@@ -1,5 +1,5 @@
 {
-    "esbonio.sphinx.confDir"  : "${workspaceFolder}/src",
-    "esbonio.sphinx.buildDir" : "${workspaceFolder}/build",
-    "esbonio.sphinx.srcDir"   : "${workspaceFolder}/src",
+    "esbonio.sphinx.buildDir" : "${workspaceFolder}/docs/build",
+    "esbonio.sphinx.confDir"  : "${workspaceFolder}/docs/source",
+    "esbonio.sphinx.srcDir"   : "${workspaceFolder}/docs/source",
 }
