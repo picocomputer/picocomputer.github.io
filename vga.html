@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>RP6502-VGA &#8212; RP6502 0.0-pre documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="RP6502-API" href="api.html" />
+    <link rel="prev" title="RP6502-RIA" href="ria.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="rp6502-vga">
+<h1>RP6502-VGA<a class="headerlink" href="#rp6502-vga" title="Permalink to this headline">¶</a></h1>
+<p>Rumbledethumps Picocomputer 6502 Video Graphics Array.</p>
+<div class="contents local topic" id="table-of-contents">
+<p class="topic-title">Table of Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#introduction" id="id1">1. Introduction</a></p></li>
+<li><p><a class="reference internal" href="#vram-and-vreg" id="id2">1. VRAM and VREG</a></p></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id1">1. Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The Video Graphics Array is a Raspberry Pi Pico with RP6502-VGA firmware. Its primary connection is to a <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> over a 5-wire PIX bus. More than one VGA module can be put on a PIX bus. Note that all VGA modules share the same 64K of VRAM and only one module can generate frame numbers and vsync interrupts.</p>
+</div>
+<div class="section" id="vram-and-vreg">
+<h2><a class="toc-backref" href="#id2">1. VRAM and VREG</a><a class="headerlink" href="#vram-and-vreg" title="Permalink to this headline">¶</a></h2>
+<p>Virtual RAM (VRAM) is R/W memory that is accessed with the two VRAM portals provided by the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a>. There is 64KB of shared VRAM.</p>
+<p>Virtual registers (VREG) are set with an <a class="reference internal" href="api.html"><span class="doc">RP6502-API</span></a> call. Each VGA module has its own 256 16-bit registers.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">RP6502</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ria.html">RIA</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">VGA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">1. Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#vram-and-vreg">1. VRAM and VREG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="ria.html" title="previous chapter">RP6502-RIA</a></li>
+      <li>Next: <a href="api.html" title="next chapter">RP6502-API</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023 Rumbledethumps.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/vga.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

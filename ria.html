@@ -1,0 +1,307 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>RP6502-RIA &#8212; RP6502 0.0-pre documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="RP6502-VGA" href="vga.html" />
+    <link rel="prev" title="Picocomputer 6502" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="rp6502-ria">
+<h1>RP6502-RIA<a class="headerlink" href="#rp6502-ria" title="Permalink to this headline">¶</a></h1>
+<p>Rumbledethumps Picocomputer 6502 Interface Adapter.</p>
+<div class="contents local topic" id="table-of-contents">
+<p class="topic-title">Table of Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#introduction" id="id2">1. Introduction</a></p>
+<ul>
+<li><p><a class="reference internal" href="#features-of-the-rp6502-ria" id="id3">1.1 Features of the RP6502-RIA</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#functional-description" id="id4">1. Functional Description</a></p></li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id2">1. Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The Rumbledethumps Interface Adapter (RIA) is a Raspberry Pi Pico with RP6502-RIA firmware. The RIA provides all essential services to support a WDC W65C02S microprocessor.</p>
+<div class="section" id="features-of-the-rp6502-ria">
+<h3><a class="toc-backref" href="#id3">1.1 Features of the RP6502-RIA</a><a class="headerlink" href="#features-of-the-rp6502-ria" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Advanced CMOS process technology for low power consumption</p></li>
+<li><p>Reset and clock management</p></li>
+<li><p>ROM loader</p></li>
+<li><p>UART</p></li>
+<li><p>Stereo audio</p></li>
+<li><p>USB MSC - Hard drives and flash drives</p></li>
+<li><p>USB HID - Keyboards, mice, and game controllers</p></li>
+<li><p>PIX bus for GPUs</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="functional-description">
+<h2><a class="toc-backref" href="#id4">1. Functional Description</a><a class="headerlink" href="#functional-description" title="Permalink to this headline">¶</a></h2>
+<p>The RIA must be installed at $FFE0-$FFFF and must be in control of RESB and PHI2. These are the only requirements. Everything else about your can be customized.</p>
+<p>RW0 and RW1 are two portals to the same VRAM. Having only one would make moving VRAM very slow since it has to buffer in 6502 RAM. Having two and using STEP0 and STEP1 makes moving VRAM slightly faster than moving 6502 RAM. Ideally, you won’t move VRAM and can used the pair for better optimizations.</p>
+<table class="colwidths-given docutils align-default" id="id1">
+<caption><span class="caption-text">Title</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 90%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Address</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>$FFE0</p></td>
+<td><p>READY</p></td>
+<td><dl class="simple">
+<dt>Flow control for UART FIFO.</dt><dd><ul class="simple">
+<li><p>bit 7 - TX FIFO not full. Ok to send.</p></li>
+<li><p>bit 6 - RX FIFO has data ready.</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="row-odd"><td><p>$FFE1</p></td>
+<td><p>TX</p></td>
+<td><p>Write bytes to the UART.</p></td>
+</tr>
+<tr class="row-even"><td><p>$FFE2</p></td>
+<td><p>RX</p></td>
+<td><p>Read bytes from the UART.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$FFE3</p></td>
+<td></td>
+<td><p>Reserved. To be used for video frame counter.</p></td>
+</tr>
+<tr class="row-even"><td><p>$FFE4</p></td>
+<td><p>RW0</p></td>
+<td><p>Read or write the VRAM referenced by ADDR0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$FFE5</p></td>
+<td><p>STEP0</p></td>
+<td><p>Signed byte added to ADDR0 after every access to RW0.</p></td>
+</tr>
+<tr class="row-even"><td><div class="line-block">
+<div class="line">$FFE6 -</div>
+<div class="line">$FFE7</div>
+</div>
+</td>
+<td><p>ADDR0</p></td>
+<td><p>Address of VRAM for RW0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$FFE8</p></td>
+<td><p>RW1</p></td>
+<td><p>Read or write the VRAM referenced by ADDR1.</p></td>
+</tr>
+<tr class="row-even"><td><p>$FFE9</p></td>
+<td><p>STEP1</p></td>
+<td><p>Signed byte added to ADDR1 after every access to RW1.</p></td>
+</tr>
+<tr class="row-odd"><td><div class="line-block">
+<div class="line">$FFEA -</div>
+<div class="line">$FFEB</div>
+</div>
+</td>
+<td><p>ADDR1</p></td>
+<td><p>Address of VRAM for RW1.</p></td>
+</tr>
+<tr class="row-even"><td><p>$FFEC</p></td>
+<td><p>VSTACK</p></td>
+<td><p>256 bytes for passing kernel paramaters.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$FFED</p></td>
+<td><p>ERRNO_LO</p></td>
+<td><p>Low byte of errno. All errors fit in this byte.</p></td>
+</tr>
+<tr class="row-even"><td><p>$FFEE</p></td>
+<td><p>ERRNO_HI</p></td>
+<td><p>Ensures errno is an optionally a 16-bit int.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$FFEF</p></td>
+<td><p>OP</p></td>
+<td><p>Write the API operation id here to begin a kernel call.</p></td>
+</tr>
+<tr class="row-even"><td><p>$FFF0</p></td>
+<td></td>
+<td><p>Reserved. Always $EA, NOP.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$FFF1</p></td>
+<td><p>RETURN</p></td>
+<td><p>Always $80, BRA. Entry to blocking API return.</p></td>
+</tr>
+<tr class="row-even"><td><p>$FFF2</p></td>
+<td><p>BUSY</p></td>
+<td><dl class="simple">
+<dt>Poll kernel for completion of operation.</dt><dd><ul class="simple">
+<li><p>bit7 - Indicates operation is running.</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="row-odd"><td><p>$FFF3</p></td>
+<td></td>
+<td><p>Reserved. Always $A9, LDA.</p></td>
+</tr>
+<tr class="row-even"><td><p>$FFF4</p></td>
+<td><p>A</p></td>
+<td><p>Kernel register A.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$FFF5</p></td>
+<td></td>
+<td><p>Reserved. Always $A2, LDX.</p></td>
+</tr>
+<tr class="row-even"><td><p>$FFF6</p></td>
+<td><p>X</p></td>
+<td><p>Kernel register X.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$FFF7</p></td>
+<td></td>
+<td><p>Reserved. Always $60, RTS.</p></td>
+</tr>
+<tr class="row-even"><td><div class="line-block">
+<div class="line">$FFF8 -</div>
+<div class="line">$FFF9</div>
+</div>
+</td>
+<td><p>SREG</p></td>
+<td><p>32-bit extension to AX - AXSREG.</p></td>
+</tr>
+<tr class="row-odd"><td><div class="line-block">
+<div class="line">$FFFA -</div>
+<div class="line">$FFFB</div>
+</div>
+</td>
+<td><p>NMIB</p></td>
+<td><p>6502 vector.</p></td>
+</tr>
+<tr class="row-even"><td><div class="line-block">
+<div class="line">$FFFC -</div>
+<div class="line">$FFFD</div>
+</div>
+</td>
+<td><p>RESB</p></td>
+<td><p>6502 vector.</p></td>
+</tr>
+<tr class="row-odd"><td><div class="line-block">
+<div class="line">$FFFE -</div>
+<div class="line">$FFFF</div>
+</div>
+</td>
+<td><p>BRK/IRQB</p></td>
+<td><p>6502 vector.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">RP6502</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">RIA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">1. Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#features-of-the-rp6502-ria">1.1 Features of the RP6502-RIA</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#functional-description">1. Functional Description</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="vga.html">VGA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Picocomputer 6502</a></li>
+      <li>Next: <a href="vga.html" title="next chapter">RP6502-VGA</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023 Rumbledethumps.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/ria.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
