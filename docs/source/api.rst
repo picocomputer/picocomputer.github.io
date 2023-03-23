@@ -28,7 +28,7 @@ Next we push arg0 on the VSTACK. Writing data to the RIA_STACK register does thi
 
 Get the operation ID from the function reference and store that in RIA_OP. The operation is running now. You can keep doing 6502 things, like running a loading animation, by polling RIA_BUSY. Or, JSR RIA_RETURN to block.
 
-If you poll, the return values will be in RIA_A, RIA_X, and RIA_SREG. If you JSR RIA_RETURN then A and X will be set upon return. If an error occurs, RIA_ERRNO will be updated.
+If you poll, the return values will be in RIA_A, RIA_X, and RIA_SREG. If you JSR RIA_RETURN then A and X will be set upon return. If an error occurs, RIA_ERRNO will be updated. RIA_A and RIX_A will both always be updated to assist with CC65's interget promotion requirements. RIA_SREG is only updated for 32-bit returhns. RIA_ERRNO is not updated unless there's an error (like POSIX).
 
 You can now proceed to pull values off the stack. You must pull the entire stack before the next call.
 
