@@ -1,4 +1,4 @@
-# RP6502 Project Documentation
+# Picocomputer Documentation
 
 https://picocomputer.github.io/
 
