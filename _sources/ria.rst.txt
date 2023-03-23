@@ -28,7 +28,7 @@ The Rumbledethumps Interface Adapter (RIA) is a Raspberry Pi Pico with RP6502-RI
 
 The RIA must be installed at $FFE0-$FFFF and must be in control of RESB and PHI2. These are the only requirements. Everything else about your can be customized.
 
-RW0 and RW1 are two portals to the same VRAM. Having only one would make moving VRAM very slow since it has to buffer in 6502 RAM. Having two and using STEP0 and STEP1 makes moving VRAM slightly faster than moving 6502 RAM. Ideally, you won't move VRAM and can used the pair for better optimizations.
+RW0 and RW1 are two portals to the same VRAM. Having only one would make moving VRAM very slow since data would have to buffer in 6502 RAM. Having two allows moving VRAM to be slightly faster than moving 6502 RAM. Ideally, you won't move VRAM and can use the pair for better optimizations.
 
 .. list-table:: Title
    :widths: 5 5 90
@@ -44,13 +44,13 @@ RW0 and RW1 are two portals to the same VRAM. Having only one would make moving 
          * bit 6 - RX FIFO has data ready.
    * - $FFE1
      - TX
-     - Write bytes to the UART. 
+     - Write bytes to the UART.
    * - $FFE2
      - RX
-     - Read bytes from the UART. 
+     - Read bytes from the UART.
    * - $FFE3
      -
-     - Reserved. To be used for video frame counter. 
+     - Reserved. To be used for video frame counter.
    * - $FFE4
      - RW0
      - Read or write the VRAM referenced by ADDR0.
@@ -82,10 +82,10 @@ RW0 and RW1 are two portals to the same VRAM. Having only one would make moving 
      - Ensures errno is an optionally a 16-bit int.
    * - $FFEF
      - OP
-     - Write the API operation id here to begin a kernel call. 
+     - Write the API operation id here to begin a kernel call.
    * - $FFF0
-     -
-     - Reserved. Always $EA, NOP.
+     - NOP
+     - Always $EA.
    * - $FFF1
      - RETURN
      - Always $80, BRA. Entry to blocking API return.
@@ -94,20 +94,20 @@ RW0 and RW1 are two portals to the same VRAM. Having only one would make moving 
      - Poll kernel for completion of operation.
         * bit7 - Indicates operation is running.
    * - $FFF3
-     -
-     - Reserved. Always $A9, LDA.
+     - LDA
+     - Always $A9.
    * - $FFF4
      - A
      - Kernel register A.
    * - $FFF5
-     -
-     - Reserved. Always $A2, LDX.
+     - LDX
+     - Always $A2.
    * - $FFF6
      - X
      - Kernel register X.
    * - $FFF7
-     -
-     - Reserved. Always $60, RTS.
+     - RTS
+     - Always $60.
    * - | $FFF8 -
        | $FFF9
      - SREG
@@ -124,4 +124,3 @@ RW0 and RW1 are two portals to the same VRAM. Having only one would make moving 
        | $FFFF
      - BRK/IRQB
      - 6502 vector.
-     
