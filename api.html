@@ -76,7 +76,7 @@
 <p>The RIA has registers called RIA_A, RIA_X, and RIA_SREG. An int is 16 bits, so we set the RIA_A and RIA_X registers with arg1. I’ll use “A” for the 6502 register and “RIA_A” for the RIA register in this explanation.</p>
 <p>Next we push arg0 on the VSTACK. Writing data to the RIA_STACK register does this. It’s a top-down stack, so push each value from left to right and maintain little endian-ness in memory.</p>
 <p>Get the operation ID from the function reference and store that in RIA_OP. The operation is running now. You can keep doing 6502 things, like running a loading animation, by polling RIA_BUSY. Or, JSR RIA_RETURN to block.</p>
-<p>If you poll, the return values will be in RIA_A, RIA_X, and RIA_SREG. If you JSR RIA_RETURN then A and X will be set upon return. If an error occurs, RIA_ERRNO will be updated.</p>
+<p>If you poll, the return values will be in RIA_A, RIA_X, and RIA_SREG. If you JSR RIA_RETURN then A and X will be set upon return. If an error occurs, RIA_ERRNO will be updated. RIA_A and RIX_A will both always be updated to assist with CC65’s interget promotion requirements. RIA_SREG is only updated for 32-bit returhns. RIA_ERRNO is not updated unless there’s an error (like POSIX).</p>
 <p>You can now proceed to pull values off the stack. You must pull the entire stack before the next call.</p>
 <div class="section" id="short-stacking">
 <h3><a class="toc-backref" href="#id3">2.1. Short Stacking</a><a class="headerlink" href="#short-stacking" title="Permalink to this headline">¶</a></h3>
