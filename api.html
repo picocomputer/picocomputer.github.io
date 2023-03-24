@@ -41,20 +41,23 @@
 <li><p><a class="reference internal" href="#calling-with-fastcall" id="id2">2. Calling with fastcall</a></p>
 <ul>
 <li><p><a class="reference internal" href="#short-stacking" id="id3">2.1. Short Stacking</a></p></li>
-<li><p><a class="reference internal" href="#bulk-data" id="id4">2.2. Bulk Data</a></p>
+<li><p><a class="reference internal" href="#shorter-integers" id="id4">2.2. Shorter Integers</a></p></li>
+<li><p><a class="reference internal" href="#bulk-data" id="id5">2.3. Bulk Data</a></p>
 <ul>
-<li><p><a class="reference internal" href="#xx-0-bulk-vstack-operations" id="id5">2.2.1. $XX+0 Bulk VSTACK Operations</a></p></li>
-<li><p><a class="reference internal" href="#xx-1-and-xx-2-bulk-vram-operations" id="id6">2.2.2. $XX+1 and $XX+2 Bulk VRAM Operations</a></p></li>
+<li><p><a class="reference internal" href="#xx-0-bulk-vstack-operations" id="id6">2.2.1. $XX+0 Bulk VSTACK Operations</a></p></li>
+<li><p><a class="reference internal" href="#xx-1-and-xx-2-bulk-vram-operations" id="id7">2.2.2. $XX+1 and $XX+2 Bulk VRAM Operations</a></p></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#function-reference" id="id7">3. Function Reference</a></p>
+<li><p><a class="reference internal" href="#function-reference" id="id8">1. Function Reference</a></p>
 <ul>
-<li><p><a class="reference internal" href="#typedefs" id="id8">Typedefs</a></p></li>
-<li><p><a class="reference internal" href="#zvstack" id="id9">$00 zvstack</a></p></li>
-<li><p><a class="reference internal" href="#open-01-02-03" id="id10">$01 open ($01 $02 $03)</a></p></li>
-<li><p><a class="reference internal" href="#ff-exit" id="id11">$FF exit</a></p></li>
+<li><p><a class="reference internal" href="#warning" id="id9">Warning</a></p></li>
+<li><p><a class="reference internal" href="#typedefs" id="id10">Typedefs</a></p></li>
+<li><p><a class="reference internal" href="#zvstack" id="id11">$00 zvstack</a></p></li>
+<li><p><a class="reference internal" href="#open-01-02-03" id="id12">$01 open ($01 $02 $03)</a></p></li>
+<li><p><a class="reference internal" href="#lseek" id="id13">$09 lseek</a></p></li>
+<li><p><a class="reference internal" href="#ff-exit" id="id14">$FF exit</a></p></li>
 </ul>
 </li>
 </ul>
@@ -88,28 +91,36 @@
 
 <p>Here we are required to pass a 64 bit value, perhaps for a file seek. If you’re only working with 64K files, you only need 16 bits, so you only need to push the two low bytes.</p>
 </div>
+<div class="section" id="shorter-integers">
+<h3><a class="toc-backref" href="#id4">2.2. Shorter Integers</a><a class="headerlink" href="#shorter-integers" title="Permalink to this headline">¶</a></h3>
+<p>Many operations can be save a few clocks by ignoring REG_X. All integers are always available as 16 bits to assist with CC65 and integer promotion. However, many operations will ignore REG_X on the register parameter and limit their return to fit in REG_A. This will be documented below as “A regs”.</p>
+</div>
 <div class="section" id="bulk-data">
-<h3><a class="toc-backref" href="#id4">2.2. Bulk Data</a><a class="headerlink" href="#bulk-data" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id5">2.3. Bulk Data</a><a class="headerlink" href="#bulk-data" title="Permalink to this headline">¶</a></h3>
 <p>Many functions come in three flavors. These functions pass blocks of data. For example, reads and writes. They all have a “const char *” parameter. This pointer is passed by special means. This is because the kernel can only change registers, not 6502 RAM.</p>
 <div class="section" id="xx-0-bulk-vstack-operations">
-<h4><a class="toc-backref" href="#id5">2.2.1. $XX+0 Bulk VSTACK Operations</a><a class="headerlink" href="#xx-0-bulk-vstack-operations" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id6">2.2.1. $XX+0 Bulk VSTACK Operations</a><a class="headerlink" href="#xx-0-bulk-vstack-operations" title="Permalink to this headline">¶</a></h4>
 <p>If the bulk data is 256 bytes or less, you can pass it on the VSTACK. If you’re passing a string, like a filename, you can omit the trailing zero. Strings are still limited to a length of 255 though. Don’t pass a “pointer” on the stack, just push or pull the data.</p>
 <p>The CC65 library uses these stack functions. It will break up large reads and writes into multiple calls. This makes C library functions like fread() work exactly as expected with no unwanted side effects. However, the C standard library has no concept of VRAM, so it’s worth learning how to use the kernel API if you’re doing anything with graphics and sound.</p>
 </div>
 <div class="section" id="xx-1-and-xx-2-bulk-vram-operations">
-<h4><a class="toc-backref" href="#id6">2.2.2. $XX+1 and $XX+2 Bulk VRAM Operations</a><a class="headerlink" href="#xx-1-and-xx-2-bulk-vram-operations" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id7">2.2.2. $XX+1 and $XX+2 Bulk VRAM Operations</a><a class="headerlink" href="#xx-1-and-xx-2-bulk-vram-operations" title="Permalink to this headline">¶</a></h4>
 <p>These functions get their pointer from RIA_ADDR0 or RIA_ADDR1. Setting an ADDR register sets the pointer. It does not matter if the value later changes with STEP and RW, the pointer is what you set initially. This way you can set the ADDR, write some data, <em>not</em> re-set the ADDR, and call the OP.</p>
 <p>Calling these functions updates VRAM. If you’re loading graphics, you can load exactly what you need right where you need it without the 6502 doing any work.</p>
 </div>
 </div>
 </div>
 <div class="section" id="function-reference">
-<h2><a class="toc-backref" href="#id7">3. Function Reference</a><a class="headerlink" href="#function-reference" title="Permalink to this headline">¶</a></h2>
-<p>These C declarations will “just work” in CC65 when using the SDK. The first declaration (without numeric suffix) is the main prototype for the binary interface as described above.</p>
+<h2><a class="toc-backref" href="#id8">1. Function Reference</a><a class="headerlink" href="#function-reference" title="Permalink to this headline">¶</a></h2>
+<p>These C declarations will “just work” in CC65 when using the SDK because they have an implemention that will block and move data between 6502 RAM and the VSTACK. Two additional C functions may be provided for working with VRAM. The first declaration (without numeric suffix) is the main prototype for the binary interface as described above.</p>
 <p>Calling kernel API functions from the C SDK will will do any copying work for you and block until the operation completes. The numbered VRAM variants will use their respective RW portal and do not preserve the VRAM registers.</p>
 <p>While calling from C SDK is easy and usually fast enough, you can also use the API from C in the same way an assembly program would.</p>
+<div class="section" id="warning">
+<h3><a class="toc-backref" href="#id9">Warning</a><a class="headerlink" href="#warning" title="Permalink to this headline">¶</a></h3>
+<p>This is not stable. Expect lots of little changes.</p>
+</div>
 <div class="section" id="typedefs">
-<h3><a class="toc-backref" href="#id8">Typedefs</a><a class="headerlink" href="#typedefs" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id10">Typedefs</a><a class="headerlink" href="#typedefs" title="Permalink to this headline">¶</a></h3>
 <dl class="type">
 <dt id="c.uint16_t">
 int <code class="sig-name descname">uint16_t</code><a class="headerlink" href="#c.uint16_t" title="Permalink to this definition">¶</a></dt>
@@ -122,7 +133,7 @@ int <code class="sig-name descname">uint16_t</code><a class="headerlink" href="#
 
 </div>
 <div class="section" id="zvstack">
-<h3><a class="toc-backref" href="#id9">$00 zvstack</a><a class="headerlink" href="#zvstack" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id11">$00 zvstack</a><a class="headerlink" href="#zvstack" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt>
 <code class="sig-name descname">void zvstack(void);</code></dt>
@@ -131,7 +142,7 @@ int <code class="sig-name descname">uint16_t</code><a class="headerlink" href="#
 
 </div>
 <div class="section" id="open-01-02-03">
-<h3><a class="toc-backref" href="#id10">$01 open ($01 $02 $03)</a><a class="headerlink" href="#open-01-02-03" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id12">$01 open ($01 $02 $03)</a><a class="headerlink" href="#open-01-02-03" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt>
 <code class="sig-name descname">int open(const char *path, int oflag);</code></dt>
@@ -145,26 +156,87 @@ int <code class="sig-name descname">uint16_t</code><a class="headerlink" href="#
 <dl class="function">
 <dt>
 <code class="sig-name descname">int open1(vram_ptr addr1, int oflag);</code></dt>
-<dd><p>Open a file.</p>
+<dd><p>Create a connection between a file and a file descriptor.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – Pathname to a file.</p></li>
+<li><p><strong>oflag</strong> – Bitfield of options.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>File descriptor. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, oflag</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_EXIST, FR_INVALID_OBJECT, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_LOCKED, FR_NOT_ENOUGH_CORE, FR_TOO_MANY_OPEN_FILES</p>
+</dd>
+<dt class="field-odd">Options</dt>
+<dd class="field-odd"><div class="line-block">
+<div class="line">O_RDONLY 0x01</div>
+<div class="line-block">
+<div class="line">Open for reading only.</div>
+</div>
+<div class="line">O_WRONLY 0x02</div>
+<div class="line-block">
+<div class="line">Open for writing only.</div>
+</div>
+<div class="line">O_RDWR 0x03</div>
+<div class="line-block">
+<div class="line">Open for reading and writing.</div>
+</div>
+<div class="line">O_CREAT 0x10</div>
+<div class="line-block">
+<div class="line">Create the file if it does not exist.</div>
+</div>
+<div class="line">O_TRUNC 0x20</div>
+<div class="line-block">
+<div class="line">Truncate the file length to 0 after opening.</div>
+</div>
+<div class="line">O_APPEND 0x40</div>
+<div class="line-block">
+<div class="line">Read/write pointer is set end of the file.</div>
+</div>
+<div class="line">O_EXCL 0x80</div>
+<div class="line-block">
+<div class="line">If O_CREAT and O_EXCL are set, fail if the file exists.</div>
+</div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="lseek">
+<h3><a class="toc-backref" href="#id13">$09 lseek</a><a class="headerlink" href="#lseek" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.lseek">
+long int <code class="sig-name descname">lseek</code><span class="sig-paren">(</span>unsigned long long int<em> offset</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move the read/write pointer. This can also expand the file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>path</strong> – Filename</p></li>
-<li><p><strong>oflag</strong> – Flags</p></li>
+<li><p><strong>offset</strong> – Position to move to in file.</p></li>
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
 </ul>
 </dd>
-<dt class="field-even">Retval -1</dt>
-<dd class="field-even"><p>on error.</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Read/write position. -1 on error. If this value would be too large for a long, the returned value will be 0x0FFFFFFF.</p>
 </dd>
-<dt class="field-odd">Retval &gt;=0</dt>
-<dd class="field-odd"><p>The file handle number.</p>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT</p>
 </dd>
 </dl>
 </dd></dl>
 
 </div>
 <div class="section" id="ff-exit">
-<h3><a class="toc-backref" href="#id11">$FF exit</a><a class="headerlink" href="#ff-exit" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id14">$FF exit</a><a class="headerlink" href="#ff-exit" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt>
 <code class="sig-name descname">void exit(int status);</code></dt>
@@ -199,17 +271,20 @@ int <code class="sig-name descname">uint16_t</code><a class="headerlink" href="#
 <li class="toctree-l2"><a class="reference internal" href="#introduction">1. Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#calling-with-fastcall">2. Calling with fastcall</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#short-stacking">2.1. Short Stacking</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#bulk-data">2.2. Bulk Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#shorter-integers">2.2. Shorter Integers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bulk-data">2.3. Bulk Data</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#xx-0-bulk-vstack-operations">2.2.1. $XX+0 Bulk VSTACK Operations</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#xx-1-and-xx-2-bulk-vram-operations">2.2.2. $XX+1 and $XX+2 Bulk VRAM Operations</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#function-reference">3. Function Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#function-reference">1. Function Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#warning">Warning</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#typedefs">Typedefs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#zvstack">$00 zvstack</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#open-01-02-03">$01 open ($01 $02 $03)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#lseek">$09 lseek</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ff-exit">$FF exit</a></li>
 </ul>
 </li>

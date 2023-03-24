@@ -40,7 +40,7 @@
 <ul class="simple">
 <li><p><a class="reference internal" href="#introduction" id="id2">1. Introduction</a></p>
 <ul>
-<li><p><a class="reference internal" href="#features-of-the-rp6502-ria" id="id3">1.1 Features of the RP6502-RIA</a></p></li>
+<li><p><a class="reference internal" href="#features-of-the-rp6502-ria" id="id3">1.1. Features of the RP6502-RIA</a></p></li>
 </ul>
 </li>
 <li><p><a class="reference internal" href="#functional-description" id="id4">1. Functional Description</a></p></li>
@@ -48,9 +48,9 @@
 </div>
 <div class="section" id="introduction">
 <h2><a class="toc-backref" href="#id2">1. Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>The Rumbledethumps Interface Adapter (RIA) is a Raspberry Pi Pico with RP6502-RIA firmware. The RIA provides all essential services to support a WDC W65C02S microprocessor.</p>
+<p>The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico with RP6502-RIA firmware. The RIA provides all essential services to support a WDC W65C02S microprocessor.</p>
 <div class="section" id="features-of-the-rp6502-ria">
-<h3><a class="toc-backref" href="#id3">1.1 Features of the RP6502-RIA</a><a class="headerlink" href="#features-of-the-rp6502-ria" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id3">1.1. Features of the RP6502-RIA</a><a class="headerlink" href="#features-of-the-rp6502-ria" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Advanced CMOS process technology for low power consumption</p></li>
 <li><p>Reset and clock management</p></li>
@@ -65,7 +65,7 @@
 </div>
 <div class="section" id="functional-description">
 <h2><a class="toc-backref" href="#id4">1. Functional Description</a><a class="headerlink" href="#functional-description" title="Permalink to this headline">¶</a></h2>
-<p>The RIA must be installed at $FFE0-$FFFF and must be in control of RESB and PHI2. These are the only requirements. Everything else about your can be customized.</p>
+<p>The RIA must be installed at $FFE0-$FFFF and must be in control of RESB and PHI2. These are the only requirements. Everything else about your Picocomputer can be customized.</p>
 <p>RW0 and RW1 are two portals to the same VRAM. Having only one would make moving VRAM very slow since data would have to buffer in 6502 RAM. Having two allows moving VRAM to be slightly faster than moving 6502 RAM. Ideally, you won’t move VRAM and can use the pair for better optimizations.</p>
 <table class="colwidths-given docutils align-default" id="id1">
 <caption><span class="caption-text">Title</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
@@ -162,13 +162,7 @@
 </tr>
 <tr class="row-even"><td><p>$FFF2</p></td>
 <td><p>BUSY</p></td>
-<td><dl class="simple">
-<dt>Poll kernel for completion of operation.</dt><dd><ul class="simple">
-<li><p>bit7 - Indicates operation is running.</p></li>
-</ul>
-</dd>
-</dl>
-</td>
+<td><p>Bit 7 high while operation is running.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$FFF3</p></td>
 <td><p>LDA</p></td>
@@ -247,7 +241,7 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">RIA</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#introduction">1. Introduction</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#features-of-the-rp6502-ria">1.1 Features of the RP6502-RIA</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#features-of-the-rp6502-ria">1.1. Features of the RP6502-RIA</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#functional-description">1. Functional Description</a></li>

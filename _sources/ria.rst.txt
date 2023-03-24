@@ -9,10 +9,10 @@ Rumbledethumps Picocomputer 6502 Interface Adapter.
 1. Introduction
 ===============
 
-The Rumbledethumps Interface Adapter (RIA) is a Raspberry Pi Pico with RP6502-RIA firmware. The RIA provides all essential services to support a WDC W65C02S microprocessor.
+The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico with RP6502-RIA firmware. The RIA provides all essential services to support a WDC W65C02S microprocessor.
 
-1.1 Features of the RP6502-RIA
-------------------------------
+1.1. Features of the RP6502-RIA
+-------------------------------
 
 * Advanced CMOS process technology for low power consumption
 * Reset and clock management
@@ -26,7 +26,7 @@ The Rumbledethumps Interface Adapter (RIA) is a Raspberry Pi Pico with RP6502-RI
 1. Functional Description
 =========================
 
-The RIA must be installed at $FFE0-$FFFF and must be in control of RESB and PHI2. These are the only requirements. Everything else about your can be customized.
+The RIA must be installed at $FFE0-$FFFF and must be in control of RESB and PHI2. These are the only requirements. Everything else about your Picocomputer can be customized.
 
 RW0 and RW1 are two portals to the same VRAM. Having only one would make moving VRAM very slow since data would have to buffer in 6502 RAM. Having two allows moving VRAM to be slightly faster than moving 6502 RAM. Ideally, you won't move VRAM and can use the pair for better optimizations.
 
@@ -91,8 +91,7 @@ RW0 and RW1 are two portals to the same VRAM. Having only one would make moving 
      - Always $80, BRA. Entry to blocking API return.
    * - $FFF2
      - BUSY
-     - Poll kernel for completion of operation.
-        * bit7 - Indicates operation is running.
+     - Bit 7 high while operation is running.
    * - $FFF3
      - LDA
      - Always $A9.
