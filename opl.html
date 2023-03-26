@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>Picocomputer 6502 &#8212; RP6502 0.0-pre documentation</title>
+    <title>RP6502-OPL &#8212; RP6502 0.0-pre documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -14,7 +14,8 @@
     <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="RP6502-RIA" href="ria.html" />
+    <link rel="next" title="RP6502-API" href="api.html" />
+    <link rel="prev" title="RP6502-VGA" href="vga.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -31,20 +32,25 @@
 
           <div class="body" role="main">
             
-  <div class="toctree-wrapper compound">
-</div>
-<div class="section" id="picocomputer-6502">
-<h1>Picocomputer 6502<a class="headerlink" href="#picocomputer-6502" title="Permalink to this headline">¶</a></h1>
-<p>The Picocomputer explores retro computing and game development by removing the barrier between genuine 8-bit hardware and modern devices. This is the documentation.</p>
-<p>The RP6502 chipset comes in two parts. The RP6502-RIA is an interface adapter similar to CIA, VIA, and ACIA devices. The RP6502-VGA is an optional video chip that connects to the RP6502-RIA. Both of these are simply Raspberry Pi Picos with the RP6502 firmware.</p>
-<p>RP6502 Datasheets:</p>
+  <div class="section" id="rp6502-opl">
+<h1>RP6502-OPL<a class="headerlink" href="#rp6502-opl" title="Permalink to this headline">¶</a></h1>
+<p>Rumbledethumps Picocomputer 6502 FM Operator Type-L.</p>
+<div class="contents local topic" id="table-of-contents">
+<p class="topic-title">Table of Contents</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="ria.html"><span class="doc">RIA Interface Adapter</span></a></p></li>
-<li><p><a class="reference internal" href="vga.html"><span class="doc">VGA Graphics Processing Unit</span></a></p></li>
-<li><p><a class="reference internal" href="opl.html"><span class="doc">OPL Sound Synthesis</span></a></p></li>
-<li><p><a class="reference internal" href="api.html"><span class="doc">API for 6502 Programing</span></a></p></li>
+<li><p><a class="reference internal" href="#introduction" id="id1">1. Introduction</a></p></li>
+<li><p><a class="reference internal" href="#vram-and-vreg" id="id2">2. VRAM and VREG</a></p></li>
 </ul>
-<p>I use “Picocomputer 6502” to refer to the reference design. It is my hope that derivitve projects use a different name. For example, “Picocomputer VERA” or “My Dream Computer” both make it obvious it’s more than the reference design.</p>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id1">1. Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The is the sound system.</p>
+</div>
+<div class="section" id="vram-and-vreg">
+<h2><a class="toc-backref" href="#id2">2. VRAM and VREG</a><a class="headerlink" href="#vram-and-vreg" title="Permalink to this headline">¶</a></h2>
+<p>Virtual RAM (VRAM) is R/W memory that is accessed with the two VRAM portals provided by the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a>. There is 64KB of shared VRAM.</p>
+<p>Virtual registers (VREG) are set with an <a class="reference internal" href="api.html"><span class="doc">RP6502-API</span></a> call. The OPL built in to the RIA is PIX ID 0.</p>
+</div>
 </div>
 
 
@@ -54,7 +60,7 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="#">RP6502</a></h1>
+<h1 class="logo"><a href="index.html">RP6502</a></h1>
 
 
 
@@ -64,18 +70,23 @@
 
 
 <h3>Navigation</h3>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="ria.html">RIA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vga.html">VGA</a></li>
-<li class="toctree-l1"><a class="reference internal" href="opl.html">OPL</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">OPL</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">1. Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#vram-and-vreg">2. VRAM and VREG</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
-  <li><a href="#">Documentation overview</a><ul>
-      <li>Next: <a href="ria.html" title="next chapter">RP6502-RIA</a></li>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="vga.html" title="previous chapter">RP6502-VGA</a></li>
+      <li>Next: <a href="api.html" title="next chapter">RP6502-API</a></li>
   </ul></li>
 </ul>
 </div>
@@ -109,7 +120,7 @@
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
-      <a href="_sources/index.rst.txt"
+      <a href="_sources/opl.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 
