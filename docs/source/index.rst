@@ -3,6 +3,7 @@
 
    RIA <ria>
    VGA <vga>
+   OPL <opl>
    API <api>
 
 Picocomputer 6502
@@ -16,6 +17,7 @@ RP6502 Datasheets:
 
 * :doc:`RIA Interface Adapter <ria>`
 * :doc:`VGA Graphics Processing Unit <vga>`
+* :doc:`OPL Sound Synthesis <opl>`
 * :doc:`API for 6502 Programing <api>`
 
 I use "Picocomputer 6502" to refer to the reference design. It is my hope that derivitve projects use a different name. For example, "Picocomputer VERA" or "My Dream Computer" both make it obvious it's more than the reference design.

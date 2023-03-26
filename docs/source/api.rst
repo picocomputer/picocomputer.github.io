@@ -16,9 +16,16 @@ The RP6502 presents an opportunity to create a new type of operating system. A 6
 2. Calling with fastcall
 ========================
 
-The binary interface is based on fastcall from the `CC65 Internals <https://cc65.github.io/doc/cc65-intern.html>`_. The last parameter is passed by register and everything else is pushed on the stack from left to right. The return value is also passed by register.
+If you only plan on writing C code, you can skip this section. The binary interface is based on fastcall from the `CC65 Internals <https://cc65.github.io/doc/cc65-intern.html>`_. However, the RP6502 fastcall does not use or require anything from CC65.
 
-The register is known as AX for 16 bits and AXSREG for 32-bits. CC65 keeps SREG in zero page. A and X are the 6502 registers. Let's look at this example function.
+The CC65 fastcall is simply a pattern which I think works well for both C and assembly programmers. In short:
+
+* Kernel calls have C declarations.
+* Last argument is passed by register.
+* Stack arguments are pushed left to right.
+* Return value in register.
+
+The register is known as AX for 16 bits and AXSREG for 32-bits. CC65 keeps SREG in zero page. A and X are the 6502 registers. Let's look at an example function. All kernel calls are specified as a C declaration like so:
 
 .. c:function:: int doit(int arg0, int arg1);
 
@@ -26,63 +33,113 @@ The RIA has registers called RIA_A, RIA_X, and RIA_SREG. An int is 16 bits, so w
 
 Next we push arg0 on the VSTACK. Writing data to the RIA_STACK register does this. It's a top-down stack, so push each value from left to right and maintain little endian-ness in memory.
 
-Get the operation ID from the function reference and store that in RIA_OP. The operation is running now. You can keep doing 6502 things, like running a loading animation, by polling RIA_BUSY. Or, JSR RIA_RETURN to block.
+To call, store the operation ID in RIA_OP. The operation begins immediately. You can keep doing 6502 things, like running a loading animation, by polling RIA_BUSY. Or, JSR RIA_RETURN to block.
 
-If you poll, the return values will be in RIA_A, RIA_X, and RIA_SREG. If you JSR RIA_RETURN then A and X will be set upon return. If an error occurs, RIA_ERRNO will be updated. RIA_A and RIX_A will both always be updated to assist with CC65's interget promotion requirements. RIA_SREG is only updated for 32-bit returhns. RIA_ERRNO is not updated unless there's an error (like POSIX).
+The JSR RIA_RETURN method can unblock in less than 2 clock cycles and does an immediate mode load of A and X. Sequential operations will run fastest with this technique. Under the hood, you're jumping into a self-modifying program that runs on the RIA registers.
 
-You can now proceed to pull values off the stack. You must pull the entire stack before the next call.
+.. code-block:: asm
+
+   BRA -2 or 0  ; RIA_BUSY
+   LDA #00      ; RIA_A
+   LDX #00      ; RIA_X
+   RTS
+
+Polling is simply snooping on the above program. The RIA_BUSY register is the -2 or 0 in the BRA above. The RIA datasheet said to use bit 7, which the 6502 can check quickly. Once clear, we read RIA_A and RIA_X with absolute instructions.
+
+.. code-block:: asm
+
+   wait:
+   BIT RIA_BUSY
+   BMI wait
+   LDA #RIA_A
+   LDX #RIA_X
+
+RIA_A and RIA_X will both always be updated to assist with CC65's integer promotion requirements. RIA_SREG is only updated for 32-bit returns. RIA_ERRNO is only updated if there is an error.
+
+Some operations return data on the stack. You must pull the entire stack before the next call. Or, the next function you call must understand the stack. For example, it is possible to chain read() and write() to copy a file without using any RAM or VRAM.
 
 2.1. Short Stacking
 -------------------
 
-In the never ending pursuit of saving all the clocks, it is possible to save a few on the stack push if you don't need all the range. This only works on the final int passed. For example:
+In the never ending pursuit of saving all the clocks, it is possible to save a few on the stack push if you don't need all the range. This only works on the stack argument that gets pushed first. For example:
 
-.. c:function:: int doit2it(unsigned long long int arg0, int arg1);
+.. code-block:: C
 
-Here we are required to pass a 64 bit value, perhaps for a file seek. If you're only working with 64K files, you only need 16 bits, so you only need to push the two low bytes.
+   long lseek64(unsigned long long offset, int fildes)
+
+Here we are asked for a 64 bit value. Not coincidentally, it's in the right position for short stacking. If you only need 24 bits, push three bytes. The significant bytes will be implicit.
 
 2.2. Shorter Integers
 ---------------------
 
-Many operations can be save a few clocks by ignoring REG_X. All integers are always available as 16 bits to assist with CC65 and integer promotion. However, many operations will ignore REG_X on the register parameter and limit their return to fit in REG_A. This will be documented below as "A regs".
+Many operations can save a few clocks by ignoring REG_X. All integers are always available as 16 bits to assist with CC65 and integer promotion. However, many operations will ignore REG_X on the register parameter and limit their return to fit in REG_A. This will be documented below as "A regs".
 
 2.3. Bulk Data
 --------------
 
-Many functions come in three flavors. These functions pass blocks of data. For example, reads and writes. They all have a "const char \*" parameter. This pointer is passed by special means. This is because the kernel can only change registers, not 6502 RAM.
+Functions that move bulk data will come in three flavors. These are any function with a "char \*" or "void \*" parameter. This pointer is passed by special means because the kernel can only change registers, not 6502 RAM.
 
-2.2.1. $XX+0 Bulk VSTACK Operations
+
+2.2.1. Bulk VSTACK Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If the bulk data is 256 bytes or less, you can pass it on the VSTACK. If you're passing a string, like a filename, you can omit the trailing zero. Strings are still limited to a length of 255 though. Don't pass a "pointer" on the stack, just push or pull the data.
+These only work if the count is 256 or less. Bulk data is passed on the VSTACK, which is 256 bytes. Let's look at some examples.
 
-The CC65 library uses these stack functions. It will break up large reads and writes into multiple calls. This makes C library functions like fread() work exactly as expected with no unwanted side effects. However, the C standard library has no concept of VRAM, so it's worth learning how to use the kernel API if you're doing anything with graphics and sound.
+.. code-block:: C
 
-2.2.2. $XX+1 and $XX+2 Bulk VRAM Operations
+   int open(const char *path, int oflag);
+
+Send `oflag` in AX. Send the path on VSTACK by pushing the string starting with the last character. You may omit pushing the terminating zero but strings are limited to a length of 255.
+
+.. code-block:: C
+
+   int read(char *buf, int count, int fildes)
+
+Send `count` as a short stack and `fildes` in AX. The returned value in AX indicates how many values must be pulled from the stack.
+
+.. code-block:: C
+
+   int write(const void *buf, int count, int fildes)
+
+Send `fildes` in AX. Push the data to VSTACK. Do not send `buf` or `count`. Pulling from VSTACK will begin with the first character.
+
+
+2.2.2. Bulk VRAM Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These functions get their pointer from RIA_ADDR0 or RIA_ADDR1. Setting an ADDR register sets the pointer. It does not matter if the value later changes with STEP and RW, the pointer is what you set initially. This way you can set the ADDR, write some data, *not* re-set the ADDR, and call the OP.
 
-Calling these functions updates VRAM. If you're loading graphics, you can load exactly what you need right where you need it without the 6502 doing any work.
+.. code-block:: C
+
+   int read0(vram_ptr addr0, int count, int fildes)
+
+The kernel expects `addr0` to come from RIA_ADDR0, so that leaves `count` for the stack and `fildes` for AX. Using a short stack and knowing fildes fits in REG_A, we can do something like:
+
+.. code-block:: C
+
+   RIA_ADDR0 = addr0; // This is a 16-bit move in the C API
+   RIA_STACK = count; // Short stacked. Just 8 bits.
+   RIA_A = fildes;    // OK because read() ignores X.
+
+Unlike the VSTACK, the kernel doesn't track a length for the VRAM portals. A set of rules around RIA_RW access could be made, but the use case where this is advantageous is too narrow to justify the complexity.
+
+Calling read functions will update VRAM. This means you can load graphics assets right where you need it without the 6502 doing any work. This leaves the 6502 free to entertain the user with an animation while the entire 64K is transferred in less than a second.
 
 
-1. Function Reference
+2. Function Reference
 =====================
 
-These C declarations will "just work" in CC65 when using the SDK because they have an implemention that will block and move data between 6502 RAM and the VSTACK. Two additional C functions may be provided for working with VRAM. The first declaration (without numeric suffix) is the main prototype for the binary interface as described above.
-
-Calling kernel API functions from the C SDK will will do any copying work for you and block until the operation completes. The numbered VRAM variants will use their respective RW portal and do not preserve the VRAM registers.
-
-While calling from C SDK is easy and usually fast enough, you can also use the API from C in the same way an assembly program would.
+These C declarations will "just work" in the C SDK because they have a generic implemention of the binary interface. These default implementations are extremely convienent when size and speed are not critical.
 
 Warning
 -------
-This is not stable. Expect lots of little changes.
+This is new. Expect lots of little changes. In particular, a renumbering of the IDs is planned. Maybe some argument reordering. Most operations have an obvious best way to align with the binary interface so the big picture won't change much, just some details.
 
 Typedefs
 --------
 
-.. c:type:: int uint16_t
+.. c:type:: int int16_t
+.. c:type:: unsigned int uint16_t
 .. c:type:: uint16_t vram_ptr
 
 
@@ -90,16 +147,16 @@ $00 zvstack
 -----------
 .. c:function:: void zvstack(void);
 
-    Abandon the vstack by resetting the pointer. Not needed for normal operation, but some performance tricks can be achieved. This is the only operation that doesn't require waiting for completion.
+Abandon the vstack by resetting the pointer. Not needed for normal operation, but some performance tricks can be achieved. This is the only operation that doesn't require waiting for completion.
 
 $01 open ($01 $02 $03)
 ----------------------
 
 .. c:function:: int open(const char *path, int oflag);
-.. c:function:: int open0(vram_ptr addr0, int oflag);
-.. c:function:: int open1(vram_ptr addr1, int oflag);
+.. c:function:: int open0(vram_ptr path, int oflag);
+.. c:function:: int open1(vram_ptr path, int oflag);
 
-   Create a connection between a file and a file descriptor.
+Create a connection between a file and a file descriptor.
 
    :param path: Pathname to a file.
    :param oflag: Bitfield of options.
@@ -123,22 +180,80 @@ $01 open ($01 $02 $03)
       |    If O_CREAT and O_EXCL are set, fail if the file exists.
 
 
-$09 lseek
+$04 close
 ---------
 
-.. c:function:: long int lseek(unsigned long long int offset, int fildes)
+.. c:function:: int close(int fildes);
 
-   Move the read/write pointer. This can also expand the file.
+Release the file descriptor after commiting any buffers. File descriptor will rejoin the pool available for use by open().
+
+   :param fildes: File descriptor from open().
+   :a regs: return, fildes
+
+
+$05 read ($05 $06 $07)
+----------------------
+
+.. c:function:: int read(void *buf, int count, int fildes)
+.. c:function:: int read0(vram_ptr buf, int count, int fildes)
+.. c:function:: int read1(vram_ptr buf, int count, int fildes)
+
+Read `count` bytes from a file to a buffer.
+
+   :param buf: Destination for the returned data.
+   :param count: Quantity of bytes to read. 0x7FFF max.
+   :param fildes: File descriptor from open().
+   :a regs: fildes
+
+$08 read ($08 $09 $0A)
+----------------------
+
+.. c:function:: int write(const void *buf, int count, int fildes)
+.. c:function:: int write0(vram_ptr buf, int count, int fildes)
+.. c:function:: int write1(vram_ptr buf, int count, int fildes)
+
+Write `count` bytes from buffer to a file.
+
+   :param buf: Location of the data.
+   :param count: Quantity of bytes to write. 0x7FFF max.
+   :param fildes: File descriptor from open().
+   :a regs: fildes
+
+
+$0B lseek
+---------
+
+.. c:function:: long lseek64(unsigned long long offset, int fildes)
+.. c:function:: long lseek32(unsigned long offset, int fildes)
+.. c:function:: long lseek16(unsigned int offset, int fildes)
+
+Move the read/write pointer. This can also expand the file. The variants are to keep C from promoting integers we can short stack.
 
    :param offset: Position to move to in file.
    :param fildes: File descriptor from open().
-   :returns: Read/write position. -1 on error. If this value would be too large for a long, the returned value will be 0x0FFFFFFF.
+   :returns: Read/write position. -1 on error. If this value would be too large for a long, the returned value will be 0x7FFFFFFF.
    :a regs: fildes
    :Errno: FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
+
+
+$10 vreg
+--------
+
+.. c:function:: void vreg(unsigned int value, unsigned char key, int devid)
+
+Set a VREG on a PIX device. See the :doc:`vga` and :doc:`opl` documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.
+
+   :param value: VREGs are 16 bit so they can point to VRAM.
+   :param key: PIX devices may have up to 256 registers.
+   :param devid: PIX device ID. 0=OPL, 1=VGA, 2-6=Unassigned, 7=Reserved.
+   :a regs: fildes
 
 
 $FF exit
 -----------
 .. c:function:: void exit(int status);
 
-   Halt the 6502 and return to the kernel command interface. This is the only operations that does not return. RESB will be pulled down before the next instruction can execute.
+Halt the 6502 and return to the kernel command interface. This is the only operation that does not return. RESB will be pulled down before the next instruction can execute. Status is currently ignored but will be used in the future.
+
+   :param status: 0 is good, 1-255 for error.
+   :a regs: status
