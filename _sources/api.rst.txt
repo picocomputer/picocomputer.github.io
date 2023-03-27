@@ -93,13 +93,15 @@ Send `oflag` in AX. Send the path on VSTACK by pushing the string starting with 
 
 .. code-block:: C
 
-   int read(char *buf, int count, int fildes)
+   int read_(char *buf, int count, int fildes)
 
 Send `count` as a short stack and `fildes` in AX. The returned value in AX indicates how many values must be pulled from the stack.
 
+The trailing underbar on read_() and write_() is there to leave room for <unistd.h> functions. Much of this API works like POSIX, but argument ordering is optimized for the RP6502 binary interface.
+
 .. code-block:: C
 
-   int write(const void *buf, int count, int fildes)
+   int write_(const void *buf, int count, int fildes)
 
 Send `fildes` in AX. Push the data to VSTACK. Do not send `buf` or `count`. Pulling from VSTACK will begin with the first character.
 
@@ -152,17 +154,17 @@ Abandon the vstack by resetting the pointer. Not needed for normal operation, bu
 $01 open ($01 $02 $03)
 ----------------------
 
-.. c:function:: int open(const char *path, int oflag);
-.. c:function:: int open0(vram_ptr path, int oflag);
-.. c:function:: int open1(vram_ptr path, int oflag);
+.. c:function:: int open(const char *path, int oflag)
+.. c:function:: int open0(vram_ptr path, int oflag)
+.. c:function:: int open1(vram_ptr path, int oflag)
 
-Create a connection between a file and a file descriptor.
+   Create a connection between a file and a file descriptor.
 
    :param path: Pathname to a file.
    :param oflag: Bitfield of options.
    :returns: File descriptor. -1 on error.
    :a regs: return, oflag
-   :Errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_EXIST, FR_INVALID_OBJECT, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_LOCKED, FR_NOT_ENOUGH_CORE, FR_TOO_MANY_OPEN_FILES
+   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_EXIST, FR_INVALID_OBJECT, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_LOCKED, FR_NOT_ENOUGH_CORE, FR_TOO_MANY_OPEN_FILES
    :Options:
       | O_RDONLY 0x01
       |    Open for reading only.
@@ -183,41 +185,46 @@ Create a connection between a file and a file descriptor.
 $04 close
 ---------
 
-.. c:function:: int close(int fildes);
+.. c:function:: int close(int fildes)
 
-Release the file descriptor after commiting any buffers. File descriptor will rejoin the pool available for use by open().
+   Release the file descriptor. File descriptor will rejoin the pool available for use by open().
 
    :param fildes: File descriptor from open().
+   :returns: 0 on success. -1 on error.
    :a regs: return, fildes
+   :errno: FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
 
 
 $05 read ($05 $06 $07)
 ----------------------
 
-.. c:function:: int read(void *buf, int count, int fildes)
+.. c:function:: int read_(void *buf, int count, int fildes)
 .. c:function:: int read0(vram_ptr buf, int count, int fildes)
 .. c:function:: int read1(vram_ptr buf, int count, int fildes)
 
-Read `count` bytes from a file to a buffer.
+   Read `count` bytes from a file to a buffer.
 
    :param buf: Destination for the returned data.
    :param count: Quantity of bytes to read. 0x7FFF max.
    :param fildes: File descriptor from open().
+   :returns: Bytes read on success. -1 on error.
    :a regs: fildes
+   :errno: FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT, FR_TIMEOUT
 
-$08 read ($08 $09 $0A)
-----------------------
+$08 write ($08 $09 $0A)
+-----------------------
 
-.. c:function:: int write(const void *buf, int count, int fildes)
+.. c:function:: int write_(const void *buf, int count, int fildes)
 .. c:function:: int write0(vram_ptr buf, int count, int fildes)
 .. c:function:: int write1(vram_ptr buf, int count, int fildes)
 
-Write `count` bytes from buffer to a file.
+   Write `count` bytes from buffer to a file.
 
    :param buf: Location of the data.
    :param count: Quantity of bytes to write. 0x7FFF max.
    :param fildes: File descriptor from open().
    :a regs: fildes
+   :errno:
 
 
 $0B lseek
@@ -225,15 +232,15 @@ $0B lseek
 
 .. c:function:: long lseek64(unsigned long long offset, int fildes)
 .. c:function:: long lseek32(unsigned long offset, int fildes)
-.. c:function:: long lseek16(unsigned int offset, int fildes)
+.. c:function:: long lseek16(unsigned offset, int fildes)
 
-Move the read/write pointer. This can also expand the file. The variants are to keep C from promoting integers we can short stack.
+   Move the read/write pointer. This can also expand the file. The 64 bit variant is only available on C compilers that support 64 bit. Only the 64 bit variant is actually implemented in the kernel becuase you can short stack the offset to any size you want. The variants are to keep C from promoting integers.
 
    :param offset: Position to move to in file.
    :param fildes: File descriptor from open().
    :returns: Read/write position. -1 on error. If this value would be too large for a long, the returned value will be 0x7FFFFFFF.
    :a regs: fildes
-   :Errno: FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
+   :errno: FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
 
 
 $10 vreg
@@ -241,7 +248,7 @@ $10 vreg
 
 .. c:function:: void vreg(unsigned int value, unsigned char key, int devid)
 
-Set a VREG on a PIX device. See the :doc:`vga` and :doc:`opl` documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.
+   Set a VREG on a PIX device. See the :doc:`vga` and :doc:`opl` documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.
 
    :param value: VREGs are 16 bit so they can point to VRAM.
    :param key: PIX devices may have up to 256 registers.
@@ -253,7 +260,7 @@ $FF exit
 -----------
 .. c:function:: void exit(int status);
 
-Halt the 6502 and return to the kernel command interface. This is the only operation that does not return. RESB will be pulled down before the next instruction can execute. Status is currently ignored but will be used in the future.
+   Halt the 6502 and return to the kernel command interface. This is the only operation that does not return. RESB will be pulled down before the next instruction can execute. Status is currently ignored but will be used in the future.
 
    :param status: 0 is good, 1-255 for error.
    :a regs: status

@@ -58,7 +58,7 @@
 <li><p><a class="reference internal" href="#open-01-02-03" id="id12">$01 open ($01 $02 $03)</a></p></li>
 <li><p><a class="reference internal" href="#close" id="id13">$04 close</a></p></li>
 <li><p><a class="reference internal" href="#read-05-06-07" id="id14">$05 read ($05 $06 $07)</a></p></li>
-<li><p><a class="reference internal" href="#read-08-09-0a" id="id15">$08 read ($08 $09 $0A)</a></p></li>
+<li><p><a class="reference internal" href="#write-08-09-0a" id="id15">$08 write ($08 $09 $0A)</a></p></li>
 <li><p><a class="reference internal" href="#b-lseek" id="id16">$0B lseek</a></p></li>
 <li><p><a class="reference internal" href="#vreg" id="id17">$10 vreg</a></p></li>
 <li><p><a class="reference internal" href="#ff-exit" id="id18">$FF exit</a></p></li>
@@ -129,11 +129,12 @@
 </pre></div>
 </div>
 <p>Send <cite>oflag</cite> in AX. Send the path on VSTACK by pushing the string starting with the last character. You may omit pushing the terminating zero but strings are limited to a length of 255.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read_</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Send <cite>count</cite> as a short stack and <cite>fildes</cite> in AX. The returned value in AX indicates how many values must be pulled from the stack.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">write</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+<p>The trailing underbar on read_() and write_() is there to leave room for &lt;unistd.h&gt; functions. Much of this API works like POSIX, but argument ordering is optimized for the RP6502 binary interface.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">write_</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Send <cite>fildes</cite> in AX. Push the data to VSTACK. Do not send <cite>buf</cite> or <cite>count</cite>. Pulling from VSTACK will begin with the first character.</p>
@@ -192,40 +193,37 @@ unsigned int <code class="sig-name descname">uint16_t</code><a class="headerlink
 <div class="section" id="open-01-02-03">
 <h3><a class="toc-backref" href="#id12">$01 open ($01 $02 $03)</a><a class="headerlink" href="#open-01-02-03" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
-<dt>
-<code class="sig-name descname">int open(const char *path, int oflag);</code></dt>
+<dt id="c.open">
+int <code class="sig-name descname">open</code><span class="sig-paren">(</span>const char<em> *path</em>, int<em> oflag</em><span class="sig-paren">)</span><a class="headerlink" href="#c.open" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
-<dt>
-<code class="sig-name descname">int open0(vram_ptr path, int oflag);</code></dt>
+<dt id="c.open0">
+int <code class="sig-name descname">open0</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> path</em>, int<em> oflag</em><span class="sig-paren">)</span><a class="headerlink" href="#c.open0" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
-<dt>
-<code class="sig-name descname">int open1(vram_ptr path, int oflag);</code></dt>
-<dd></dd></dl>
-
-<p>Create a connection between a file and a file descriptor.</p>
-<blockquote>
-<div><dl class="field-list">
-<dt class="field-odd">param path</dt>
-<dd class="field-odd"><p>Pathname to a file.</p>
+<dt id="c.open1">
+int <code class="sig-name descname">open1</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> path</em>, int<em> oflag</em><span class="sig-paren">)</span><a class="headerlink" href="#c.open1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a connection between a file and a file descriptor.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – Pathname to a file.</p></li>
+<li><p><strong>oflag</strong> – Bitfield of options.</p></li>
+</ul>
 </dd>
-<dt class="field-even">param oflag</dt>
-<dd class="field-even"><p>Bitfield of options.</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>File descriptor. -1 on error.</p>
 </dd>
-<dt class="field-odd">returns</dt>
-<dd class="field-odd"><p>File descriptor. -1 on error.</p>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, oflag</p>
 </dd>
-<dt class="field-even">a regs</dt>
-<dd class="field-even"><p>return, oflag</p>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_EXIST, FR_INVALID_OBJECT, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_LOCKED, FR_NOT_ENOUGH_CORE, FR_TOO_MANY_OPEN_FILES</p>
 </dd>
-<dt class="field-odd">Errno</dt>
-<dd class="field-odd"><p>FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_EXIST, FR_INVALID_OBJECT, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_LOCKED, FR_NOT_ENOUGH_CORE, FR_TOO_MANY_OPEN_FILES</p>
-</dd>
-<dt class="field-even">Options</dt>
-<dd class="field-even"><div class="line-block">
+<dt class="field-odd">Options</dt>
+<dd class="field-odd"><div class="line-block">
 <div class="line">O_RDONLY 0x01</div>
 <div class="line-block">
 <div class="line">Open for reading only.</div>
@@ -257,32 +255,39 @@ unsigned int <code class="sig-name descname">uint16_t</code><a class="headerlink
 </div>
 </dd>
 </dl>
-</div></blockquote>
+</dd></dl>
+
 </div>
 <div class="section" id="close">
 <h3><a class="toc-backref" href="#id13">$04 close</a><a class="headerlink" href="#close" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
-<dt>
-<code class="sig-name descname">int close(int fildes);</code></dt>
-<dd></dd></dl>
-
-<p>Release the file descriptor after commiting any buffers. File descriptor will rejoin the pool available for use by open().</p>
-<blockquote>
-<div><dl class="field-list simple">
-<dt class="field-odd">param fildes</dt>
-<dd class="field-odd"><p>File descriptor from open().</p>
+<dt id="c.close">
+int <code class="sig-name descname">close</code><span class="sig-paren">(</span>int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Release the file descriptor. File descriptor will rejoin the pool available for use by open().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
 </dd>
-<dt class="field-even">a regs</dt>
-<dd class="field-even"><p>return, fildes</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT</p>
 </dd>
 </dl>
-</div></blockquote>
+</dd></dl>
+
 </div>
 <div class="section" id="read-05-06-07">
 <h3><a class="toc-backref" href="#id14">$05 read ($05 $06 $07)</a><a class="headerlink" href="#read-05-06-07" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
-<dt id="c.read">
-int <code class="sig-name descname">read</code><span class="sig-paren">(</span>void<em> *buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read" title="Permalink to this definition">¶</a></dt>
+<dt id="c.read_">
+int <code class="sig-name descname">read_</code><span class="sig-paren">(</span>void<em> *buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read_" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
@@ -293,31 +298,33 @@ int <code class="sig-name descname">read0</code><span class="sig-paren">(</span>
 <dl class="function">
 <dt id="c.read1">
 int <code class="sig-name descname">read1</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read1" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<p>Read <cite>count</cite> bytes from a file to a buffer.</p>
-<blockquote>
-<div><dl class="field-list simple">
-<dt class="field-odd">param buf</dt>
-<dd class="field-odd"><p>Destination for the returned data.</p>
+<dd><p>Read <cite>count</cite> bytes from a file to a buffer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>buf</strong> – Destination for the returned data.</p></li>
+<li><p><strong>count</strong> – Quantity of bytes to read. 0x7FFF max.</p></li>
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
 </dd>
-<dt class="field-even">param count</dt>
-<dd class="field-even"><p>Quantity of bytes to read. 0x7FFF max.</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Bytes read on success. -1 on error.</p>
 </dd>
-<dt class="field-odd">param fildes</dt>
-<dd class="field-odd"><p>File descriptor from open().</p>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>fildes</p>
 </dd>
-<dt class="field-even">a regs</dt>
-<dd class="field-even"><p>fildes</p>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT, FR_TIMEOUT</p>
 </dd>
 </dl>
-</div></blockquote>
+</dd></dl>
+
 </div>
-<div class="section" id="read-08-09-0a">
-<h3><a class="toc-backref" href="#id15">$08 read ($08 $09 $0A)</a><a class="headerlink" href="#read-08-09-0a" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="write-08-09-0a">
+<h3><a class="toc-backref" href="#id15">$08 write ($08 $09 $0A)</a><a class="headerlink" href="#write-08-09-0a" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
-<dt id="c.write">
-int <code class="sig-name descname">write</code><span class="sig-paren">(</span>const void<em> *buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write" title="Permalink to this definition">¶</a></dt>
+<dt id="c.write_">
+int <code class="sig-name descname">write_</code><span class="sig-paren">(</span>const void<em> *buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write_" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
@@ -328,25 +335,23 @@ int <code class="sig-name descname">write0</code><span class="sig-paren">(</span
 <dl class="function">
 <dt id="c.write1">
 int <code class="sig-name descname">write1</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write1" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<p>Write <cite>count</cite> bytes from buffer to a file.</p>
-<blockquote>
-<div><dl class="field-list simple">
-<dt class="field-odd">param buf</dt>
-<dd class="field-odd"><p>Location of the data.</p>
+<dd><p>Write <cite>count</cite> bytes from buffer to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>buf</strong> – Location of the data.</p></li>
+<li><p><strong>count</strong> – Quantity of bytes to write. 0x7FFF max.</p></li>
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
 </dd>
-<dt class="field-even">param count</dt>
-<dd class="field-even"><p>Quantity of bytes to write. 0x7FFF max.</p>
-</dd>
-<dt class="field-odd">param fildes</dt>
-<dd class="field-odd"><p>File descriptor from open().</p>
-</dd>
-<dt class="field-even">a regs</dt>
+<dt class="field-even">A regs</dt>
 <dd class="field-even"><p>fildes</p>
 </dd>
+<dt class="field-odd">Errno</dt>
+<dd class="field-odd"><p></p></dd>
 </dl>
-</div></blockquote>
+</dd></dl>
+
 </div>
 <div class="section" id="b-lseek">
 <h3><a class="toc-backref" href="#id16">$0B lseek</a><a class="headerlink" href="#b-lseek" title="Permalink to this headline">¶</a></h3>
@@ -362,73 +367,67 @@ long <code class="sig-name descname">lseek32</code><span class="sig-paren">(</sp
 
 <dl class="function">
 <dt id="c.lseek16">
-long <code class="sig-name descname">lseek16</code><span class="sig-paren">(</span>unsigned int<em> offset</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek16" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<p>Move the read/write pointer. This can also expand the file. The variants are to keep C from promoting integers we can short stack.</p>
-<blockquote>
-<div><dl class="field-list simple">
-<dt class="field-odd">param offset</dt>
-<dd class="field-odd"><p>Position to move to in file.</p>
+long <code class="sig-name descname">lseek16</code><span class="sig-paren">(</span>unsigned<em> offset</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek16" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move the read/write pointer. This can also expand the file. The 64 bit variant is only available on C compilers that support 64 bit. Only the 64 bit variant is actually implemented in the kernel becuase you can short stack the offset to any size you want. The variants are to keep C from promoting integers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>offset</strong> – Position to move to in file.</p></li>
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
 </dd>
-<dt class="field-even">param fildes</dt>
-<dd class="field-even"><p>File descriptor from open().</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Read/write position. -1 on error. If this value would be too large for a long, the returned value will be 0x7FFFFFFF.</p>
 </dd>
-<dt class="field-odd">returns</dt>
-<dd class="field-odd"><p>Read/write position. -1 on error. If this value would be too large for a long, the returned value will be 0x7FFFFFFF.</p>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>fildes</p>
 </dd>
-<dt class="field-even">a regs</dt>
-<dd class="field-even"><p>fildes</p>
-</dd>
-<dt class="field-odd">Errno</dt>
-<dd class="field-odd"><p>FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT</p>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT</p>
 </dd>
 </dl>
-</div></blockquote>
+</dd></dl>
+
 </div>
 <div class="section" id="vreg">
 <h3><a class="toc-backref" href="#id17">$10 vreg</a><a class="headerlink" href="#vreg" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.vreg">
 void <code class="sig-name descname">vreg</code><span class="sig-paren">(</span>unsigned int<em> value</em>, unsigned char<em> key</em>, int<em> devid</em><span class="sig-paren">)</span><a class="headerlink" href="#c.vreg" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<p>Set a VREG on a PIX device. See the <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> and <a class="reference internal" href="opl.html"><span class="doc">RP6502-OPL</span></a> documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.</p>
-<blockquote>
-<div><dl class="field-list simple">
-<dt class="field-odd">param value</dt>
-<dd class="field-odd"><p>VREGs are 16 bit so they can point to VRAM.</p>
+<dd><p>Set a VREG on a PIX device. See the <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> and <a class="reference internal" href="opl.html"><span class="doc">RP6502-OPL</span></a> documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> – VREGs are 16 bit so they can point to VRAM.</p></li>
+<li><p><strong>key</strong> – PIX devices may have up to 256 registers.</p></li>
+<li><p><strong>devid</strong> – PIX device ID. 0=OPL, 1=VGA, 2-6=Unassigned, 7=Reserved.</p></li>
+</ul>
 </dd>
-<dt class="field-even">param key</dt>
-<dd class="field-even"><p>PIX devices may have up to 256 registers.</p>
-</dd>
-<dt class="field-odd">param devid</dt>
-<dd class="field-odd"><p>PIX device ID. 0=OPL, 1=VGA, 2-6=Unassigned, 7=Reserved.</p>
-</dd>
-<dt class="field-even">a regs</dt>
+<dt class="field-even">A regs</dt>
 <dd class="field-even"><p>fildes</p>
 </dd>
 </dl>
-</div></blockquote>
+</dd></dl>
+
 </div>
 <div class="section" id="ff-exit">
 <h3><a class="toc-backref" href="#id18">$FF exit</a><a class="headerlink" href="#ff-exit" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt>
 <code class="sig-name descname">void exit(int status);</code></dt>
-<dd></dd></dl>
-
-<p>Halt the 6502 and return to the kernel command interface. This is the only operation that does not return. RESB will be pulled down before the next instruction can execute. Status is currently ignored but will be used in the future.</p>
-<blockquote>
-<div><dl class="field-list simple">
-<dt class="field-odd">param status</dt>
-<dd class="field-odd"><p>0 is good, 1-255 for error.</p>
+<dd><p>Halt the 6502 and return to the kernel command interface. This is the only operation that does not return. RESB will be pulled down before the next instruction can execute. Status is currently ignored but will be used in the future.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>status</strong> – 0 is good, 1-255 for error.</p></li>
+</ul>
 </dd>
-<dt class="field-even">a regs</dt>
+<dt class="field-even">A regs</dt>
 <dd class="field-even"><p>status</p>
 </dd>
 </dl>
-</div></blockquote>
+</dd></dl>
+
 </div>
 </div>
 </div>
@@ -473,7 +472,7 @@ void <code class="sig-name descname">vreg</code><span class="sig-paren">(</span>
 <li class="toctree-l3"><a class="reference internal" href="#open-01-02-03">$01 open ($01 $02 $03)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#close">$04 close</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#read-05-06-07">$05 read ($05 $06 $07)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#read-08-09-0a">$08 read ($08 $09 $0A)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#write-08-09-0a">$08 write ($08 $09 $0A)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#b-lseek">$0B lseek</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#vreg">$10 vreg</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ff-exit">$FF exit</a></li>
