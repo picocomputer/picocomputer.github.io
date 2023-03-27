@@ -128,14 +128,14 @@ Unlike the VSTACK, the kernel doesn't track a length for the VRAM portals. A set
 Calling read functions will update VRAM. This means you can load graphics assets right where you need it without the 6502 doing any work. This leaves the 6502 free to entertain the user with an animation while the entire 64K is transferred in less than a second.
 
 
-2. Function Reference
+3. Function Reference
 =====================
 
-These C declarations will "just work" in the C SDK because they have a generic implemention of the binary interface. These default implementations are extremely convienent when size and speed are not critical.
+Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, many functions will have different argument orders or bitfield values than what you're used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice if you only work in C because the SDK has wrapper functions with familiar prototypes. For example, fread() and read() are portable and familiar, but the read_() descibed below is optimized for a RIA fastcall.
 
 Warning
 -------
-This is new. Expect lots of little changes. In particular, a renumbering of the IDs is planned. Maybe some argument reordering. Most operations have an obvious best way to align with the binary interface so the big picture won't change much, just some details.
+This is new. Expect lots of little changes. In particular, a renumbering of the IDs is planned and error numbers are definitely unstable. Mostly, the thing to watch out for is argument reordering. Operations tend to have an obvious best way to align with the binary interface so the big picture won't change much, just some details which will probably only need a recompile with the new headers.
 
 Typedefs
 --------
@@ -230,17 +230,25 @@ $08 write ($08 $09 $0A)
 $0B lseek
 ---------
 
-.. c:function:: long lseek64(unsigned long long offset, int fildes)
-.. c:function:: long lseek32(unsigned long offset, int fildes)
-.. c:function:: long lseek16(unsigned offset, int fildes)
+.. c:function:: long lseek64(long long offset, char whence, int fildes)
+.. c:function:: long lseek32(long offset, char whence, int fildes)
+.. c:function:: long lseek16(int offset, char whence, int fildes)
 
-   Move the read/write pointer. This can also expand the file. The 64 bit variant is only available on C compilers that support 64 bit. Only the 64 bit variant is actually implemented in the kernel becuase you can short stack the offset to any size you want. The variants are to keep C from promoting integers.
+   Move the read/write pointer. The 64 bit variant is only available on C compilers that support 64 bit. Only the 64 bit variant is actually implemented in the kernel becuase you can short stack the offset to any size you want. The shorter variants are to keep C from promoting integers.
 
-   :param offset: Position to move to in file.
+   :param offset: How far you wish to seek.
+   :param whence: From whence you wish to seek.
    :param fildes: File descriptor from open().
    :returns: Read/write position. -1 on error. If this value would be too large for a long, the returned value will be 0x7FFFFFFF.
    :a regs: fildes
    :errno: FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
+   :whence:
+      | SEEK_SET
+      |    The start of the file (0) plus offset bytes.
+      | SEEK_CUR
+      |    The current location plus offset bytes.
+      | SEEK_END
+      |    The size of the file plus offset bytes.
 
 
 $10 vreg

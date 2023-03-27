@@ -50,7 +50,7 @@
 </li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#function-reference" id="id8">2. Function Reference</a></p>
+<li><p><a class="reference internal" href="#function-reference" id="id8">3. Function Reference</a></p>
 <ul>
 <li><p><a class="reference internal" href="#warning" id="id9">Warning</a></p></li>
 <li><p><a class="reference internal" href="#typedefs" id="id10">Typedefs</a></p></li>
@@ -157,11 +157,11 @@
 </div>
 </div>
 <div class="section" id="function-reference">
-<h2><a class="toc-backref" href="#id8">2. Function Reference</a><a class="headerlink" href="#function-reference" title="Permalink to this headline">¶</a></h2>
-<p>These C declarations will “just work” in the C SDK because they have a generic implemention of the binary interface. These default implementations are extremely convienent when size and speed are not critical.</p>
+<h2><a class="toc-backref" href="#id8">3. Function Reference</a><a class="headerlink" href="#function-reference" title="Permalink to this headline">¶</a></h2>
+<p>Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, many functions will have different argument orders or bitfield values than what you’re used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice if you only work in C because the SDK has wrapper functions with familiar prototypes. For example, fread() and read() are portable and familiar, but the read_() descibed below is optimized for a RIA fastcall.</p>
 <div class="section" id="warning">
 <h3><a class="toc-backref" href="#id9">Warning</a><a class="headerlink" href="#warning" title="Permalink to this headline">¶</a></h3>
-<p>This is new. Expect lots of little changes. In particular, a renumbering of the IDs is planned. Maybe some argument reordering. Most operations have an obvious best way to align with the binary interface so the big picture won’t change much, just some details.</p>
+<p>This is new. Expect lots of little changes. In particular, a renumbering of the IDs is planned and error numbers are definitely unstable. Mostly, the thing to watch out for is argument reordering. Operations tend to have an obvious best way to align with the binary interface so the big picture won’t change much, just some details which will probably only need a recompile with the new headers.</p>
 </div>
 <div class="section" id="typedefs">
 <h3><a class="toc-backref" href="#id10">Typedefs</a><a class="headerlink" href="#typedefs" title="Permalink to this headline">¶</a></h3>
@@ -357,22 +357,23 @@ int <code class="sig-name descname">write1</code><span class="sig-paren">(</span
 <h3><a class="toc-backref" href="#id16">$0B lseek</a><a class="headerlink" href="#b-lseek" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.lseek64">
-long <code class="sig-name descname">lseek64</code><span class="sig-paren">(</span>unsigned long long<em> offset</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek64" title="Permalink to this definition">¶</a></dt>
+long <code class="sig-name descname">lseek64</code><span class="sig-paren">(</span>long long<em> offset</em>, char<em> whence</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek64" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="c.lseek32">
-long <code class="sig-name descname">lseek32</code><span class="sig-paren">(</span>unsigned long<em> offset</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek32" title="Permalink to this definition">¶</a></dt>
+long <code class="sig-name descname">lseek32</code><span class="sig-paren">(</span>long<em> offset</em>, char<em> whence</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek32" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="c.lseek16">
-long <code class="sig-name descname">lseek16</code><span class="sig-paren">(</span>unsigned<em> offset</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek16" title="Permalink to this definition">¶</a></dt>
-<dd><p>Move the read/write pointer. This can also expand the file. The 64 bit variant is only available on C compilers that support 64 bit. Only the 64 bit variant is actually implemented in the kernel becuase you can short stack the offset to any size you want. The variants are to keep C from promoting integers.</p>
-<dl class="field-list simple">
+long <code class="sig-name descname">lseek16</code><span class="sig-paren">(</span>int<em> offset</em>, char<em> whence</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek16" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move the read/write pointer. The 64 bit variant is only available on C compilers that support 64 bit. Only the 64 bit variant is actually implemented in the kernel becuase you can short stack the offset to any size you want. The shorter variants are to keep C from promoting integers.</p>
+<dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>offset</strong> – Position to move to in file.</p></li>
+<li><p><strong>offset</strong> – How far you wish to seek.</p></li>
+<li><p><strong>whence</strong> – From whence you wish to seek.</p></li>
 <li><p><strong>fildes</strong> – File descriptor from open().</p></li>
 </ul>
 </dd>
@@ -384,6 +385,22 @@ long <code class="sig-name descname">lseek16</code><span class="sig-paren">(</sp
 </dd>
 <dt class="field-even">Errno</dt>
 <dd class="field-even"><p>FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT</p>
+</dd>
+<dt class="field-odd">Whence</dt>
+<dd class="field-odd"><div class="line-block">
+<div class="line">SEEK_SET</div>
+<div class="line-block">
+<div class="line">The start of the file (0) plus offset bytes.</div>
+</div>
+<div class="line">SEEK_CUR</div>
+<div class="line-block">
+<div class="line">The current location plus offset bytes.</div>
+</div>
+<div class="line">SEEK_END</div>
+<div class="line-block">
+<div class="line">The size of the file plus offset bytes.</div>
+</div>
+</div>
 </dd>
 </dl>
 </dd></dl>
@@ -465,7 +482,7 @@ void <code class="sig-name descname">vreg</code><span class="sig-paren">(</span>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#function-reference">2. Function Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#function-reference">3. Function Reference</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#warning">Warning</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#typedefs">Typedefs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#zvstack">$00 zvstack</a></li>
