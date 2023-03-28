@@ -50,15 +50,15 @@
 </li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#function-reference" id="id8">3. Function Reference</a></p>
+<li><p><a class="reference internal" href="#function-reference" id="id8">1. Function Reference</a></p>
 <ul>
 <li><p><a class="reference internal" href="#warning" id="id9">Warning</a></p></li>
 <li><p><a class="reference internal" href="#typedefs" id="id10">Typedefs</a></p></li>
 <li><p><a class="reference internal" href="#zvstack" id="id11">$00 zvstack</a></p></li>
-<li><p><a class="reference internal" href="#open-01-02-03" id="id12">$01 open ($01 $02 $03)</a></p></li>
+<li><p><a class="reference internal" href="#open" id="id12">$01 open</a></p></li>
 <li><p><a class="reference internal" href="#close" id="id13">$04 close</a></p></li>
-<li><p><a class="reference internal" href="#read-05-06-07" id="id14">$05 read ($05 $06 $07)</a></p></li>
-<li><p><a class="reference internal" href="#write-08-09-0a" id="id15">$08 write ($08 $09 $0A)</a></p></li>
+<li><p><a class="reference internal" href="#read-05-06" id="id14">$05 read ($05 $06)</a></p></li>
+<li><p><a class="reference internal" href="#write-08-09" id="id15">$08 write ($08 $09)</a></p></li>
 <li><p><a class="reference internal" href="#b-lseek" id="id16">$0B lseek</a></p></li>
 <li><p><a class="reference internal" href="#vreg" id="id17">$10 vreg</a></p></li>
 <li><p><a class="reference internal" href="#ff-exit" id="id18">$FF exit</a></p></li>
@@ -68,13 +68,12 @@
 </div>
 <div class="section" id="introduction">
 <h2><a class="toc-backref" href="#id1">1. Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>The <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> runs a protected 32-bit kernel that you can call from the 6502. The kernel runs on a processor that is significnatly faster than a 6502. This is the only practical way to run modern networking and USB host stacks.</p>
+<p>The <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> runs a protected 32-bit kernel that you can call from the 6502. The kernel runs on a processor that is significantly faster than a 6502. This is the only practical way to run modern networking and USB host stacks.</p>
 <p>The RP6502 presents an opportunity to create a new type of operating system. A 6502 OS based on the C programming language with familiar POSIX-like operations.</p>
 </div>
 <div class="section" id="calling-with-fastcall">
 <h2><a class="toc-backref" href="#id2">2. Calling with fastcall</a><a class="headerlink" href="#calling-with-fastcall" title="Permalink to this headline">¶</a></h2>
-<p>If you only plan on writing C code, you can skip this section. The binary interface is based on fastcall from the <a class="reference external" href="https://cc65.github.io/doc/cc65-intern.html">CC65 Internals</a>. However, the RP6502 fastcall does not use or require anything from CC65.</p>
-<p>The CC65 fastcall is simply a pattern which I think works well for both C and assembly programmers. In short:</p>
+<p>The binary interface is based on fastcall from the <a class="reference external" href="https://cc65.github.io/doc/cc65-intern.html">CC65 Internals</a>. However, the RP6502 fastcall does not use or require anything from CC65. I think works well for both C and assembly programmers. Here’s the call flow this section will expand on.</p>
 <ul class="simple">
 <li><p>Kernel calls have C declarations.</p></li>
 <li><p>Last argument is passed by register.</p></li>
@@ -106,14 +105,14 @@
 </pre></div>
 </div>
 <p>RIA_A and RIA_X will both always be updated to assist with CC65’s integer promotion requirements. RIA_SREG is only updated for 32-bit returns. RIA_ERRNO is only updated if there is an error.</p>
-<p>Some operations return data on the stack. You must pull the entire stack before the next call. Or, the next function you call must understand the stack. For example, it is possible to chain read() and write() to copy a file without using any RAM or VRAM.</p>
+<p>Some operations return data on the stack. You must pull the entire stack before the next call. Or, the next function you call must understand the stack. For example, it is possible to chain read_() and write_() to copy a file without using any RAM or VRAM.</p>
 <div class="section" id="short-stacking">
 <h3><a class="toc-backref" href="#id3">2.1. Short Stacking</a><a class="headerlink" href="#short-stacking" title="Permalink to this headline">¶</a></h3>
 <p>In the never ending pursuit of saving all the clocks, it is possible to save a few on the stack push if you don’t need all the range. This only works on the stack argument that gets pushed first. For example:</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">long</span> <span class="n">lseek64</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="kt">long</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">long</span> <span class="n">lseek64</span><span class="p">(</span><span class="kt">long</span> <span class="kt">long</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">char</span> <span class="n">whence</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Here we are asked for a 64 bit value. Not coincidentally, it’s in the right position for short stacking. If you only need 24 bits, push three bytes. The significant bytes will be implicit.</p>
+<p>Here we are asked for a 64 bit value. Not coincidentally, it’s in the right position for short stacking. If, for example, you only need 24 bits, push only three bytes. The significant bytes will be implicit.</p>
 </div>
 <div class="section" id="shorter-integers">
 <h3><a class="toc-backref" href="#id4">2.2. Shorter Integers</a><a class="headerlink" href="#shorter-integers" title="Permalink to this headline">¶</a></h3>
@@ -121,44 +120,37 @@
 </div>
 <div class="section" id="bulk-data">
 <h3><a class="toc-backref" href="#id5">2.3. Bulk Data</a><a class="headerlink" href="#bulk-data" title="Permalink to this headline">¶</a></h3>
-<p>Functions that move bulk data will come in three flavors. These are any function with a “char *” or “void *” parameter. This pointer is passed by special means because the kernel can only change registers, not 6502 RAM.</p>
+<p>Functions that move bulk data may come in two flavors. These are any function with a pointer parameter. This pointer is meaningless to the kernel because it can not change 6502 RAM. Instead, we use the VSTACK or VRAM for data buffers.</p>
 <div class="section" id="bulk-vstack-operations">
 <h4><a class="toc-backref" href="#id6">2.2.1. Bulk VSTACK Operations</a><a class="headerlink" href="#bulk-vstack-operations" title="Permalink to this headline">¶</a></h4>
-<p>These only work if the count is 256 or less. Bulk data is passed on the VSTACK, which is 256 bytes. Let’s look at some examples.</p>
+<p>These only work if the count is 256 or less. Bulk data is passed on the VSTACK, which is 256 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let’s look at some examples.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">open</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">path</span><span class="p">,</span> <span class="kt">int</span> <span class="n">oflag</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>Send <cite>oflag</cite> in AX. Send the path on VSTACK by pushing the string starting with the last character. You may omit pushing the terminating zero but strings are limited to a length of 255.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read_</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+<p>Send <cite>oflag</cite> in AX. Send the path on VSTACK by pushing the string starting with the last character. You may omit pushing the terminating zero, but strings are limited to a length of 255. Calling this from the C SDK will “just work” because there’s an implementation that pushes the string for you.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read_</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Send <cite>count</cite> as a short stack and <cite>fildes</cite> in AX. The returned value in AX indicates how many values must be pulled from the stack.</p>
-<p>The trailing underbar on read_() and write_() is there to leave room for &lt;unistd.h&gt; functions. Much of this API works like POSIX, but argument ordering is optimized for the RP6502 binary interface.</p>
+<p>Send <cite>count</cite> as a short stack and <cite>fildes</cite> in AX. The returned value in AX indicates how many values must be pulled from the stack. If you call this from the C SDK then it will copy VSTACK to buf[] for you.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">write_</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Send <cite>fildes</cite> in AX. Push the data to VSTACK. Do not send <cite>buf</cite> or <cite>count</cite>. Pulling from VSTACK will begin with the first character.</p>
+<p>Send <cite>fildes</cite> in AX. Push the data to VSTACK. Do not send <cite>count</cite>, the kernel knows this from its internal stack pointer. If you call this from the C SDK then it will copy buf[] to VSTACK for you.</p>
+<p>Note that read() and write() are part of the C SDK and may be used if you prefer the POSIX argument order. They simply call the underbar version after reordering the arguments.</p>
 </div>
 <div class="section" id="bulk-vram-operations">
 <h4><a class="toc-backref" href="#id7">2.2.2. Bulk VRAM Operations</a><a class="headerlink" href="#bulk-vram-operations" title="Permalink to this headline">¶</a></h4>
-<p>These functions get their pointer from RIA_ADDR0 or RIA_ADDR1. Setting an ADDR register sets the pointer. It does not matter if the value later changes with STEP and RW, the pointer is what you set initially. This way you can set the ADDR, write some data, <em>not</em> re-set the ADDR, and call the OP.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read0</span><span class="p">(</span><span class="n">vram_ptr</span> <span class="n">addr0</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+<p>These load and save VRAM directly. You can load game assets without going through 6502 RAM or capture a screenshot with ease.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">readv</span><span class="p">(</span><span class="n">vram_ptr</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The kernel expects <cite>addr0</cite> to come from RIA_ADDR0, so that leaves <cite>count</cite> for the stack and <cite>fildes</cite> for AX. Using a short stack and knowing fildes fits in REG_A, we can do something like:</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">RIA_ADDR0</span> <span class="o">=</span> <span class="n">addr0</span><span class="p">;</span> <span class="c1">// This is a 16-bit move in the C API</span>
-<span class="n">RIA_STACK</span> <span class="o">=</span> <span class="n">count</span><span class="p">;</span> <span class="c1">// Short stacked. Just 8 bits.</span>
-<span class="n">RIA_A</span> <span class="o">=</span> <span class="n">fildes</span><span class="p">;</span>    <span class="c1">// OK because read() ignores X.</span>
-</pre></div>
-</div>
-<p>Unlike the VSTACK, the kernel doesn’t track a length for the VRAM portals. A set of rules around RIA_RW access could be made, but the use case where this is advantageous is too narrow to justify the complexity.</p>
-<p>Calling read functions will update VRAM. This means you can load graphics assets right where you need it without the 6502 doing any work. This leaves the 6502 free to entertain the user with an animation while the entire 64K is transferred in less than a second.</p>
+<p>The kernel expects <cite>buf</cite> and <cite>count</cite> on the VSTACK as integers with <cite>filedes</cite> in AX. The buffer is effectively (void *)&amp;VRAM[buf] here. There’s nothing special about these calls in regards to how the binary interface rules are applied.</p>
 </div>
 </div>
 </div>
 <div class="section" id="function-reference">
-<h2><a class="toc-backref" href="#id8">3. Function Reference</a><a class="headerlink" href="#function-reference" title="Permalink to this headline">¶</a></h2>
-<p>Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, many functions will have different argument orders or bitfield values than what you’re used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice if you only work in C because the SDK has wrapper functions with familiar prototypes. For example, fread() and read() are portable and familiar, but the read_() descibed below is optimized for a RIA fastcall.</p>
+<h2><a class="toc-backref" href="#id8">1. Function Reference</a><a class="headerlink" href="#function-reference" title="Permalink to this headline">¶</a></h2>
+<p>Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, many functions will have different argument orders or bitfield values than what you’re used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice if you only work in C because the SDK has wrapper functions with familiar prototypes. For example, fread() and read() are portable and familiar, but the read_() described below is optimized for a RIA fastcall.</p>
 <div class="section" id="warning">
 <h3><a class="toc-backref" href="#id9">Warning</a><a class="headerlink" href="#warning" title="Permalink to this headline">¶</a></h3>
 <p>This is new. Expect lots of little changes. In particular, a renumbering of the IDs is planned and error numbers are definitely unstable. Mostly, the thing to watch out for is argument reordering. Operations tend to have an obvious best way to align with the binary interface so the big picture won’t change much, just some details which will probably only need a recompile with the new headers.</p>
@@ -190,21 +182,11 @@ unsigned int <code class="sig-name descname">uint16_t</code><a class="headerlink
 
 <p>Abandon the vstack by resetting the pointer. Not needed for normal operation, but some performance tricks can be achieved. This is the only operation that doesn’t require waiting for completion.</p>
 </div>
-<div class="section" id="open-01-02-03">
-<h3><a class="toc-backref" href="#id12">$01 open ($01 $02 $03)</a><a class="headerlink" href="#open-01-02-03" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="open">
+<h3><a class="toc-backref" href="#id12">$01 open</a><a class="headerlink" href="#open" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.open">
 int <code class="sig-name descname">open</code><span class="sig-paren">(</span>const char<em> *path</em>, int<em> oflag</em><span class="sig-paren">)</span><a class="headerlink" href="#c.open" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="c.open0">
-int <code class="sig-name descname">open0</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> path</em>, int<em> oflag</em><span class="sig-paren">)</span><a class="headerlink" href="#c.open0" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="c.open1">
-int <code class="sig-name descname">open1</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> path</em>, int<em> oflag</em><span class="sig-paren">)</span><a class="headerlink" href="#c.open1" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a connection between a file and a file descriptor.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
@@ -283,22 +265,17 @@ int <code class="sig-name descname">close</code><span class="sig-paren">(</span>
 </dd></dl>
 
 </div>
-<div class="section" id="read-05-06-07">
-<h3><a class="toc-backref" href="#id14">$05 read ($05 $06 $07)</a><a class="headerlink" href="#read-05-06-07" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="read-05-06">
+<h3><a class="toc-backref" href="#id14">$05 read ($05 $06)</a><a class="headerlink" href="#read-05-06" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.read_">
-int <code class="sig-name descname">read_</code><span class="sig-paren">(</span>void<em> *buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read_" title="Permalink to this definition">¶</a></dt>
+int <code class="sig-name descname">read_</code><span class="sig-paren">(</span>void<em> *buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read_" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
-<dt id="c.read0">
-int <code class="sig-name descname">read0</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read0" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="c.read1">
-int <code class="sig-name descname">read1</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read1" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read <cite>count</cite> bytes from a file to a buffer.</p>
+<dt id="c.readv">
+int <code class="sig-name descname">readv</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.readv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read <cite>count</cite> bytes from a file to a buffer. Requests are limited to 0x7FFF bytes. Requesting more will return at most 0x7FFF bytes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -308,7 +285,7 @@ int <code class="sig-name descname">read1</code><span class="sig-paren">(</span>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Bytes read on success. -1 on error.</p>
+<dd class="field-even"><p>On success, number of bytes read is returned. On error, -1 is returned, and errno is set to indicate the error.</p>
 </dd>
 <dt class="field-odd">A regs</dt>
 <dd class="field-odd"><p>fildes</p>
@@ -320,21 +297,16 @@ int <code class="sig-name descname">read1</code><span class="sig-paren">(</span>
 </dd></dl>
 
 </div>
-<div class="section" id="write-08-09-0a">
-<h3><a class="toc-backref" href="#id15">$08 write ($08 $09 $0A)</a><a class="headerlink" href="#write-08-09-0a" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="write-08-09">
+<h3><a class="toc-backref" href="#id15">$08 write ($08 $09)</a><a class="headerlink" href="#write-08-09" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.write_">
 int <code class="sig-name descname">write_</code><span class="sig-paren">(</span>const void<em> *buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write_" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
-<dt id="c.write0">
-int <code class="sig-name descname">write0</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write0" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="c.write1">
-int <code class="sig-name descname">write1</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write1" title="Permalink to this definition">¶</a></dt>
+<dt id="c.writev">
+int <code class="sig-name descname">writev</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.writev" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write <cite>count</cite> bytes from buffer to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -368,7 +340,7 @@ long <code class="sig-name descname">lseek32</code><span class="sig-paren">(</sp
 <dl class="function">
 <dt id="c.lseek16">
 long <code class="sig-name descname">lseek16</code><span class="sig-paren">(</span>int<em> offset</em>, char<em> whence</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek16" title="Permalink to this definition">¶</a></dt>
-<dd><p>Move the read/write pointer. The 64 bit variant is only available on C compilers that support 64 bit. Only the 64 bit variant is actually implemented in the kernel becuase you can short stack the offset to any size you want. The shorter variants are to keep C from promoting integers.</p>
+<dd><p>Move the read/write pointer. The 64 bit variant is only available on C compilers that support 64 bit. Only the 64 bit variant is actually implemented in the kernel because you can short stack the offset to any size you want. The shorter variants are to keep C from promoting integers.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -482,14 +454,14 @@ void <code class="sig-name descname">vreg</code><span class="sig-paren">(</span>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#function-reference">3. Function Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#function-reference">1. Function Reference</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#warning">Warning</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#typedefs">Typedefs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#zvstack">$00 zvstack</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#open-01-02-03">$01 open ($01 $02 $03)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#open">$01 open</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#close">$04 close</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#read-05-06-07">$05 read ($05 $06 $07)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#write-08-09-0a">$08 write ($08 $09 $0A)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#read-05-06">$05 read ($05 $06)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#write-08-09">$08 write ($08 $09)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#b-lseek">$0B lseek</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#vreg">$10 vreg</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ff-exit">$FF exit</a></li>

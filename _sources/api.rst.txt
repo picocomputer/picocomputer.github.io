@@ -9,16 +9,14 @@ Rumbledethumps Picocomputer 6502 Application Programming Interface.
 1. Introduction
 ===============
 
-The :doc:`ria` runs a protected 32-bit kernel that you can call from the 6502. The kernel runs on a processor that is significnatly faster than a 6502. This is the only practical way to run modern networking and USB host stacks.
+The :doc:`ria` runs a protected 32-bit kernel that you can call from the 6502. The kernel runs on a processor that is significantly faster than a 6502. This is the only practical way to run modern networking and USB host stacks.
 
 The RP6502 presents an opportunity to create a new type of operating system. A 6502 OS based on the C programming language with familiar POSIX-like operations.
 
 2. Calling with fastcall
 ========================
 
-If you only plan on writing C code, you can skip this section. The binary interface is based on fastcall from the `CC65 Internals <https://cc65.github.io/doc/cc65-intern.html>`_. However, the RP6502 fastcall does not use or require anything from CC65.
-
-The CC65 fastcall is simply a pattern which I think works well for both C and assembly programmers. In short:
+The binary interface is based on fastcall from the `CC65 Internals <https://cc65.github.io/doc/cc65-intern.html>`_. However, the RP6502 fastcall does not use or require anything from CC65. I think works well for both C and assembly programmers. Here's the call flow this section will expand on.
 
 * Kernel calls have C declarations.
 * Last argument is passed by register.
@@ -56,7 +54,7 @@ Polling is simply snooping on the above program. The RIA_BUSY register is the -2
 
 RIA_A and RIA_X will both always be updated to assist with CC65's integer promotion requirements. RIA_SREG is only updated for 32-bit returns. RIA_ERRNO is only updated if there is an error.
 
-Some operations return data on the stack. You must pull the entire stack before the next call. Or, the next function you call must understand the stack. For example, it is possible to chain read() and write() to copy a file without using any RAM or VRAM.
+Some operations return data on the stack. You must pull the entire stack before the next call. Or, the next function you call must understand the stack. For example, it is possible to chain read_() and write_() to copy a file without using any RAM or VRAM.
 
 2.1. Short Stacking
 -------------------
@@ -65,9 +63,9 @@ In the never ending pursuit of saving all the clocks, it is possible to save a f
 
 .. code-block:: C
 
-   long lseek64(unsigned long long offset, int fildes)
+   long lseek64(long long offset, char whence, int fildes)
 
-Here we are asked for a 64 bit value. Not coincidentally, it's in the right position for short stacking. If you only need 24 bits, push three bytes. The significant bytes will be implicit.
+Here we are asked for a 64 bit value. Not coincidentally, it's in the right position for short stacking. If, for example, you only need 24 bits, push only three bytes. The significant bytes will be implicit.
 
 2.2. Shorter Integers
 ---------------------
@@ -77,61 +75,48 @@ Many operations can save a few clocks by ignoring REG_X. All integers are always
 2.3. Bulk Data
 --------------
 
-Functions that move bulk data will come in three flavors. These are any function with a "char \*" or "void \*" parameter. This pointer is passed by special means because the kernel can only change registers, not 6502 RAM.
-
+Functions that move bulk data may come in two flavors. These are any function with a pointer parameter. This pointer is meaningless to the kernel because it can not change 6502 RAM. Instead, we use the VSTACK or VRAM for data buffers.
 
 2.2.1. Bulk VSTACK Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-These only work if the count is 256 or less. Bulk data is passed on the VSTACK, which is 256 bytes. Let's look at some examples.
+These only work if the count is 256 or less. Bulk data is passed on the VSTACK, which is 256 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let's look at some examples.
 
 .. code-block:: C
 
    int open(const char *path, int oflag);
 
-Send `oflag` in AX. Send the path on VSTACK by pushing the string starting with the last character. You may omit pushing the terminating zero but strings are limited to a length of 255.
+Send `oflag` in AX. Send the path on VSTACK by pushing the string starting with the last character. You may omit pushing the terminating zero, but strings are limited to a length of 255. Calling this from the C SDK will "just work" because there's an implementation that pushes the string for you.
 
 .. code-block:: C
 
-   int read_(char *buf, int count, int fildes)
+   int read_(void *buf, int count, int fildes)
 
-Send `count` as a short stack and `fildes` in AX. The returned value in AX indicates how many values must be pulled from the stack.
-
-The trailing underbar on read_() and write_() is there to leave room for <unistd.h> functions. Much of this API works like POSIX, but argument ordering is optimized for the RP6502 binary interface.
+Send `count` as a short stack and `fildes` in AX. The returned value in AX indicates how many values must be pulled from the stack. If you call this from the C SDK then it will copy VSTACK to buf[] for you.
 
 .. code-block:: C
 
    int write_(const void *buf, int count, int fildes)
 
-Send `fildes` in AX. Push the data to VSTACK. Do not send `buf` or `count`. Pulling from VSTACK will begin with the first character.
+Send `fildes` in AX. Push the data to VSTACK. Do not send `count`, the kernel knows this from its internal stack pointer. If you call this from the C SDK then it will copy buf[] to VSTACK for you.
 
+Note that read() and write() are part of the C SDK and may be used if you prefer the POSIX argument order. They simply call the underbar version after reordering the arguments.
 
 2.2.2. Bulk VRAM Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-These functions get their pointer from RIA_ADDR0 or RIA_ADDR1. Setting an ADDR register sets the pointer. It does not matter if the value later changes with STEP and RW, the pointer is what you set initially. This way you can set the ADDR, write some data, *not* re-set the ADDR, and call the OP.
+These load and save VRAM directly. You can load game assets without going through 6502 RAM or capture a screenshot with ease.
 
 .. code-block:: C
 
-   int read0(vram_ptr addr0, int count, int fildes)
+   int readv(vram_ptr buf, int count, int fildes)
 
-The kernel expects `addr0` to come from RIA_ADDR0, so that leaves `count` for the stack and `fildes` for AX. Using a short stack and knowing fildes fits in REG_A, we can do something like:
+The kernel expects `buf` and `count` on the VSTACK as integers with `filedes` in AX. The buffer is effectively (void \*)&VRAM[buf] here. There's nothing special about these calls in regards to how the binary interface rules are applied.
 
-.. code-block:: C
-
-   RIA_ADDR0 = addr0; // This is a 16-bit move in the C API
-   RIA_STACK = count; // Short stacked. Just 8 bits.
-   RIA_A = fildes;    // OK because read() ignores X.
-
-Unlike the VSTACK, the kernel doesn't track a length for the VRAM portals. A set of rules around RIA_RW access could be made, but the use case where this is advantageous is too narrow to justify the complexity.
-
-Calling read functions will update VRAM. This means you can load graphics assets right where you need it without the 6502 doing any work. This leaves the 6502 free to entertain the user with an animation while the entire 64K is transferred in less than a second.
-
-
-3. Function Reference
+1. Function Reference
 =====================
 
-Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, many functions will have different argument orders or bitfield values than what you're used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice if you only work in C because the SDK has wrapper functions with familiar prototypes. For example, fread() and read() are portable and familiar, but the read_() descibed below is optimized for a RIA fastcall.
+Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, many functions will have different argument orders or bitfield values than what you're used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice if you only work in C because the SDK has wrapper functions with familiar prototypes. For example, fread() and read() are portable and familiar, but the read_() described below is optimized for a RIA fastcall.
 
 Warning
 -------
@@ -151,12 +136,10 @@ $00 zvstack
 
 Abandon the vstack by resetting the pointer. Not needed for normal operation, but some performance tricks can be achieved. This is the only operation that doesn't require waiting for completion.
 
-$01 open ($01 $02 $03)
-----------------------
+$01 open
+--------
 
 .. c:function:: int open(const char *path, int oflag)
-.. c:function:: int open0(vram_ptr path, int oflag)
-.. c:function:: int open1(vram_ptr path, int oflag)
 
    Create a connection between a file and a file descriptor.
 
@@ -195,28 +178,26 @@ $04 close
    :errno: FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
 
 
-$05 read ($05 $06 $07)
-----------------------
+$05 read ($05 $06)
+------------------
 
-.. c:function:: int read_(void *buf, int count, int fildes)
-.. c:function:: int read0(vram_ptr buf, int count, int fildes)
-.. c:function:: int read1(vram_ptr buf, int count, int fildes)
+.. c:function:: int read_(void *buf, unsigned count, int fildes)
+.. c:function:: int readv(vram_ptr buf, unsigned count, int fildes)
 
-   Read `count` bytes from a file to a buffer.
+   Read `count` bytes from a file to a buffer. Requests are limited to 0x7FFF bytes. Requesting more will return at most 0x7FFF bytes.
 
    :param buf: Destination for the returned data.
    :param count: Quantity of bytes to read. 0x7FFF max.
    :param fildes: File descriptor from open().
-   :returns: Bytes read on success. -1 on error.
+   :returns: On success, number of bytes read is returned. On error, -1 is returned, and errno is set to indicate the error.
    :a regs: fildes
    :errno: FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT, FR_TIMEOUT
 
-$08 write ($08 $09 $0A)
------------------------
+$08 write ($08 $09)
+-------------------
 
 .. c:function:: int write_(const void *buf, int count, int fildes)
-.. c:function:: int write0(vram_ptr buf, int count, int fildes)
-.. c:function:: int write1(vram_ptr buf, int count, int fildes)
+.. c:function:: int writev(vram_ptr buf, int count, int fildes)
 
    Write `count` bytes from buffer to a file.
 
@@ -234,7 +215,7 @@ $0B lseek
 .. c:function:: long lseek32(long offset, char whence, int fildes)
 .. c:function:: long lseek16(int offset, char whence, int fildes)
 
-   Move the read/write pointer. The 64 bit variant is only available on C compilers that support 64 bit. Only the 64 bit variant is actually implemented in the kernel becuase you can short stack the offset to any size you want. The shorter variants are to keep C from promoting integers.
+   Move the read/write pointer. The 64 bit variant is only available on C compilers that support 64 bit. Only the 64 bit variant is actually implemented in the kernel because you can short stack the offset to any size you want. The shorter variants are to keep C from promoting integers.
 
    :param offset: How far you wish to seek.
    :param whence: From whence you wish to seek.
