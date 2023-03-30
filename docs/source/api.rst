@@ -29,7 +29,7 @@ The register is known as AX for 16 bits and AXSREG for 32-bits. CC65 keeps SREG 
 
 The RIA has registers called RIA_A, RIA_X, and RIA_SREG. An int is 16 bits, so we set the RIA_A and RIA_X registers with arg1. I'll use "A" for the 6502 register and "RIA_A" for the RIA register in this explanation.
 
-Next we push arg0 on the VSTACK. Writing data to the RIA_STACK register does this. It's a top-down stack, so push each value from left to right and maintain little endian-ness in memory.
+Next we push arg0 on the XSTACK. Writing data to the RIA_STACK register does this. It's a top-down stack, so push each value from left to right and maintain little endian-ness in memory.
 
 To call, store the operation ID in RIA_OP. The operation begins immediately. You can keep doing 6502 things, like running a loading animation, by polling RIA_BUSY. Or, JSR RIA_RETURN to block.
 
@@ -54,7 +54,7 @@ Polling is simply snooping on the above program. The RIA_BUSY register is the -2
 
 RIA_A and RIA_X will both always be updated to assist with CC65's integer promotion requirements. RIA_SREG is only updated for 32-bit returns. RIA_ERRNO is only updated if there is an error.
 
-Some operations return data on the stack. You must pull the entire stack before the next call. Or, the next function you call must understand the stack. For example, it is possible to chain read_() and write_() to copy a file without using any RAM or VRAM.
+Some operations return data on the stack. You must pull the entire stack before the next call. Or, the next function you call must understand the stack. For example, it is possible to chain read_() and write_() to copy a file without using any RAM or XRAM.
 
 2.1. Short Stacking
 -------------------
@@ -75,43 +75,43 @@ Many operations can save a few clocks by ignoring REG_X. All integers are always
 2.3. Bulk Data
 --------------
 
-Functions that move bulk data may come in two flavors. These are any function with a pointer parameter. This pointer is meaningless to the kernel because it can not change 6502 RAM. Instead, we use the VSTACK or VRAM for data buffers.
+Functions that move bulk data may come in two flavors. These are any function with a pointer parameter. This pointer is meaningless to the kernel because it can not change 6502 RAM. Instead, we use the XSTACK or XRAM for data buffers.
 
-2.2.1. Bulk VSTACK Operations
+2.2.1. Bulk XSTACK Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-These only work if the count is 256 or less. Bulk data is passed on the VSTACK, which is 256 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let's look at some examples.
+These only work if the count is 256 or less. Bulk data is passed on the XSTACK, which is 256 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let's look at some examples.
 
 .. code-block:: C
 
    int open(const char *path, int oflag);
 
-Send `oflag` in AX. Send the path on VSTACK by pushing the string starting with the last character. You may omit pushing the terminating zero, but strings are limited to a length of 255. Calling this from the C SDK will "just work" because there's an implementation that pushes the string for you.
+Send `oflag` in AX. Send the path on XSTACK by pushing the string starting with the last character. You may omit pushing the terminating zero, but strings are limited to a length of 255. Calling this from the C SDK will "just work" because there's an implementation that pushes the string for you.
 
 .. code-block:: C
 
    int read_(void *buf, int count, int fildes)
 
-Send `count` as a short stack and `fildes` in AX. The returned value in AX indicates how many values must be pulled from the stack. If you call this from the C SDK then it will copy VSTACK to buf[] for you.
+Send `count` as a short stack and `fildes` in AX. The returned value in AX indicates how many values must be pulled from the stack. If you call this from the C SDK then it will copy XSTACK to buf[] for you.
 
 .. code-block:: C
 
    int write_(const void *buf, int count, int fildes)
 
-Send `fildes` in AX. Push the data to VSTACK. Do not send `count`, the kernel knows this from its internal stack pointer. If you call this from the C SDK then it will copy buf[] to VSTACK for you.
+Send `fildes` in AX. Push the data to XSTACK. Do not send `count`, the kernel knows this from its internal stack pointer. If you call this from the C SDK then it will copy buf[] to XSTACK for you.
 
 Note that read() and write() are part of the C SDK and may be used if you prefer the POSIX argument order. They simply call the underbar version after reordering the arguments.
 
-2.2.2. Bulk VRAM Operations
+2.2.2. Bulk XRAM Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-These load and save VRAM directly. You can load game assets without going through 6502 RAM or capture a screenshot with ease.
+These load and save XRAM directly. You can load game assets without going through 6502 RAM or capture a screenshot with ease.
 
 .. code-block:: C
 
-   int readv(vram_ptr buf, int count, int fildes)
+   int readv(xram_ptr buf, int count, int fildes)
 
-The kernel expects `buf` and `count` on the VSTACK as integers with `filedes` in AX. The buffer is effectively (void \*)&VRAM[buf] here. There's nothing special about these calls in regards to how the binary interface rules are applied.
+The kernel expects `buf` and `count` on the XSTACK as integers with `filedes` in AX. The buffer is effectively (void \*)&XRAM[buf] here. There's nothing special about these calls in regards to how the binary interface rules are applied.
 
 1. Function Reference
 =====================
@@ -127,14 +127,14 @@ Typedefs
 
 .. c:type:: int int16_t
 .. c:type:: unsigned int uint16_t
-.. c:type:: uint16_t vram_ptr
+.. c:type:: uint16_t xram_ptr
 
 
-$00 zvstack
+$00 zxstack
 -----------
-.. c:function:: void zvstack(void);
+.. c:function:: void zxstack(void);
 
-Abandon the vstack by resetting the pointer. Not needed for normal operation, but some performance tricks can be achieved. This is the only operation that doesn't require waiting for completion.
+Abandon the xstack by resetting the pointer. Not needed for normal operation, but some performance tricks can be achieved. This is the only operation that doesn't require waiting for completion.
 
 $01 open
 --------
@@ -182,7 +182,7 @@ $05 read ($05 $06)
 ------------------
 
 .. c:function:: int read_(void *buf, unsigned count, int fildes)
-.. c:function:: int readv(vram_ptr buf, unsigned count, int fildes)
+.. c:function:: int readv(xram_ptr buf, unsigned count, int fildes)
 
    Read `count` bytes from a file to a buffer. Requests are limited to 0x7FFF bytes. Requesting more will return at most 0x7FFF bytes.
 
@@ -198,7 +198,7 @@ $08 write ($08 $09)
 -------------------
 
 .. c:function:: int write_(const void *buf, int count, int fildes)
-.. c:function:: int writev(vram_ptr buf, int count, int fildes)
+.. c:function:: int writev(xram_ptr buf, int count, int fildes)
 
    Write `count` bytes from buffer to a file.
 
@@ -234,15 +234,15 @@ $0B lseek
       |    The size of the file plus offset bytes.
 
 
-$10 vreg
+$10 xreg
 --------
 
-.. c:function:: void vreg(unsigned value, unsigned vreg, int devid)
+.. c:function:: void xreg(unsigned value, unsigned xreg, int devid)
 
-   Set a VREG on a PIX device. See the :doc:`ria`:audio and :doc:`vga` documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.
+   Set a XREG on a PIX device. See the :doc:`ria`:audio and :doc:`vga` documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.
 
-   :param value: VREGs are 16 bit so they can point to VRAM.
-   :param vreg: PIX devices may have up to 4096 registers.
+   :param value: XREGs are 16 bit so they can point to XRAM.
+   :param xreg: PIX devices may have up to 4096 registers.
    :param devid: PIX device ID. 0=OPL, 1=VGA, 2-6=Unassigned, 7=Reserved.
    :a regs: fildes
 
