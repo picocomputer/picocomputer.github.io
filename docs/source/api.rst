@@ -193,6 +193,7 @@ $05 read ($05 $06)
    :a regs: fildes
    :errno: FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT, FR_TIMEOUT
 
+
 $08 write ($08 $09)
 -------------------
 
@@ -204,8 +205,9 @@ $08 write ($08 $09)
    :param buf: Location of the data.
    :param count: Quantity of bytes to write. 0x7FFF max.
    :param fildes: File descriptor from open().
+   :returns: On success, number of bytes written is returned. On error, -1 is returned, and errno is set to indicate the error.
    :a regs: fildes
-   :errno:
+   :errno: FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT, FR_TIMEOUT
 
 
 $0B lseek
@@ -235,12 +237,12 @@ $0B lseek
 $10 vreg
 --------
 
-.. c:function:: void vreg(unsigned int value, unsigned char key, int devid)
+.. c:function:: void vreg(unsigned value, unsigned vreg, int devid)
 
-   Set a VREG on a PIX device. See the :doc:`vga` and :doc:`opl` documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.
+   Set a VREG on a PIX device. See the :doc:`ria`:audio and :doc:`vga` documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.
 
    :param value: VREGs are 16 bit so they can point to VRAM.
-   :param key: PIX devices may have up to 256 registers.
+   :param vreg: PIX devices may have up to 4096 registers.
    :param devid: PIX device ID. 0=OPL, 1=VGA, 2-6=Unassigned, 7=Reserved.
    :a regs: fildes
 
