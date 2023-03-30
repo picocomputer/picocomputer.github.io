@@ -14,7 +14,7 @@
     <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="RP6502-OPL" href="opl.html" />
+    <link rel="prev" title="RP6502-VGA" href="vga.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -316,11 +316,15 @@ int <code class="sig-name descname">writev</code><span class="sig-paren">(</span
 <li><p><strong>fildes</strong> – File descriptor from open().</p></li>
 </ul>
 </dd>
-<dt class="field-even">A regs</dt>
-<dd class="field-even"><p>fildes</p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>On success, number of bytes written is returned. On error, -1 is returned, and errno is set to indicate the error.</p>
 </dd>
-<dt class="field-odd">Errno</dt>
-<dd class="field-odd"><p></p></dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT, FR_TIMEOUT</p>
+</dd>
 </dl>
 </dd></dl>
 
@@ -382,13 +386,13 @@ long <code class="sig-name descname">lseek16</code><span class="sig-paren">(</sp
 <h3><a class="toc-backref" href="#id17">$10 vreg</a><a class="headerlink" href="#vreg" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.vreg">
-void <code class="sig-name descname">vreg</code><span class="sig-paren">(</span>unsigned int<em> value</em>, unsigned char<em> key</em>, int<em> devid</em><span class="sig-paren">)</span><a class="headerlink" href="#c.vreg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set a VREG on a PIX device. See the <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> and <a class="reference internal" href="opl.html"><span class="doc">RP6502-OPL</span></a> documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.</p>
+void <code class="sig-name descname">vreg</code><span class="sig-paren">(</span>unsigned<em> value</em>, unsigned<em> vreg</em>, int<em> devid</em><span class="sig-paren">)</span><a class="headerlink" href="#c.vreg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a VREG on a PIX device. See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a>:audio and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>value</strong> – VREGs are 16 bit so they can point to VRAM.</p></li>
-<li><p><strong>key</strong> – PIX devices may have up to 256 registers.</p></li>
+<li><p><strong>vreg</strong> – PIX devices may have up to 4096 registers.</p></li>
 <li><p><strong>devid</strong> – PIX device ID. 0=OPL, 1=VGA, 2-6=Unassigned, 7=Reserved.</p></li>
 </ul>
 </dd>
@@ -441,7 +445,6 @@ void <code class="sig-name descname">vreg</code><span class="sig-paren">(</span>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="ria.html">RIA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vga.html">VGA</a></li>
-<li class="toctree-l1"><a class="reference internal" href="opl.html">OPL</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#introduction">1. Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#calling-with-fastcall">2. Calling with fastcall</a><ul>
@@ -475,7 +478,7 @@ void <code class="sig-name descname">vreg</code><span class="sig-paren">(</span>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="opl.html" title="previous chapter">RP6502-OPL</a></li>
+      <li>Previous: <a href="vga.html" title="previous chapter">RP6502-VGA</a></li>
   </ul></li>
 </ul>
 </div>
