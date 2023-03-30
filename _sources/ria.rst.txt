@@ -70,26 +70,26 @@ WARNING! Do not hook up a physical button to RESB. If you really need one for so
      - Reserved. To be used for video frame counter.
    * - $FFE4
      - RW0
-     - Read or write the VRAM referenced by ADDR0.
+     - Read or write the XRAM referenced by ADDR0.
    * - $FFE5
      - STEP0
      - Signed byte added to ADDR0 after every access to RW0.
    * - | $FFE6 -
        | $FFE7
      - ADDR0
-     - Address of VRAM for RW0.
+     - Address of XRAM for RW0.
    * - $FFE8
      - RW1
-     - Read or write the VRAM referenced by ADDR1.
+     - Read or write the XRAM referenced by ADDR1.
    * - $FFE9
      - STEP1
      - Signed byte added to ADDR1 after every access to RW1.
    * - | $FFEA -
        | $FFEB
      - ADDR1
-     - Address of VRAM for RW1.
+     - Address of XRAM for RW1.
    * - $FFEC
-     - VSTACK
+     - XSTACK
      - 256 bytes for passing kernel paramaters.
    * - $FFED
      - ERRNO_LO
@@ -147,18 +147,17 @@ WARNING! Do not hook up a physical button to RESB. If you really need one for so
 
 Easy and direct access to the UART RX/TX pins of the :doc:`ria` is available from $FFE0-$FFE2. The ready flags on bits 6-7 enable testing with the BIT operator. You may choose to use these or STDIN and STDOUT from the :doc:`api`. Using the UART directly while a STDIN or STDOUT kernel function is in progress will result in undefined behavior.
 
+2.2 Extended RAM (XRAM)
+-----------------------
 
-2.2 Virtual Stack (VSTACK)
---------------------------
-
-This is 256 bytes of last-in, first-out, top-down stack used for the fastcall mechanism described in the :doc:`api`. Reading past the end is guaranteed to return zeros.
-
-2.3 Virtual RAM (VRAM)
-----------------------
-
-RW0 and RW1 are two portals to the same 64K VRAM. Having only one portal would make moving VRAM very slow since data would have to buffer in 6502 RAM. Having two allows moving VRAM to be slightly faster than moving 6502 RAM. Ideally, you won't move VRAM and can use the pair for better optimizations.
+RW0 and RW1 are two portals to the same 64K XRAM. Having only one portal would make moving XRAM very slow since data would have to buffer in 6502 RAM. Ideally, you won't move XRAM and can use the pair for better optimizations.
 
 STEP0 and STEP1 are reset to 1. These are signed so you can go backwards and reverse data. These adders allow for very fast sequential access, which typically make up for the slightly slower random access as compared to 6502 RAM.
+
+2.3 Extended Stack (XSTACK)
+---------------------------
+
+This is 256 bytes of last-in, first-out, top-down stack used for the fastcall mechanism described in the :doc:`api`. Reading past the end is guaranteed to return zeros.
 
 
 1. Pico Information Exchange (PIX)
@@ -175,28 +174,28 @@ Bit 28 (0x10000000) is the framing bit. This bit will be sent in all messages. A
 
 Bits 31-29 (0xE0000000) indicate the channel number for a message.
 
-Channel 0 broadcasts VRAM. Bits 15-0 is the VRAM address. Bits 23-16 is the VRAM data.
+Channel 0 broadcasts XRAM. Bits 15-0 is the XRAM address. Bits 23-16 is the XRAM data.
 
-Channels 1-6 carry device specific information, typically VREG.  Bits 27-16 is the VREG address. Bits 15-0 is the VREG data.
+Channels 1-6 carry device specific information, typically XREG.  Bits 27-16 is the XREG address. Bits 15-0 is the XREG data.
 
 Channel 7 is used for synchronization. Because 0xF0000000 is hard to miss on test equipment.
 
-3.2 Virtual RAM (VRAM)
-----------------------
+3.2 Extended RAM (XRAM)
+-----------------------
 
-All changes to the 64KB of VRAM on the RIA will be broadcast on PIX channel 0. PIX devices will maintain a replica of the VRAM they use. Typically, all 64K is replicated and a VREG set by the application will point to VRAM.
+All changes to the 64KB of XRAM on the RIA will be broadcast on PIX channel 0. PIX devices will maintain a replica of the XRAM they use. Typically, all 64K is replicated and an XREG set by the application will point to XRAM.
 
-3.3 Virtual Registers (VREG)
-----------------------------
+3.3 PIX Registers (XREG)
+------------------------
 
 Channels 1-6 are used to address the registers of specific PIX devices. For example, channel 1 is used by :doc:`vga`. The remaining channels are suitable for additional video and sound devices.
 
-Each register is 16 bits, the perfect length to point to VRAM. PIX devices may have up to 4096 unique registers.
+Each register is 16 bits, the perfect length to point to XRAM. PIX devices may have up to 4096 unique registers.
 
 3.4 PIX Halt
 ------------
 
-A halt message is sent upon initial boot and every time the 6502 returns to the kernel CLI. This is sent to all 6 device channels in VREG 0xFFF. This data is a bitfield with configuration information from the RIA. A PIX device should reset itself upon receiving this message.
+A halt message is sent upon initial boot and every time the 6502 returns to the kernel CLI. This is sent to all 6 device channels in XREG 0xFFF. This data is a bitfield with configuration information from the RIA. A PIX device should reset itself upon receiving this message.
 
 Bits 0-1: Monitor type.
   | 0x0 - SD 4:3 640x480
@@ -209,6 +208,6 @@ Bits 0-1: Monitor type.
 
 The RIA includes an FM Audio Synthesizer on PIX channel 0.
 
-Note that VREGs for PIX device 0 do not actually get broadcast on the PIX bus. This is a special device built-in to the RIA. Overloading channel 0, which is used for VRAM, is done to provide an extra hardware address.
+Note that XREGs for PIX device 0 do not actually get broadcast on the PIX bus. This is a special device built-in to the RIA. Overloading channel 0, which is also used for XRAM, is done to provide an extra hardware address.
 
 Note that audio software hasn't been written yet.

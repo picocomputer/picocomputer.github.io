@@ -44,8 +44,8 @@
 <li><p><a class="reference internal" href="#shorter-integers" id="id4">2.2. Shorter Integers</a></p></li>
 <li><p><a class="reference internal" href="#bulk-data" id="id5">2.3. Bulk Data</a></p>
 <ul>
-<li><p><a class="reference internal" href="#bulk-vstack-operations" id="id6">2.2.1. Bulk VSTACK Operations</a></p></li>
-<li><p><a class="reference internal" href="#bulk-vram-operations" id="id7">2.2.2. Bulk VRAM Operations</a></p></li>
+<li><p><a class="reference internal" href="#bulk-xstack-operations" id="id6">2.2.1. Bulk XSTACK Operations</a></p></li>
+<li><p><a class="reference internal" href="#bulk-xram-operations" id="id7">2.2.2. Bulk XRAM Operations</a></p></li>
 </ul>
 </li>
 </ul>
@@ -54,13 +54,13 @@
 <ul>
 <li><p><a class="reference internal" href="#warning" id="id9">Warning</a></p></li>
 <li><p><a class="reference internal" href="#typedefs" id="id10">Typedefs</a></p></li>
-<li><p><a class="reference internal" href="#zvstack" id="id11">$00 zvstack</a></p></li>
+<li><p><a class="reference internal" href="#zxstack" id="id11">$00 zxstack</a></p></li>
 <li><p><a class="reference internal" href="#open" id="id12">$01 open</a></p></li>
 <li><p><a class="reference internal" href="#close" id="id13">$04 close</a></p></li>
 <li><p><a class="reference internal" href="#read-05-06" id="id14">$05 read ($05 $06)</a></p></li>
 <li><p><a class="reference internal" href="#write-08-09" id="id15">$08 write ($08 $09)</a></p></li>
 <li><p><a class="reference internal" href="#b-lseek" id="id16">$0B lseek</a></p></li>
-<li><p><a class="reference internal" href="#vreg" id="id17">$10 vreg</a></p></li>
+<li><p><a class="reference internal" href="#xreg" id="id17">$10 xreg</a></p></li>
 <li><p><a class="reference internal" href="#ff-exit" id="id18">$FF exit</a></p></li>
 </ul>
 </li>
@@ -87,7 +87,7 @@
 <dd></dd></dl>
 
 <p>The RIA has registers called RIA_A, RIA_X, and RIA_SREG. An int is 16 bits, so we set the RIA_A and RIA_X registers with arg1. I’ll use “A” for the 6502 register and “RIA_A” for the RIA register in this explanation.</p>
-<p>Next we push arg0 on the VSTACK. Writing data to the RIA_STACK register does this. It’s a top-down stack, so push each value from left to right and maintain little endian-ness in memory.</p>
+<p>Next we push arg0 on the XSTACK. Writing data to the RIA_STACK register does this. It’s a top-down stack, so push each value from left to right and maintain little endian-ness in memory.</p>
 <p>To call, store the operation ID in RIA_OP. The operation begins immediately. You can keep doing 6502 things, like running a loading animation, by polling RIA_BUSY. Or, JSR RIA_RETURN to block.</p>
 <p>The JSR RIA_RETURN method can unblock in less than 2 clock cycles and does an immediate mode load of A and X. Sequential operations will run fastest with this technique. Under the hood, you’re jumping into a self-modifying program that runs on the RIA registers.</p>
 <div class="highlight-asm notranslate"><div class="highlight"><pre><span></span><span class="nf">BRA</span> <span class="p">-</span><span class="mi">2</span> <span class="no">or</span> <span class="mi">0</span>  <span class="c">; RIA_BUSY</span>
@@ -105,7 +105,7 @@
 </pre></div>
 </div>
 <p>RIA_A and RIA_X will both always be updated to assist with CC65’s integer promotion requirements. RIA_SREG is only updated for 32-bit returns. RIA_ERRNO is only updated if there is an error.</p>
-<p>Some operations return data on the stack. You must pull the entire stack before the next call. Or, the next function you call must understand the stack. For example, it is possible to chain read_() and write_() to copy a file without using any RAM or VRAM.</p>
+<p>Some operations return data on the stack. You must pull the entire stack before the next call. Or, the next function you call must understand the stack. For example, it is possible to chain read_() and write_() to copy a file without using any RAM or XRAM.</p>
 <div class="section" id="short-stacking">
 <h3><a class="toc-backref" href="#id3">2.1. Short Stacking</a><a class="headerlink" href="#short-stacking" title="Permalink to this headline">¶</a></h3>
 <p>In the never ending pursuit of saving all the clocks, it is possible to save a few on the stack push if you don’t need all the range. This only works on the stack argument that gets pushed first. For example:</p>
@@ -120,31 +120,31 @@
 </div>
 <div class="section" id="bulk-data">
 <h3><a class="toc-backref" href="#id5">2.3. Bulk Data</a><a class="headerlink" href="#bulk-data" title="Permalink to this headline">¶</a></h3>
-<p>Functions that move bulk data may come in two flavors. These are any function with a pointer parameter. This pointer is meaningless to the kernel because it can not change 6502 RAM. Instead, we use the VSTACK or VRAM for data buffers.</p>
-<div class="section" id="bulk-vstack-operations">
-<h4><a class="toc-backref" href="#id6">2.2.1. Bulk VSTACK Operations</a><a class="headerlink" href="#bulk-vstack-operations" title="Permalink to this headline">¶</a></h4>
-<p>These only work if the count is 256 or less. Bulk data is passed on the VSTACK, which is 256 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let’s look at some examples.</p>
+<p>Functions that move bulk data may come in two flavors. These are any function with a pointer parameter. This pointer is meaningless to the kernel because it can not change 6502 RAM. Instead, we use the XSTACK or XRAM for data buffers.</p>
+<div class="section" id="bulk-xstack-operations">
+<h4><a class="toc-backref" href="#id6">2.2.1. Bulk XSTACK Operations</a><a class="headerlink" href="#bulk-xstack-operations" title="Permalink to this headline">¶</a></h4>
+<p>These only work if the count is 256 or less. Bulk data is passed on the XSTACK, which is 256 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let’s look at some examples.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">open</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">path</span><span class="p">,</span> <span class="kt">int</span> <span class="n">oflag</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>Send <cite>oflag</cite> in AX. Send the path on VSTACK by pushing the string starting with the last character. You may omit pushing the terminating zero, but strings are limited to a length of 255. Calling this from the C SDK will “just work” because there’s an implementation that pushes the string for you.</p>
+<p>Send <cite>oflag</cite> in AX. Send the path on XSTACK by pushing the string starting with the last character. You may omit pushing the terminating zero, but strings are limited to a length of 255. Calling this from the C SDK will “just work” because there’s an implementation that pushes the string for you.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read_</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Send <cite>count</cite> as a short stack and <cite>fildes</cite> in AX. The returned value in AX indicates how many values must be pulled from the stack. If you call this from the C SDK then it will copy VSTACK to buf[] for you.</p>
+<p>Send <cite>count</cite> as a short stack and <cite>fildes</cite> in AX. The returned value in AX indicates how many values must be pulled from the stack. If you call this from the C SDK then it will copy XSTACK to buf[] for you.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">write_</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Send <cite>fildes</cite> in AX. Push the data to VSTACK. Do not send <cite>count</cite>, the kernel knows this from its internal stack pointer. If you call this from the C SDK then it will copy buf[] to VSTACK for you.</p>
+<p>Send <cite>fildes</cite> in AX. Push the data to XSTACK. Do not send <cite>count</cite>, the kernel knows this from its internal stack pointer. If you call this from the C SDK then it will copy buf[] to XSTACK for you.</p>
 <p>Note that read() and write() are part of the C SDK and may be used if you prefer the POSIX argument order. They simply call the underbar version after reordering the arguments.</p>
 </div>
-<div class="section" id="bulk-vram-operations">
-<h4><a class="toc-backref" href="#id7">2.2.2. Bulk VRAM Operations</a><a class="headerlink" href="#bulk-vram-operations" title="Permalink to this headline">¶</a></h4>
-<p>These load and save VRAM directly. You can load game assets without going through 6502 RAM or capture a screenshot with ease.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">readv</span><span class="p">(</span><span class="n">vram_ptr</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+<div class="section" id="bulk-xram-operations">
+<h4><a class="toc-backref" href="#id7">2.2.2. Bulk XRAM Operations</a><a class="headerlink" href="#bulk-xram-operations" title="Permalink to this headline">¶</a></h4>
+<p>These load and save XRAM directly. You can load game assets without going through 6502 RAM or capture a screenshot with ease.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">readv</span><span class="p">(</span><span class="n">xram_ptr</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The kernel expects <cite>buf</cite> and <cite>count</cite> on the VSTACK as integers with <cite>filedes</cite> in AX. The buffer is effectively (void *)&amp;VRAM[buf] here. There’s nothing special about these calls in regards to how the binary interface rules are applied.</p>
+<p>The kernel expects <cite>buf</cite> and <cite>count</cite> on the XSTACK as integers with <cite>filedes</cite> in AX. The buffer is effectively (void *)&amp;XRAM[buf] here. There’s nothing special about these calls in regards to how the binary interface rules are applied.</p>
 </div>
 </div>
 </div>
@@ -168,19 +168,19 @@ unsigned int <code class="sig-name descname">uint16_t</code><a class="headerlink
 <dd></dd></dl>
 
 <dl class="type">
-<dt id="c.vram_ptr">
-<a class="reference internal" href="#c.uint16_t" title="uint16_t">uint16_t</a> <code class="sig-name descname">vram_ptr</code><a class="headerlink" href="#c.vram_ptr" title="Permalink to this definition">¶</a></dt>
+<dt id="c.xram_ptr">
+<a class="reference internal" href="#c.uint16_t" title="uint16_t">uint16_t</a> <code class="sig-name descname">xram_ptr</code><a class="headerlink" href="#c.xram_ptr" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
-<div class="section" id="zvstack">
-<h3><a class="toc-backref" href="#id11">$00 zvstack</a><a class="headerlink" href="#zvstack" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="zxstack">
+<h3><a class="toc-backref" href="#id11">$00 zxstack</a><a class="headerlink" href="#zxstack" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt>
-<code class="sig-name descname">void zvstack(void);</code></dt>
+<code class="sig-name descname">void zxstack(void);</code></dt>
 <dd></dd></dl>
 
-<p>Abandon the vstack by resetting the pointer. Not needed for normal operation, but some performance tricks can be achieved. This is the only operation that doesn’t require waiting for completion.</p>
+<p>Abandon the xstack by resetting the pointer. Not needed for normal operation, but some performance tricks can be achieved. This is the only operation that doesn’t require waiting for completion.</p>
 </div>
 <div class="section" id="open">
 <h3><a class="toc-backref" href="#id12">$01 open</a><a class="headerlink" href="#open" title="Permalink to this headline">¶</a></h3>
@@ -274,7 +274,7 @@ int <code class="sig-name descname">read_</code><span class="sig-paren">(</span>
 
 <dl class="function">
 <dt id="c.readv">
-int <code class="sig-name descname">readv</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.readv" title="Permalink to this definition">¶</a></dt>
+int <code class="sig-name descname">readv</code><span class="sig-paren">(</span><a class="reference internal" href="#c.xram_ptr" title="xram_ptr">xram_ptr</a><em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.readv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read <cite>count</cite> bytes from a file to a buffer. Requests are limited to 0x7FFF bytes. Requesting more will return at most 0x7FFF bytes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -306,7 +306,7 @@ int <code class="sig-name descname">write_</code><span class="sig-paren">(</span
 
 <dl class="function">
 <dt id="c.writev">
-int <code class="sig-name descname">writev</code><span class="sig-paren">(</span><a class="reference internal" href="#c.vram_ptr" title="vram_ptr">vram_ptr</a><em> buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.writev" title="Permalink to this definition">¶</a></dt>
+int <code class="sig-name descname">writev</code><span class="sig-paren">(</span><a class="reference internal" href="#c.xram_ptr" title="xram_ptr">xram_ptr</a><em> buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.writev" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write <cite>count</cite> bytes from buffer to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -382,17 +382,17 @@ long <code class="sig-name descname">lseek16</code><span class="sig-paren">(</sp
 </dd></dl>
 
 </div>
-<div class="section" id="vreg">
-<h3><a class="toc-backref" href="#id17">$10 vreg</a><a class="headerlink" href="#vreg" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="xreg">
+<h3><a class="toc-backref" href="#id17">$10 xreg</a><a class="headerlink" href="#xreg" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
-<dt id="c.vreg">
-void <code class="sig-name descname">vreg</code><span class="sig-paren">(</span>unsigned<em> value</em>, unsigned<em> vreg</em>, int<em> devid</em><span class="sig-paren">)</span><a class="headerlink" href="#c.vreg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set a VREG on a PIX device. See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a>:audio and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.</p>
+<dt id="c.xreg">
+void <code class="sig-name descname">xreg</code><span class="sig-paren">(</span>unsigned<em> value</em>, unsigned<em> xreg</em>, int<em> devid</em><span class="sig-paren">)</span><a class="headerlink" href="#c.xreg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a XREG on a PIX device. See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a>:audio and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>value</strong> – VREGs are 16 bit so they can point to VRAM.</p></li>
-<li><p><strong>vreg</strong> – PIX devices may have up to 4096 registers.</p></li>
+<li><p><strong>value</strong> – XREGs are 16 bit so they can point to XRAM.</p></li>
+<li><p><strong>xreg</strong> – PIX devices may have up to 4096 registers.</p></li>
 <li><p><strong>devid</strong> – PIX device ID. 0=OPL, 1=VGA, 2-6=Unassigned, 7=Reserved.</p></li>
 </ul>
 </dd>
@@ -451,8 +451,8 @@ void <code class="sig-name descname">vreg</code><span class="sig-paren">(</span>
 <li class="toctree-l3"><a class="reference internal" href="#short-stacking">2.1. Short Stacking</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#shorter-integers">2.2. Shorter Integers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#bulk-data">2.3. Bulk Data</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bulk-vstack-operations">2.2.1. Bulk VSTACK Operations</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#bulk-vram-operations">2.2.2. Bulk VRAM Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bulk-xstack-operations">2.2.1. Bulk XSTACK Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bulk-xram-operations">2.2.2. Bulk XRAM Operations</a></li>
 </ul>
 </li>
 </ul>
@@ -460,13 +460,13 @@ void <code class="sig-name descname">vreg</code><span class="sig-paren">(</span>
 <li class="toctree-l2"><a class="reference internal" href="#function-reference">1. Function Reference</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#warning">Warning</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#typedefs">Typedefs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#zvstack">$00 zvstack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#zxstack">$00 zxstack</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#open">$01 open</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#close">$04 close</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#read-05-06">$05 read ($05 $06)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#write-08-09">$08 write ($08 $09)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#b-lseek">$0B lseek</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#vreg">$10 vreg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xreg">$10 xreg</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ff-exit">$FF exit</a></li>
 </ul>
 </li>
