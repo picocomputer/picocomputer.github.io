@@ -73,7 +73,7 @@
 </div>
 <div class="section" id="calling-with-fastcall">
 <h2><a class="toc-backref" href="#id2">2. Calling with fastcall</a><a class="headerlink" href="#calling-with-fastcall" title="Permalink to this headline">¶</a></h2>
-<p>The binary interface is based on fastcall from the <a class="reference external" href="https://cc65.github.io/doc/cc65-intern.html">CC65 Internals</a>. However, the RP6502 fastcall does not use or require anything from CC65. I think works well for both C and assembly programmers. Here’s the call flow this section will expand on.</p>
+<p>The binary interface is based on fastcall from the <a class="reference external" href="https://cc65.github.io/doc/cc65-intern.html">CC65 Internals</a>. However, the RP6502 fastcall does not use or require anything from CC65. I think this works well for both C and assembly programmers. Here’s the call flow this section will expand on.</p>
 <ul class="simple">
 <li><p>Kernel calls have C declarations.</p></li>
 <li><p>Last argument is passed by register.</p></li>
@@ -87,12 +87,12 @@
 <dd></dd></dl>
 
 <p>The RIA has registers called RIA_A, RIA_X, and RIA_SREG. An int is 16 bits, so we set the RIA_A and RIA_X registers with arg1. I’ll use “A” for the 6502 register and “RIA_A” for the RIA register in this explanation.</p>
-<p>Next we push arg0 on the XSTACK. Writing data to the RIA_STACK register does this. It’s a top-down stack, so push each value from left to right and maintain little endian-ness in memory.</p>
+<p>Next we push arg0 on the XSTACK. Writing data to the RIA_STACK register does this. It’s a top-down stack, so push each argument from left to right and maintain little endian-ness in memory.</p>
 <p>To call, store the operation ID in RIA_OP. The operation begins immediately. You can keep doing 6502 things, like running a loading animation, by polling RIA_BUSY. Or, JSR RIA_RETURN to block.</p>
-<p>The JSR RIA_RETURN method can unblock in less than 2 clock cycles and does an immediate mode load of A and X. Sequential operations will run fastest with this technique. Under the hood, you’re jumping into a self-modifying program that runs on the RIA registers.</p>
+<p>The JSR RIA_RETURN method can unblock in less than 3 clock cycles and does an immediate load of A and X. Sequential operations will run fastest with this technique. Under the hood, you’re jumping into a self-modifying program that runs on the RIA registers.</p>
 <div class="highlight-asm notranslate"><div class="highlight"><pre><span></span><span class="nf">BRA</span> <span class="p">-</span><span class="mi">2</span> <span class="no">or</span> <span class="mi">0</span>  <span class="c">; RIA_BUSY</span>
-<span class="nf">LDA</span> <span class="c">#00      ; RIA_A</span>
-<span class="nf">LDX</span> <span class="c">#00      ; RIA_X</span>
+<span class="nf">LDA</span> <span class="c">#$00      ; RIA_A</span>
+<span class="nf">LDX</span> <span class="c">#$00      ; RIA_X</span>
 <span class="nf">RTS</span>
 </pre></div>
 </div>
@@ -100,8 +100,8 @@
 <div class="highlight-asm notranslate"><div class="highlight"><pre><span></span><span class="nl">wait:</span>
 <span class="nf">BIT</span> <span class="no">RIA_BUSY</span>
 <span class="nf">BMI</span> <span class="no">wait</span>
-<span class="nf">LDA</span> <span class="c">#RIA_A</span>
-<span class="nf">LDX</span> <span class="c">#RIA_X</span>
+<span class="nf">LDA</span> <span class="no">RIA_A</span>
+<span class="nf">LDX</span> <span class="no">RIA_X</span>
 </pre></div>
 </div>
 <p>RIA_A and RIA_X will both always be updated to assist with CC65’s integer promotion requirements. RIA_SREG is only updated for 32-bit returns. RIA_ERRNO is only updated if there is an error.</p>
@@ -136,7 +136,7 @@
 </pre></div>
 </div>
 <p>Send <cite>fildes</cite> in AX. Push the data to XSTACK. Do not send <cite>count</cite>, the kernel knows this from its internal stack pointer. If you call this from the C SDK then it will copy buf[] to XSTACK for you.</p>
-<p>Note that read() and write() are part of the C SDK and may be used if you prefer the POSIX argument order. They simply call the underbar version after reordering the arguments.</p>
+<p>Note that read() and write() are part of the C SDK, not a kernel operation. CC65 requires them to have POSIX-ordered arguments. They simply call the underbar version after reordering the arguments.</p>
 </div>
 <div class="section" id="bulk-xram-operations">
 <h4><a class="toc-backref" href="#id7">2.2.2. Bulk XRAM Operations</a><a class="headerlink" href="#bulk-xram-operations" title="Permalink to this headline">¶</a></h4>
@@ -144,13 +144,13 @@
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">readv</span><span class="p">(</span><span class="n">xram_ptr</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The kernel expects <cite>buf</cite> and <cite>count</cite> on the XSTACK as integers with <cite>filedes</cite> in AX. The buffer is effectively (void *)&amp;XRAM[buf] here. There’s nothing special about these calls in regards to how the binary interface rules are applied.</p>
+<p>The kernel expects <cite>buf</cite> and <cite>count</cite> on the XSTACK as integers with <cite>filedes</cite> in AX. The buffer is effectively &amp;XRAM[buf] here. There’s nothing special about these calls in regards to how the binary interface rules are applied.</p>
 </div>
 </div>
 </div>
 <div class="section" id="function-reference">
 <h2><a class="toc-backref" href="#id8">1. Function Reference</a><a class="headerlink" href="#function-reference" title="Permalink to this headline">¶</a></h2>
-<p>Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, many functions will have different argument orders or bitfield values than what you’re used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice if you only work in C because the SDK has wrapper functions with familiar prototypes. For example, fread() and read() are portable and familiar, but the read_() described below is optimized for a RIA fastcall.</p>
+<p>Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, many functions will have different argument orders or bitfield values than what you’re used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice if you only work in C because the standard library has wrapper functions and familiar prototypes. For example, fread() and read() are portable and familiar, but the read_() described below is optimized for a RIA fastcall.</p>
 <div class="section" id="warning">
 <h3><a class="toc-backref" href="#id9">Warning</a><a class="headerlink" href="#warning" title="Permalink to this headline">¶</a></h3>
 <p>This is new. Expect lots of little changes. In particular, a renumbering of the IDs is planned and error numbers are definitely unstable. Mostly, the thing to watch out for is argument reordering. Operations tend to have an obvious best way to align with the binary interface so the big picture won’t change much, just some details which will probably only need a recompile with the new headers.</p>
@@ -301,12 +301,12 @@ int <code class="sig-name descname">readv</code><span class="sig-paren">(</span>
 <h3><a class="toc-backref" href="#id15">$08 write ($08 $09)</a><a class="headerlink" href="#write-08-09" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.write_">
-int <code class="sig-name descname">write_</code><span class="sig-paren">(</span>const void<em> *buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write_" title="Permalink to this definition">¶</a></dt>
+int <code class="sig-name descname">write_</code><span class="sig-paren">(</span>const void<em> *buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write_" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="c.writev">
-int <code class="sig-name descname">writev</code><span class="sig-paren">(</span><a class="reference internal" href="#c.xram_ptr" title="xram_ptr">xram_ptr</a><em> buf</em>, int<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.writev" title="Permalink to this definition">¶</a></dt>
+int <code class="sig-name descname">writev</code><span class="sig-paren">(</span><a class="reference internal" href="#c.xram_ptr" title="xram_ptr">xram_ptr</a><em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.writev" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write <cite>count</cite> bytes from buffer to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -406,8 +406,8 @@ void <code class="sig-name descname">xreg</code><span class="sig-paren">(</span>
 <div class="section" id="ff-exit">
 <h3><a class="toc-backref" href="#id18">$FF exit</a><a class="headerlink" href="#ff-exit" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
-<dt>
-<code class="sig-name descname">void exit(int status);</code></dt>
+<dt id="c.exit">
+void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>int<em> status</em><span class="sig-paren">)</span><a class="headerlink" href="#c.exit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Halt the 6502 and return to the kernel command interface. This is the only operation that does not return. RESB will be pulled down before the next instruction can execute. Status is currently ignored but will be used in the future.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
