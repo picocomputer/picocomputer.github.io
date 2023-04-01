@@ -4,7 +4,6 @@
    RIA <ria>
    VGA <vga>
    API <api>
-   SCH </_static/schematic.pdf>
 
 Picocomputer 6502
 =================
@@ -27,4 +26,4 @@ RP6502 Datasheets:
 
 .. :_how to write mathematics: ../_static/how-to-write-mathematics-halmos.pdf
 
-I use "Picocomputer 6502" to refer to the reference design. It is my hope that derivitve projects use a different name. For example, "Picocomputer VERA" or "Ulf's Dream Computer". Think about what people asking for help should call the device and go with that.
+I use "Picocomputer 6502" to refer to the reference design. It is my hope that derivative projects use a different name. For example, "Picocomputer VERA" or "Ulf's Dream Computer". Think about what people asking for help should call the device and go with that.
