@@ -44,13 +44,13 @@
 <li><p><a class="reference internal" href="#shorter-integers" id="id4">2.2. Shorter Integers</a></p></li>
 <li><p><a class="reference internal" href="#bulk-data" id="id5">2.3. Bulk Data</a></p>
 <ul>
-<li><p><a class="reference internal" href="#bulk-xstack-operations" id="id6">2.2.1. Bulk XSTACK Operations</a></p></li>
-<li><p><a class="reference internal" href="#bulk-xram-operations" id="id7">2.2.2. Bulk XRAM Operations</a></p></li>
+<li><p><a class="reference internal" href="#bulk-xstack-operations" id="id6">2.3.1. Bulk XSTACK Operations</a></p></li>
+<li><p><a class="reference internal" href="#bulk-xram-operations" id="id7">2.3.2. Bulk XRAM Operations</a></p></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#function-reference" id="id8">1. Function Reference</a></p>
+<li><p><a class="reference internal" href="#function-reference" id="id8">3. Function Reference</a></p>
 <ul>
 <li><p><a class="reference internal" href="#warning" id="id9">Warning</a></p></li>
 <li><p><a class="reference internal" href="#typedefs" id="id10">Typedefs</a></p></li>
@@ -76,11 +76,11 @@
 <p>The binary interface is based on fastcall from the <a class="reference external" href="https://cc65.github.io/doc/cc65-intern.html">CC65 Internals</a>. However, the RP6502 fastcall does not use or require anything from CC65. I think this works well for both C and assembly programmers. Here’s the call flow this section will expand on.</p>
 <ul class="simple">
 <li><p>Kernel calls have C declarations.</p></li>
-<li><p>Last argument is passed by register.</p></li>
 <li><p>Stack arguments are pushed left to right.</p></li>
+<li><p>Last argument is passed by register.</p></li>
 <li><p>Return value in register.</p></li>
 </ul>
-<p>The register is known as AX for 16 bits and AXSREG for 32-bits. CC65 keeps SREG in zero page. A and X are the 6502 registers. Let’s look at an example function. All kernel calls are specified as a C declaration like so:</p>
+<p>The register is known as AX for 16 bits and AXSREG for 32 bits. CC65 keeps SREG in zero page. A and X are the 6502 registers. Let’s look at an example function. All kernel calls are specified as a C declaration like so:</p>
 <dl class="function">
 <dt>
 <code class="sig-name descname">int doit(int arg0, int arg1);</code></dt>
@@ -122,7 +122,7 @@
 <h3><a class="toc-backref" href="#id5">2.3. Bulk Data</a><a class="headerlink" href="#bulk-data" title="Permalink to this headline">¶</a></h3>
 <p>Functions that move bulk data may come in two flavors. These are any function with a pointer parameter. This pointer is meaningless to the kernel because it can not change 6502 RAM. Instead, we use the XSTACK or XRAM for data buffers.</p>
 <div class="section" id="bulk-xstack-operations">
-<h4><a class="toc-backref" href="#id6">2.2.1. Bulk XSTACK Operations</a><a class="headerlink" href="#bulk-xstack-operations" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id6">2.3.1. Bulk XSTACK Operations</a><a class="headerlink" href="#bulk-xstack-operations" title="Permalink to this headline">¶</a></h4>
 <p>These only work if the count is 256 or less. Bulk data is passed on the XSTACK, which is 256 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let’s look at some examples.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">open</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">path</span><span class="p">,</span> <span class="kt">int</span> <span class="n">oflag</span><span class="p">);</span>
 </pre></div>
@@ -139,7 +139,7 @@
 <p>Note that read() and write() are part of the C SDK, not a kernel operation. CC65 requires them to have POSIX-ordered arguments. They simply call the underbar version after reordering the arguments.</p>
 </div>
 <div class="section" id="bulk-xram-operations">
-<h4><a class="toc-backref" href="#id7">2.2.2. Bulk XRAM Operations</a><a class="headerlink" href="#bulk-xram-operations" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id7">2.3.2. Bulk XRAM Operations</a><a class="headerlink" href="#bulk-xram-operations" title="Permalink to this headline">¶</a></h4>
 <p>These load and save XRAM directly. You can load game assets without going through 6502 RAM or capture a screenshot with ease.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">readv</span><span class="p">(</span><span class="n">xram_ptr</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
@@ -149,7 +149,7 @@
 </div>
 </div>
 <div class="section" id="function-reference">
-<h2><a class="toc-backref" href="#id8">1. Function Reference</a><a class="headerlink" href="#function-reference" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id8">3. Function Reference</a><a class="headerlink" href="#function-reference" title="Permalink to this headline">¶</a></h2>
 <p>Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, many functions will have different argument orders or bitfield values than what you’re used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice if you only work in C because the standard library has wrapper functions and familiar prototypes. For example, fread() and read() are portable and familiar, but the read_() described below is optimized for a RIA fastcall.</p>
 <div class="section" id="warning">
 <h3><a class="toc-backref" href="#id9">Warning</a><a class="headerlink" href="#warning" title="Permalink to this headline">¶</a></h3>
@@ -451,13 +451,13 @@ void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>
 <li class="toctree-l3"><a class="reference internal" href="#short-stacking">2.1. Short Stacking</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#shorter-integers">2.2. Shorter Integers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#bulk-data">2.3. Bulk Data</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bulk-xstack-operations">2.2.1. Bulk XSTACK Operations</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#bulk-xram-operations">2.2.2. Bulk XRAM Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bulk-xstack-operations">2.3.1. Bulk XSTACK Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bulk-xram-operations">2.3.2. Bulk XRAM Operations</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#function-reference">1. Function Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#function-reference">3. Function Reference</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#warning">Warning</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#typedefs">Typedefs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#zxstack">$00 zxstack</a></li>

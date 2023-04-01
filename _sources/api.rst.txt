@@ -19,11 +19,11 @@ The RP6502 presents an opportunity to create a new type of operating system. A 6
 The binary interface is based on fastcall from the `CC65 Internals <https://cc65.github.io/doc/cc65-intern.html>`_. However, the RP6502 fastcall does not use or require anything from CC65. I think this works well for both C and assembly programmers. Here's the call flow this section will expand on.
 
 * Kernel calls have C declarations.
-* Last argument is passed by register.
 * Stack arguments are pushed left to right.
+* Last argument is passed by register.
 * Return value in register.
 
-The register is known as AX for 16 bits and AXSREG for 32-bits. CC65 keeps SREG in zero page. A and X are the 6502 registers. Let's look at an example function. All kernel calls are specified as a C declaration like so:
+The register is known as AX for 16 bits and AXSREG for 32 bits. CC65 keeps SREG in zero page. A and X are the 6502 registers. Let's look at an example function. All kernel calls are specified as a C declaration like so:
 
 .. c:function:: int doit(int arg0, int arg1);
 
@@ -77,8 +77,8 @@ Many operations can save a few clocks by ignoring REG_X. All integers are always
 
 Functions that move bulk data may come in two flavors. These are any function with a pointer parameter. This pointer is meaningless to the kernel because it can not change 6502 RAM. Instead, we use the XSTACK or XRAM for data buffers.
 
-2.2.1. Bulk XSTACK Operations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2.3.1. Bulk XSTACK Operations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These only work if the count is 256 or less. Bulk data is passed on the XSTACK, which is 256 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let's look at some examples.
 
@@ -102,8 +102,8 @@ Send `fildes` in AX. Push the data to XSTACK. Do not send `count`, the kernel kn
 
 Note that read() and write() are part of the C SDK, not a kernel operation. CC65 requires them to have POSIX-ordered arguments. They simply call the underbar version after reordering the arguments.
 
-2.2.2. Bulk XRAM Operations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2.3.2. Bulk XRAM Operations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These load and save XRAM directly. You can load game assets without going through 6502 RAM or capture a screenshot with ease.
 
@@ -113,7 +113,7 @@ These load and save XRAM directly. You can load game assets without going throug
 
 The kernel expects `buf` and `count` on the XSTACK as integers with `filedes` in AX. The buffer is effectively &XRAM[buf] here. There's nothing special about these calls in regards to how the binary interface rules are applied.
 
-1. Function Reference
+3. Function Reference
 =====================
 
 Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, many functions will have different argument orders or bitfield values than what you're used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice if you only work in C because the standard library has wrapper functions and familiar prototypes. For example, fread() and read() are portable and familiar, but the read_() described below is optimized for a RIA fastcall.
