@@ -273,8 +273,8 @@ int <code class="sig-name descname">read_</code><span class="sig-paren">(</span>
 <dd></dd></dl>
 
 <dl class="function">
-<dt id="c.readv">
-int <code class="sig-name descname">readv</code><span class="sig-paren">(</span><a class="reference internal" href="#c.xram_ptr" title="xram_ptr">xram_ptr</a><em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.readv" title="Permalink to this definition">¶</a></dt>
+<dt id="c.readx">
+int <code class="sig-name descname">readx</code><span class="sig-paren">(</span><a class="reference internal" href="#c.xram_ptr" title="xram_ptr">xram_ptr</a><em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.readx" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read <cite>count</cite> bytes from a file to a buffer. Requests are limited to 0x7FFF bytes. Requesting more will return at most 0x7FFF bytes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -305,8 +305,8 @@ int <code class="sig-name descname">write_</code><span class="sig-paren">(</span
 <dd></dd></dl>
 
 <dl class="function">
-<dt id="c.writev">
-int <code class="sig-name descname">writev</code><span class="sig-paren">(</span><a class="reference internal" href="#c.xram_ptr" title="xram_ptr">xram_ptr</a><em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.writev" title="Permalink to this definition">¶</a></dt>
+<dt id="c.writex">
+int <code class="sig-name descname">writex</code><span class="sig-paren">(</span><a class="reference internal" href="#c.xram_ptr" title="xram_ptr">xram_ptr</a><em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.writex" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write <cite>count</cite> bytes from buffer to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

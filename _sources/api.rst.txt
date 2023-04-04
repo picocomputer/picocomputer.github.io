@@ -182,7 +182,7 @@ $05 read ($05 $06)
 ------------------
 
 .. c:function:: int read_(void *buf, unsigned count, int fildes)
-.. c:function:: int readv(xram_ptr buf, unsigned count, int fildes)
+.. c:function:: int readx(xram_ptr buf, unsigned count, int fildes)
 
    Read `count` bytes from a file to a buffer. Requests are limited to 0x7FFF bytes. Requesting more will return at most 0x7FFF bytes.
 
@@ -198,7 +198,7 @@ $08 write ($08 $09)
 -------------------
 
 .. c:function:: int write_(const void *buf, unsigned count, int fildes)
-.. c:function:: int writev(xram_ptr buf, unsigned count, int fildes)
+.. c:function:: int writex(xram_ptr buf, unsigned count, int fildes)
 
    Write `count` bytes from buffer to a file.
 
