@@ -32,6 +32,8 @@ A new RIA will boot to the the kernel CLI. This CLI can be accessed from VGA and
 
 The kernel CLI can be used in two ways. There are commands to install ROM files to the RIA EEPROM which can boot on power up. You may also use the CLI to load programs from a USB drive or development system.
 
+If not using the :doc:`vga` system, the UART can be directly connected to. Use 115200 8N1.
+
 2.1. Reset
 ----------
 
