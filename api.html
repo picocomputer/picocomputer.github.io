@@ -61,7 +61,10 @@
 <li><p><a class="reference internal" href="#write-08-09" id="id15">$08 write ($08 $09)</a></p></li>
 <li><p><a class="reference internal" href="#b-lseek" id="id16">$0B lseek</a></p></li>
 <li><p><a class="reference internal" href="#xreg" id="id17">$10 xreg</a></p></li>
-<li><p><a class="reference internal" href="#ff-exit" id="id18">$FF exit</a></p></li>
+<li><p><a class="reference internal" href="#phi2" id="id18">$11 phi2</a></p></li>
+<li><p><a class="reference internal" href="#codepage" id="id19">$12 codepage</a></p></li>
+<li><p><a class="reference internal" href="#rand" id="id20">$13 rand</a></p></li>
+<li><p><a class="reference internal" href="#ff-exit" id="id21">$FF exit</a></p></li>
 </ul>
 </li>
 </ul>
@@ -386,25 +389,72 @@ long <code class="sig-name descname">lseek16</code><span class="sig-paren">(</sp
 <h3><a class="toc-backref" href="#id17">$10 xreg</a><a class="headerlink" href="#xreg" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.xreg">
-void <code class="sig-name descname">xreg</code><span class="sig-paren">(</span>unsigned<em> value</em>, unsigned<em> xreg</em>, int<em> devid</em><span class="sig-paren">)</span><a class="headerlink" href="#c.xreg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set a XREG on a PIX device. See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a>:audio and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.</p>
+void <code class="sig-name descname">xreg</code><span class="sig-paren">(</span>unsigned<em> value</em>, unsigned<em> reg</em>, int<em> devid</em><span class="sig-paren">)</span><a class="headerlink" href="#c.xreg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a register on a PIX device. See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a>:audio and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>value</strong> – XREGs are 16 bit so they can point to XRAM.</p></li>
-<li><p><strong>xreg</strong> – PIX devices may have up to 4096 registers.</p></li>
-<li><p><strong>devid</strong> – PIX device ID. 0=OPL, 1=VGA, 2-6=Unassigned, 7=Reserved.</p></li>
+<li><p><strong>value</strong> – Value to store. 0-65535</p></li>
+<li><p><strong>reg</strong> – Register location. 0-4095</p></li>
+<li><p><strong>devid</strong> – PIX device ID. 0-6</p></li>
 </ul>
 </dd>
 <dt class="field-even">A regs</dt>
-<dd class="field-even"><p>fildes</p>
+<dd class="field-even"><p>devid</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="phi2">
+<h3><a class="toc-backref" href="#id18">$11 phi2</a><a class="headerlink" href="#phi2" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.phi2">
+unsigned <code class="sig-name descname">phi2</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.phi2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the PHI2 setting from the RIA. Applications can use this to adapt to different speeds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The 6502 clock speed in kHz.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="codepage">
+<h3><a class="toc-backref" href="#id19">$12 codepage</a><a class="headerlink" href="#codepage" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.codepage">
+unsigned <code class="sig-name descname">codepage</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.codepage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the CP setting from the RIA.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The code page. One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862, 863, 864, 865, 866, 869, 932, 936, 949, 950.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="rand">
+<h3><a class="toc-backref" href="#id20">$13 rand</a><a class="headerlink" href="#rand" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.rand32">
+unsigned long <code class="sig-name descname">rand32</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.rand32" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.rand16">
+unsigned <code class="sig-name descname">rand16</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.rand16" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a random number utilizing entropy on the RIA. This is suitable for seeding a RNG or general use. The rand16() variant is only in the C SDK to avoid integer promotion (it ignores SREG).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Chaos.</p>
 </dd>
 </dl>
 </dd></dl>
 
 </div>
 <div class="section" id="ff-exit">
-<h3><a class="toc-backref" href="#id18">$FF exit</a><a class="headerlink" href="#ff-exit" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id21">$FF exit</a><a class="headerlink" href="#ff-exit" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.exit">
 void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>int<em> status</em><span class="sig-paren">)</span><a class="headerlink" href="#c.exit" title="Permalink to this definition">¶</a></dt>
@@ -467,6 +517,9 @@ void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>
 <li class="toctree-l3"><a class="reference internal" href="#write-08-09">$08 write ($08 $09)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#b-lseek">$0B lseek</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#xreg">$10 xreg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#phi2">$11 phi2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codepage">$12 codepage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rand">$13 rand</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ff-exit">$FF exit</a></li>
 </ul>
 </li>

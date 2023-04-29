@@ -237,14 +237,43 @@ $0B lseek
 $10 xreg
 --------
 
-.. c:function:: void xreg(unsigned value, unsigned xreg, int devid)
+.. c:function:: void xreg(unsigned value, unsigned reg, int devid)
 
-   Set a XREG on a PIX device. See the :doc:`ria`:audio and :doc:`vga` documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.
+   Set a register on a PIX device. See the :doc:`ria`:audio and :doc:`vga` documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.
 
-   :param value: XREGs are 16 bit so they can point to XRAM.
-   :param xreg: PIX devices may have up to 4096 registers.
-   :param devid: PIX device ID. 0=OPL, 1=VGA, 2-6=Unassigned, 7=Reserved.
-   :a regs: fildes
+   :param value: Value to store. 0-65535
+   :param reg: Register location. 0-4095
+   :param devid: PIX device ID. 0-6
+   :a regs: devid
+
+
+$11 phi2
+--------
+
+.. c:function:: unsigned phi2(void)
+
+   Retrieves the PHI2 setting from the RIA. Applications can use this to adapt to different speeds.
+
+   :returns: The 6502 clock speed in kHz.
+
+$12 codepage
+------------
+
+.. c:function:: unsigned codepage(void)
+
+   Retrieves the CP setting from the RIA.
+
+   :returns: The code page. One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862, 863, 864, 865, 866, 869, 932, 936, 949, 950.
+
+$13 rand
+--------
+
+.. c:function:: unsigned long rand32(void)
+.. c:function:: unsigned rand16(void)
+
+   Generates a random number utilizing entropy on the RIA. This is suitable for seeding a RNG or general use. The rand16() variant is only in the C SDK to avoid integer promotion (it ignores SREG).
+
+   :returns: Chaos.
 
 
 $FF exit
