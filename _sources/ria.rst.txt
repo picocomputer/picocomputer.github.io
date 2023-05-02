@@ -114,17 +114,17 @@ WARNING! Do not hook up a physical button to RESB. If you really need one for so
      - BUSY
      - Bit 7 high while operation is running.
    * - $FFF3
-     - LDA
-     - Always $A9.
-   * - $FFF4
-     - A
-     - Kernel register A.
-   * - $FFF5
      - LDX
      - Always $A2.
-   * - $FFF6
+   * - $FFF4
      - X
      - Kernel register X.
+   * - $FFF5
+     - LDA
+     - Always $A9.
+   * - $FFF6
+     - A
+     - Kernel register A.
    * - $FFF7
      - RTS
      - Always $60.
