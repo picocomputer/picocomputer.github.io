@@ -1,0 +1,374 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Schematic, PCB, and Parts &#8212; RP6502 0.0-pre documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="RP6502-RIA" href="ria.html" />
+    <link rel="prev" title="Picocomputer 6502" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="schematic-pcb-and-parts">
+<h1>Schematic, PCB, and Parts<a class="headerlink" href="#schematic-pcb-and-parts" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="schematic">
+<h2>Schematic<a class="headerlink" href="#schematic" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="_static/schematic.pdf">Picocomputer 6502</a></p>
+<p>I use “Picocomputer 6502” to refer to the reference design. This is buildable on a breadboard. Please use a differentiating name if you change the hardware. For example, “Picocomputer VERA” or “Ulf’s Dream Computer”. Think about what people asking for help should call the device and go with that.</p>
+</div>
+<div class="section" id="tools">
+<h2>Tools<a class="headerlink" href="#tools" title="Permalink to this headline">¶</a></h2>
+<p>Assembly requires a soldering iron, wire cutters, personal protection, and personal responsibility.</p>
+</div>
+<div class="section" id="parts-list">
+<h2>Parts List<a class="headerlink" href="#parts-list" title="Permalink to this headline">¶</a></h2>
+<p>This is everything for a circuit board. You can send this CSV to mouser.com. If something is out of stock, consult the substitution notes below.</p>
+<p><a class="reference external" href="_static/parts.csv">Download CSV</a></p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Qty</p></th>
+<th class="head"><p>Reference</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Mfr Name</p></th>
+<th class="head"><p>Mfr Part Number</p></th>
+<th class="head"><p>Mouser Part Number</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>10</p></td>
+<td><p>C1-C9, C11</p></td>
+<td><p>0.1μF Ceramic Capacitor</p></td>
+<td><p>Vishay</p></td>
+<td><p>A104M15X7RF5TAA</p></td>
+<td><p>594-A104M15X7RF5TAA</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>C10, C12</p></td>
+<td><p>47μF Ceramic Capacitor</p></td>
+<td><p>TDK</p></td>
+<td><p>FG26X5R1E476MRT00</p></td>
+<td><p>810-FG26X5R1E476MRT0</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>R1, R6, R11, R18</p></td>
+<td><p>8.06k resistor 1%</p></td>
+<td><p>YAGEO</p></td>
+<td><p>MFR-25FBF52-8K06</p></td>
+<td><p>603-MFR-25FBF52-8K06</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>R2, R7, R12</p></td>
+<td><p>4.02k resistor 1%</p></td>
+<td><p>YAGEO</p></td>
+<td><p>MFR-25FBF52-4K02</p></td>
+<td><p>603-MFR-25FBF52-4K02</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>R3, R8, R13</p></td>
+<td><p>2k resistor 1%</p></td>
+<td><p>YAGEO</p></td>
+<td><p>MFR-25FBF52-2K</p></td>
+<td><p>603-MFR-25FBF52-2K</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>R21, R24</p></td>
+<td><p>1.8k resistor 1%</p></td>
+<td><p>YAGEO</p></td>
+<td><p>MFR-25FBF52-1K8</p></td>
+<td><p>603-MFR-25FBF52-1K8</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>R4, R9, R14</p></td>
+<td><p>1k resistor 1%</p></td>
+<td><p>YAGEO</p></td>
+<td><p>MFR-25FBF52-1K</p></td>
+<td><p>603-MFR-25FBF52-1K</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>R5, R10, R15</p></td>
+<td><p>499 ohm resistor 1%</p></td>
+<td><p>YAGEO</p></td>
+<td><p>MFR-25FBF52-499R</p></td>
+<td><p>603-MFR-25FBF52-499R</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>R19, R22</p></td>
+<td><p>220 ohm resistor 1%</p></td>
+<td><p>YAGEO</p></td>
+<td><p>MFR-25FBF52-220R</p></td>
+<td><p>603-MFR-25FBF52-220R</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>R20, R23</p></td>
+<td><p>100 ohm resistor 1%</p></td>
+<td><p>YAGEO</p></td>
+<td><p>MFR-25FBF52-100R</p></td>
+<td><p>603-MFR-25FBF52-100R</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>R16, R17</p></td>
+<td><p>47 ohm resistor 1%</p></td>
+<td><p>YAGEO</p></td>
+<td><p>MFR-25FBF52-47R</p></td>
+<td><p>603-MFR-25FBF52-47R</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>U2, U4</p></td>
+<td><p>Raspberry Pi Pico</p></td>
+<td><p>Raspberry Pi</p></td>
+<td><p>SC0915</p></td>
+<td><p>358-SC0915</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>U1</p></td>
+<td><p>WDC W65C02S</p></td>
+<td><p>WDC</p></td>
+<td><p>W65C02S6TPG-14</p></td>
+<td><p>955-W65C02S6TPG-14</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>U5</p></td>
+<td><p>WDC W65C22S</p></td>
+<td><p>WDC</p></td>
+<td><p>W65C22S6TPG-14</p></td>
+<td><p>955-W65C22S6TPG-14</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>U3</p></td>
+<td><p>128k RAM AS6C1008</p></td>
+<td><p>Alliance</p></td>
+<td><p>AS6C1008-55PCN</p></td>
+<td><p>913-AS6C1008-55PCN</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>U6</p></td>
+<td><p>74AC00 Quad NAND</p></td>
+<td><p>TI</p></td>
+<td><p>CD74AC00E</p></td>
+<td><p>595-CD74AC00E</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>U7</p></td>
+<td><p>74AC02 Quad NOR</p></td>
+<td><p>TI</p></td>
+<td><p>CD74AC02E</p></td>
+<td><p>595-CD74AC02E</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>U8</p></td>
+<td><p>74HC30 8-input NAND</p></td>
+<td><p>TI</p></td>
+<td><p>CD74HC30E</p></td>
+<td><p>595-CD74HC30E</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>J1</p></td>
+<td><p>GPIO 2x12 Pin Header</p></td>
+<td><p>Amp</p></td>
+<td><p>10129381-924001BLF</p></td>
+<td><p>649-1012938192401BLF</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>J2</p></td>
+<td><p>PIX 2x6 Pin Header</p></td>
+<td><p>Amp</p></td>
+<td><p>10129381-912001BLF</p></td>
+<td><p>649-1012938191201BLF</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>U2, U4</p></td>
+<td><p>Pico 20 Pin Header (x2)</p></td>
+<td><p>Amp</p></td>
+<td><p>10129378-920001BLF</p></td>
+<td><p>649-1012937892001BLF</p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>U2, U4</p></td>
+<td><p>Pico 20 Pin Socket (x2)</p></td>
+<td><p>Mill-Max</p></td>
+<td><p>310-47-120-41-001000</p></td>
+<td><p>575-3104712041001000</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>U2</p></td>
+<td><p>SWD 3 Pin Header</p></td>
+<td><p>Amp</p></td>
+<td><p>10129378-903001BLF</p></td>
+<td><p>649-1012937890301BLF</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>U2</p></td>
+<td><p>SWD 3 Pin Socket (x2)</p></td>
+<td><p>Mill-Max</p></td>
+<td><p>310-47-103-41-001000</p></td>
+<td><p>575-3104710341001000</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>J3</p></td>
+<td><p>VGA Jack</p></td>
+<td><p>Amp</p></td>
+<td><p>L77HDE15SD1CH4FVGA</p></td>
+<td><p>523-7HDE15SD1CH4FVGA</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>J4</p></td>
+<td><p>Audio Jack</p></td>
+<td><p>CUI</p></td>
+<td><p>SJ1-3525NG-GR</p></td>
+<td><p>490-SJ1-3525NG-GR</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>SW1</p></td>
+<td><p>Reset Button</p></td>
+<td><p>CUI</p></td>
+<td><p>TS11-674-43-BK-160-RA-D</p></td>
+<td><p>179-TS1167443160RAD</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>U6, U7, U8</p></td>
+<td><p>14-pin IC Socket</p></td>
+<td><p>TE</p></td>
+<td><p>1-2199298-3</p></td>
+<td><p>571-1-2199298-3</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>U3</p></td>
+<td><p>28-pin IC Socket</p></td>
+<td><p>TE</p></td>
+<td><p>1-2199299-2</p></td>
+<td><p>571-1-2199299-2</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>U1, U5</p></td>
+<td><p>40-pin IC Socket</p></td>
+<td><p>TE</p></td>
+<td><p>1-2199299-5</p></td>
+<td><p>571-1-2199299-5</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="parts-substitution">
+<h2>Parts Substitution<a class="headerlink" href="#parts-substitution" title="Permalink to this headline">¶</a></h2>
+<p>All resistors are &lt;= 1% tolerance. Any power rating. Leads must fit 0.8mm plated holes spaced 10mm apart. Recommended size is approximately 0.1” x 0.25” (2.4-2.6mm x 6-8mm).</p>
+<p>0.1 μF ceramic capacitors are available in axial packaging (like resistors) but you may use classic radial (disc) capacitors if you prefer. Leads must fit 0.8mm plated holes spaced 10mm apart. Only a voltage of &gt;=10V is required. Tolerance and temperature coefficient do not matter.</p>
+<p>Yes, 47 μF ceramic capacitors are expensive, but you only need two and they never leak. Leads must fit 0.8mm plated holes spaced 5mm apart. Only a voltage of &gt;=10V is required. Tolerance and temperature coefficient do not matter.</p>
+<p>The CUI audio jack is available in many colors and with optional switches. The switches are not used, but the circuit board can accept the extra leads.</p>
+<p>The REBOOT switch is available from multiple manufacturers in various lengths, colors, and activation forces. Nothing matters except that it’s “momentary on”.</p>
+<p>The VGA jack is available from multiple manufacturers. This style has been around since the beginning, so if it looks like it’ll fit then it probably will. Newer VGA jacks are designed to use less PCB space or be oven soldered and will be visibly different enough to avoid.</p>
+<p>The 74xx ICs must be true CMOS. Use AC or HC, do not use ACT or HCT. Two out of three must be AC for 8MHz. You may use 74HC00 and 74HC02 instead of AC, but 8MHz will not be achievable. I’ve never seen a DIP 74AC30, but if you find one then it would be preferred over the 74HC30.</p>
+<p>The RAM IC is 128k because 2x32k is more expensive. Speed must be &lt;=70ns for 8MHz.</p>
+<p>The WDC W65C02S and W65C22S must not be substituted. Do not attempt to use NMOS chips (without the C in the number). Some older CMOS designs may work but there are no plans to support out-of-production ICs.</p>
+<p>Only the Raspberry Pi design of the Pi Pico has been tested. The “H” (header) version may be used, but connecting the three SWD pins will require soldering a debug wire to the circuit board. The SWD connection is only used for kernel development, so it’s OK to leave this unconnected.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">RP6502</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Hardware</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#schematic">Schematic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tools">Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parts-list">Parts List</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parts-substitution">Parts Substitution</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ria.html">RIA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vga.html">VGA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Picocomputer 6502</a></li>
+      <li>Next: <a href="ria.html" title="next chapter">RP6502-RIA</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023 Rumbledethumps.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/hardware.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
