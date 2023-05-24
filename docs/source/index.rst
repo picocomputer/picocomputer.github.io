@@ -1,6 +1,7 @@
 .. toctree::
    :hidden:
 
+   Hardware <hardware>
    RIA <ria>
    VGA <vga>
    API <api>
@@ -17,9 +18,7 @@ The RP6502 chipset comes in two parts. The RP6502-RIA is an interface adapter th
 
 RP6502 Datasheets:
 
+* :doc:`Schematic, PCB, and Parts <hardware>`
 * :doc:`RIA Interface Adapter <ria>`
 * :doc:`VGA Graphics Processing Unit <vga>`
 * :doc:`API for 6502 Programing <api>`
-* `Reference Design Schematic <_static/schematic.pdf>`_
-
-I use "Picocomputer 6502" to refer to the reference design. It is my hope that derivative projects use a different name. For example, "Picocomputer VERA" or "Ulf's Dream Computer". Think about what people asking for help should call the device and go with that.
