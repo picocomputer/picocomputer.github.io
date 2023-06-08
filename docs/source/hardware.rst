@@ -4,7 +4,7 @@ Schematic, PCB, and Parts
 Schematic
 ---------
 
-`Picocomputer 6502 <_static/schematic.pdf>`_
+`Picocomputer 6502 <_static/2023-06-07-rp6502.pdf>`_
 
 I use "Picocomputer 6502" to refer to the reference design. This is buildable on a breadboard. Please use a differentiating name if you change the hardware. For example, "Picocomputer VERA" or "Ulf's Dream Computer". Think about what people asking for help should call the device and go with that.
 
