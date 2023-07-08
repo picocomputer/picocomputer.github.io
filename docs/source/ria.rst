@@ -167,51 +167,42 @@ This is 256 bytes of last-in, first-out, top-down stack used for the fastcall me
 3. Pico Information Exchange (PIX)
 ==================================
 
-The limited numbers of GPIO pins on the Raspberry Pi Pico required creating a new bus for high bandwidth devices like video systems. This is an addressable broadcast system which any numbers of devices can listen to.
+The limited numbers of GPIO pins on the Raspberry Pi Pico required creating a new bus for high bandwidth devices like video systems. This is an addressable broadcast system which any number of devices can listen to.
 
 3.1. Physical layer
 -------------------
 
 The physical layer is designed to be easily decoded by Pi Pico PIO, which is just a fancy shift register. The signals used are PHI2 and PIX0-3. This is a double data rate bus with PIX0-3 shifted left on both transitions of PHI2. A frame consists of 32 bits transmitted over 4 cycles of PHI2.
 
-Bit 28 (0x10000000) is the framing bit. This bit will be sent in all messages. An all zero payload is repeated on channel 7 when the bus is idle. A receiver will synchronize by ensuring PIX0 is high on a low transition of PHI2. If it is not, stall until the next clock cycle.
+Bit 28 (0x10000000) is the framing bit. This bit will be set in all messages. An all zero payload is repeated on device ID 7 when the bus is idle. A receiver will synchronize by ensuring PIX0 is high on a low transition of PHI2. If it is not, stall until the next clock cycle.
 
-Bits 31-29 (0xE0000000) indicate the channel number for a message.
+Bits 31-29 (0xE0000000) indicate the device ID number for a message.
 
-Channel 0 broadcasts XRAM. Bits 15-0 is the XRAM address. Bits 23-16 is the XRAM data.
+Device 0 is allocated to :doc:`ria`. Device 0 is also overloaded to broadcast XRAM.
 
-Channels 1-6 carry device specific information, typically XREG.  Bits 27-16 is the XREG address. Bits 15-0 is the XREG data.
+Device 1 is allocated to :doc:`vga`.
 
-Channel 7 is used for synchronization. Because 0xF0000000 is hard to miss on test equipment.
+Devices 2-6 are for expansion.
 
-3.2. Extended RAM (XRAM)
-------------------------
+Device 7 is used for synchronization. Because 0xF0000000 is hard to miss on test equipment.
 
-All changes to the 64KB of XRAM on the RIA will be broadcast on PIX channel 0. PIX devices will maintain a replica of the XRAM they use. Typically, all 64K is replicated and an XREG set by the application will point to XRAM.
+3.2. PIX Extended RAM (XRAM)
+----------------------------
 
-3.3. PIX Registers (XREG)
--------------------------
+All changes to the 64KB of XRAM on the RIA will be broadcast on PIX device 0. Bits 15-0 is the XRAM address. Bits 23-16 is the XRAM data. This goes out on the wire, but is never seen by the SDK. Device 0, as seen by the SDK, is the RIA itself and has no need to go out the wire.
 
-Channels 1-6 are used to address the registers of specific PIX devices. For example, channel 1 is used by :doc:`vga`. The remaining channels are suitable for additional video and sound devices.
+PIX devices will maintain a replica of the XRAM they use. Typically, all 64K is replicated and an XREG set by the application will point to a configuration structure in XRAM.
 
-Each register is 16 bits, the perfect length to point to XRAM. PIX devices may have up to 4096 unique registers.
+3.3. PIX Extended Registers (XREG)
+----------------------------------
 
-3.4. PIX Halt
--------------
+PIX devices may use bits 27-0 however they choose. The suggest division of this bits is:
 
-A halt message is sent upon initial boot and every time the 6502 returns to the kernel CLI. This is sent to all 6 device channels in XREG 0xFFF. This data is a bitfield with configuration information from the RIA. A PIX device should reset itself upon receiving this message.
+Bits 27-24 indicate a channel. For example, the RIA device has a channel for audio, a channel for keyboard and mouse, a channel for Wifi, and so on. Bits 23-16 is an extended register address. Bits 15:0 for the payload.
 
-Bits 0-1: Monitor type.
-  | 0x0 - SD 4:3 640x480
-  | 0x1 - HD 16:9 640x480 and 1280x720
-  | 0x2 - SXGA 5:4 1280x1024
-
+So we have seven PIX devices, each with 16 internal channels having 256 16-bit registers. The idea is to use extended registers to point to structures in XRAM. Changing XREG is setup, changing XRAM causes the device to respond.
 
 4. FM Audio Synthesizer
 =======================
 
-The RIA includes an FM Audio Synthesizer on PIX channel 0.
-
-Note that XREGs for PIX device 0 do not actually get broadcast on the PIX bus. This is a special device built-in to the RIA. Overloading channel 0, which is also used for XRAM, is done to provide an extra hardware address.
-
-Note that audio software hasn't been written yet.
+The RIA will include an FM Audio Synthesizer on PIX device 0 channel 0.
