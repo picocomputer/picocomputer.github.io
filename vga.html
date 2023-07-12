@@ -531,7 +531,7 @@
 </div>
 <div class="section" id="control-channel-f">
 <h3><a class="toc-backref" href="#id9">Control Channel $F</a><a class="headerlink" href="#control-channel-f" title="Permalink to this headline">¶</a></h3>
-<p>These registers are managed by the RIA. Display and code page are saved settings. The backchannel is an internal resource.</p>
+<p>These registers are managed by the RIA.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -559,17 +559,21 @@
 </tr>
 <tr class="row-odd"><td><p>$F:01</p></td>
 <td><p>CODEPAGE</p></td>
-<td><p>Select code page for built-in font.</p></td>
+<td><p>Set code page for built-in font.</p></td>
 </tr>
 <tr class="row-even"><td><p>$F:02</p></td>
+<td><p>UART</p></td>
+<td><p>Set baud rate.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$F:03</p></td>
 <td><p>STDOUT</p></td>
 <td><p>Alternate path for UART Tx when using backchannel.</p></td>
 </tr>
-<tr class="row-odd"><td><p>$F:03</p></td>
+<tr class="row-even"><td><p>$F:04</p></td>
 <td><p>BACKCHANREQ</p></td>
 <td><p>Request UART Tx switch over to backchannel.</p></td>
 </tr>
-<tr class="row-even"><td><p>$F:04</p></td>
+<tr class="row-odd"><td><p>$F:05</p></td>
 <td><p>BACKCHANACK</p></td>
 <td><p>Acknowledge UART Tx switch over to backchannel.</p></td>
 </tr>

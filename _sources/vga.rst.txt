@@ -410,7 +410,7 @@ Affine sprites apply a 3x3 matrix transform. These are slower than plain sprites
 Control Channel $F
 ------------------
 
-These registers are managed by the RIA. Display and code page are saved settings. The backchannel is an internal resource.
+These registers are managed by the RIA.
 
 .. list-table::
    :widths: 5 5 90
@@ -427,13 +427,16 @@ These registers are managed by the RIA. Display and code page are saved settings
         * 2 - SXGA (5:4) 1280x1024
    * - $F:01
      - CODEPAGE
-     - Select code page for built-in font.
+     - Set code page for built-in font.
    * - $F:02
+     - UART
+     - Set baud rate.
+   * - $F:03
      - STDOUT
      - Alternate path for UART Tx when using backchannel.
-   * - $F:03
+   * - $F:04
      - BACKCHANREQ
      - Request UART Tx switch over to backchannel.
-   * - $F:04
+   * - $F:05
      - BACKCHANACK
      - Acknowledge UART Tx switch over to backchannel.
