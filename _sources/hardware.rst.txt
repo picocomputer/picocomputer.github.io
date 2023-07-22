@@ -4,21 +4,49 @@ Schematic, PCB, and Parts
 Schematic
 ---------
 
-`Picocomputer 6502 <_static/2023-06-07-rp6502.pdf>`_
+`Picocomputer 6502 <_static/2023-06-07-rp6502.pdf>`_ (pdf)
 
-I use "Picocomputer 6502" to refer to the reference design. This is buildable on a breadboard. Please use a differentiating name if you change the hardware. For example, "Picocomputer VERA" or "Ulf's Dream Computer". Think about what people asking for help should call the device and go with that.
+I use "Picocomputer 6502" to refer to the reference design. Please use a differentiating name if you change the hardware. For example, "Picocomputer VERA" or "Ulf's Dream Computer". Think about what people asking for help should call the device and go with that.
 
-The KiCad sources will be released after I validate some footprint changes. I'll announce its availability on `Twitter <https://twitter.com/Rumbledethumps>`_.
+Buying a Picocomputer
+---------------------
 
-Tools
------
+I do not sell hardware at this time and have no immediate plans to do so. Instead, I provide design files that have been tested so that all you need to do is upload them to a factory and use their default options.
 
-Assembly requires a soldering iron, wire cutters, personal protection, and personal responsibility.
+There are no affilate links here. To financially support this open source project, consider joining `Patreon <https://www.patreon.com/rumbledethumps>`_ or give a Super Thanks on any of my YouTube Videos.
 
-Parts List
-----------
+Even better than money would be pull requests for the many `unfinished features <https://github.com/picocomputer/rp6502/issues>`_ or `this documentation <https://github.com/picocomputer/picocomputer.github.io>`_.
 
-This is everything for a circuit board. You can send this CSV to mouser.com. If something is out of stock, consult the substitution notes below.
+Factory Assembly
+----------------
+
+Factory assembly only requires you to plug in the ICs. There is no soldering.
+
+1. Watch the video. (coming soon)
+2. Send the `gerbers <_static/gerbers.zip>`_ to a PCB manufacturer that does assembly. The default options will be correct.
+3. Request assembly and send the `BOM, notes, and photos <_static/assembly.zip>`_. The default options will be correct.
+4. Upload the `active parts list <_static/active.csv>`_ to a `Mouser <https://mouser.com>`_ shopping cart. If something is out of stock, consult the substitution notes below.
+5. The latest firmware is on `the forums <https://github.com/orgs/picocomputer/discussions/4>`_.
+
+If the factory has questions you can't answer, post them on the forums. It will most likely be to confirm a part substitution. They may also send you a photo to review before final soldering. There's nothing tricky about the design, so there's no need to overanalyze this.
+
+DIY Assembly
+------------
+
+DIY assembly requires through hole soldering. There are no surface mounted devices. IMO, soldering the pins on the Pi Pico is the most difficult part, so you'll be fine if you think you can handle that.
+
+1. Watch `the DIY video <https://youtu.be/bwgLXEQdq20>`_.
+2. Send the `gerbers <_static/gerbers.zip>`_ to a PCB manufacturer. The default options will be correct.
+3. Upload the `full parts list <_static/parts.csv>`_ to a `Mouser <https://mouser.com>`_ shopping cart. If something is out of stock, consult the substitution notes below.
+4. The latest firmware is on `the forums <https://github.com/orgs/picocomputer/discussions/4>`_.
+
+Acrylic Sandwich Case
+---------------------
+
+The circuit board is 150 x 100mm (4x6 inches). I regularly see vendors on Amazon and eBay selling 150 x 100 x 3mm acrylic sheets. You'll need to drill 3mm holes for M3 standoffs. The recommended standoff height is >=15.5mm for the top and >=3.5mm for the bottom.
+
+Full Parts List
+---------------
 
 `Download CSV <_static/parts.csv>`_
 
