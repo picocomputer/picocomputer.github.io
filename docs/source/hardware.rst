@@ -22,7 +22,7 @@ Factory Assembly
 
 Factory assembly only requires you to plug in the ICs. There is no soldering.
 
-1. Watch `the PCBWay video <http://example.com>`_.
+1. Watch the video. (coming soon)
 2. Send the `gerbers <_static/gerbers.zip>`_ to a PCB manufacturer that does assembly. The default options will be correct.
 3. Request assembly and send the `BOM, notes, and photos <_static/assembly.zip>`_. The default options will be correct.
 4. Upload the `active parts list <_static/active.csv>`_ to a `Mouser <https://mouser.com>`_ shopping cart. If something is out of stock, consult the substitution notes below.
