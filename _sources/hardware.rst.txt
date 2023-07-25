@@ -29,26 +29,28 @@ To solder, or not to solder, that is the question. We're living in the future. Y
 Step 2. Order Printed Circuit Boards
 ====================================
 
+Download `the gerbers <_static/rp6502-reva-gerbers.zip>`_.
+
+Gerbers are like PDFs for circuit boards. You'll be asked to upload these; simply upload the zip file from above. The PCB manufacturer's website should detect that this is a two-layer 150x100mm board.
+
 PCB manufacturers that welcome hobbyists have optimized their basic services for production in multiples of five. You won't be able to order only one board.
 
-Gerbers are like PDFs for circuit boards. You'll be asked to upload these; simply upload the zip file below. The PCB manufacturer's website should detect that this is a two-layer 150x100mm board.
-
 There's a ton of options you can change if you like. The defaults will get you a classic green and white board with lead (Pb) HASL. Consider getting the lead-free HASL upgrade if the other four boards will be kicking around a drawer for the next 20 years.
-
-`Download the gerbers <_static/rp6502-reva-gerbers.zip>`_.
 
 Step 3. Order Assembly
 ======================
 
-PCBWay has a minimum quantity of one. JLCPCB has a minimum of two. You'll have them build you a "board of sockets" that is always available since there are multiple vendors for every part.
-
 Skip this step if you want to solder it yourself.
 
-Request assembly with your PCB order and send the `BOM, notes, and photos <_static/rp6502-reva-assembly.zip>`_. They will use the boards you ordered in step 2. The default options will work. Let them source the parts. Let them make substitutions.
+PCBWay has a minimum quantity of one. JLCPCB has a minimum of two. What you'll order is a "board of sockets". It should never be constrained on parts availability since there are multiple vendors for every part.
+
+Download `the BOM, notes, and photos <_static/rp6502-reva-assembly.zip>`_.
+
+Request assembly with your PCB order and send the `BOM, notes, and photos <_static/rp6502-reva-assembly.zip>`_. There is no centroid file. They will use the boards you ordered in step 2. The default options will work. Let them source the parts. Let them make substitutions.
 
 There will be a short delay as they get you a price for the bill-of-materials. Then you can pay and wait. I was estimated four weeks and got it in three.
 
-If the factory has questions you can't answer, post them on the forums. It will most likely be to confirm a part substitution. They may also send you a photo to review before final soldering. There's nothing tricky about the design, so there's no need to overanalyze this.
+If your sales rep has questions, read the notes you sent them because maybe they didn't. If the answer isn't there, post the question on the forums. It will most likely be to confirm a part substitution. They may also send you a photo to review before final soldering. There's nothing tricky about the design, so there's no need to overanalyze this.
 
 Step 4. More Parts
 ==================
