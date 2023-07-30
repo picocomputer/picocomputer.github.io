@@ -42,15 +42,15 @@ Step 3. Order Assembly
 
 Skip this step if you want to solder it yourself.
 
-PCBWay has a minimum quantity of one. JLCPCB has a minimum of two. What you'll order is a "board of sockets". It should never be constrained on parts availability since there are multiple vendors for every part.
+PCBWay has a minimum quantity of one for assembly. They will use the boards you ordered in step 2. What you'll order is a "board of sockets". It should never be constrained on parts availability since there are multiple vendors for every part.
 
 Download `the BOM, notes, and photos <_static/rp6502-reva-assembly.zip>`_.
 
-Request assembly with your PCB order and send the `BOM, notes, and photos <_static/rp6502-reva-assembly.zip>`_. There is no centroid file. They will use the boards you ordered in step 2. The default options will work. Let them source the parts. Let them make substitutions.
+Request assembly with your PCB order and send the `BOM, notes, and photos <_static/rp6502-reva-assembly.zip>`_. There is no centroid file. The default options will work. Let them source the parts. Let them make substitutions.
 
 There will be a short delay as they get you a price for the bill-of-materials. Then you can pay and wait. I was estimated four weeks and got it in three.
 
-If your sales rep has questions, read the notes you sent them because maybe they didn't. If the answer isn't there, post the question on the forums. It will most likely be to confirm a part substitution. They may also send you a photo to review before final soldering. There's nothing tricky about the design, so there's no need to overanalyze this.
+If they have a question, make sure you both have read the notes you sent them. If you can't answer, post the question on the forums. Do not post issues on the forums before asking your sales rep first.
 
 Step 4. More Parts
 ==================
