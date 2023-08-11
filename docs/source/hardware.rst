@@ -50,7 +50,7 @@ Request assembly with your PCB order and send the `BOM, notes, and photos <_stat
 
 There will be a short delay as they get you a price for the bill-of-materials. Then you can pay and wait. I was estimated four weeks and got it in three.
 
-If they have a question, make sure you both have read the notes you sent them. If you can't answer, post the question on the forums. Do not post issues on the forums before asking your sales rep first.
+If they have a question, make sure you both you and your sales rep read the notes you sent them. If you have a question about options on their web site, ask your sales rep before asking on the forums. They help people all day long with projects far more complex than this. Even if you don't understand what you are doing, they can figure it out by looking at the zip files. Really, they do this all day long, and will probably enjoy the easy win.
 
 Step 4. More Parts
 ==================
