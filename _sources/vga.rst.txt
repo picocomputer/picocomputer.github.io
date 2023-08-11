@@ -444,7 +444,7 @@ These registers are managed by the RIA.
 3. Backchannel
 ==============
 
-Because the PIX bus is unidirectional, it can't be used for sending data from the VGA system back to the PIX. Using the UART Rx path is undesirable since there would be framing overhead or unusable control characters. Since there is a lot of unused bandwidth on the PIX bus, which is only used when the 6502 is writing to XRAM, it can be used for the UART Tx path allowing the UART Rx path to switch directions.
+Because the PIX bus is unidirectional, it can't be used for sending data from the VGA system back to the RIA. Using the UART Rx path is undesirable since there would be framing overhead or unusable control characters. Since there is a lot of unused bandwidth on the PIX bus, which is only used when the 6502 is writing to XRAM, it can be used for the UART Tx path allowing the UART Tx pin to switch directions.
 
 This is not interesting to the 6502 programmer as it happens automatically. RIA Kernel developers can extend its usefulness. The backchannel is simply a UART implemented in PIO so it sends 8-bit values.
 
