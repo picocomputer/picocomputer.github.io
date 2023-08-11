@@ -70,8 +70,8 @@ WARNING! Do not hook up a physical button to RESB. If you really need one for so
      - RX
      - Read bytes from the UART.
    * - $FFE3
-     -
-     - Reserved. To be used for video frame counter.
+     - VSYNC
+     - Increments every 1/60 second when PIX VGA device is connected.
    * - $FFE4
      - RW0
      - Read or write the XRAM referenced by ADDR0.
