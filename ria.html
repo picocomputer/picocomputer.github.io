@@ -87,11 +87,14 @@
 <p>If not using the <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> system, the UART can be directly connected to. Use 115200 8N1.</p>
 <div class="section" id="reset">
 <h3><a class="toc-backref" href="#id4">2.1. Reset</a><a class="headerlink" href="#reset" title="Permalink to this headline">¶</a></h3>
-<p>When the 6502 is in reset, meaning RESB is low and it is not running, the kernel CLI is available for use. If the 6502 has stopped running or the current application has no way to exit, you can put the 6502 back into reset in two ways.</p>
+<p>When the 6502 is in reset, meaning RESB is low and it is not running, the kernel monitor CLI is available for use. If the 6502 has crashed or the current application has no way to exit, you can put the 6502 back into reset in two ways.</p>
 <p>Using a USB keyboard, press CTRL-ALT-DEL. The USB stack runs on the Pi Pico so this will work even if the 6502 has crashed.</p>
 <p>Over the UART, send a break. This can be used by a build system to upload and test programs.</p>
-<p>MacOS currently can not send a break using the RP6502-VGA due to a known issue with TinyUSB.</p>
-<p>WARNING! Do not hook up a physical button to RESB. If you really need one for some reason, have the button pull UART RX low (a break). But what you probably want is the reset that happens from the RUN pin. Resetting the Pi Pico with RUN will cause the boot ROM to load, like at power on. Resetting the 6502 from keyboard or UART will only return you to the kernel CLI.</p>
+<p>MacOS isn’t capable of sending a break with its CDC driver. A common workaround is to drop the baud rate significantly so a bit sequence of zeros will look like a break. The <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> CDC implementation has a hack to detect a full byte of zeros within 100ms of changing the baud rate to 1200.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>stty -F /dev/ttyACM0 <span class="m">1200</span> <span class="o">&amp;&amp;</span> <span class="nb">echo</span> -ne <span class="s1">&#39;\0&#39;</span> &gt; /dev/ttyACM0
+</pre></div>
+</div>
+<p>WARNING! Do not hook up a physical button to RESB. The RIA must remain in control of RESB. What you probably want is the reset that happens from the RIA RUN pin. We call this a reboot. The reference hardware reboot button is hooked up to the RIA RUN pin. Rebooting the Pi Pico RIA like this will cause any configured boot ROM to load, like at power on. Resetting the 6502 from keyboard or UART will only return you to the kernel CLI, which is great for devlopment and hacking.</p>
 </div>
 <div class="section" id="registers">
 <h3><a class="toc-backref" href="#id5">2.2. Registers</a><a class="headerlink" href="#registers" title="Permalink to this headline">¶</a></h3>
@@ -254,6 +257,18 @@
 <h3><a class="toc-backref" href="#id7">2.4. Extended RAM (XRAM)</a><a class="headerlink" href="#extended-ram-xram" title="Permalink to this headline">¶</a></h3>
 <p>RW0 and RW1 are two portals to the same 64K XRAM. Having only one portal would make moving XRAM very slow since data would have to buffer in 6502 RAM. Ideally, you won’t move XRAM and can use the pair for better optimizations.</p>
 <p>STEP0 and STEP1 are reset to 1. These are signed so you can go backwards and reverse data. These adders allow for very fast sequential access, which typically make up for the slightly slower random access as compared to 6502 RAM.</p>
+<p>RW0 and RW1 are latching. This is important to remember when other systems change XRAM. For example, when using readx() to load XRAM from a mass storage device, this will not work as expected:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">RIA_ADDR0</span> <span class="o">=</span> <span class="mh">0x1000</span><span class="p">;</span>
+<span class="n">readx</span><span class="p">(</span><span class="mh">0x1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+<span class="kt">uint8_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">RIA_RW0</span><span class="p">;</span> <span class="c1">// wrong</span>
+</pre></div>
+</div>
+<p>Setting ADDR after the expected XRAM change will latch RW to the latest value.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">readx</span><span class="p">(</span><span class="mh">0x1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+<span class="n">RIA_ADDR0</span> <span class="o">=</span> <span class="mh">0x1000</span><span class="p">;</span>
+<span class="kt">uint8_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">RIA_RW0</span><span class="p">;</span> <span class="c1">// correct</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="extended-stack-xstack">
 <h3><a class="toc-backref" href="#id8">2.5. Extended Stack (XSTACK)</a><a class="headerlink" href="#extended-stack-xstack" title="Permalink to this headline">¶</a></h3>

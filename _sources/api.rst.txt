@@ -37,9 +37,9 @@ The JSR RIA_RETURN method can unblock in less than 3 clock cycles and does an im
 
 .. code-block:: asm
 
-   BRA {-2 or 0} ; RIA_BUSY
-   LDX #$00      ; RIA_X
-   LDA #$00      ; RIA_A
+   BRA #$??      ; RIA_BUSY {-2 or 0}
+   LDX #$??      ; RIA_X
+   LDA #$??      ; RIA_A
    RTS
 
 Polling is simply snooping on the above program. The RIA_BUSY register is the -2 or 0 in the BRA above. The RIA datasheet specifies bit 7, which the 6502 can check quickly. Once clear, we read RIA_A and RIA_X with absolute instructions.

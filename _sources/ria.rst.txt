@@ -37,15 +37,19 @@ If not using the :doc:`vga` system, the UART can be directly connected to. Use 1
 2.1. Reset
 ----------
 
-When the 6502 is in reset, meaning RESB is low and it is not running, the kernel CLI is available for use. If the 6502 has stopped running or the current application has no way to exit, you can put the 6502 back into reset in two ways.
+When the 6502 is in reset, meaning RESB is low and it is not running, the kernel monitor CLI is available for use. If the 6502 has crashed or the current application has no way to exit, you can put the 6502 back into reset in two ways.
 
 Using a USB keyboard, press CTRL-ALT-DEL. The USB stack runs on the Pi Pico so this will work even if the 6502 has crashed.
 
 Over the UART, send a break. This can be used by a build system to upload and test programs.
 
-MacOS currently can not send a break using the RP6502-VGA due to a known issue with TinyUSB.
+MacOS isn't capable of sending a break with its CDC driver. A common workaround is to drop the baud rate significantly so a bit sequence of zeros will look like a break. The :doc:`vga` CDC implementation has a hack to detect a full byte of zeros within 100ms of changing the baud rate to 1200.
 
-WARNING! Do not hook up a physical button to RESB. If you really need one for some reason, have the button pull UART RX low (a break). But what you probably want is the reset that happens from the RUN pin. Resetting the Pi Pico with RUN will cause the boot ROM to load, like at power on. Resetting the 6502 from keyboard or UART will only return you to the kernel CLI.
+.. code-block:: bash
+
+  stty -F /dev/ttyACM0 1200 && echo -ne '\0' > /dev/ttyACM0
+
+WARNING! Do not hook up a physical button to RESB. The RIA must remain in control of RESB. What you probably want is the reset that happens from the RIA RUN pin. We call this a reboot. The reference hardware reboot button is hooked up to the RIA RUN pin. Rebooting the Pi Pico RIA like this will cause any configured boot ROM to load, like at power on. Resetting the 6502 from keyboard or UART will only return you to the kernel CLI, which is great for devlopment and hacking.
 
 
 2.2. Registers
@@ -157,6 +161,22 @@ Easy and direct access to the UART RX/TX pins of the :doc:`ria` is available fro
 RW0 and RW1 are two portals to the same 64K XRAM. Having only one portal would make moving XRAM very slow since data would have to buffer in 6502 RAM. Ideally, you won't move XRAM and can use the pair for better optimizations.
 
 STEP0 and STEP1 are reset to 1. These are signed so you can go backwards and reverse data. These adders allow for very fast sequential access, which typically make up for the slightly slower random access as compared to 6502 RAM.
+
+RW0 and RW1 are latching. This is important to remember when other systems change XRAM. For example, when using readx() to load XRAM from a mass storage device, this will not work as expected:
+
+.. code-block:: C
+
+  RIA_ADDR0 = 0x1000;
+  readx(0x1000, 1, 3);
+  uint8_t result = RIA_RW0; // wrong
+
+Setting ADDR after the expected XRAM change will latch RW to the latest value.
+
+.. code-block:: C
+
+  readx(0x1000, 1, 3);
+  RIA_ADDR0 = 0x1000;
+  uint8_t result = RIA_RW0; // correct
 
 2.5. Extended Stack (XSTACK)
 ----------------------------

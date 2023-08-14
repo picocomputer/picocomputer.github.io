@@ -93,10 +93,10 @@
 <p>Next we push arg0 on the XSTACK. Writing data to the RIA_STACK register does this. It’s a top-down stack, so push each argument from left to right and maintain little endian-ness in memory.</p>
 <p>To call, store the operation ID in RIA_OP. The operation begins immediately. You can keep doing 6502 things, like running a loading animation, by polling RIA_BUSY. Or, JSR RIA_RETURN to block.</p>
 <p>The JSR RIA_RETURN method can unblock in less than 3 clock cycles and does an immediate load of A and X. Sequential operations will run fastest with this technique. Under the hood, you’re jumping into a self-modifying program that runs on the RIA registers.</p>
-<div class="highlight-asm notranslate"><div class="highlight"><pre><span></span>BRA {-2 or 0} ; RIA_BUSY
-LDX #$00      ; RIA_X
-LDA #$00      ; RIA_A
-RTS
+<div class="highlight-asm notranslate"><div class="highlight"><pre><span></span><span class="nf">BRA</span> <span class="c">#$??      ; RIA_BUSY {-2 or 0}</span>
+<span class="nf">LDX</span> <span class="c">#$??      ; RIA_X</span>
+<span class="nf">LDA</span> <span class="c">#$??      ; RIA_A</span>
+<span class="nf">RTS</span>
 </pre></div>
 </div>
 <p>Polling is simply snooping on the above program. The RIA_BUSY register is the -2 or 0 in the BRA above. The RIA datasheet specifies bit 7, which the 6502 can check quickly. Once clear, we read RIA_A and RIA_X with absolute instructions.</p>
