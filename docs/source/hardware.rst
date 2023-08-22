@@ -64,7 +64,7 @@ If something is out of stock, consult the substitution notes below. If it's the 
 Step 5. Pi Pico Firmware
 =========================
 
-`Download <https://github.com/picocomputer/discussions/files/11683923/2023-06-07-rp6502.uf2.zip>`_ the UF2 files.
+Download the `UF2 files  <https://github.com/picocomputer/rp6502/releases>`_.
 
 To load firmware on a Pi Pico, hold its BOOTSEL button down while plugging it into a computer. The Pi Pico will appear as a storage device. Copy the VGA UF2 file to make a Pico VGA and the RIA UF2 file to make a Pico RIA. It should take less than 15 seconds to copy. The LED turns on when done.
 
