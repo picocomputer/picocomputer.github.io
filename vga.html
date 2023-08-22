@@ -93,7 +93,7 @@
 </tbody>
 </table>
 </div></blockquote>
-<p>The following is a new design being worked on. It only exists in the “vga” branch.</p>
+<p>The following is a new design being worked on. It only exists in the “develop” branch.</p>
 <p>The design philosophy for the VGA system is to enable the full power of the Pi Pico while maintaining some 8-bit purity. To that end, it can do affine transforms but is limited to working from 64K of extended memory (XRAM).</p>
 <p>The VGA system is built around the scanvideo library from Pi Pico Extras. The color arrangement is identical to their demo board reference design, so sprites and other creations for the Pi Pico have a very good chance of working. This design uses the 16th color bit to render three planes with transparency. The sprite system is from Pi Pico Playground. The RP6502 VGA system exposes per-scanline configuration of these libraries from a 6502 application.</p>
 <p>Each scanline has three fill planes. Two sprite layers can be drawn over each fill plane. If you draw too much, the screen will become half-blue. The VGA engine will begin rendering with scanline 0. It first renders fill plane 0 if a fill mode is programmed. Fill planes require modes that fill all pixels, like character and bitmap modes. If no fill plane is programmed, and sprites need to be rendered for this plane, a line of transparent black is automatically rendered (which takes time). Sprites are drawn over their fill plane, in order, over each other using the transparent bit. The process repeats for each fill plane, then repeats for each scanline.</p>
@@ -114,13 +114,9 @@
 </thead>
 <tbody>
 <tr class="row-even"><td><p>$0:00</p></td>
-<td><p>VSYNC</p></td>
-<td><p>Select which scanline number increments the frame counter and fires the optional IRQ.</p></td>
-</tr>
-<tr class="row-odd"><td><p>$0:01</p></td>
 <td><p>CANVAS</p></td>
 <td><dl class="simple">
-<dt>Select a graphics canvas. This clears $0:03-$0:FF and all scanline programming. The 80 column console canvas is used as a failsafe and therefore not scanline programmable.</dt><dd><ul class="simple">
+<dt>Select a graphics canvas. This clears $0:02-$0:FF and all scanline programming. The 80 column console canvas is used as a failsafe and therefore not scanline programmable.</dt><dd><ul class="simple">
 <li><p>0 - 80 column console. (4:3 or 5:4)</p></li>
 <li><p>1 - 320x240 (4:3)</p></li>
 <li><p>2 - 320x180 (16:9)</p></li>
@@ -131,10 +127,10 @@
 </dl>
 </td>
 </tr>
-<tr class="row-even"><td><p>$0:02</p></td>
+<tr class="row-odd"><td><p>$0:01</p></td>
 <td><p>MODE</p></td>
 <td><dl class="simple">
-<dt>Program a mode into a plane of scanlines. $0:03-$0:FF cleared after programming.</dt><dd><ul class="simple">
+<dt>Program a mode into a plane of scanlines. $0:02-$0:FF cleared after programming.</dt><dd><ul class="simple">
 <li><p>0 - Console</p></li>
 <li><p>1 - Character</p></li>
 <li><p>2 - Tile</p></li>
@@ -146,15 +142,15 @@
 </dl>
 </td>
 </tr>
-<tr class="row-odd"><td><p>$0:03</p></td>
+<tr class="row-even"><td><p>$0:02</p></td>
 <td><p>PLANE</p></td>
 <td><p>0-3 to select which fill plane of scanlines to program.</p></td>
 </tr>
-<tr class="row-even"><td><p>$0:04</p></td>
+<tr class="row-odd"><td><p>$0:03</p></td>
 <td><p>SLBEGIN</p></td>
 <td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
 </tr>
-<tr class="row-odd"><td><p>$0:05</p></td>
+<tr class="row-even"><td><p>$0:04</p></td>
 <td><p>SLEND</p></td>
 <td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
 </tr>

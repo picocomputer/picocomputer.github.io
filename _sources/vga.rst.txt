@@ -33,7 +33,7 @@ This is the current implementation. This is leftovers from validating the PIX bu
      - RESET
      - Always returns to terminal mode.
 
-The following is a new design being worked on. It only exists in the "vga" branch.
+The following is a new design being worked on. It only exists in the "develop" branch.
 
 The design philosophy for the VGA system is to enable the full power of the Pi Pico while maintaining some 8-bit purity. To that end, it can do affine transforms but is limited to working from 64K of extended memory (XRAM).
 
@@ -55,32 +55,29 @@ The built-in color palettes are accessed by using the special XRAM pointer $FFFF
     - Name
     - Description
   * - $0:00
-    - VSYNC
-    - Select which scanline number increments the frame counter and fires the optional IRQ.
-  * - $0:01
     - CANVAS
-    - Select a graphics canvas. This clears $0:03-$0:FF and all scanline programming. The 80 column console canvas is used as a failsafe and therefore not scanline programmable.
+    - Select a graphics canvas. This clears $0:02-$0:FF and all scanline programming. The 80 column console canvas is used as a failsafe and therefore not scanline programmable.
         * 0 - 80 column console. (4:3 or 5:4)
         * 1 - 320x240 (4:3)
         * 2 - 320x180 (16:9)
         * 3 - 640x480 (4:3)
         * 4 - 640x360 (16:9)
-  * - $0:02
+  * - $0:01
     - MODE
-    - Program a mode into a plane of scanlines. $0:03-$0:FF cleared after programming.
+    - Program a mode into a plane of scanlines. $0:02-$0:FF cleared after programming.
         * 0 - Console
         * 1 - Character
         * 2 - Tile
         * 3 - Bitmap
         * 4 - Sprite
         * 5 - Affine Sprite
-  * - $0:03
+  * - $0:02
     - PLANE
     - 0-3 to select which fill plane of scanlines to program.
-  * - $0:04
+  * - $0:03
     - SLBEGIN
     - First scanline to program. SLBEGIN \<= n \< SLEND
-  * - $0:05
+  * - $0:04
     - SLEND
     - End of scanlines to program. 0 means use max y resolution (180-480).
 
