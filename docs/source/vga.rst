@@ -42,4 +42,10 @@ This is not interesting to the 6502 programmer as it happens automatically. RIA 
 
 Values 0x00 to 0x7F are used to send a version string as ASCII terminated with a 0x0D or 0x0A. This must be sent immediately after the backchannel enable message is received for it to be displayed as part of the boot message. It may be updated any time after that and inspected with the STATUS CLI command, but currently there is no reason to do so.
 
-Values 0x80 to 0xFF are used for VSYNC. This value increments every frame then wraps around.
+When bit 0x80 is set, the 0x70 bits indicate the command type, and the 0x0F bits are a scalar for the command.
+
+0x80 VSYNC - The scalar will increment and be used for the LSB of the RIA_VSYNC register.
+
+0x90 OP_ACK - Some XREG locations are triggers for remote calls which may fail or take time to complete. This acknowledges a successful completion.
+
+0xA0 OP_NAK - This acknowledges a failure.

@@ -62,7 +62,7 @@ In the never ending pursuit of saving all the clocks, it is possible to save a f
 
 .. code-block:: C
 
-   long $lseek(long long offset, char whence, int fildes)
+   long lseek_impl(long offset, char whence, int fildes)
 
 Here we are asked for a 64 bit value. Not coincidentally, it's in the right position for short stacking. If, for example, you only need 24 bits, push only three bytes. The significant bytes will be implicit.
 
