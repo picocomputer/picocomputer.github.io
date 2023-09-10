@@ -38,7 +38,7 @@
 <h2>VGA Graphics<a class="headerlink" href="#vga-graphics" title="Permalink to this headline">¶</a></h2>
 <p>The design philosophy for the VGA system is to enable the full power of the Pi Pico while maintaining some 8-bit purity. To that end, it can do affine transforms but is limited to working from 64K of extended memory (XRAM).</p>
 <p>The VGA system is built around the scanvideo library from Pi Pico Extras. The color arrangement is identical to their demo board reference design, so sprites and other creations for the Pi Pico have a very good chance of working. This design uses the 16th color bit to render three planes with transparency. The sprite system is from Pi Pico Playground. The RP6502 VGA system exposes per-scanline configuration of these libraries from a 6502 application.</p>
-<p>Each scanline has three fill planes. Two sprite layers can be drawn over each fill plane. If you draw too much, the screen will become half-blue. The VGA engine will begin rendering with scanline 0. It first renders fill plane 0 if a fill mode is programmed. Fill planes require modes that fill all pixels, like character and bitmap modes. If no fill plane is programmed, and sprites need to be rendered for this plane, a line of transparent black is automatically rendered (which takes time). Sprites are drawn over their fill plane, in order, over each other using the transparent bit. The process repeats for each fill plane, then repeats for each scanline.</p>
+<p>Each scanline has three fill planes. A sprite layer can be drawn over each fill plane. If you draw too much, the screen will become half-blue. The VGA engine will begin rendering with scanline 0. It first renders fill plane 0 if a fill mode is programmed. Fill planes require modes that fill all pixels, like character and bitmap modes. If no fill plane is programmed, and sprites need to be rendered for this plane, a line of transparent black is automatically rendered (which takes time). Sprites are drawn over their fill plane, in order, over each other using the transparent bit. The process repeats for each fill plane, then repeats for each scanline.</p>
 <p>Programming the VGA device should be done with the SDK system calls. These PIX registers are for reference and not yet stable. VGA is PIX device ID 1. VGA PIX extended register addresses store 16 bit values and are specified by $channel:register. e.g. $0:0F</p>
 <p>The built-in 8x8 and 8x16 fonts are available by using the special XRAM pointer $FFFF. Glyphs 0-127 are ASCII, glyphs 128-255 vary depending on the code page selected.</p>
 <p>The built-in color palettes are accessed by using the special XRAM pointer $FFFF. 1-bit is black and white. 4, and 8-bits point to an ANSI color palette. This is defined as 16 colors, followed by 216 colors (6x6x6), followed by 24 greys.</p>
@@ -84,6 +84,24 @@
 </dl>
 </td>
 </tr>
+</tbody>
+</table>
+<div class="section" id="mode-0-console">
+<h3>Mode 0: Console<a class="headerlink" href="#mode-0-console" title="Permalink to this headline">¶</a></h3>
+<p>Programming the console for a partial screen will align the bottom row on the last scanline. The background is transparent, which makes it easy to show text over a background image using planes.</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 90%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Address</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
 <tr class="row-even"><td><p>$0:02</p></td>
 <td><p>PLANE</p></td>
 <td><p>0-3 to select which fill plane of scanlines to program.</p></td>
@@ -98,9 +116,6 @@
 </tr>
 </tbody>
 </table>
-<div class="section" id="mode-0-console">
-<h3>Mode 0: Console<a class="headerlink" href="#mode-0-console" title="Permalink to this headline">¶</a></h3>
-<p>There are no additional registers for the console. Programming the console for a partial screen will align the bottom row on the last scanline. The background is transparent, which makes it easy to show text over a background image using planes.</p>
 </div>
 <div class="section" id="mode-1-character">
 <h3>Mode 1: Character<a class="headerlink" href="#mode-1-character" title="Permalink to this headline">¶</a></h3>
@@ -118,17 +133,7 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$0:06</p></td>
-<td><p>ATTRIBUTES</p></td>
-<td><div class="line-block">
-<div class="line">bit 4 - 0=8x8, 1=8x16</div>
-<div class="line">bit 3 - wrapy</div>
-<div class="line">bit 2 - wrapx</div>
-<div class="line">bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color</div>
-</div>
-</td>
-</tr>
-<tr class="row-odd"><td><p>$0:07</p></td>
+<tr class="row-even"><td><p>$0:02</p></td>
 <td><p>STRUCT</p></td>
 <td><div class="line-block">
 <div class="line">Pointer to config structure in XRAM.</div>
@@ -145,6 +150,28 @@
 <div class="line">}</div>
 </div>
 </td>
+</tr>
+<tr class="row-odd"><td><p>$0:03</p></td>
+<td><p>ATTRIBUTES</p></td>
+<td><div class="line-block">
+<div class="line">bit 4 - 0=8x8, 1=8x16</div>
+<div class="line">bit 3 - wrapy</div>
+<div class="line">bit 2 - wrapx</div>
+<div class="line">bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p>$0:04</p></td>
+<td><p>PLANE</p></td>
+<td><p>0-3 to select which fill plane of scanlines to program.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$0:05</p></td>
+<td><p>SLBEGIN</p></td>
+<td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
+</tr>
+<tr class="row-even"><td><p>$0:06</p></td>
+<td><p>SLEND</p></td>
+<td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
 </tr>
 </tbody>
 </table>
@@ -214,17 +241,7 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$0:06</p></td>
-<td><p>ATTRIBUTES</p></td>
-<td><div class="line-block">
-<div class="line">bit 4 - 0=8x8, 1=16x16</div>
-<div class="line">bit 3 - wrapy</div>
-<div class="line">bit 2 - wrapx</div>
-<div class="line">bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color</div>
-</div>
-</td>
-</tr>
-<tr class="row-odd"><td><p>$0:07</p></td>
+<tr class="row-even"><td><p>$0:02</p></td>
 <td><p>STRUCT</p></td>
 <td><div class="line-block">
 <div class="line">Pointer to config structure in XRAM.</div>
@@ -241,6 +258,28 @@
 <div class="line">}</div>
 </div>
 </td>
+</tr>
+<tr class="row-odd"><td><p>$0:03</p></td>
+<td><p>ATTRIBUTES</p></td>
+<td><div class="line-block">
+<div class="line">bit 4 - 0=8x8, 1=16x16</div>
+<div class="line">bit 3 - wrapy</div>
+<div class="line">bit 2 - wrapx</div>
+<div class="line">bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p>$0:04</p></td>
+<td><p>PLANE</p></td>
+<td><p>0-3 to select which fill plane of scanlines to program.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$0:05</p></td>
+<td><p>SLBEGIN</p></td>
+<td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
+</tr>
+<tr class="row-even"><td><p>$0:06</p></td>
+<td><p>SLEND</p></td>
+<td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
 </tr>
 </tbody>
 </table>
@@ -333,16 +372,7 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$0:06</p></td>
-<td><p>ATTRIBUTES</p></td>
-<td><div class="line-block">
-<div class="line">bit 3 - wrapy</div>
-<div class="line">bit 2 - wrapx</div>
-<div class="line">bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color</div>
-</div>
-</td>
-</tr>
-<tr class="row-odd"><td><p>$0:07</p></td>
+<tr class="row-even"><td><p>$0:02</p></td>
 <td><p>STRUCT</p></td>
 <td><div class="line-block">
 <div class="line">Pointer to config structure in XRAM.</div>
@@ -358,6 +388,27 @@
 <div class="line">}</div>
 </div>
 </td>
+</tr>
+<tr class="row-odd"><td><p>$0:03</p></td>
+<td><p>ATTRIBUTES</p></td>
+<td><div class="line-block">
+<div class="line">bit 3 - wrapy</div>
+<div class="line">bit 2 - wrapx</div>
+<div class="line">bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p>$0:04</p></td>
+<td><p>PLANE</p></td>
+<td><p>0-3 to select which fill plane of scanlines to program.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$0:05</p></td>
+<td><p>SLBEGIN</p></td>
+<td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
+</tr>
+<tr class="row-even"><td><p>$0:06</p></td>
+<td><p>SLEND</p></td>
+<td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
 </tr>
 </tbody>
 </table>
@@ -390,15 +441,7 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$0:06</p></td>
-<td><p>LAYER</p></td>
-<td><p>0-1 Two sprite layers per plane.</p></td>
-</tr>
-<tr class="row-odd"><td><p>$0:07</p></td>
-<td><p>LENGTH</p></td>
-<td><p>Length of sprite structure array in XRAM.</p></td>
-</tr>
-<tr class="row-even"><td><p>$0:08</p></td>
+<tr class="row-even"><td><p>$0:02</p></td>
 <td><p>STRUCT</p></td>
 <td><div class="line-block">
 <div class="line">Pointer to config structure array in XRAM.</div>
@@ -413,6 +456,22 @@
 <div class="line">}</div>
 </div>
 </td>
+</tr>
+<tr class="row-odd"><td><p>$0:03</p></td>
+<td><p>LENGTH</p></td>
+<td><p>Length of sprite structure array in XRAM.</p></td>
+</tr>
+<tr class="row-even"><td><p>$0:04</p></td>
+<td><p>PLANE</p></td>
+<td><p>0-3 to select which fill plane of scanlines to program.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$0:05</p></td>
+<td><p>SLBEGIN</p></td>
+<td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
+</tr>
+<tr class="row-even"><td><p>$0:06</p></td>
+<td><p>SLEND</p></td>
+<td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
 </tr>
 </tbody>
 </table>
@@ -440,15 +499,7 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$0:06</p></td>
-<td><p>LAYER</p></td>
-<td><p>0-1 Two sprite layers per plane.</p></td>
-</tr>
-<tr class="row-odd"><td><p>$0:07</p></td>
-<td><p>LENGTH</p></td>
-<td><p>Length of sprite structure array in XRAM.</p></td>
-</tr>
-<tr class="row-even"><td><p>$0:08</p></td>
+<tr class="row-even"><td><p>$0:02</p></td>
 <td><p>STRUCT</p></td>
 <td><div class="line-block">
 <div class="line">Pointer to config structure array in XRAM.</div>
@@ -465,12 +516,28 @@
 </div>
 </td>
 </tr>
+<tr class="row-odd"><td><p>$0:03</p></td>
+<td><p>LENGTH</p></td>
+<td><p>Length of sprite structure array in XRAM.</p></td>
+</tr>
+<tr class="row-even"><td><p>$0:04</p></td>
+<td><p>PLANE</p></td>
+<td><p>0-3 to select which fill plane of scanlines to program.</p></td>
+</tr>
+<tr class="row-odd"><td><p>$0:05</p></td>
+<td><p>SLBEGIN</p></td>
+<td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
+</tr>
+<tr class="row-even"><td><p>$0:06</p></td>
+<td><p>SLEND</p></td>
+<td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
+</tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="control-channel-f">
 <h3>Control Channel $F<a class="headerlink" href="#control-channel-f" title="Permalink to this headline">¶</a></h3>
-<p>These registers are managed by the RIA.</p>
+<p>These registers are managed by the RIA. Do not distribute applications that set these.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -487,7 +554,7 @@
 <tr class="row-even"><td><p>$F:00</p></td>
 <td><p>DISPLAY</p></td>
 <td><dl class="simple">
-<dt>This sets the aspect ratio of your display. Use CANVAS to select the resolution the 6502 works with.</dt><dd><ul class="simple">
+<dt>This sets the aspect ratio of your display. This also resets CANVAS to the console.</dt><dd><ul class="simple">
 <li><p>0 - VGA (4:3) 640x480</p></li>
 <li><p>1 - HD (16:9) 640x480 and 1280x720</p></li>
 <li><p>2 - SXGA (5:4) 1280x1024</p></li>
@@ -502,7 +569,7 @@
 </tr>
 <tr class="row-even"><td><p>$F:02</p></td>
 <td><p>UART</p></td>
-<td><p>Set baud rate.</p></td>
+<td><p>Set baud rate. Reserved, not implemented.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$F:03</p></td>
 <td><p>UART_TX</p></td>

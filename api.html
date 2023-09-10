@@ -114,7 +114,7 @@
 <div class="section" id="short-stacking">
 <h3><a class="toc-backref" href="#id3">2.1. Short Stacking</a><a class="headerlink" href="#short-stacking" title="Permalink to this headline">¶</a></h3>
 <p>In the never ending pursuit of saving all the clocks, it is possible to save a few on the stack push if you don’t need all the range. This only works on the stack argument that gets pushed first. For example:</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span>long $lseek(long long offset, char whence, int fildes)
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">long</span> <span class="n">lseek_impl</span><span class="p">(</span><span class="kt">long</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">char</span> <span class="n">whence</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Here we are asked for a 64 bit value. Not coincidentally, it’s in the right position for short stacking. If, for example, you only need 24 bits, push only three bytes. The significant bytes will be implicit.</p>

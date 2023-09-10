@@ -10,7 +10,7 @@ The design philosophy for the VGA system is to enable the full power of the Pi P
 
 The VGA system is built around the scanvideo library from Pi Pico Extras. The color arrangement is identical to their demo board reference design, so sprites and other creations for the Pi Pico have a very good chance of working. This design uses the 16th color bit to render three planes with transparency. The sprite system is from Pi Pico Playground. The RP6502 VGA system exposes per-scanline configuration of these libraries from a 6502 application.
 
-Each scanline has three fill planes. Two sprite layers can be drawn over each fill plane. If you draw too much, the screen will become half-blue. The VGA engine will begin rendering with scanline 0. It first renders fill plane 0 if a fill mode is programmed. Fill planes require modes that fill all pixels, like character and bitmap modes. If no fill plane is programmed, and sprites need to be rendered for this plane, a line of transparent black is automatically rendered (which takes time). Sprites are drawn over their fill plane, in order, over each other using the transparent bit. The process repeats for each fill plane, then repeats for each scanline.
+Each scanline has three fill planes. A sprite layer can be drawn over each fill plane. If you draw too much, the screen will become half-blue. The VGA engine will begin rendering with scanline 0. It first renders fill plane 0 if a fill mode is programmed. Fill planes require modes that fill all pixels, like character and bitmap modes. If no fill plane is programmed, and sprites need to be rendered for this plane, a line of transparent black is automatically rendered (which takes time). Sprites are drawn over their fill plane, in order, over each other using the transparent bit. The process repeats for each fill plane, then repeats for each scanline.
 
 Programming the VGA device should be done with the SDK system calls. These PIX registers are for reference and not yet stable. VGA is PIX device ID 1. VGA PIX extended register addresses store 16 bit values and are specified by $channel:register. e.g. $0:0F
 
@@ -42,6 +42,20 @@ The built-in color palettes are accessed by using the special XRAM pointer $FFFF
         * 3 - Bitmap
         * 4 - Sprite
         * 5 - Affine Sprite
+
+
+Mode 0: Console
+---------------
+
+Programming the console for a partial screen will align the bottom row on the last scanline. The background is transparent, which makes it easy to show text over a background image using planes.
+
+.. list-table::
+  :widths: 5 5 90
+  :header-rows: 1
+
+  * - Address
+    - Name
+    - Description
   * - $0:02
     - PLANE
     - 0-3 to select which fill plane of scanlines to program.
@@ -53,17 +67,10 @@ The built-in color palettes are accessed by using the special XRAM pointer $FFFF
     - End of scanlines to program. 0 means use max y resolution (180-480).
 
 
-Mode 0: Console
----------------
-
-There are no additional registers for the console. Programming the console for a partial screen will align the bottom row on the last scanline. The background is transparent, which makes it easy to show text over a background image using planes.
-
 Mode 1: Character
 -----------------
 
 Character modes have color information for each position on the screen. This is the mode you want for showing text in different colors.
-
-
 
 .. list-table::
   :widths: 5 5 90
@@ -72,13 +79,7 @@ Character modes have color information for each position on the screen. This is 
   * - Address
     - Name
     - Description
-  * - $0:06
-    - ATTRIBUTES
-    - | bit 4 - 0=8x8, 1=8x16
-      | bit 3 - wrapy
-      | bit 2 - wrapx
-      | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
-  * - $0:07
+  * - $0:02
     - STRUCT
     - | Pointer to config structure in XRAM.
       | {
@@ -90,6 +91,21 @@ Character modes have color information for each position on the screen. This is 
       |   uint16_t xram_color_ptr
       |   uint16_t xram_font_ptr
       | }
+  * - $0:03
+    - ATTRIBUTES
+    - | bit 4 - 0=8x8, 1=8x16
+      | bit 3 - wrapy
+      | bit 2 - wrapx
+      | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
+  * - $0:04
+    - PLANE
+    - 0-3 to select which fill plane of scanlines to program.
+  * - $0:05
+    - SLBEGIN
+    - First scanline to program. SLBEGIN \<= n \< SLEND
+  * - $0:06
+    - SLEND
+    - End of scanlines to program. 0 means use max y resolution (180-480).
 
 Fonts are encoded in wide format. The first 256 bytes are the first row of each of the 256 glyphs. This is the fastest layout, but wastes memory when not using the entire character set.
 
@@ -160,13 +176,7 @@ Tile modes have color information encoded in the tile bitmap. This is the mode y
    * - Address
      - Name
      - Description
-   * - $0:06
-     - ATTRIBUTES
-     - | bit 4 - 0=8x8, 1=16x16
-       | bit 3 - wrapy
-       | bit 2 - wrapx
-       | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
-   * - $0:07
+   * - $0:02
      - STRUCT
      - | Pointer to config structure in XRAM.
        | {
@@ -178,6 +188,21 @@ Tile modes have color information encoded in the tile bitmap. This is the mode y
        |   uint16_t xram_color_ptr
        |   uint16_t xram_tile_ptr
        | }
+   * - $0:03
+     - ATTRIBUTES
+     - | bit 4 - 0=8x8, 1=16x16
+       | bit 3 - wrapy
+       | bit 2 - wrapx
+       | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
+   * - $0:04
+     - PLANE
+     - 0-3 to select which fill plane of scanlines to program.
+   * - $0:05
+     - SLBEGIN
+     - First scanline to program. SLBEGIN \<= n \< SLEND
+   * - $0:06
+     - SLEND
+     - End of scanlines to program. 0 means use max y resolution (180-480).
 
 Tile codes are WCHAR, for more than 256, as memory permits.
 
@@ -270,12 +295,7 @@ Every pixel can be its own color. 64K XRAM has limits. Monochrome for 640x480, 2
    * - Address
      - Name
      - Description
-   * - $0:06
-     - ATTRIBUTES
-     - | bit 3 - wrapy
-       | bit 2 - wrapx
-       | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
-   * - $0:07
+   * - $0:02
      - STRUCT
      - | Pointer to config structure in XRAM.
        | {
@@ -286,6 +306,20 @@ Every pixel can be its own color. 64K XRAM has limits. Monochrome for 640x480, 2
        |   uint16_t xram_data_ptr
        |   uint16_t xram_color_ptr
        | }
+   * - $0:03
+     - ATTRIBUTES
+     - | bit 3 - wrapy
+       | bit 2 - wrapx
+       | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
+   * - $0:04
+     - PLANE
+     - 0-3 to select which fill plane of scanlines to program.
+   * - $0:05
+     - SLBEGIN
+     - First scanline to program. SLBEGIN \<= n \< SLEND
+   * - $0:06
+     - SLEND
+     - End of scanlines to program. 0 means use max y resolution (180-480).
 
 Color information is an array.
 
@@ -317,13 +351,7 @@ Sprites have two layers drawn over each plane. This allows for both plain sprite
    * - Address
      - Name
      - Description
-   * - $0:06
-     - LAYER
-     - 0-1 Two sprite layers per plane.
-   * - $0:07
-     - LENGTH
-     - Length of sprite structure array in XRAM.
-   * - $0:08
+   * - $0:02
      - STRUCT
      - | Pointer to config structure array in XRAM.
        | {
@@ -333,6 +361,18 @@ Sprites have two layers drawn over each plane. This allows for both plain sprite
        |   uint8_t log_size;
        |   bool has_opacity_metadata;
        | }
+   * - $0:03
+     - LENGTH
+     - Length of sprite structure array in XRAM.
+   * - $0:04
+     - PLANE
+     - 0-3 to select which fill plane of scanlines to program.
+   * - $0:05
+     - SLBEGIN
+     - First scanline to program. SLBEGIN \<= n \< SLEND
+   * - $0:06
+     - SLEND
+     - End of scanlines to program. 0 means use max y resolution (180-480).
 
 Sprite image data is an array of 16 bit colors.
 
@@ -356,13 +396,7 @@ Affine sprites apply a 3x3 matrix transform. These are slower than plain sprites
    * - Address
      - Name
      - Description
-   * - $0:06
-     - LAYER
-     - 0-1 Two sprite layers per plane.
-   * - $0:07
-     - LENGTH
-     - Length of sprite structure array in XRAM.
-   * - $0:08
+   * - $0:02
      - STRUCT
      - | Pointer to config structure array in XRAM.
        | {
@@ -373,12 +407,24 @@ Affine sprites apply a 3x3 matrix transform. These are slower than plain sprites
        |   uint8_t log_size;
        |   bool has_opacity_metadata;
        | }
+   * - $0:03
+     - LENGTH
+     - Length of sprite structure array in XRAM.
+   * - $0:04
+     - PLANE
+     - 0-3 to select which fill plane of scanlines to program.
+   * - $0:05
+     - SLBEGIN
+     - First scanline to program. SLBEGIN \<= n \< SLEND
+   * - $0:06
+     - SLEND
+     - End of scanlines to program. 0 means use max y resolution (180-480).
 
 
 Control Channel $F
 ------------------
 
-These registers are managed by the RIA.
+These registers are managed by the RIA. Do not distribute applications that set these.
 
 .. list-table::
    :widths: 5 5 90
@@ -389,7 +435,7 @@ These registers are managed by the RIA.
      - Description
    * - $F:00
      - DISPLAY
-     - This sets the aspect ratio of your display. Use CANVAS to select the resolution the 6502 works with.
+     - This sets the aspect ratio of your display. This also resets CANVAS to the console.
         * 0 - VGA (4:3) 640x480
         * 1 - HD (16:9) 640x480 and 1280x720
         * 2 - SXGA (5:4) 1280x1024
@@ -398,7 +444,7 @@ These registers are managed by the RIA.
      - Set code page for built-in font.
    * - $F:02
      - UART
-     - Set baud rate.
+     - Set baud rate. Reserved, not implemented.
    * - $F:03
      - UART_TX
      - Alternate path for UART Tx when using backchannel.
