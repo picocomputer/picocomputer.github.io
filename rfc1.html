@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>RP6502-RFC-1 &#8212; RP6502 0.0-pre documentation</title>
+    <title>RP6502-RFC1 Programmable Video Graphics Array &#8212; RP6502 0.0-pre documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,17 +31,15 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="rp6502-rfc-1">
-<h1>RP6502-RFC-1<a class="headerlink" href="#rp6502-rfc-1" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="rp6502-rfc1-programmable-video-graphics-array">
+<h1>RP6502-RFC1 Programmable Video Graphics Array<a class="headerlink" href="#rp6502-rfc1-programmable-video-graphics-array" title="Permalink to this headline">¶</a></h1>
 <p>Comment in <a class="reference external" href="https://github.com/orgs/picocomputer/discussions/38">this forum post</a>.</p>
-<div class="section" id="vga-graphics">
-<h2>VGA Graphics<a class="headerlink" href="#vga-graphics" title="Permalink to this headline">¶</a></h2>
 <p>The design philosophy for the VGA system is to enable the full power of the Pi Pico while maintaining some 8-bit purity. To that end, it can do affine transforms but is limited to working from 64K of extended memory (XRAM).</p>
-<p>The VGA system is built around the scanvideo library from Pi Pico Extras. The color arrangement is identical to their demo board reference design, so sprites and other creations for the Pi Pico have a very good chance of working. This design uses the 16th color bit to render three planes with transparency. The sprite system is from Pi Pico Playground. The RP6502 VGA system exposes per-scanline configuration of these libraries from a 6502 application.</p>
-<p>Each scanline has three fill planes. A sprite layer can be drawn over each fill plane. If you draw too much, the screen will become half-blue. The VGA engine will begin rendering with scanline 0. It first renders fill plane 0 if a fill mode is programmed. Fill planes require modes that fill all pixels, like character and bitmap modes. If no fill plane is programmed, and sprites need to be rendered for this plane, a line of transparent black is automatically rendered (which takes time). Sprites are drawn over their fill plane, in order, over each other using the transparent bit. The process repeats for each fill plane, then repeats for each scanline.</p>
-<p>Programming the VGA device should be done with the SDK system calls. These PIX registers are for reference and not yet stable. VGA is PIX device ID 1. VGA PIX extended register addresses store 16 bit values and are specified by $channel:register. e.g. $0:0F</p>
+<p>The VGA system is built around the scanvideo library from Pi Pico Extras. All three planes are enabled with RGB555 color plus transparency. The sprite system is from Pi Pico Playground.</p>
+<p>The RP6502 VGA system exposes per-scanline configuration of the video system from a 6502 application. Each scanline has three fill planes. A sprite layer can be drawn over each fill plane. If you attempt to render too much, the screen will become half-blue. The VGA engine will begin rendering with scanline 0. It first renders fill plane 0 if a fill mode is programmed. Fill planes require modes that fill all pixels, like character and bitmap modes. If no fill plane is programmed, and sprites need to be rendered, a line of transparent black may be automatically rendered (which takes time). Sprites are drawn over their fill plane, in order, over each other using the transparent bit. The process repeats for each fill plane, then repeats for each scanline.</p>
+<p>Programming the VGA device is done with PIX extended registers - XREGS. VGA is PIX device ID 1. VGA PIX extended registers are 16 bit values specified by $channel:register. e.g. $0:0F</p>
 <p>The built-in 8x8 and 8x16 fonts are available by using the special XRAM pointer $FFFF. Glyphs 0-127 are ASCII, glyphs 128-255 vary depending on the code page selected.</p>
-<p>The built-in color palettes are accessed by using the special XRAM pointer $FFFF. 1-bit is black and white. 4, and 8-bits point to an ANSI color palette. This is defined as 16 colors, followed by 216 colors (6x6x6), followed by 24 greys.</p>
+<p>The built-in color palettes are accessed by using the special XRAM pointer $FFFF. 1-bit is black and white. 4 and 8-bits point to an ANSI color palette of 16 colors, followed by 216 colors (6x6x6), followed by 24 greys.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -58,7 +56,7 @@
 <tr class="row-even"><td><p>$0:00</p></td>
 <td><p>CANVAS</p></td>
 <td><dl class="simple">
-<dt>Select a graphics canvas. This clears $0:02-$0:FF and all scanline programming. The 80 column console canvas is used as a failsafe and therefore not scanline programmable.</dt><dd><ul class="simple">
+<dt>Select a graphics canvas. This clears $0:00-$0:FF and all scanline programming. The 80 column console canvas is used as a failsafe and therefore not scanline programmable. Setting this can fail with EINVAL.</dt><dd><ul class="simple">
 <li><p>0 - 80 column console. (4:3 or 5:4)</p></li>
 <li><p>1 - 320x240 (4:3)</p></li>
 <li><p>2 - 320x180 (16:9)</p></li>
@@ -72,7 +70,7 @@
 <tr class="row-odd"><td><p>$0:01</p></td>
 <td><p>MODE</p></td>
 <td><dl class="simple">
-<dt>Program a mode into a plane of scanlines. $0:02-$0:FF cleared after programming.</dt><dd><ul class="simple">
+<dt>Program a mode into a plane of scanlines. $0:00-$0:FF cleared after programming. Setting this can fail with EINVAL.</dt><dd><ul class="simple">
 <li><p>0 - Console</p></li>
 <li><p>1 - Character</p></li>
 <li><p>2 - Tile</p></li>
@@ -87,8 +85,8 @@
 </tbody>
 </table>
 <div class="section" id="mode-0-console">
-<h3>Mode 0: Console<a class="headerlink" href="#mode-0-console" title="Permalink to this headline">¶</a></h3>
-<p>Programming the console for a partial screen will align the bottom row on the last scanline. The background is transparent, which makes it easy to show text over a background image using planes.</p>
+<h2>Mode 0: Console<a class="headerlink" href="#mode-0-console" title="Permalink to this headline">¶</a></h2>
+<p>The console may be rendered on any canvas plane. The background is transparent, which makes it easy to show text over a background image using planes. The console may be a partial screen, but the scanlines must be a multiple of the font height. Only one console may be programmed, doing so again will clear the previous console.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -102,23 +100,27 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$0:02</p></td>
+<tr class="row-even"><td><p>$0:01</p></td>
+<td><p>MODE</p></td>
+<td><p>0 - Console</p></td>
+</tr>
+<tr class="row-odd"><td><p>$0:02</p></td>
 <td><p>PLANE</p></td>
 <td><p>0-3 to select which fill plane of scanlines to program.</p></td>
 </tr>
-<tr class="row-odd"><td><p>$0:03</p></td>
+<tr class="row-even"><td><p>$0:03</p></td>
 <td><p>SLBEGIN</p></td>
 <td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
 </tr>
-<tr class="row-even"><td><p>$0:04</p></td>
+<tr class="row-odd"><td><p>$0:04</p></td>
 <td><p>SLEND</p></td>
-<td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
+<td><p>End of scanlines to program. 0 means use canvas height (180-480).</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="mode-1-character">
-<h3>Mode 1: Character<a class="headerlink" href="#mode-1-character" title="Permalink to this headline">¶</a></h3>
+<h2>Mode 1: Character<a class="headerlink" href="#mode-1-character" title="Permalink to this headline">¶</a></h2>
 <p>Character modes have color information for each position on the screen. This is the mode you want for showing text in different colors.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
@@ -133,7 +135,11 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$0:02</p></td>
+<tr class="row-even"><td><p>$0:01</p></td>
+<td><p>MODE</p></td>
+<td><p>1 - Character</p></td>
+</tr>
+<tr class="row-odd"><td><p>$0:02</p></td>
 <td><p>STRUCT</p></td>
 <td><div class="line-block">
 <div class="line">Pointer to config structure in XRAM.</div>
@@ -144,63 +150,49 @@
 <div class="line">int16_t width_chars</div>
 <div class="line">int16_t height_chars</div>
 <div class="line">uint16_t xram_data_ptr</div>
-<div class="line">uint16_t xram_color_ptr</div>
+<div class="line">uint16_t xram_palette_ptr</div>
 <div class="line">uint16_t xram_font_ptr</div>
 </div>
 <div class="line">}</div>
 </div>
 </td>
 </tr>
-<tr class="row-odd"><td><p>$0:03</p></td>
+<tr class="row-even"><td><p>$0:03</p></td>
 <td><p>ATTRIBUTES</p></td>
 <td><div class="line-block">
-<div class="line">bit 4 - 0=8x8, 1=8x16</div>
+<div class="line">bit 4 - font size 0=8x8, 1=8x16</div>
 <div class="line">bit 3 - wrapy</div>
 <div class="line">bit 2 - wrapx</div>
 <div class="line">bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color</div>
 </div>
 </td>
 </tr>
-<tr class="row-even"><td><p>$0:04</p></td>
+<tr class="row-odd"><td><p>$0:04</p></td>
 <td><p>PLANE</p></td>
 <td><p>0-3 to select which fill plane of scanlines to program.</p></td>
 </tr>
-<tr class="row-odd"><td><p>$0:05</p></td>
+<tr class="row-even"><td><p>$0:05</p></td>
 <td><p>SLBEGIN</p></td>
 <td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
 </tr>
-<tr class="row-even"><td><p>$0:06</p></td>
+<tr class="row-odd"><td><p>$0:06</p></td>
 <td><p>SLEND</p></td>
-<td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
+<td><p>End of scanlines to program. 0 means use canvas height (180-480).</p></td>
 </tr>
 </tbody>
 </table>
-<p>Fonts are encoded in wide format. The first 256 bytes are the first row of each of the 256 glyphs. This is the fastest layout, but wastes memory when not using the entire character set.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
-    <span class="kt">uint8_t</span> <span class="n">col_bits</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">font_row</span><span class="p">[</span><span class="n">height</span><span class="p">];</span>
-</pre></div>
-</div>
-<p>Data and color information is encoded based on the color bit depth selected.</p>
+<p>Data is encoded based on the color bit depth selected.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// 2-color, 1-bit</span>
 <span class="k">struct</span> <span class="p">{</span>
     <span class="kt">uint8_t</span> <span class="n">glyph_code</span><span class="p">;</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data</span><span class="p">[</span><span class="n">width_chars</span> <span class="o">*</span> <span class="n">height_chars</span><span class="p">];</span>
-
-<span class="k">struct</span> <span class="p">{</span>
-    <span class="kt">uint16_t</span> <span class="n">color</span><span class="p">;</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">color</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">data</span><span class="p">[</span><span class="n">width_chars</span> <span class="o">*</span> <span class="n">height_chars</span><span class="p">];</span>
 </pre></div>
 </div>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// 16-color, 4-bit</span>
 <span class="k">struct</span> <span class="p">{</span>
     <span class="kt">uint8_t</span> <span class="n">glyph_code</span><span class="p">;</span>
     <span class="kt">uint8_t</span> <span class="n">fg_bg</span><span class="p">;</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data_ptr</span><span class="p">[</span><span class="n">width_chars</span> <span class="o">*</span> <span class="n">height_chars</span><span class="p">];</span>
-
-<span class="k">struct</span> <span class="p">{</span>
-    <span class="kt">uint16_t</span> <span class="n">color</span><span class="p">;</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">color</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">data</span><span class="p">[</span><span class="n">width_chars</span> <span class="o">*</span> <span class="n">height_chars</span><span class="p">];</span>
 </pre></div>
 </div>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// 256-color, 8-bit</span>
@@ -208,11 +200,7 @@
     <span class="kt">uint8_t</span> <span class="n">glyph_code</span><span class="p">;</span>
     <span class="kt">uint8_t</span> <span class="n">fg_index</span><span class="p">;</span>
     <span class="kt">uint8_t</span> <span class="n">bg_index</span><span class="p">;</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data_ptr</span><span class="p">[</span><span class="n">width_chars</span> <span class="o">*</span> <span class="n">height_chars</span><span class="p">];</span>
-
-<span class="k">struct</span> <span class="p">{</span>
-    <span class="kt">uint16_t</span> <span class="n">color</span><span class="p">;</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">color</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">data</span><span class="p">[</span><span class="n">width_chars</span> <span class="o">*</span> <span class="n">height_chars</span><span class="p">];</span>
 </pre></div>
 </div>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// 32768-color, 16-bit (no color table)</span>
@@ -221,12 +209,26 @@
     <span class="kt">uint8_t</span> <span class="n">attributes</span><span class="p">;</span> <span class="c1">// user defined</span>
     <span class="kt">uint16_t</span> <span class="n">fg_color</span><span class="p">;</span>
     <span class="kt">uint16_t</span> <span class="n">bg_color</span><span class="p">;</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data_ptr</span><span class="p">[</span><span class="n">width_chars</span> <span class="o">*</span> <span class="n">height_chars</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">data</span><span class="p">[</span><span class="n">width_chars</span> <span class="o">*</span> <span class="n">height_chars</span><span class="p">];</span>
+</pre></div>
+</div>
+<p>Palette information is an array.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
+    <span class="kt">uint16_t</span> <span class="n">color</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">palette</span><span class="p">[</span><span class="n">colors_count</span><span class="p">];</span>
+</pre></div>
+</div>
+<p>Fonts are encoded in wide format. The first 256 bytes are the first row of each of the 256 glyphs. This is the fastest layout, but wastes memory when not using the entire character set.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
+  <span class="k">struct</span> <span class="p">{</span>
+      <span class="kt">uint8_t</span> <span class="n">col</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+  <span class="p">}</span> <span class="n">row</span><span class="p">[</span><span class="n">height</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">font</span><span class="p">;</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="mode-2-tile">
-<h3>Mode 2: Tile<a class="headerlink" href="#mode-2-tile" title="Permalink to this headline">¶</a></h3>
+<h2>Mode 2: Tile<a class="headerlink" href="#mode-2-tile" title="Permalink to this headline">¶</a></h2>
 <p>Tile modes have color information encoded in the tile bitmap. This is the mode you want for showing a video game playfield.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
@@ -241,7 +243,11 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$0:02</p></td>
+<tr class="row-even"><td><p>$0:01</p></td>
+<td><p>MODE</p></td>
+<td><p>2 - Tile</p></td>
+</tr>
+<tr class="row-odd"><td><p>$0:02</p></td>
 <td><p>STRUCT</p></td>
 <td><div class="line-block">
 <div class="line">Pointer to config structure in XRAM.</div>
@@ -252,14 +258,14 @@
 <div class="line">int16_t width_tiles</div>
 <div class="line">int16_t height_tiles</div>
 <div class="line">uint16_t xram_data_ptr</div>
-<div class="line">uint16_t xram_color_ptr</div>
+<div class="line">uint16_t xram_palette_ptr</div>
 <div class="line">uint16_t xram_tile_ptr</div>
 </div>
 <div class="line">}</div>
 </div>
 </td>
 </tr>
-<tr class="row-odd"><td><p>$0:03</p></td>
+<tr class="row-even"><td><p>$0:03</p></td>
 <td><p>ATTRIBUTES</p></td>
 <td><div class="line-block">
 <div class="line">bit 4 - 0=8x8, 1=16x16</div>
@@ -269,95 +275,93 @@
 </div>
 </td>
 </tr>
-<tr class="row-even"><td><p>$0:04</p></td>
+<tr class="row-odd"><td><p>$0:04</p></td>
 <td><p>PLANE</p></td>
 <td><p>0-3 to select which fill plane of scanlines to program.</p></td>
 </tr>
-<tr class="row-odd"><td><p>$0:05</p></td>
+<tr class="row-even"><td><p>$0:05</p></td>
 <td><p>SLBEGIN</p></td>
 <td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
 </tr>
-<tr class="row-even"><td><p>$0:06</p></td>
+<tr class="row-odd"><td><p>$0:06</p></td>
 <td><p>SLEND</p></td>
-<td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
+<td><p>End of scanlines to program. 0 means use canvas height (180-480).</p></td>
 </tr>
 </tbody>
 </table>
-<p>Tile codes are WCHAR, for more than 256, as memory permits.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// 2-color, 1-bit</span>
-<span class="k">struct</span> <span class="p">{</span>
-    <span class="kt">uint16_t</span> <span class="n">glyph_code</span><span class="p">;</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data</span><span class="p">[</span><span class="n">width_tiles</span> <span class="o">*</span> <span class="n">height_tiles</span><span class="p">];</span>
+<p>Glyph codes are a 2D array with 0,0 at the top left.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
+    <span class="kt">uint8_t</span> <span class="n">glyph_code</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">data</span><span class="p">[</span><span class="n">width_tiles</span> <span class="o">*</span> <span class="n">height_tiles</span><span class="p">];</span>
 </pre></div>
 </div>
-<p>Color information is an array.</p>
+<p>Palette information is an array.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
     <span class="kt">uint16_t</span> <span class="n">color</span><span class="p">;</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">color</span><span class="p">[</span><span class="n">colors_count</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">palette</span><span class="p">[</span><span class="n">colors_count</span><span class="p">];</span>
 </pre></div>
 </div>
 <p>Tile data is encoded in “tall” bitmap format.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// 1-bit 8x8 tiles</span>
 <span class="k">struct</span> <span class="p">{</span>
     <span class="k">struct</span> <span class="p">{</span>
-        <span class="kt">uint8_t</span> <span class="n">cols_0_7</span><span class="p">;</span>
-    <span class="p">}</span> <span class="n">line</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data_ptr</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
+        <span class="kt">uint8_t</span> <span class="n">cols</span><span class="p">;</span>
+    <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">tile</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
 
 <span class="c1">// 1-bit 16x16 tiles</span>
 <span class="k">struct</span> <span class="p">{</span>
     <span class="k">struct</span> <span class="p">{</span>
-        <span class="kt">uint8_t</span> <span class="n">cols_0_7</span><span class="p">;</span>
-        <span class="kt">uint8_t</span> <span class="n">cols_8_15</span><span class="p">;</span>
-    <span class="p">}</span> <span class="n">line</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data_ptr</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
+        <span class="kt">uint8_t</span> <span class="n">cols</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+    <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">tile</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
 
 <span class="c1">// 4-bit 8x8 tiles</span>
 <span class="k">struct</span> <span class="p">{</span>
     <span class="k">struct</span> <span class="p">{</span>
         <span class="kt">uint8_t</span> <span class="n">cols</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
-    <span class="p">}</span> <span class="n">line</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data_ptr</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
+    <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">tile</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
 
 <span class="c1">// 4-bit 16x16 tiles</span>
 <span class="k">struct</span> <span class="p">{</span>
     <span class="k">struct</span> <span class="p">{</span>
         <span class="kt">uint8_t</span> <span class="n">cols</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
-    <span class="p">}</span> <span class="n">line</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data_ptr</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
+    <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">tile</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
 
 <span class="c1">// 8-bit 8x8 tiles</span>
 <span class="k">struct</span> <span class="p">{</span>
     <span class="k">struct</span> <span class="p">{</span>
         <span class="kt">uint8_t</span> <span class="n">cols</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
-    <span class="p">}</span> <span class="n">line</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data_ptr</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
+    <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">tile</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
 
 <span class="c1">// 8-bit 16x16 tiles</span>
 <span class="k">struct</span> <span class="p">{</span>
     <span class="k">struct</span> <span class="p">{</span>
         <span class="kt">uint8_t</span> <span class="n">cols</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
-    <span class="p">}</span> <span class="n">line</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data_ptr</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
+    <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">tile</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
 
-<span class="c1">// 16-bit 8x8 tiles</span>
+<span class="c1">// 16-bit 8x8 tiles (no color table)</span>
 <span class="k">struct</span> <span class="p">{</span>
     <span class="k">struct</span> <span class="p">{</span>
         <span class="kt">uint16_t</span> <span class="n">cols</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
-    <span class="p">}</span> <span class="n">line</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data_ptr</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
+    <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">tile</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
 
-<span class="c1">// 16-bit 16x16 tiles</span>
+<span class="c1">// 16-bit 16x16 tiles (no color table)</span>
 <span class="k">struct</span> <span class="p">{</span>
     <span class="k">struct</span> <span class="p">{</span>
         <span class="kt">uint16_t</span> <span class="n">cols</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
-    <span class="p">}</span> <span class="n">line</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">data_ptr</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
+    <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">tile</span><span class="p">[</span><span class="n">tile_code_count</span><span class="p">];</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="mode-3-bitmap">
-<h3>Mode 3: Bitmap<a class="headerlink" href="#mode-3-bitmap" title="Permalink to this headline">¶</a></h3>
+<h2>Mode 3: Bitmap<a class="headerlink" href="#mode-3-bitmap" title="Permalink to this headline">¶</a></h2>
 <p>Every pixel can be its own color. 64K XRAM has limits. Monochrome for 640x480, 256 color for 320x180, and 16 colors on 320x240.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
@@ -372,7 +376,11 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$0:02</p></td>
+<tr class="row-even"><td><p>$0:01</p></td>
+<td><p>MODE</p></td>
+<td><p>3 - Bitmap</p></td>
+</tr>
+<tr class="row-odd"><td><p>$0:02</p></td>
 <td><p>STRUCT</p></td>
 <td><div class="line-block">
 <div class="line">Pointer to config structure in XRAM.</div>
@@ -383,51 +391,55 @@
 <div class="line">int16_t width_px</div>
 <div class="line">int16_t height_px</div>
 <div class="line">uint16_t xram_data_ptr</div>
-<div class="line">uint16_t xram_color_ptr</div>
+<div class="line">uint16_t xram_palette_ptr</div>
 </div>
 <div class="line">}</div>
 </div>
 </td>
 </tr>
-<tr class="row-odd"><td><p>$0:03</p></td>
+<tr class="row-even"><td><p>$0:03</p></td>
 <td><p>ATTRIBUTES</p></td>
 <td><div class="line-block">
+<div class="line">bit 4 - reverse bits</div>
 <div class="line">bit 3 - wrapy</div>
 <div class="line">bit 2 - wrapx</div>
 <div class="line">bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color</div>
 </div>
 </td>
 </tr>
-<tr class="row-even"><td><p>$0:04</p></td>
+<tr class="row-odd"><td><p>$0:04</p></td>
 <td><p>PLANE</p></td>
 <td><p>0-3 to select which fill plane of scanlines to program.</p></td>
 </tr>
-<tr class="row-odd"><td><p>$0:05</p></td>
+<tr class="row-even"><td><p>$0:05</p></td>
 <td><p>SLBEGIN</p></td>
 <td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
 </tr>
-<tr class="row-even"><td><p>$0:06</p></td>
+<tr class="row-odd"><td><p>$0:06</p></td>
 <td><p>SLEND</p></td>
-<td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
+<td><p>End of scanlines to program. 0 means use canvas height (180-480).</p></td>
 </tr>
 </tbody>
 </table>
-<p>Color information is an array.</p>
+<p>Palette information is an array.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
     <span class="kt">uint16_t</span> <span class="n">color</span><span class="p">;</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">color</span><span class="p">[</span><span class="n">colors_count</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">palette</span><span class="p">[</span><span class="n">colors_count</span><span class="p">];</span>
 </pre></div>
 </div>
-<p>Data is the color information packed down to the bit level. 16-bit color encodes the color directly, less uses the color table.</p>
+<p>Data is the color information packed down to the bit level. 16-bit color encodes the color directly, less uses the palette.</p>
+<p>Bit order is traditionally done so that left and right bit shift operations match pixel movement on screen. The reverse bits option change 1 and 4 bit modes so bit-level manipulation is slightly faster and smaller.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
-    <span class="kt">uint8_t</span> <span class="n">data</span><span class="p">[(</span><span class="n">width_px</span> <span class="o">*</span> <span class="n">bit_depth</span> <span class="o">+</span> <span class="mi">7</span><span class="p">)</span> <span class="o">/</span> <span class="mi">8</span><span class="p">];</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">rows</span><span class="p">[</span><span class="n">height_px</span><span class="p">];</span>
+  <span class="k">struct</span> <span class="p">{</span>
+      <span class="kt">uint8_t</span> <span class="n">cols</span><span class="p">[(</span><span class="n">width_px</span> <span class="o">*</span> <span class="n">bit_depth</span> <span class="o">+</span> <span class="mi">7</span><span class="p">)</span> <span class="o">/</span> <span class="mi">8</span><span class="p">];</span>
+  <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="n">height_px</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">data</span><span class="p">;</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="mode-4-sprite">
-<h3>Mode 4: Sprite<a class="headerlink" href="#mode-4-sprite" title="Permalink to this headline">¶</a></h3>
-<p>Sprites have two layers drawn over each plane. This allows for both plain sprites and affine sprites to be drawn on each plane.</p>
+<h2>Mode 4: Sprite<a class="headerlink" href="#mode-4-sprite" title="Permalink to this headline">¶</a></h2>
+<p>Sprites may be drawn over each fill plane.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -441,7 +453,11 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$0:02</p></td>
+<tr class="row-even"><td><p>$0:01</p></td>
+<td><p>MODE</p></td>
+<td><p>4 - Sprite</p></td>
+</tr>
+<tr class="row-odd"><td><p>$0:02</p></td>
 <td><p>STRUCT</p></td>
 <td><div class="line-block">
 <div class="line">Pointer to config structure array in XRAM.</div>
@@ -449,7 +465,7 @@
 <div class="line-block">
 <div class="line">int16_t xpos_px</div>
 <div class="line">int16_t ypos_px</div>
-<div class="line">int16_t xram_img_ptr</div>
+<div class="line">int16_t strite_ptr</div>
 <div class="line">uint8_t log_size;</div>
 <div class="line">bool has_opacity_metadata;</div>
 </div>
@@ -457,34 +473,36 @@
 </div>
 </td>
 </tr>
-<tr class="row-odd"><td><p>$0:03</p></td>
+<tr class="row-even"><td><p>$0:03</p></td>
 <td><p>LENGTH</p></td>
 <td><p>Length of sprite structure array in XRAM.</p></td>
 </tr>
-<tr class="row-even"><td><p>$0:04</p></td>
+<tr class="row-odd"><td><p>$0:04</p></td>
 <td><p>PLANE</p></td>
 <td><p>0-3 to select which fill plane of scanlines to program.</p></td>
 </tr>
-<tr class="row-odd"><td><p>$0:05</p></td>
+<tr class="row-even"><td><p>$0:05</p></td>
 <td><p>SLBEGIN</p></td>
 <td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
 </tr>
-<tr class="row-even"><td><p>$0:06</p></td>
+<tr class="row-odd"><td><p>$0:06</p></td>
 <td><p>SLEND</p></td>
-<td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
+<td><p>End of scanlines to program. 0 means use canvas height (180-480).</p></td>
 </tr>
 </tbody>
 </table>
 <p>Sprite image data is an array of 16 bit colors.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
-    <span class="kt">uint16_t</span> <span class="n">pixels</span><span class="p">[</span><span class="mi">2</span><span class="o">^</span><span class="n">log_size</span><span class="p">];</span>
-<span class="p">}</span> <span class="o">*</span><span class="n">rows</span><span class="p">[</span><span class="mi">2</span><span class="o">^</span><span class="n">log_size</span><span class="p">];</span>
+  <span class="k">struct</span> <span class="p">{</span>
+      <span class="kt">uint16_t</span> <span class="n">pixels</span><span class="p">[</span><span class="mi">2</span><span class="o">^</span><span class="n">log_size</span><span class="p">];</span>
+  <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">2</span><span class="o">^</span><span class="n">log_size</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">sprite</span><span class="p">;</span>
 </pre></div>
 </div>
 <p>TODO: Opacity metadata can be used to speed up rendering. See source for format.</p>
 </div>
 <div class="section" id="mode-5-affine-sprite">
-<h3>Mode 5: Affine Sprite<a class="headerlink" href="#mode-5-affine-sprite" title="Permalink to this headline">¶</a></h3>
+<h2>Mode 5: Affine Sprite<a class="headerlink" href="#mode-5-affine-sprite" title="Permalink to this headline">¶</a></h2>
 <p>Affine sprites apply a 3x3 matrix transform. These are slower than plain sprites. Only the first two rows of the matrix is useful, which is why there’s only six transform values. These are in signed 8.8 fixed point format.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
@@ -499,7 +517,11 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>$0:02</p></td>
+<tr class="row-even"><td><p>$0:01</p></td>
+<td><p>MODE</p></td>
+<td><p>5 - Affine Sprite</p></td>
+</tr>
+<tr class="row-odd"><td><p>$0:02</p></td>
 <td><p>STRUCT</p></td>
 <td><div class="line-block">
 <div class="line">Pointer to config structure array in XRAM.</div>
@@ -516,27 +538,27 @@
 </div>
 </td>
 </tr>
-<tr class="row-odd"><td><p>$0:03</p></td>
+<tr class="row-even"><td><p>$0:03</p></td>
 <td><p>LENGTH</p></td>
 <td><p>Length of sprite structure array in XRAM.</p></td>
 </tr>
-<tr class="row-even"><td><p>$0:04</p></td>
+<tr class="row-odd"><td><p>$0:04</p></td>
 <td><p>PLANE</p></td>
 <td><p>0-3 to select which fill plane of scanlines to program.</p></td>
 </tr>
-<tr class="row-odd"><td><p>$0:05</p></td>
+<tr class="row-even"><td><p>$0:05</p></td>
 <td><p>SLBEGIN</p></td>
 <td><p>First scanline to program. SLBEGIN &lt;= n &lt; SLEND</p></td>
 </tr>
-<tr class="row-even"><td><p>$0:06</p></td>
+<tr class="row-odd"><td><p>$0:06</p></td>
 <td><p>SLEND</p></td>
-<td><p>End of scanlines to program. 0 means use max y resolution (180-480).</p></td>
+<td><p>End of scanlines to program. 0 means use canvas height (180-480).</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="control-channel-f">
-<h3>Control Channel $F<a class="headerlink" href="#control-channel-f" title="Permalink to this headline">¶</a></h3>
+<h2>Control Channel $F<a class="headerlink" href="#control-channel-f" title="Permalink to this headline">¶</a></h2>
 <p>These registers are managed by the RIA. Do not distribute applications that set these.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
@@ -554,7 +576,7 @@
 <tr class="row-even"><td><p>$F:00</p></td>
 <td><p>DISPLAY</p></td>
 <td><dl class="simple">
-<dt>This sets the aspect ratio of your display. This also resets CANVAS to the console.</dt><dd><ul class="simple">
+<dt>This sets the aspect ratio of your display. This also resets CANVAS o the console.</dt><dd><ul class="simple">
 <li><p>0 - VGA (4:3) 640x480</p></li>
 <li><p>1 - HD (16:9) 640x480 and 1280x720</p></li>
 <li><p>2 - SXGA (5:4) 1280x1024</p></li>
@@ -591,7 +613,6 @@
 </table>
 </div>
 </div>
-</div>
 
 
           </div>
@@ -618,17 +639,14 @@
 <li class="toctree-l1 current"><a class="reference internal" href="rfc.html">RFC</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="rfc.html#contributing">Contributing</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="rfc.html#active-rfcs">Active RFCs</a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">RP6502-RFC-1</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#vga-graphics">VGA Graphics</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="#mode-0-console">Mode 0: Console</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#mode-1-character">Mode 1: Character</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#mode-2-tile">Mode 2: Tile</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#mode-3-bitmap">Mode 3: Bitmap</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#mode-4-sprite">Mode 4: Sprite</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#mode-5-affine-sprite">Mode 5: Affine Sprite</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#control-channel-f">Control Channel $F</a></li>
-</ul>
-</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">RP6502-RFC1 Programmable Video Graphics Array</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mode-0-console">Mode 0: Console</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mode-1-character">Mode 1: Character</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mode-2-tile">Mode 2: Tile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mode-3-bitmap">Mode 3: Bitmap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mode-4-sprite">Mode 4: Sprite</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mode-5-affine-sprite">Mode 5: Affine Sprite</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#control-channel-f">Control Channel $F</a></li>
 </ul>
 </li>
 </ul>
