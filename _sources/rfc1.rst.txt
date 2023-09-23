@@ -9,11 +9,28 @@ The VGA system is built around the scanvideo library from Pi Pico Extras. All th
 
 The RP6502 VGA system exposes per-scanline configuration of the video system from a 6502 application. Each scanline has three fill planes. A sprite layer can be drawn over each fill plane. If you attempt to render too much, the screen will become half-blue. The VGA engine will begin rendering with scanline 0. It first renders fill plane 0 if a fill mode is programmed. Fill planes require modes that fill all pixels, like character and bitmap modes. If no fill plane is programmed, and sprites need to be rendered, a line of transparent black may be automatically rendered (which takes time). Sprites are drawn over their fill plane, in order, over each other using the transparent bit. The process repeats for each fill plane, then repeats for each scanline.
 
-Programming the VGA device is done with PIX extended registers - XREGS. VGA is PIX device ID 1. VGA PIX extended registers are 16 bit values specified by $channel:register. e.g. $0:0F
-
 The built-in 8x8 and 8x16 fonts are available by using the special XRAM pointer $FFFF. Glyphs 0-127 are ASCII, glyphs 128-255 vary depending on the code page selected.
 
 The built-in color palettes are accessed by using the special XRAM pointer $FFFF. 1-bit is black and white. 4 and 8-bits point to an ANSI color palette of 16 colors, followed by 216 colors (6x6x6), followed by 24 greys.
+
+16-bit colors are built with the following bit logic. Setting the alpha mask bit will make the color opaque. The built-in ANSI color palette has the alpha bit mask set on all colors except color 0 black.
+
+.. code-block:: C
+
+  #define COLOR_FROM_RGB8(r,g,b) (((b>>3)<<11)|((g>>3)<<6)|(r>>3))
+  #define COLOR_FROM_RGB5(r,g,b) ((b<<11)|(g<<6)|(r))
+  #define COLOR_ALPHA_MASK (1u<<5)
+
+Palette information is an array.
+
+.. code-block:: C
+
+  struct {
+      uint16_t color;
+  } palette[2^bits_per_pixel];
+
+
+Programming the VGA device is done with PIX extended registers - XREGS. VGA is PIX device ID 1. VGA PIX extended registers are 16 bit values specified by $channel:register. e.g. $0:0F
 
 .. list-table::
   :widths: 5 5 90
@@ -86,19 +103,19 @@ Character modes have color information for each position on the screen. This is 
     - STRUCT
     - | Pointer to config structure in XRAM.
       | {
-      |   int16_t xpos_px
-      |   int16_t ypos_px
+      |   bool x_wrap
+      |   bool y_wrap
+      |   int16_t x_px
+      |   int16_t y_px
       |   int16_t width_chars
       |   int16_t height_chars
-      |   uint16_t xram_data_ptr
-      |   uint16_t xram_palette_ptr
-      |   uint16_t xram_font_ptr
+      |   uint16_t data_ptr
+      |   uint16_t palette_ptr
+      |   uint16_t font_ptr
       | }
   * - $0:03
     - ATTRIBUTES
-    - | bit 4 - font size 0=8x8, 1=8x16
-      | bit 3 - wrapy
-      | bit 2 - wrapx
+    - | bit 2 - font size 0=8x8, 1=8x16
       | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
   * - $0:04
     - PLANE
@@ -147,14 +164,6 @@ Data is encoded based on the color bit depth selected.
       uint16_t bg_color;
   } data[width_chars * height_chars];
 
-Palette information is an array.
-
-.. code-block:: C
-
-  struct {
-      uint16_t color;
-  } palette[colors_count];
-
 Fonts are encoded in wide format. The first 256 bytes are the first row of each of the 256 glyphs. This is the fastest layout, but wastes memory when not using the entire character set.
 
 .. code-block:: C
@@ -185,19 +194,19 @@ Tile modes have color information encoded in the tile bitmap. This is the mode y
     - STRUCT
     - | Pointer to config structure in XRAM.
       | {
-      |   int16_t xpos_px
-      |   int16_t ypos_px
+      |   bool x_wrap
+      |   bool y_wrap
+      |   int16_t x_px
+      |   int16_t y_px
       |   int16_t width_tiles
       |   int16_t height_tiles
-      |   uint16_t xram_data_ptr
-      |   uint16_t xram_palette_ptr
-      |   uint16_t xram_tile_ptr
+      |   uint16_t data_ptr
+      |   uint16_t palette_ptr
+      |   uint16_t tile_ptr
       | }
   * - $0:03
     - ATTRIBUTES
-    - | bit 4 - 0=8x8, 1=16x16
-      | bit 3 - wrapy
-      | bit 2 - wrapx
+    - | bit 2 - 0=8x8, 1=16x16
       | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
   * - $0:04
     - PLANE
@@ -305,18 +314,18 @@ Every pixel can be its own color. 64K XRAM has limits. Monochrome for 640x480, 2
     - STRUCT
     - | Pointer to config structure in XRAM.
       | {
-      |   int16_t xpos_px
-      |   int16_t ypos_px
+      |   bool x_wrap
+      |   bool y_wrap
+      |   int16_t x_px
+      |   int16_t y_px
       |   int16_t width_px
       |   int16_t height_px
-      |   uint16_t xram_data_ptr
-      |   uint16_t xram_palette_ptr
+      |   uint16_t data_ptr
+      |   uint16_t palette_ptr
       | }
   * - $0:03
     - ATTRIBUTES
-    - | bit 4 - reverse bits
-      | bit 3 - wrapy
-      | bit 2 - wrapx
+    - | bit 2 - reverse bits
       | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
   * - $0:04
     - PLANE
@@ -336,9 +345,9 @@ Palette information is an array.
       uint16_t color;
   } palette[colors_count];
 
-Data is the color information packed down to the bit level. 16-bit color encodes the color directly, less uses the palette.
+Data is the color information packed down to the bit level. 16-bit color encodes the color directly as data. 1, 4, and 8 bit color encodes a palette index as data.
 
-Bit order is traditionally done so that left and right bit shift operations match pixel movement on screen. The reverse bits option change 1 and 4 bit modes so bit-level manipulation is slightly faster and smaller.
+Bit order is traditionally done so that left and right bit shift operations match pixel movement on screen. The reverse bits option change the bit order of 1 and 4 bit modes so bit-level manipulation code is slightly faster and smaller.
 
 .. code-block:: C
 
@@ -368,9 +377,9 @@ Sprites may be drawn over each fill plane.
     - STRUCT
     - | Pointer to config structure array in XRAM.
       | {
-      |   int16_t xpos_px
-      |   int16_t ypos_px
-      |   int16_t strite_ptr
+      |   int16_t x_px
+      |   int16_t y_px
+      |   int16_t sprite_ptr
       |   uint8_t log_size;
       |   bool has_opacity_metadata;
       | }
@@ -419,8 +428,8 @@ Affine sprites apply a 3x3 matrix transform. These are slower than plain sprites
     - | Pointer to config structure array in XRAM.
       | {
       |   int16_t transform[6];
-      |   int16_t xpos_px
-      |   int16_t ypos_px
+      |   int16_t x_px
+      |   int16_t y_px
       |   int16_t xram_img_ptr
       |   uint8_t log_size;
       |   bool has_opacity_metadata;
