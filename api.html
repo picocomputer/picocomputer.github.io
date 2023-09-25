@@ -54,19 +54,19 @@
 <li><p><a class="reference internal" href="#function-reference" id="id8">1. Function Reference</a></p>
 <ul>
 <li><p><a class="reference internal" href="#zxstack" id="id9">zxstack</a></p></li>
-<li><p><a class="reference internal" href="#open" id="id10">open</a></p></li>
-<li><p><a class="reference internal" href="#close" id="id11">close</a></p></li>
-<li><p><a class="reference internal" href="#read" id="id12">read</a></p></li>
-<li><p><a class="reference internal" href="#read-xstack" id="id13">read_xstack</a></p></li>
-<li><p><a class="reference internal" href="#read-xram" id="id14">read_xram</a></p></li>
-<li><p><a class="reference internal" href="#write" id="id15">write</a></p></li>
-<li><p><a class="reference internal" href="#write-xstack" id="id16">write_xstack</a></p></li>
-<li><p><a class="reference internal" href="#write-xram" id="id17">write_xram</a></p></li>
-<li><p><a class="reference internal" href="#lseek" id="id18">lseek</a></p></li>
-<li><p><a class="reference internal" href="#xreg" id="id19">xreg</a></p></li>
-<li><p><a class="reference internal" href="#phi2" id="id20">phi2</a></p></li>
-<li><p><a class="reference internal" href="#codepage" id="id21">codepage</a></p></li>
-<li><p><a class="reference internal" href="#lrand" id="id22">lrand</a></p></li>
+<li><p><a class="reference internal" href="#xreg" id="id10">xreg</a></p></li>
+<li><p><a class="reference internal" href="#phi2" id="id11">phi2</a></p></li>
+<li><p><a class="reference internal" href="#codepage" id="id12">codepage</a></p></li>
+<li><p><a class="reference internal" href="#lrand" id="id13">lrand</a></p></li>
+<li><p><a class="reference internal" href="#open" id="id14">open</a></p></li>
+<li><p><a class="reference internal" href="#close" id="id15">close</a></p></li>
+<li><p><a class="reference internal" href="#read" id="id16">read</a></p></li>
+<li><p><a class="reference internal" href="#read-xstack" id="id17">read_xstack</a></p></li>
+<li><p><a class="reference internal" href="#read-xram" id="id18">read_xram</a></p></li>
+<li><p><a class="reference internal" href="#write" id="id19">write</a></p></li>
+<li><p><a class="reference internal" href="#write-xstack" id="id20">write_xstack</a></p></li>
+<li><p><a class="reference internal" href="#write-xram" id="id21">write_xram</a></p></li>
+<li><p><a class="reference internal" href="#lseek" id="id22">lseek</a></p></li>
 <li><p><a class="reference internal" href="#exit" id="id23">exit</a></p></li>
 </ul>
 </li>
@@ -133,11 +133,11 @@
 </pre></div>
 </div>
 <p>Send <cite>oflag</cite> in AX. Send the path on XSTACK by pushing the string starting with the last character. You may omit pushing the terminating zero, but strings are limited to a length of 255. Calling this from the C SDK will “just work” because there’s an implementation that pushes the string for you.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read_xstack</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read_xstack</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Send <cite>count</cite> as a short stack and <cite>fildes</cite> in AX. The returned value in AX indicates how many values must be pulled from the stack. If you call this from the C SDK then it will copy XSTACK to buf[] for you.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">write_xstack</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">write_xstack</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Send <cite>fildes</cite> in AX. Push the data to XSTACK. Do not send <cite>count</cite>, the kernel knows this from its internal stack pointer. If you call this from the C SDK then it will copy buf[] to XSTACK for you.</p>
@@ -146,7 +146,8 @@
 <div class="section" id="bulk-xram-operations">
 <h4><a class="toc-backref" href="#id7">2.3.2. Bulk XRAM Operations</a><a class="headerlink" href="#bulk-xram-operations" title="Permalink to this headline">¶</a></h4>
 <p>These load and save XRAM directly. You can load game assets without going through 6502 RAM or capture a screenshot with ease.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read_xram</span><span class="p">(</span><span class="n">xram_addr</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read_xram</span><span class="p">(</span><span class="n">xram_addr</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+<span class="kt">int</span> <span class="n">write_xram</span><span class="p">(</span><span class="n">xram_addr</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The kernel expects <cite>buf</cite> and <cite>count</cite> on the XSTACK as integers with <cite>filedes</cite> in AX. The buffer is effectively &amp;XRAM[buf] here. There’s nothing special about these calls in regards to how the binary interface rules are applied. They are interesting because of their high performance for loading assets.</p>
@@ -165,8 +166,75 @@
 
 <p>Abandon the xstack by resetting the pointer. Not needed for normal operation. This is the only operation that doesn’t require waiting for completion.</p>
 </div>
+<div class="section" id="xreg">
+<h3><a class="toc-backref" href="#id10">xreg</a><a class="headerlink" href="#xreg" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt>
+<code class="sig-name descname">int xreg(char device, char channel, unsigned char address, ...);</code></dt>
+<dd><p>Set extended registers on a PIX device. See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. Setting extended registers can fail, which you should use for feature detection. EINVAL means the device responded with a negative acknowledgementg. EIO means there was a timeout waiting for ack/nak.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> – PIX device ID. 0-6</p></li>
+<li><p><strong>channel</strong> – PIX channel. 0-15</p></li>
+<li><p><strong>address</strong> – PIX address. 0-255</p></li>
+<li><p><strong>...</strong> – 16 bit integers to set starting at address.</p></li>
+</ul>
+</dd>
+<dt class="field-even">A regs</dt>
+<dd class="field-even"><p>devid</p>
+</dd>
+<dt class="field-odd">Errno</dt>
+<dd class="field-odd"><p>EINVAL, EIO</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="phi2">
+<h3><a class="toc-backref" href="#id11">phi2</a><a class="headerlink" href="#phi2" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.phi2">
+unsigned <code class="sig-name descname">phi2</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.phi2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the PHI2 setting from the RIA. Applications can use this for adjusting to or rejecting different clock speeds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The 6502 clock speed in kHz.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="codepage">
+<h3><a class="toc-backref" href="#id12">codepage</a><a class="headerlink" href="#codepage" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.codepage">
+unsigned <code class="sig-name descname">codepage</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.codepage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the CP setting from the RIA. This is the encoding the filesystem is using and, if VGA is installed, the console and default font.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The code page. One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862, 863, 864, 865, 866, 869, 932, 936, 949, 950.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="lrand">
+<h3><a class="toc-backref" href="#id13">lrand</a><a class="headerlink" href="#lrand" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.lrand">
+unsigned long <code class="sig-name descname">lrand</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.lrand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a random number starting with entropy on the RIA. This is suitable for seeding a RNG or general use. The 16-bit rand() in the CC65 library can be seeded with this by calling its non-standard _randomize() function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Chaos.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 <div class="section" id="open">
-<h3><a class="toc-backref" href="#id10">open</a><a class="headerlink" href="#open" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id14">open</a><a class="headerlink" href="#open" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.open">
 int <code class="sig-name descname">open</code><span class="sig-paren">(</span>const char<em> *path</em>, int<em> oflag</em><span class="sig-paren">)</span><a class="headerlink" href="#c.open" title="Permalink to this definition">¶</a></dt>
@@ -224,7 +292,7 @@ int <code class="sig-name descname">open</code><span class="sig-paren">(</span>c
 
 </div>
 <div class="section" id="close">
-<h3><a class="toc-backref" href="#id11">close</a><a class="headerlink" href="#close" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id15">close</a><a class="headerlink" href="#close" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.close">
 int <code class="sig-name descname">close</code><span class="sig-paren">(</span>int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.close" title="Permalink to this definition">¶</a></dt>
@@ -249,7 +317,7 @@ int <code class="sig-name descname">close</code><span class="sig-paren">(</span>
 
 </div>
 <div class="section" id="read">
-<h3><a class="toc-backref" href="#id12">read</a><a class="headerlink" href="#read" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16">read</a><a class="headerlink" href="#read" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.read">
 int <code class="sig-name descname">read</code><span class="sig-paren">(</span>int<em> fildes</em>, void<em> *buf</em>, unsigned<em> count</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read" title="Permalink to this definition">¶</a></dt>
@@ -276,7 +344,7 @@ int <code class="sig-name descname">read</code><span class="sig-paren">(</span>i
 
 </div>
 <div class="section" id="read-xstack">
-<h3><a class="toc-backref" href="#id13">read_xstack</a><a class="headerlink" href="#read-xstack" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17">read_xstack</a><a class="headerlink" href="#read-xstack" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.read_xstack">
 int <code class="sig-name descname">read_xstack</code><span class="sig-paren">(</span>void<em> *buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read_xstack" title="Permalink to this definition">¶</a></dt>
@@ -303,10 +371,10 @@ int <code class="sig-name descname">read_xstack</code><span class="sig-paren">(<
 
 </div>
 <div class="section" id="read-xram">
-<h3><a class="toc-backref" href="#id14">read_xram</a><a class="headerlink" href="#read-xram" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18">read_xram</a><a class="headerlink" href="#read-xram" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.read_xram">
-int <code class="sig-name descname">read_xram</code><span class="sig-paren">(</span>xram_ptr<em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read_xram" title="Permalink to this definition">¶</a></dt>
+int <code class="sig-name descname">read_xram</code><span class="sig-paren">(</span>xram_addr<em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read_xram" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read <cite>count</cite> bytes from a file to xram.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -330,7 +398,7 @@ int <code class="sig-name descname">read_xram</code><span class="sig-paren">(</s
 
 </div>
 <div class="section" id="write">
-<h3><a class="toc-backref" href="#id15">write</a><a class="headerlink" href="#write" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19">write</a><a class="headerlink" href="#write" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.write">
 int <code class="sig-name descname">write</code><span class="sig-paren">(</span>int<em> fildes</em>, const void<em> *buf</em>, unsigned<em> count</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write" title="Permalink to this definition">¶</a></dt>
@@ -357,7 +425,7 @@ int <code class="sig-name descname">write</code><span class="sig-paren">(</span>
 
 </div>
 <div class="section" id="write-xstack">
-<h3><a class="toc-backref" href="#id16">write_xstack</a><a class="headerlink" href="#write-xstack" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20">write_xstack</a><a class="headerlink" href="#write-xstack" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.write_xstack">
 int <code class="sig-name descname">write_xstack</code><span class="sig-paren">(</span>const void<em> *buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write_xstack" title="Permalink to this definition">¶</a></dt>
@@ -384,10 +452,10 @@ int <code class="sig-name descname">write_xstack</code><span class="sig-paren">(
 
 </div>
 <div class="section" id="write-xram">
-<h3><a class="toc-backref" href="#id17">write_xram</a><a class="headerlink" href="#write-xram" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id21">write_xram</a><a class="headerlink" href="#write-xram" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.write_xram">
-int <code class="sig-name descname">write_xram</code><span class="sig-paren">(</span>xram_ptr<em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write_xram" title="Permalink to this definition">¶</a></dt>
+int <code class="sig-name descname">write_xram</code><span class="sig-paren">(</span>xram_addr<em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write_xram" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write <cite>count</cite> bytes from xram to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -411,7 +479,7 @@ int <code class="sig-name descname">write_xram</code><span class="sig-paren">(</
 
 </div>
 <div class="section" id="lseek">
-<h3><a class="toc-backref" href="#id18">lseek</a><a class="headerlink" href="#lseek" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id22">lseek</a><a class="headerlink" href="#lseek" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.lseek">
 off_t <code class="sig-name descname">lseek</code><span class="sig-paren">(</span>int<em> fildes</em>, off_t<em> offset</em>, int<em> whence</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek" title="Permalink to this definition">¶</a></dt>
@@ -440,82 +508,19 @@ static long <code class="sig-name descname">lseek_impl</code><span class="sig-pa
 </dd>
 <dt class="field-odd">Whence</dt>
 <dd class="field-odd"><div class="line-block">
-<div class="line">SEEK_SET</div>
+<div class="line">SEEK_SET = 2</div>
 <div class="line-block">
-<div class="line">The start of the file (0) plus offset bytes.</div>
+<div class="line">The start of the file plus offset bytes.</div>
 </div>
-<div class="line">SEEK_CUR</div>
+<div class="line">SEEK_CUR = 0</div>
 <div class="line-block">
 <div class="line">The current location plus offset bytes.</div>
 </div>
-<div class="line">SEEK_END</div>
+<div class="line">SEEK_END = 1</div>
 <div class="line-block">
 <div class="line">The size of the file plus offset bytes.</div>
 </div>
 </div>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="xreg">
-<h3><a class="toc-backref" href="#id19">xreg</a><a class="headerlink" href="#xreg" title="Permalink to this headline">¶</a></h3>
-<dl class="function">
-<dt id="c.xreg">
-void <code class="sig-name descname">xreg</code><span class="sig-paren">(</span>unsigned<em> value</em>, unsigned<em> reg</em>, int<em> devid</em><span class="sig-paren">)</span><a class="headerlink" href="#c.xreg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set a register on a PIX device. See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a>:audio and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>value</strong> – Value to store. 0-65535</p></li>
-<li><p><strong>reg</strong> – Register location. 0-4095</p></li>
-<li><p><strong>devid</strong> – PIX device ID. 0-6</p></li>
-</ul>
-</dd>
-<dt class="field-even">A regs</dt>
-<dd class="field-even"><p>devid</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="phi2">
-<h3><a class="toc-backref" href="#id20">phi2</a><a class="headerlink" href="#phi2" title="Permalink to this headline">¶</a></h3>
-<dl class="function">
-<dt id="c.phi2">
-unsigned <code class="sig-name descname">phi2</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.phi2" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieves the PHI2 setting from the RIA. Applications can use this to adapt to different speeds.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The 6502 clock speed in kHz.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="codepage">
-<h3><a class="toc-backref" href="#id21">codepage</a><a class="headerlink" href="#codepage" title="Permalink to this headline">¶</a></h3>
-<dl class="function">
-<dt id="c.codepage">
-unsigned <code class="sig-name descname">codepage</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.codepage" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieves the CP setting from the RIA.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The code page. One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862, 863, 864, 865, 866, 869, 932, 936, 949, 950.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="lrand">
-<h3><a class="toc-backref" href="#id22">lrand</a><a class="headerlink" href="#lrand" title="Permalink to this headline">¶</a></h3>
-<dl class="function">
-<dt id="c.lrand">
-unsigned long <code class="sig-name descname">lrand</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.lrand" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generates a random number starting with entropy on the RIA. This is suitable for seeding a RNG or general use. The 16-bit rand() in the CC65 library can be seeded with this by calling its non-standard _randomize() function.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Chaos.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -578,6 +583,10 @@ void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#function-reference">1. Function Reference</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#zxstack">zxstack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xreg">xreg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#phi2">phi2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codepage">codepage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#lrand">lrand</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#open">open</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#close">close</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#read">read</a></li>
@@ -587,10 +596,6 @@ void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>
 <li class="toctree-l3"><a class="reference internal" href="#write-xstack">write_xstack</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#write-xram">write_xram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#lseek">lseek</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#xreg">xreg</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#phi2">phi2</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#codepage">codepage</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#lrand">lrand</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#exit">exit</a></li>
 </ul>
 </li>

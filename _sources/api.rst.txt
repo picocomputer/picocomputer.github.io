@@ -89,13 +89,13 @@ Send `oflag` in AX. Send the path on XSTACK by pushing the string starting with 
 
 .. code-block:: C
 
-   int read_xstack(void *buf, int count, int fildes)
+   int read_xstack(void *buf, unsigned count, int fildes)
 
 Send `count` as a short stack and `fildes` in AX. The returned value in AX indicates how many values must be pulled from the stack. If you call this from the C SDK then it will copy XSTACK to buf[] for you.
 
 .. code-block:: C
 
-   int write_xstack(const void *buf, int count, int fildes)
+   int write_xstack(const void *buf, unsigned count, int fildes)
 
 Send `fildes` in AX. Push the data to XSTACK. Do not send `count`, the kernel knows this from its internal stack pointer. If you call this from the C SDK then it will copy buf[] to XSTACK for you.
 
@@ -108,7 +108,8 @@ These load and save XRAM directly. You can load game assets without going throug
 
 .. code-block:: C
 
-   int read_xram(xram_addr buf, int count, int fildes)
+   int read_xram(xram_addr buf, unsigned count, int fildes)
+   int write_xram(xram_addr buf, unsigned count, int fildes)
 
 The kernel expects `buf` and `count` on the XSTACK as integers with `filedes` in AX. The buffer is effectively &XRAM[buf] here. There's nothing special about these calls in regards to how the binary interface rules are applied. They are interesting because of their high performance for loading assets.
 
@@ -123,6 +124,50 @@ zxstack
 .. c:function:: void zxstack(void);
 
 Abandon the xstack by resetting the pointer. Not needed for normal operation. This is the only operation that doesn't require waiting for completion.
+
+xreg
+----
+
+.. c:function:: int xreg(char device, char channel, unsigned char address, ...);
+
+   Set extended registers on a PIX device. See the :doc:`ria` and :doc:`vga` documentation for what each register does. Setting extended registers can fail, which you should use for feature detection. EINVAL means the device responded with a negative acknowledgementg. EIO means there was a timeout waiting for ack/nak.
+
+   :param device: PIX device ID. 0-6
+   :param channel: PIX channel. 0-15
+   :param address: PIX address. 0-255
+   :param ...: 16 bit integers to set starting at address.
+   :a regs: devid
+   :errno: EINVAL, EIO
+
+
+phi2
+----
+
+.. c:function:: unsigned phi2(void)
+
+   Retrieves the PHI2 setting from the RIA. Applications can use this for adjusting to or rejecting different clock speeds.
+
+   :returns: The 6502 clock speed in kHz.
+
+
+codepage
+--------
+
+.. c:function:: unsigned codepage(void)
+
+   Retrieves the CP setting from the RIA. This is the encoding the filesystem is using and, if VGA is installed, the console and default font.
+
+   :returns: The code page. One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862, 863, 864, 865, 866, 869, 932, 936, 949, 950.
+
+
+lrand
+-----
+
+.. c:function:: unsigned long lrand(void)
+
+   Generates a random number starting with entropy on the RIA. This is suitable for seeding a RNG or general use. The 16-bit rand() in the CC65 library can be seeded with this by calling its non-standard _randomize() function.
+
+   :returns: Chaos.
 
 open
 ----
@@ -198,7 +243,7 @@ read_xstack
 read_xram
 ---------
 
-.. c:function:: int read_xram(xram_ptr buf, unsigned count, int fildes)
+.. c:function:: int read_xram(xram_addr buf, unsigned count, int fildes)
 
    Read `count` bytes from a file to xram.
 
@@ -243,7 +288,7 @@ write_xstack
 write_xram
 ----------
 
-.. c:function:: int write_xram(xram_ptr buf, unsigned count, int fildes)
+.. c:function:: int write_xram(xram_addr buf, unsigned count, int fildes)
 
    Write `count` bytes from xram to a file.
 
@@ -270,55 +315,15 @@ lseek
    :a regs: fildes
    :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
    :whence:
-      | SEEK_SET
-      |    The start of the file (0) plus offset bytes.
-      | SEEK_CUR
+      | SEEK_SET = 2
+      |    The start of the file plus offset bytes.
+      | SEEK_CUR = 0
       |    The current location plus offset bytes.
-      | SEEK_END
+      | SEEK_END = 1
       |    The size of the file plus offset bytes.
 
 
-xreg
-----
 
-.. c:function:: void xreg(unsigned value, unsigned reg, int devid)
-
-   Set a register on a PIX device. See the :doc:`ria`:audio and :doc:`vga` documentation for what each register does. PIX is a broadcast protocol so this can not fail and there is nothing to return. However, you still need to wait on RIA_BUSY before the next op.
-
-   :param value: Value to store. 0-65535
-   :param reg: Register location. 0-4095
-   :param devid: PIX device ID. 0-6
-   :a regs: devid
-
-
-phi2
-----
-
-.. c:function:: unsigned phi2(void)
-
-   Retrieves the PHI2 setting from the RIA. Applications can use this to adapt to different speeds.
-
-   :returns: The 6502 clock speed in kHz.
-
-
-codepage
---------
-
-.. c:function:: unsigned codepage(void)
-
-   Retrieves the CP setting from the RIA.
-
-   :returns: The code page. One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862, 863, 864, 865, 866, 869, 932, 936, 949, 950.
-
-
-lrand
------
-
-.. c:function:: unsigned long lrand(void)
-
-   Generates a random number starting with entropy on the RIA. This is suitable for seeding a RNG or general use. The 16-bit rand() in the CC65 library can be seeded with this by calling its non-standard _randomize() function.
-
-   :returns: Chaos.
 
 
 exit

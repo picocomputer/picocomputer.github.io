@@ -11,11 +11,11 @@ I use "Picocomputer 6502" to refer to the reference design. Please use a differe
 Buying a Picocomputer
 ---------------------
 
-I do not sell hardware at this time and have no immediate plans to do so. Instead, I provide design files that have been tested so that all you need to do is upload them to a factory and pay to have it made.
+You will need to place two orders. First, for the Printed Circuit Board. Second, for the electronic components. Some PCB factories will do the soldering for you, but you'll still need to order the ICs and plug them into sockets.
 
-There are no affilate links here. To financially support this open source project, consider joining `Patreon <https://www.patreon.com/rumbledethumps>`_ or give a Super Thanks on any of my YouTube Videos.
+I have circuit boards in a `Tindie store <https://www.tindie.com/stores/rumbledethumps/>`_ that ships to the United States. International shipping is either too slow or too much when compared to getting boards made locally or in China.
 
-Even better than money would be pull requests for the many `unfinished features <https://github.com/picocomputer/rp6502/issues>`_ or `this documentation <https://github.com/picocomputer/picocomputer.github.io>`_.
+To financially support this open source project, consider joining `Patreon <https://www.patreon.com/rumbledethumps>`_ or give a Super Thanks on any of my YouTube Videos.
 
 Step 1. Watch the Videos
 ========================
@@ -42,11 +42,11 @@ Step 3. Order Assembly
 
 Skip this step if you want to solder it yourself.
 
-PCBWay has a minimum quantity of one for assembly. They will use the boards you ordered in step 2. What you'll order is a "board of sockets". It should never be constrained on parts availability since there are multiple vendors for every part.
+PCBWay has a minimum quantity of one for assembly. They will use the boards you ordered in step 2. What you'll have them make is a "board of sockets" - the ICs will be installed by you later. It should never be constrained on parts availability since there are multiple vendors for every part.
 
 Download `the BOM, notes, and photos <_static/rp6502-reva-assembly.zip>`_.
 
-Request assembly with your PCB order and send the `BOM, notes, and photos <_static/rp6502-reva-assembly.zip>`_. There is no centroid file. The default options will work. Let them source the parts. Let them make substitutions.
+Request assembly with your PCB order and send the `BOM, notes, and photos <_static/rp6502-reva-assembly.zip>`_. There is no centroid file because there are no surface mount parts. The default options will work. Let them source the parts. Let them make substitutions.
 
 There will be a short delay as they get you a price for the bill-of-materials. Then you can pay and wait. I was estimated four weeks and got it in three.
 
