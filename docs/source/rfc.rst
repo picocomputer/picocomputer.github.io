@@ -19,4 +19,4 @@ Active RFCs
 .. toctree::
    :maxdepth: 1
 
-   rfc1
+None here right now. Try the `forums. <https://github.com/orgs/picocomputer/discussions/categories/rfcs>`_
