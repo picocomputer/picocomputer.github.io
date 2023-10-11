@@ -64,13 +64,13 @@
 <p>The RP6502 VGA system exposes per-scanline configuration of the video system to your 6502 application. We start with three planes. Each plane has two layers, a fill layer and a sprite layer. Your application can assign different fill and sprite modes to specific planes and scanlines. There’s plenty of fill rate to exceed the capabilities of any classic 8-bit system, but if you like to push the limits then you may see a half-blue screen indicating you went too far.</p>
 <p>The built-in 8x8 and 8x16 fonts are available by using the special XRAM pointer $FFFF. Glyphs 0-127 are ASCII, glyphs 128-255 vary depending on the code page selected.</p>
 <p>The built-in color palettes are accessed by using the special XRAM pointer $FFFF. 1-bit is black and white. 4 and 8-bits point to an ANSI color palette of 16 colors, followed by 216 colors (6x6x6), followed by 24 greys.</p>
-<p>16-bit colors are built with the following bit logic. Setting the alpha mask bit will make the color opaque. The built-in ANSI color palette has the alpha bit mask set on all colors except color 0 black.</p>
+<p>16-bit colors are built with the following bit logic. Setting the alpha bit will make the color opaque. The built-in ANSI color palette has the alpha bit set on all colors except color 0 black.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="cp">#define COLOR_FROM_RGB8(r,g,b) (((b&gt;&gt;3)&lt;&lt;11)|((g&gt;&gt;3)&lt;&lt;6)|(r&gt;&gt;3))</span>
 <span class="cp">#define COLOR_FROM_RGB5(r,g,b) ((b&lt;&lt;11)|(g&lt;&lt;6)|(r))</span>
 <span class="cp">#define COLOR_ALPHA_MASK (1u&lt;&lt;5)</span>
 </pre></div>
 </div>
-<p>Palette information is an array. 8bpp, 4bpp, and 1bpp modes use a palette. 16 bit per pixel modes don’t used indexed color and will ignore the palette.</p>
+<p>Palette information is an array. 8bpp, 4bpp, and 1bpp modes use a palette. 16 bit per pixel modes don’t used indexed color and will ignore the palette. Palettes must be 16-bit aligned.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
     <span class="kt">uint16_t</span> <span class="n">color</span><span class="p">;</span>
 <span class="p">}</span> <span class="n">palette</span><span class="p">[</span><span class="mi">2</span><span class="o">^</span><span class="n">bits_per_pixel</span><span class="p">];</span>
@@ -79,9 +79,9 @@
 <p>Programming the VGA device is done with PIX extended registers - XREGS. VGA is PIX device ID 1. Registers are 16 bit values addressed by $device:$channel:register. e.g. $1:0:0F</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// Select a 320x240 canvas</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">xreg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
-<span class="c1">// Program mode 3 for 16 colors with</span>
+<span class="c1">// Program mode 3 for 4 bit color with</span>
 <span class="c1">// its config registers at XRAM $FF00.</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">xreg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mh">0xFF00</span><span class="p">);</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">xreg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0xFF00</span><span class="p">);</span>
 </pre></div>
 </div>
 <div class="section" id="key-registers">
@@ -425,6 +425,7 @@
 </div>
 <p>Data is the color information packed down to the bit level. 16-bit color encodes the color directly as data. 1, 4, and 8 bit color encodes a palette index as data.</p>
 <p>Bit order is traditionally done so that left and right bit shift operations match pixel movement on screen. The reverse bits option change the bit order of 1 and 4 bit modes so bit-level manipulation code is slightly faster and smaller.</p>
+<p>Data for 16 bit color must be 16 bit aligned.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
     <span class="k">struct</span> <span class="p">{</span>
         <span class="kt">uint8_t</span> <span class="n">cols</span><span class="p">[(</span><span class="n">width_px</span> <span class="o">*</span> <span class="n">bit_depth</span> <span class="o">+</span> <span class="mi">7</span><span class="p">)</span> <span class="o">/</span> <span class="mi">8</span><span class="p">];</span>
