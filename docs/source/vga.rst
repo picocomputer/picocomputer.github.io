@@ -24,7 +24,7 @@ The built-in 8x8 and 8x16 fonts are available by using the special XRAM pointer 
 
 The built-in color palettes are accessed by using the special XRAM pointer $FFFF. 1-bit is black and white. 4 and 8-bits point to an ANSI color palette of 16 colors, followed by 216 colors (6x6x6), followed by 24 greys.
 
-16-bit colors are built with the following bit logic. Setting the alpha mask bit will make the color opaque. The built-in ANSI color palette has the alpha bit mask set on all colors except color 0 black.
+16-bit colors are built with the following bit logic. Setting the alpha bit will make the color opaque. The built-in ANSI color palette has the alpha bit set on all colors except color 0 black.
 
 .. code-block:: C
 
@@ -32,7 +32,7 @@ The built-in color palettes are accessed by using the special XRAM pointer $FFFF
   #define COLOR_FROM_RGB5(r,g,b) ((b<<11)|(g<<6)|(r))
   #define COLOR_ALPHA_MASK (1u<<5)
 
-Palette information is an array. 8bpp, 4bpp, and 1bpp modes use a palette. 16 bit per pixel modes don't used indexed color and will ignore the palette.
+Palette information is an array. 8bpp, 4bpp, and 1bpp modes use a palette. 16 bit per pixel modes don't used indexed color and will ignore the palette. Palettes must be 16-bit aligned.
 
 .. code-block:: C
 
@@ -47,9 +47,9 @@ Programming the VGA device is done with PIX extended registers - XREGS. VGA is P
 
     // Select a 320x240 canvas
     result = xreg(1, 0, 0, 1);
-    // Program mode 3 for 16 colors with
+    // Program mode 3 for 4 bit color with
     // its config registers at XRAM $FF00.
-    result = xreg(1, 0, 1, 3, 5, 0xFF00);
+    result = xreg(1, 0, 1, 3, 1, 0xFF00);
 
 Key Registers
 -------------
@@ -342,6 +342,8 @@ Config structure may be updated without reprogramming scanlines.
 Data is the color information packed down to the bit level. 16-bit color encodes the color directly as data. 1, 4, and 8 bit color encodes a palette index as data.
 
 Bit order is traditionally done so that left and right bit shift operations match pixel movement on screen. The reverse bits option change the bit order of 1 and 4 bit modes so bit-level manipulation code is slightly faster and smaller.
+
+Data for 16 bit color must be 16 bit aligned.
 
 .. code-block:: C
 
