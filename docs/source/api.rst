@@ -243,7 +243,7 @@ read_xstack
 read_xram
 ---------
 
-.. c:function:: int read_xram(xram_addr buf, unsigned count, int fildes)
+.. c:function:: int read_xram(unsigned buf, unsigned count, int fildes)
 
    Read `count` bytes from a file to xram.
 
@@ -288,7 +288,7 @@ write_xstack
 write_xram
 ----------
 
-.. c:function:: int write_xram(xram_addr buf, unsigned count, int fildes)
+.. c:function:: int write_xram(unsigned buf, unsigned count, int fildes)
 
    Write `count` bytes from xram to a file.
 
