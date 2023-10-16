@@ -204,8 +204,9 @@ This is 256 bytes of last-in, first-out, top-down stack used for the fastcall me
 
       .. code-block:: C
 
-        uint8_t keys[32];
-        #define key(code) (keys[code >> 3] & (1 << (code & 7)))
+        uint8_t keyboard[32];
+        #define key(code) (keyboard[code >> 3] & \
+                           (1 << (code & 7)))
   * - $0:0:01
     - MOUSE
     - | Sets the address in extended RAM for a structure containing direct mouse input.
@@ -214,13 +215,13 @@ This is 256 bytes of last-in, first-out, top-down stack used for the fastcall me
 
         struct {
             uint8_t buttons;
-            uint16_t x;
-            uint16_t y;
-            uint16_t wheel;
-            uint16_t pan;
-        } hid_mouse_t;
+            uint8_t x;
+            uint8_t y;
+            uint8_t wheel;
+            uint8_t pan;
+        } mouse;
 
-      | The amount of movement is computed by keeping track of the previous values and subtracting from the current value.
+      | The amount of movement is computed by keeping track of the previous values and subtracting from the current value. Vsync timing (60Hz) isn't always fast enough. For perfect mouse input with fast mice, use an ISR at 8ms or faster (125Hz).
 
       .. code-block:: C
 

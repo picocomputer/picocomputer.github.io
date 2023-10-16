@@ -300,8 +300,9 @@
 <div class="line">* 3 - Unused - Undefined error</div>
 <div class="line">This is intended for applications that need to detect both key up and down events or the modifier keys. Use the UART or stdin if you don’t need this kind of direct access.</div>
 </div>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">uint8_t</span> <span class="n">keys</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
-<span class="cp">#define key(code) (keys[code &gt;&gt; 3] &amp; (1 &lt;&lt; (code &amp; 7)))</span>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">uint8_t</span> <span class="n">keyboard</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
+<span class="cp">#define key(code) (keyboard[code &gt;&gt; 3] &amp; \</span>
+<span class="cp">                   (1 &lt;&lt; (code &amp; 7)))</span>
 </pre></div>
 </div>
 </td>
@@ -313,15 +314,15 @@
 </div>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
     <span class="kt">uint8_t</span> <span class="n">buttons</span><span class="p">;</span>
-    <span class="kt">uint16_t</span> <span class="n">x</span><span class="p">;</span>
-    <span class="kt">uint16_t</span> <span class="n">y</span><span class="p">;</span>
-    <span class="kt">uint16_t</span> <span class="n">wheel</span><span class="p">;</span>
-    <span class="kt">uint16_t</span> <span class="n">pan</span><span class="p">;</span>
-<span class="p">}</span> <span class="n">hid_mouse_t</span><span class="p">;</span>
+    <span class="kt">uint8_t</span> <span class="n">x</span><span class="p">;</span>
+    <span class="kt">uint8_t</span> <span class="n">y</span><span class="p">;</span>
+    <span class="kt">uint8_t</span> <span class="n">wheel</span><span class="p">;</span>
+    <span class="kt">uint8_t</span> <span class="n">pan</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">mouse</span><span class="p">;</span>
 </pre></div>
 </div>
 <div class="line-block">
-<div class="line">The amount of movement is computed by keeping track of the previous values and subtracting from the current value.</div>
+<div class="line">The amount of movement is computed by keeping track of the previous values and subtracting from the current value. Vsync timing (60Hz) isn’t always fast enough. For perfect mouse input with fast mice, use an ISR at 8ms or faster (125Hz).</div>
 </div>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int16_t</span> <span class="n">delta_x</span> <span class="o">=</span> <span class="n">current_x</span> <span class="o">-</span> <span class="n">prev_x</span><span class="p">;</span>
 </pre></div>
