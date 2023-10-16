@@ -50,16 +50,17 @@
 <li><p><a class="reference internal" href="#uart" id="id6">2.3. UART</a></p></li>
 <li><p><a class="reference internal" href="#extended-ram-xram" id="id7">2.4. Extended RAM (XRAM)</a></p></li>
 <li><p><a class="reference internal" href="#extended-stack-xstack" id="id8">2.5. Extended Stack (XSTACK)</a></p></li>
+<li><p><a class="reference internal" href="#extended-registers-xreg" id="id9">2.6. Extended Registers (XREG)</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#pico-information-exchange-pix" id="id9">3. Pico Information Exchange (PIX)</a></p>
+<li><p><a class="reference internal" href="#pico-information-exchange-pix" id="id10">1. Pico Information Exchange (PIX)</a></p>
 <ul>
-<li><p><a class="reference internal" href="#physical-layer" id="id10">3.1. Physical layer</a></p></li>
-<li><p><a class="reference internal" href="#pix-extended-ram-xram" id="id11">3.2. PIX Extended RAM (XRAM)</a></p></li>
-<li><p><a class="reference internal" href="#pix-extended-registers-xreg" id="id12">3.3. PIX Extended Registers (XREG)</a></p></li>
+<li><p><a class="reference internal" href="#physical-layer" id="id11">3.1. Physical layer</a></p></li>
+<li><p><a class="reference internal" href="#pix-extended-ram-xram" id="id12">3.2. PIX Extended RAM (XRAM)</a></p></li>
+<li><p><a class="reference internal" href="#pix-extended-registers-xreg" id="id13">3.3. PIX Extended Registers (XREG)</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#fm-audio-synthesizer" id="id13">4. FM Audio Synthesizer</a></p></li>
+<li><p><a class="reference internal" href="#fm-audio-synthesizer" id="id14">4. FM Audio Synthesizer</a></p></li>
 </ul>
 </div>
 <div class="section" id="introduction">
@@ -274,34 +275,101 @@
 <h3><a class="toc-backref" href="#id8">2.5. Extended Stack (XSTACK)</a><a class="headerlink" href="#extended-stack-xstack" title="Permalink to this headline">¶</a></h3>
 <p>This is 256 bytes of last-in, first-out, top-down stack used for the fastcall mechanism described in the <a class="reference internal" href="api.html"><span class="doc">RP6502-API</span></a>. Reading past the end is guaranteed to return zeros.</p>
 </div>
+<div class="section" id="extended-registers-xreg">
+<h3><a class="toc-backref" href="#id9">2.6. Extended Registers (XREG)</a><a class="headerlink" href="#extended-registers-xreg" title="Permalink to this headline">¶</a></h3>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 90%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Address</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>$0:0:00</p></td>
+<td><p>KEYBOARD</p></td>
+<td><div class="line-block">
+<div class="line">Sets the address in extended RAM for a bit array of USB HID keyboard codes. Note that these are not the same as PS/2 scancodes. Each bit represents one key with the first four bits having special meaning.</div>
+<div class="line">* 0 - No key pressed</div>
+<div class="line">* 1 - Overflow - too many keys pressed</div>
+<div class="line">* 2 - Unused - POST error</div>
+<div class="line">* 3 - Unused - Undefined error</div>
+<div class="line">This is intended for applications that need to detect both key up and down events or the modifier keys. Use the UART or stdin if you don’t need this kind of direct access.</div>
+</div>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">uint8_t</span> <span class="n">keys</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
+<span class="cp">#define key(code) (keys[code &gt;&gt; 3] &amp; (1 &lt;&lt; (code &amp; 7)))</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p>$0:0:01</p></td>
+<td><p>MOUSE</p></td>
+<td><div class="line-block">
+<div class="line">Sets the address in extended RAM for a structure containing direct mouse input.</div>
+</div>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
+    <span class="kt">uint8_t</span> <span class="n">buttons</span><span class="p">;</span>
+    <span class="kt">uint16_t</span> <span class="n">x</span><span class="p">;</span>
+    <span class="kt">uint16_t</span> <span class="n">y</span><span class="p">;</span>
+    <span class="kt">uint16_t</span> <span class="n">wheel</span><span class="p">;</span>
+    <span class="kt">uint16_t</span> <span class="n">pan</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">hid_mouse_t</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The amount of movement is computed by keeping track of the previous values and subtracting from the current value.</div>
+</div>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int16_t</span> <span class="n">delta_x</span> <span class="o">=</span> <span class="n">current_x</span> <span class="o">-</span> <span class="n">prev_x</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Mouse buttons are a bitfield:</div>
+<div class="line">0 - LEFT</div>
+<div class="line">1 - RIGHT</div>
+<div class="line">2 - MIDDLE</div>
+<div class="line">3 - BACKWARD</div>
+<div class="line">4 - FORWARD</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div class="section" id="pico-information-exchange-pix">
-<h2><a class="toc-backref" href="#id9">3. Pico Information Exchange (PIX)</a><a class="headerlink" href="#pico-information-exchange-pix" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id10">1. Pico Information Exchange (PIX)</a><a class="headerlink" href="#pico-information-exchange-pix" title="Permalink to this headline">¶</a></h2>
 <p>The limited numbers of GPIO pins on the Raspberry Pi Pico required creating a new bus for high bandwidth devices like video systems. This is an addressable broadcast system which any number of devices can listen to.</p>
 <div class="section" id="physical-layer">
-<h3><a class="toc-backref" href="#id10">3.1. Physical layer</a><a class="headerlink" href="#physical-layer" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id11">3.1. Physical layer</a><a class="headerlink" href="#physical-layer" title="Permalink to this headline">¶</a></h3>
 <p>The physical layer is designed to be easily decoded by Pi Pico PIO, which is just a fancy shift register. The signals used are PHI2 and PIX0-3. This is a double data rate bus with PIX0-3 shifted left on both transitions of PHI2. A frame consists of 32 bits transmitted over 4 cycles of PHI2.</p>
 <p>Bit 28 (0x10000000) is the framing bit. This bit will be set in all messages. An all zero payload is repeated on device ID 7 when the bus is idle. A receiver will synchronize by ensuring PIX0 is high on a low transition of PHI2. If it is not, stall until the next clock cycle.</p>
 <p>Bits 31-29 (0xE0000000) indicate the device ID number for a message.</p>
 <p>Device 0 is allocated to <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a>. Device 0 is also overloaded to broadcast XRAM.</p>
 <p>Device 1 is allocated to <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a>.</p>
-<p>Devices 2-6 are for expansion.</p>
+<p>Devices 2-6 are available for user expansion.</p>
 <p>Device 7 is used for synchronization. Because 0xF0000000 is hard to miss on test equipment.</p>
+<p>Bits 27-24(0x0F000000) indicate the channel ID number for a message. Each device can have 16 channels.</p>
+<p>Bits 23-16(0x00FF0000) indicate the register address in the channel on the device.</p>
+<p>Bits 15-0(0x0000FFFF) is a value to store in the register.</p>
 </div>
 <div class="section" id="pix-extended-ram-xram">
-<h3><a class="toc-backref" href="#id11">3.2. PIX Extended RAM (XRAM)</a><a class="headerlink" href="#pix-extended-ram-xram" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id12">3.2. PIX Extended RAM (XRAM)</a><a class="headerlink" href="#pix-extended-ram-xram" title="Permalink to this headline">¶</a></h3>
 <p>All changes to the 64KB of XRAM on the RIA will be broadcast on PIX device 0. Bits 15-0 is the XRAM address. Bits 23-16 is the XRAM data. This goes out on the wire, but is never seen by the SDK. Device 0, as seen by the SDK, is the RIA itself and has no need to go out the wire.</p>
 <p>PIX devices will maintain a replica of the XRAM they use. Typically, all 64K is replicated and an XREG set by the application will point to a configuration structure in XRAM.</p>
 </div>
 <div class="section" id="pix-extended-registers-xreg">
-<h3><a class="toc-backref" href="#id12">3.3. PIX Extended Registers (XREG)</a><a class="headerlink" href="#pix-extended-registers-xreg" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13">3.3. PIX Extended Registers (XREG)</a><a class="headerlink" href="#pix-extended-registers-xreg" title="Permalink to this headline">¶</a></h3>
 <p>PIX devices may use bits 27-0 however they choose. The suggest division of this bits is:</p>
 <p>Bits 27-24 indicate a channel. For example, the RIA device has a channel for audio, a channel for keyboard and mouse, a channel for Wifi, and so on. Bits 23-16 is an extended register address. Bits 15:0 for the payload.</p>
 <p>So we have seven PIX devices, each with 16 internal channels having 256 16-bit registers. The idea is to use extended registers to point to structures in XRAM. Changing XREG is setup, changing XRAM causes the device to respond.</p>
 </div>
 </div>
 <div class="section" id="fm-audio-synthesizer">
-<h2><a class="toc-backref" href="#id13">4. FM Audio Synthesizer</a><a class="headerlink" href="#fm-audio-synthesizer" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id14">4. FM Audio Synthesizer</a><a class="headerlink" href="#fm-audio-synthesizer" title="Permalink to this headline">¶</a></h2>
 <p>The RIA will include an FM Audio Synthesizer on PIX device 0 channel 0.</p>
 </div>
 </div>
@@ -336,9 +404,10 @@
 <li class="toctree-l3"><a class="reference internal" href="#uart">2.3. UART</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#extended-ram-xram">2.4. Extended RAM (XRAM)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#extended-stack-xstack">2.5. Extended Stack (XSTACK)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#extended-registers-xreg">2.6. Extended Registers (XREG)</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#pico-information-exchange-pix">3. Pico Information Exchange (PIX)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pico-information-exchange-pix">1. Pico Information Exchange (PIX)</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#physical-layer">3.1. Physical layer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pix-extended-ram-xram">3.2. PIX Extended RAM (XRAM)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#pix-extended-registers-xreg">3.3. PIX Extended Registers (XREG)</a></li>

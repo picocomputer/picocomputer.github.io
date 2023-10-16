@@ -183,8 +183,58 @@ Setting ADDR after the expected XRAM change will latch RW to the latest value.
 
 This is 256 bytes of last-in, first-out, top-down stack used for the fastcall mechanism described in the :doc:`api`. Reading past the end is guaranteed to return zeros.
 
+2.6. Extended Registers (XREG)
+------------------------------
 
-3. Pico Information Exchange (PIX)
+.. list-table::
+  :widths: 5 5 90
+  :header-rows: 1
+
+  * - Address
+    - Name
+    - Description
+  * - $0:0:00
+    - KEYBOARD
+    - | Sets the address in extended RAM for a bit array of USB HID keyboard codes. Note that these are not the same as PS/2 scancodes. Each bit represents one key with the first four bits having special meaning.
+      | * 0 - No key pressed
+      | * 1 - Overflow - too many keys pressed
+      | * 2 - Unused - POST error
+      | * 3 - Unused - Undefined error
+      | This is intended for applications that need to detect both key up and down events or the modifier keys. Use the UART or stdin if you don't need this kind of direct access.
+
+      .. code-block:: C
+
+        uint8_t keys[32];
+        #define key(code) (keys[code >> 3] & (1 << (code & 7)))
+  * - $0:0:01
+    - MOUSE
+    - | Sets the address in extended RAM for a structure containing direct mouse input.
+
+      .. code-block:: C
+
+        struct {
+            uint8_t buttons;
+            uint16_t x;
+            uint16_t y;
+            uint16_t wheel;
+            uint16_t pan;
+        } hid_mouse_t;
+
+      | The amount of movement is computed by keeping track of the previous values and subtracting from the current value.
+
+      .. code-block:: C
+
+        int16_t delta_x = current_x - prev_x;
+
+      | Mouse buttons are a bitfield:
+      | 0 - LEFT
+      | 1 - RIGHT
+      | 2 - MIDDLE
+      | 3 - BACKWARD
+      | 4 - FORWARD
+
+
+1. Pico Information Exchange (PIX)
 ==================================
 
 The limited numbers of GPIO pins on the Raspberry Pi Pico required creating a new bus for high bandwidth devices like video systems. This is an addressable broadcast system which any number of devices can listen to.
@@ -202,9 +252,15 @@ Device 0 is allocated to :doc:`ria`. Device 0 is also overloaded to broadcast XR
 
 Device 1 is allocated to :doc:`vga`.
 
-Devices 2-6 are for expansion.
+Devices 2-6 are available for user expansion.
 
 Device 7 is used for synchronization. Because 0xF0000000 is hard to miss on test equipment.
+
+Bits 27-24(0x0F000000) indicate the channel ID number for a message. Each device can have 16 channels.
+
+Bits 23-16(0x00FF0000) indicate the register address in the channel on the device.
+
+Bits 15-0(0x0000FFFF) is a value to store in the register.
 
 3.2. PIX Extended RAM (XRAM)
 ----------------------------
