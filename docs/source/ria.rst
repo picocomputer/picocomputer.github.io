@@ -225,7 +225,7 @@ This is 256 bytes of last-in, first-out, top-down stack used for the fastcall me
 
       .. code-block:: C
 
-        int16_t delta_x = current_x - prev_x;
+        int8_t delta_x = current_x - prev_x;
 
       | Mouse buttons are a bitfield:
       | 0 - LEFT
