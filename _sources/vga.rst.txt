@@ -125,8 +125,8 @@ Character modes have color information for each position on the screen. This is 
     - 1 - Character
   * - $1:0:02
     - OPTIONS
-    - | bit 2 - font size 0=8x8, 1=8x16
-      | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
+    - | bit 3 - font size 0=8x8, 1=8x16
+      | bit 2:0 - 0=1, 1=2, 2=4, 3=8, or 4=16 bit color
   * - $1:0:03
     - CONFIG
     - Address of config structure in XRAM.
@@ -220,8 +220,8 @@ Tile modes have color information encoded in the tile bitmap. This is the mode y
     - 2 - Tile
   * - $1:0:02
     - OPTIONS
-    - | bit 2 - 0=8x8, 1=16x16
-      | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
+    - | bit 3 - 0=8x8, 1=16x16
+      | bit 2:0 - 0=1, 1=2, 2=4, 3=8, or 4=16 bit color
   * - $1:0:03
     - CONFIG
     - Address of config structure in XRAM.
@@ -309,8 +309,8 @@ Every pixel can be its own color. 64K XRAM limits the full screen color depth. M
     - 3 - Bitmap
   * - $1:0:02
     - OPTIONS
-    - | bit 2 - reverse bits
-      | bit 1:0 - 0=1, 1=4, 2=8, or 3=16 bit color
+    - | bit 3 - reverse bit order
+      | bit 2:0 - 0=1, 1=2, 2=4, 3=8, or 4=16 bit color
   * - $1:0:03
     - CONFIG
     - Address of config structure in XRAM.

@@ -324,7 +324,7 @@
 <div class="line-block">
 <div class="line">The amount of movement is computed by keeping track of the previous values and subtracting from the current value. Vsync timing (60Hz) isn’t always fast enough. For perfect mouse input with fast mice, use an ISR at 8ms or faster (125Hz).</div>
 </div>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int16_t</span> <span class="n">delta_x</span> <span class="o">=</span> <span class="n">current_x</span> <span class="o">-</span> <span class="n">prev_x</span><span class="p">;</span>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int8_t</span> <span class="n">delta_x</span> <span class="o">=</span> <span class="n">current_x</span> <span class="o">-</span> <span class="n">prev_x</span><span class="p">;</span>
 </pre></div>
 </div>
 <div class="line-block">
