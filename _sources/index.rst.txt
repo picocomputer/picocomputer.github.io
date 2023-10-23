@@ -10,6 +10,10 @@
 Picocomputer 6502
 =================
 
+.. image:: _static/founders.jpg
+  :width: 600
+  :alt: Alternative text
+
 The Picocomputer explores retro computing and game development by removing the barrier between genuine 8-bit hardware and modern devices. This is the documentation.
 
 * GitHub: https://github.com/picocomputer
