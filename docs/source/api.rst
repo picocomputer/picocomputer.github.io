@@ -170,7 +170,7 @@ lrand
 
 
 clock_getres
------
+------------
 
 .. c:function:: int clock_getres(clockid_t clock_id, struct timespec *res)
 
@@ -182,7 +182,7 @@ clock_getres
 
 
 clock_gettime
------
+-------------
 
 .. c:function:: int clock_gettime(clockid_t clock_id, struct timespec *tp)
 
@@ -194,7 +194,7 @@ clock_gettime
 
 
 clock_settime
------
+-------------
 
 .. c:function:: int clock_settime(clockid_t clock_id, const struct timespec *tp)
 
@@ -206,7 +206,7 @@ clock_settime
 
 
 clock_gettimezone
------
+-----------------
 
 .. c:function:: int clock_gettimezone(clockid_t clock_id, struct _timezone *tz)
 
