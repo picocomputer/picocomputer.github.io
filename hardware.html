@@ -409,7 +409,7 @@
 <p>The 74xx ICs must be true CMOS. Use AC or HC, do not use ACT or HCT. Two out of three must be AC for 8MHz. You may use 74HC00 and 74HC02 instead of AC, but 8MHz will not be achievable. I’ve never seen a DIP 74AC30, but if you find one then it would be preferred over the 74HC30.</p>
 <p>The RAM IC is 128k because 2x32k is more expensive. Speed must be &lt;=70ns for 8MHz.</p>
 <p>The WDC W65C02S and W65C22S must not be substituted. Do not attempt to use NMOS chips (without the C in the number). Some older CMOS designs may work but there are no plans to support out-of-production ICs.</p>
-<p>Only the Raspberry Pi design of the Pi Pico has been tested. The “H” (header) version may be used, but connecting the three SWD pins will require soldering a debug wire to the circuit board. The SWD connection is only used for kernel development, so it’s OK to leave this unconnected.</p>
+<p>Only the Raspberry Pi design of the Pi Pico has been tested. Both original and “H” (header) versions work great. Pin-compatible alternatives may work, check the forums. The 3-pin SWD connection on the Pi Pico RIA is no longer used internally and may be ignored when looking for alternatives.</p>
 </div>
 </div>
 

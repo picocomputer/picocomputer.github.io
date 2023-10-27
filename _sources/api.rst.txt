@@ -113,11 +113,10 @@ These load and save XRAM directly. You can load game assets without going throug
 
 The kernel expects `buf` and `count` on the XSTACK as integers with `filedes` in AX. The buffer is effectively &XRAM[buf] here. There's nothing special about these calls in regards to how the binary interface rules are applied. They are interesting because of their high performance for loading assets.
 
-1. Function Reference
+3. Function Reference
 =====================
 
 Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, some operations will have different argument orders or bitfield values than what you're used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice the differences if you only work in C because the standard library has wrapper functions and familiar prototypes. For example, the lseek_impl() described below has reorderd arguments that are optimized for short stacking the long argument. But you never call lseek_impl() from C, you call the usual lseek() which has the traditional argument order.
-
 
 zxstack
 -------
@@ -168,6 +167,55 @@ lrand
    Generates a random number starting with entropy on the RIA. This is suitable for seeding a RNG or general use. The 16-bit rand() in the CC65 library can be seeded with this by calling its non-standard _randomize() function.
 
    :returns: Chaos.
+
+
+clock_getres
+-----
+
+.. c:function:: int clock_getres(clockid_t clock_id, struct timespec *res)
+
+   Copies the clock resolution to `res`.
+
+   :param clock_id: 0 for CLOCK_REALTIME.
+   :returns: 0 on success. -1 on error.
+   :errno: EINVAL
+
+
+clock_gettime
+-----
+
+.. c:function:: int clock_gettime(clockid_t clock_id, struct timespec *tp)
+
+   Copies the current time to `tp`.
+
+   :param clock_id: 0 for CLOCK_REALTIME.
+   :returns: 0 on success. -1 on error.
+   :errno: EINVAL, EUNKNOWN
+
+
+clock_settime
+-----
+
+.. c:function:: int clock_settime(clockid_t clock_id, const struct timespec *tp)
+
+   Sets the current time to `tp`.
+
+   :param clock_id: 0 for CLOCK_REALTIME.
+   :returns: 0 on success. -1 on error.
+   :errno: EINVAL, EUNKNOWN
+
+
+clock_gettimezone
+-----
+
+.. c:function:: int clock_gettimezone(clockid_t clock_id, struct _timezone *tz)
+
+   Not implemented. Always fails.
+
+   :param clock_id: 0 for CLOCK_REALTIME.
+   :returns: -1 always.
+   :errno: ENOSYS
+
 
 open
 ----
@@ -323,9 +371,6 @@ lseek
       |    The size of the file plus offset bytes.
 
 
-
-
-
 exit
 ----
 .. c:function:: void exit(int status)
@@ -334,3 +379,9 @@ exit
 
    :param status: 0 is good, 1-255 for error.
    :a regs: status
+
+
+4. Tips and Tricks
+==================
+
+The CC65 C standard library has a hidden secret. Typically unsafe calls like fgets become possible because of a 255 char string length limit. You're always safe as long as you provide a 256 byte buffer. The size becomes easier to justify when you consider you'd need some of that for bounds checking.

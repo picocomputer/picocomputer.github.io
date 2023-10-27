@@ -103,7 +103,7 @@
 <tr class="row-even"><td><p>$1:0:00</p></td>
 <td><p>CANVAS</p></td>
 <td><dl class="simple">
-<dt>Select a graphics canvas. This clears $1:0:00-$1:0:FF and all scanline programming. The 80 column console canvas is used as a failsafe and therefore not scanline programmable.</dt><dd><ul class="simple">
+<dt>Select a graphics canvas. This clears $1:0:02-$1:0:FF and all scanline programming. The 80 column console canvas is used as a failsafe and therefore not scanline programmable.</dt><dd><ul class="simple">
 <li><p>0 - 80 column console. (4:3 or 5:4)</p></li>
 <li><p>1 - 320x240 (4:3)</p></li>
 <li><p>2 - 320x180 (16:9)</p></li>
@@ -117,13 +117,12 @@
 <tr class="row-odd"><td><p>$1:0:01</p></td>
 <td><p>MODE</p></td>
 <td><dl class="simple">
-<dt>Program a mode into a plane of scanlines. $1:0:00-$1:0:FF cleared after programming. Each mode has a section of this document for its own registers.</dt><dd><ul class="simple">
+<dt>Program a mode into a plane of scanlines. $1:0:02-$1:0:FF cleared after programming. Each mode has a section of this document for its own registers.</dt><dd><ul class="simple">
 <li><p>0 - Console</p></li>
 <li><p>1 - Character</p></li>
 <li><p>2 - Tile</p></li>
 <li><p>3 - Bitmap</p></li>
 <li><p>4 - Sprite</p></li>
-<li><p>5 - Affine Sprite</p></li>
 </ul>
 </dd>
 </dl>
@@ -488,29 +487,29 @@
 </table>
 <p>Unused sprites should be moved off screen. Non-affine sprites use this config structure.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
-    <span class="kt">int16_t</span> <span class="n">x_px</span><span class="p">;</span>
-    <span class="kt">int16_t</span> <span class="n">y_px</span><span class="p">;</span>
-    <span class="kt">int16_t</span> <span class="n">sprite_ptr</span><span class="p">;</span>
-    <span class="kt">uint8_t</span> <span class="n">log_size</span><span class="p">;</span>
-    <span class="kt">bool</span> <span class="n">has_opacity_metadata</span><span class="p">;</span>
+  <span class="kt">int16_t</span> <span class="n">x_pos_px</span><span class="p">;</span>
+  <span class="kt">int16_t</span> <span class="n">y_pos_px</span><span class="p">;</span>
+  <span class="kt">uint16_t</span> <span class="n">xram_sprite_ptr</span><span class="p">;</span>
+  <span class="kt">uint8_t</span> <span class="n">log_size</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">has_opacity_metadata</span><span class="p">;</span>
 <span class="p">}</span> <span class="n">config</span><span class="p">[</span><span class="n">LENGTH</span><span class="p">];</span>
 </pre></div>
 </div>
 <p>Affine sprites apply a 3x3 matrix transform. These are slower than plain sprites. Only the first two rows of the matrix is useful, which is why there’s only six transform values. These are in signed 8.8 fixed point format.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
-     <span class="kt">int16_t</span> <span class="n">transform</span><span class="p">[</span><span class="mi">6</span><span class="p">];</span>
-     <span class="kt">int16_t</span> <span class="n">x_px</span>
-     <span class="kt">int16_t</span> <span class="n">y_px</span>
-     <span class="kt">int16_t</span> <span class="n">sprite_ptr</span>
-     <span class="kt">uint8_t</span> <span class="n">log_size</span><span class="p">;</span>
-     <span class="kt">bool</span> <span class="n">has_opacity_metadata</span><span class="p">;</span>
+  <span class="kt">int16_t</span> <span class="n">transform</span><span class="p">[</span><span class="mi">6</span><span class="p">];</span>
+  <span class="kt">int16_t</span> <span class="n">x_pos_px</span><span class="p">;</span>
+  <span class="kt">int16_t</span> <span class="n">y_pos_px</span><span class="p">;</span>
+  <span class="kt">uint16_t</span> <span class="n">xram_sprite_ptr</span><span class="p">;</span>
+  <span class="kt">uint8_t</span> <span class="n">log_size</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">has_opacity_metadata</span><span class="p">;</span>
 <span class="p">}</span> <span class="n">config</span><span class="p">[</span><span class="n">LENGTH</span><span class="p">];</span>
 </pre></div>
 </div>
 <p>Sprite image data is an array of 16 bit colors.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
   <span class="k">struct</span> <span class="p">{</span>
-      <span class="kt">uint16_t</span> <span class="n">pixels</span><span class="p">[</span><span class="mi">2</span><span class="o">^</span><span class="n">log_size</span><span class="p">];</span>
+      <span class="kt">uint16_t</span> <span class="n">color</span><span class="p">[</span><span class="mi">2</span><span class="o">^</span><span class="n">log_size</span><span class="p">];</span>
   <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">2</span><span class="o">^</span><span class="n">log_size</span><span class="p">];</span>
 <span class="p">}</span> <span class="n">sprite</span><span class="p">;</span>
 </pre></div>
