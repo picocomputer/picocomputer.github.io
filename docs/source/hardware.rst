@@ -114,4 +114,4 @@ The RAM IC is 128k because 2x32k is more expensive. Speed must be \<=70ns for 8M
 
 The WDC W65C02S and W65C22S must not be substituted. Do not attempt to use NMOS chips (without the C in the number). Some older CMOS designs may work but there are no plans to support out-of-production ICs.
 
-Only the Raspberry Pi design of the Pi Pico has been tested. The "H" (header) version may be used, but connecting the three SWD pins will require soldering a debug wire to the circuit board. The SWD connection is only used for kernel development, so it's OK to leave this unconnected.
+Only the Raspberry Pi design of the Pi Pico has been tested. Both original and "H" (header) versions work great. Pin-compatible alternatives may work, check the forums. The 3-pin SWD connection on the Pi Pico RIA is no longer used internally and may be ignored when looking for alternatives.

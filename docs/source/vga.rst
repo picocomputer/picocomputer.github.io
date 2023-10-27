@@ -65,7 +65,7 @@ Setting key registers may return a failure (-1) with errno EINVAL. Not all optio
     - Description
   * - $1:0:00
     - CANVAS
-    - Select a graphics canvas. This clears $1:0:00-$1:0:FF and all scanline programming. The 80 column console canvas is used as a failsafe and therefore not scanline programmable.
+    - Select a graphics canvas. This clears $1:0:02-$1:0:FF and all scanline programming. The 80 column console canvas is used as a failsafe and therefore not scanline programmable.
         * 0 - 80 column console. (4:3 or 5:4)
         * 1 - 320x240 (4:3)
         * 2 - 320x180 (16:9)
@@ -73,13 +73,12 @@ Setting key registers may return a failure (-1) with errno EINVAL. Not all optio
         * 4 - 640x360 (16:9)
   * - $1:0:01
     - MODE
-    - Program a mode into a plane of scanlines. $1:0:00-$1:0:FF cleared after programming. Each mode has a section of this document for its own registers.
+    - Program a mode into a plane of scanlines. $1:0:02-$1:0:FF cleared after programming. Each mode has a section of this document for its own registers.
         * 0 - Console
         * 1 - Character
         * 2 - Tile
         * 3 - Bitmap
         * 4 - Sprite
-        * 5 - Affine Sprite
 
 
 Mode 0: Console
@@ -393,11 +392,11 @@ Unused sprites should be moved off screen. Non-affine sprites use this config st
 .. code-block:: C
 
   struct {
-      int16_t x_px;
-      int16_t y_px;
-      int16_t sprite_ptr;
-      uint8_t log_size;
-      bool has_opacity_metadata;
+    int16_t x_pos_px;
+    int16_t y_pos_px;
+    uint16_t xram_sprite_ptr;
+    uint8_t log_size;
+    bool has_opacity_metadata;
   } config[LENGTH];
 
 Affine sprites apply a 3x3 matrix transform. These are slower than plain sprites. Only the first two rows of the matrix is useful, which is why there's only six transform values. These are in signed 8.8 fixed point format.
@@ -405,12 +404,12 @@ Affine sprites apply a 3x3 matrix transform. These are slower than plain sprites
 .. code-block:: C
 
   struct {
-       int16_t transform[6];
-       int16_t x_px
-       int16_t y_px
-       int16_t sprite_ptr
-       uint8_t log_size;
-       bool has_opacity_metadata;
+    int16_t transform[6];
+    int16_t x_pos_px;
+    int16_t y_pos_px;
+    uint16_t xram_sprite_ptr;
+    uint8_t log_size;
+    bool has_opacity_metadata;
   } config[LENGTH];
 
 
@@ -420,7 +419,7 @@ Sprite image data is an array of 16 bit colors.
 
   struct {
     struct {
-        uint16_t pixels[2^log_size];
+        uint16_t color[2^log_size];
     } rows[2^log_size];
   } sprite;
 
