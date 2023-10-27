@@ -371,6 +371,31 @@ lseek
       |    The size of the file plus offset bytes.
 
 
+unlink
+------
+
+.. c:function:: int unlink (const char* name)
+
+   Removes a file or directory from the volume.
+
+   :param name: File or directory name to unlink (remove).
+   :returns: 0 on success. -1 on error.
+   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_LOCKED, FR_NOT_ENOUGH_CORE
+
+
+rename
+------
+
+.. c:function:: int rename (const char* oldname, const char* newname)
+
+   Renames and/or moves a file or directory.
+
+   :param oldname: Existing file or directory name to rename.
+   :param newname: New object name.
+   :returns: 0 on success. -1 on error.
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_EXIST, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_LOCKED, FR_NOT_ENOUGH_CORE
+
+
 exit
 ----
 .. c:function:: void exit(int status)
