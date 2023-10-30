@@ -125,7 +125,7 @@ Character modes have color information for each position on the screen. This is 
   * - $1:0:02
     - OPTIONS
     - | bit 3 - font size 0=8x8, 1=8x16
-      | bit 2:0 - 0=1, 1=2, 2=4, 3=8, or 4=16 bit color
+      | bit 2:0 - 0=1, 1=4r, 2=4, 3=8, or 4=16 bit color
   * - $1:0:03
     - CONFIG
     - Address of config structure in XRAM.
@@ -166,10 +166,18 @@ Data is encoded based on the color bit depth selected.
 
 .. code-block:: C
 
+  // 16-color reversed index, 4-bit
+  struct {
+      uint8_t glyph_code;
+      uint8_t fg_bg_index;
+  } data[width_chars * height_chars];
+
+.. code-block:: C
+
   // 16-color, 4-bit
   struct {
       uint8_t glyph_code;
-      uint8_t fg_bg;
+      uint8_t bg_fg_index;
   } data[width_chars * height_chars];
 
 .. code-block:: C
@@ -357,6 +365,8 @@ Mode 4: Sprite
 --------------
 
 Sprites may be drawn over each fill plane. This is the 16-bit sprite system from the Pi Pico Playground. Lower bit depths are planned for a different mode.
+
+WARNING! Highly experimental! Rumbledethumps did not write this code. This code can crash the entire VGA module.
 
 .. list-table::
   :widths: 5 5 90

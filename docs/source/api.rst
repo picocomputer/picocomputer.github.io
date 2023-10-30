@@ -135,7 +135,6 @@ xreg
    :param channel: PIX channel. 0-15
    :param address: PIX address. 0-255
    :param ...: 16 bit integers to set starting at address.
-   :a regs: devid
    :errno: EINVAL, EIO
 
 
