@@ -297,7 +297,7 @@
 <td><p>OPTIONS</p></td>
 <td><div class="line-block">
 <div class="line">bit 3 - 0=8x8, 1=16x16</div>
-<div class="line">bit 2:0 - 0=1, 1=2, 2=4, 3=8, or 4=16 bit color</div>
+<div class="line">bit 2:0 - 0=1, 1=2, 2=4, or 3=8 bit color</div>
 </div>
 </td>
 </tr>
@@ -333,13 +333,13 @@
 <span class="p">}</span> <span class="n">config</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>Data is a matrix of glyph codes with 0,0 at the top left.</p>
+<p>Data is a matrix of tile ids with 0,0 at the top left.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
-    <span class="kt">uint8_t</span> <span class="n">glyph_code</span><span class="p">;</span>
+    <span class="kt">uint8_t</span> <span class="n">tile_id</span><span class="p">;</span>
 <span class="p">}</span> <span class="n">data</span><span class="p">[</span><span class="n">width_tiles</span> <span class="o">*</span> <span class="n">height_tiles</span><span class="p">];</span>
 </pre></div>
 </div>
-<p>Tile data is encoded in “tall” bitmap format.</p>
+<p>Tiles are encoded in “tall” bitmap format.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// 8x8 tiles</span>
 <span class="k">struct</span> <span class="p">{</span>
     <span class="k">struct</span> <span class="p">{</span>
@@ -351,20 +351,6 @@
 <span class="k">struct</span> <span class="p">{</span>
     <span class="k">struct</span> <span class="p">{</span>
         <span class="kt">uint8_t</span> <span class="n">cols</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">bpp</span><span class="p">];</span>
-    <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
-<span class="p">}</span> <span class="n">tile</span><span class="p">[</span><span class="n">up_to_256</span><span class="p">];</span>
-
-<span class="c1">// 16-bit 8x8 tiles (no palette)</span>
-<span class="k">struct</span> <span class="p">{</span>
-    <span class="k">struct</span> <span class="p">{</span>
-        <span class="kt">uint16_t</span> <span class="n">cols</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
-    <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
-<span class="p">}</span> <span class="n">tile</span><span class="p">[</span><span class="n">up_to_256</span><span class="p">];</span>
-
-<span class="c1">// 16-bit 16x16 tiles (no palette)</span>
-<span class="k">struct</span> <span class="p">{</span>
-    <span class="k">struct</span> <span class="p">{</span>
-        <span class="kt">uint16_t</span> <span class="n">cols</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
     <span class="p">}</span> <span class="n">rows</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
 <span class="p">}</span> <span class="n">tile</span><span class="p">[</span><span class="n">up_to_256</span><span class="p">];</span>
 </pre></div>

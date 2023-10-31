@@ -228,7 +228,7 @@ Tile modes have color information encoded in the tile bitmap. This is the mode y
   * - $1:0:02
     - OPTIONS
     - | bit 3 - 0=8x8, 1=16x16
-      | bit 2:0 - 0=1, 1=2, 2=4, 3=8, or 4=16 bit color
+      | bit 2:0 - 0=1, 1=2, 2=4, or 3=8 bit color
   * - $1:0:03
     - CONFIG
     - Address of config structure in XRAM.
@@ -258,15 +258,15 @@ Config structure may be updated without reprogramming scanlines.
       uint16_t tile_ptr;
   } config;
 
-Data is a matrix of glyph codes with 0,0 at the top left.
+Data is a matrix of tile ids with 0,0 at the top left.
 
 .. code-block:: C
 
   struct {
-      uint8_t glyph_code;
+      uint8_t tile_id;
   } data[width_tiles * height_tiles];
 
-Tile data is encoded in "tall" bitmap format.
+Tiles are encoded in "tall" bitmap format.
 
 .. code-block:: C
 
@@ -281,20 +281,6 @@ Tile data is encoded in "tall" bitmap format.
   struct {
       struct {
           uint8_t cols[2*bpp];
-      } rows[16];
-  } tile[up_to_256];
-
-  // 16-bit 8x8 tiles (no palette)
-  struct {
-      struct {
-          uint16_t cols[8];
-      } rows[8];
-  } tile[up_to_256];
-
-  // 16-bit 16x16 tiles (no palette)
-  struct {
-      struct {
-          uint16_t cols[16];
       } rows[16];
   } tile[up_to_256];
 
