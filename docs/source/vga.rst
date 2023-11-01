@@ -9,16 +9,16 @@ Rumbledethumps Picocomputer 6502 Video Graphics Array.
 1. Introduction
 ===============
 
-The Video Graphics Array is a Raspberry Pi Pico with RP6502-VGA firmware. Its primary connection is to a :doc:`ria` over a 5-wire PIX bus. More than one VGA module can be put on a PIX bus. Note that all VGA modules share the same 64K of XRAM and only one module can generate frame numbers and vsync interrupts.
+The RP6502 Video Graphics Array is a Raspberry Pi Pico with RP6502-VGA firmware. Its primary data connection is to a :doc:`ria` over a 5-wire PIX bus. More than one VGA module can be put on a PIX bus. Note that all VGA modules share the same 64K of XRAM and only one module can generate frame numbers and vsync interrupts.
 
 2. Video Programming
 ====================
 
-The design philosophy for the VGA system is to enable the full power of the Pi Pico while maintaining some 8-bit purity. 6502 programmers should be solving problems with the same thought processes as was used for classic 8-bit home computers. To that end, the VGA system is limited to working from 64K of extended memory (XRAM).
+The design philosophy for the VGA system is to enable the full power of the Pi Pico while maintaining some 8-bit purity. To that end, two paths must be created. The VGA system must help you get the most value from 64K of extended memory (XRAM) and the VGA modes must inflict nostaligia. You may follow either or both paths.
 
-The VGA system is built around the scanvideo library from Pi Pico Extras. All three planes are enabled with RGB555 color plus transparency. The mode 4 sprite system is from Pi Pico Playground.
+The VGA system is built around the scanvideo library from Pi Pico Extras. All three planes are enabled with RGB555 color plus transparency. The mode 4 sprite system is from Pi Pico Playground. The programming system and all other modes are original work for the RP6502.
 
-The RP6502 VGA system exposes per-scanline configuration of the video system to your 6502 application. We start with three planes. Each plane has two layers, a fill layer and a sprite layer. Your application can assign different fill and sprite modes to specific planes and scanlines. There's plenty of fill rate to exceed the capabilities of any classic 8-bit system, but if you like to push the limits then you may see a half-blue screen indicating you went too far.
+The RP6502 VGA system exposes per-scanline configuration of the video system to your 6502 application. At the broadest scope we have three planes. Each plane has two layers, a fill layer and a sprite layer. Your application can assign different fill and sprite modes to specific planes and scanlines. There's plenty of fill rate to exceed the capabilities of any classic 8-bit system, but if you like to push the limits then you may see a half-blue screen indicating you went too far.
 
 The built-in 8x8 and 8x16 fonts are available by using the special XRAM pointer $FFFF. Glyphs 0-127 are ASCII, glyphs 128-255 vary depending on the code page selected.
 
@@ -32,7 +32,7 @@ The built-in color palettes are accessed by using the special XRAM pointer $FFFF
   #define COLOR_FROM_RGB5(r,g,b) ((b<<11)|(g<<6)|(r))
   #define COLOR_ALPHA_MASK (1u<<5)
 
-Palette information is an array. 8bpp, 4bpp, and 1bpp modes use a palette. 16 bit per pixel modes don't used indexed color and will ignore the palette. Palettes must be 16-bit aligned.
+Palette information is an array. 8bpp, 4bpp, and 1bpp modes use a palette. 16 bit per pixel modes don't use indexed color and will ignore the palette. Palettes must be 16-bit aligned.
 
 .. code-block:: C
 
@@ -46,15 +46,17 @@ Programming the VGA device is done with PIX extended registers - XREGS. VGA is P
 .. code-block:: C
 
     // Select a 320x240 canvas
-    result = xreg(1, 0, 0, 1);
+    result = xreg(1, 0, 0, 1); // or
+    result = xreg_vga_canvas(1);
     // Program mode 3 for 4 bit color with
     // its config registers at XRAM $FF00.
-    result = xreg(1, 0, 1, 3, 1, 0xFF00);
+    result = xreg(1, 0, 1, 3, 2, 0xFF00); // or
+    result = xreg_vga_mode(3, 2, 0xFF00);
 
 Key Registers
 -------------
 
-Setting key registers may return a failure (-1) with errno EINVAL. Not all options for all modes are implemented (yet). Check the result of xreg() to detect if a feature is available.
+Setting key registers may return a failure (-1) with errno EINVAL.
 
 .. list-table::
   :widths: 5 5 90
@@ -84,7 +86,7 @@ Setting key registers may return a failure (-1) with errno EINVAL. Not all optio
 Mode 0: Console
 ---------------
 
-The console may be rendered on any canvas plane. The background is transparent, which makes it easy to show text over a background image using planes. The console may be a partial screen, but the scanlines must be a multiple of the font height. 640 pixel wide canvases use an 8x16 font for 80 columns. 320 pixel wide canvases use an 8x8 font for 40 columns. Only one console may be visible, programming again will remove the previous console.
+The console may be rendered on any canvas plane. ANSI color 0-black is transparent, which makes it easy to show text over a background image using planes. The console may be a partial screen, but the scanlines must be a multiple of the font height. 640 pixel wide canvases use an 8x16 font for 80 columns. 320 pixel wide canvases use an 8x8 font for 40 columns. Only one console may be visible, programming again will remove the previous console.
 
 .. list-table::
   :widths: 5 5 90
@@ -98,7 +100,7 @@ The console may be rendered on any canvas plane. The background is transparent, 
     - 0 - Console
   * - $1:0:02
     - PLANE
-    - 0-3 to select which fill plane of scanlines to program.
+    - 0-2 to select which fill plane of scanlines to program.
   * - $1:0:03
     - BEGIN
     - First scanline to program. BEGIN \<= n \< END
@@ -131,7 +133,7 @@ Character modes have color information for each position on the screen. This is 
     - Address of config structure in XRAM.
   * - $1:0:04
     - PLANE
-    - 0-3 to select which fill plane of scanlines to program.
+    - 0-2 to select which fill plane of scanlines to program.
   * - $1:0:05
     - BEGIN
     - First scanline to program. BEGIN \<= n \< END
@@ -199,7 +201,7 @@ Data is encoded based on the color bit depth selected.
       uint16_t bg_color;
   } data[width_chars * height_chars];
 
-Fonts are encoded in wide format. The first 256 bytes are the first row of each of the 256 glyphs. This is the fastest layout, but wastes memory when not using the entire character set.
+Fonts are encoded in wide format. The first 256 bytes are the first row of each of the 256 glyphs.
 
 .. code-block:: C
 
@@ -213,7 +215,7 @@ Fonts are encoded in wide format. The first 256 bytes are the first row of each 
 Mode 2: Tile
 ------------
 
-Tile modes have color information encoded in the tile bitmap. This is the mode you want for showing a video game playfield.
+Tile modes have color information encoded in the tile bitmap. This is the mode you want for showing a video game playfield. Hi-res canvases (640x480 and 640x360) support one plane of 1-bit color. Standard canvases (320x240 and 328x180) support two planes of any option.
 
 .. list-table::
   :widths: 5 5 90
@@ -234,7 +236,7 @@ Tile modes have color information encoded in the tile bitmap. This is the mode y
     - Address of config structure in XRAM.
   * - $1:0:04
     - PLANE
-    - 0-3 to select which fill plane of scanlines to program.
+    - 0-2 to select which fill plane of scanlines to program.
   * - $1:0:05
     - BEGIN
     - First scanline to program. BEGIN \<= n \< END
@@ -309,7 +311,7 @@ Every pixel can be its own color. 64K XRAM limits the full screen color depth. M
     - Address of config structure in XRAM.
   * - $1:0:04
     - PLANE
-    - 0-3 to select which fill plane of scanlines to program.
+    - 0-2 to select which fill plane of scanlines to program.
   * - $1:0:05
     - BEGIN
     - First scanline to program. BEGIN \<= n \< END
@@ -352,7 +354,7 @@ Mode 4: Sprite
 
 Sprites may be drawn over each fill plane. This is the 16-bit sprite system from the Pi Pico Playground. Lower bit depths are planned for a different mode.
 
-WARNING! Highly experimental! Rumbledethumps did not write this code. This code can crash the entire VGA module.
+WARNING! Slightly experimental! It is unknown how well the structure data is validated. Please submit a reproducable test program if you encounter a VGA system lockup.
 
 .. list-table::
   :widths: 5 5 90
@@ -375,7 +377,7 @@ WARNING! Highly experimental! Rumbledethumps did not write this code. This code 
     - Length of config array array in XRAM.
   * - $1:0:05
     - PLANE
-    - 0-3 to select which fill plane of scanlines to program.
+    - 0-2 to select which sprite plane of scanlines to program.
   * - $1:0:06
     - BEGIN
     - First scanline to program. BEGIN \<= n \< END
@@ -455,7 +457,7 @@ These registers are managed by the RIA. Do not distribute applications that set 
        * 2 - Request acknowledgment
 
 
-3. Backchannel
+1. Backchannel
 ==============
 
 Because the PIX bus is unidirectional, it can't be used for sending data from the VGA system back to the RIA. Using the UART Rx path is undesirable since there would be framing overhead or unusable control characters. Since there is a lot of unused bandwidth on the PIX bus, which is only used when the 6502 is writing to XRAM, it can be used for the UART Tx path allowing the UART Tx pin to switch directions.
