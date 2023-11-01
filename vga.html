@@ -50,18 +50,18 @@
 <li><p><a class="reference internal" href="#control-channel-f" id="id9">Control Channel $F</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#backchannel" id="id10">3. Backchannel</a></p></li>
+<li><p><a class="reference internal" href="#backchannel" id="id10">1. Backchannel</a></p></li>
 </ul>
 </div>
 <div class="section" id="introduction">
 <h2><a class="toc-backref" href="#id1">1. Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>The Video Graphics Array is a Raspberry Pi Pico with RP6502-VGA firmware. Its primary connection is to a <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> over a 5-wire PIX bus. More than one VGA module can be put on a PIX bus. Note that all VGA modules share the same 64K of XRAM and only one module can generate frame numbers and vsync interrupts.</p>
+<p>The RP6502 Video Graphics Array is a Raspberry Pi Pico with RP6502-VGA firmware. Its primary data connection is to a <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> over a 5-wire PIX bus. More than one VGA module can be put on a PIX bus. Note that all VGA modules share the same 64K of XRAM and only one module can generate frame numbers and vsync interrupts.</p>
 </div>
 <div class="section" id="video-programming">
 <h2><a class="toc-backref" href="#id2">2. Video Programming</a><a class="headerlink" href="#video-programming" title="Permalink to this headline">¶</a></h2>
-<p>The design philosophy for the VGA system is to enable the full power of the Pi Pico while maintaining some 8-bit purity. 6502 programmers should be solving problems with the same thought processes as was used for classic 8-bit home computers. To that end, the VGA system is limited to working from 64K of extended memory (XRAM).</p>
-<p>The VGA system is built around the scanvideo library from Pi Pico Extras. All three planes are enabled with RGB555 color plus transparency. The mode 4 sprite system is from Pi Pico Playground.</p>
-<p>The RP6502 VGA system exposes per-scanline configuration of the video system to your 6502 application. We start with three planes. Each plane has two layers, a fill layer and a sprite layer. Your application can assign different fill and sprite modes to specific planes and scanlines. There’s plenty of fill rate to exceed the capabilities of any classic 8-bit system, but if you like to push the limits then you may see a half-blue screen indicating you went too far.</p>
+<p>The design philosophy for the VGA system is to enable the full power of the Pi Pico while maintaining some 8-bit purity. To that end, two paths must be created. The VGA system must help you get the most value from 64K of extended memory (XRAM) and the VGA modes must inflict nostaligia. You may follow either or both paths.</p>
+<p>The VGA system is built around the scanvideo library from Pi Pico Extras. All three planes are enabled with RGB555 color plus transparency. The mode 4 sprite system is from Pi Pico Playground. The programming system and all other modes are original work for the RP6502.</p>
+<p>The RP6502 VGA system exposes per-scanline configuration of the video system to your 6502 application. At the broadest scope we have three planes. Each plane has two layers, a fill layer and a sprite layer. Your application can assign different fill and sprite modes to specific planes and scanlines. There’s plenty of fill rate to exceed the capabilities of any classic 8-bit system, but if you like to push the limits then you may see a half-blue screen indicating you went too far.</p>
 <p>The built-in 8x8 and 8x16 fonts are available by using the special XRAM pointer $FFFF. Glyphs 0-127 are ASCII, glyphs 128-255 vary depending on the code page selected.</p>
 <p>The built-in color palettes are accessed by using the special XRAM pointer $FFFF. 1-bit is black and white. 4 and 8-bits point to an ANSI color palette of 16 colors, followed by 216 colors (6x6x6), followed by 24 greys.</p>
 <p>16-bit colors are built with the following bit logic. Setting the alpha bit will make the color opaque. The built-in ANSI color palette has the alpha bit set on all colors except color 0 black.</p>
@@ -70,7 +70,7 @@
 <span class="cp">#define COLOR_ALPHA_MASK (1u&lt;&lt;5)</span>
 </pre></div>
 </div>
-<p>Palette information is an array. 8bpp, 4bpp, and 1bpp modes use a palette. 16 bit per pixel modes don’t used indexed color and will ignore the palette. Palettes must be 16-bit aligned.</p>
+<p>Palette information is an array. 8bpp, 4bpp, and 1bpp modes use a palette. 16 bit per pixel modes don’t use indexed color and will ignore the palette. Palettes must be 16-bit aligned.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
     <span class="kt">uint16_t</span> <span class="n">color</span><span class="p">;</span>
 <span class="p">}</span> <span class="n">palette</span><span class="p">[</span><span class="mi">2</span><span class="o">^</span><span class="n">bits_per_pixel</span><span class="p">];</span>
@@ -78,15 +78,17 @@
 </div>
 <p>Programming the VGA device is done with PIX extended registers - XREGS. VGA is PIX device ID 1. Registers are 16 bit values addressed by $device:$channel:register. e.g. $1:0:0F</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="c1">// Select a 320x240 canvas</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">xreg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">xreg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span> <span class="c1">// or</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">xreg_vga_canvas</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
 <span class="c1">// Program mode 3 for 4 bit color with</span>
 <span class="c1">// its config registers at XRAM $FF00.</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">xreg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0xFF00</span><span class="p">);</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">xreg</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mh">0xFF00</span><span class="p">);</span> <span class="c1">// or</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">xreg_vga_mode</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mh">0xFF00</span><span class="p">);</span>
 </pre></div>
 </div>
 <div class="section" id="key-registers">
 <h3><a class="toc-backref" href="#id3">Key Registers</a><a class="headerlink" href="#key-registers" title="Permalink to this headline">¶</a></h3>
-<p>Setting key registers may return a failure (-1) with errno EINVAL. Not all options for all modes are implemented (yet). Check the result of xreg() to detect if a feature is available.</p>
+<p>Setting key registers may return a failure (-1) with errno EINVAL.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -133,7 +135,7 @@
 </div>
 <div class="section" id="mode-0-console">
 <h3><a class="toc-backref" href="#id4">Mode 0: Console</a><a class="headerlink" href="#mode-0-console" title="Permalink to this headline">¶</a></h3>
-<p>The console may be rendered on any canvas plane. The background is transparent, which makes it easy to show text over a background image using planes. The console may be a partial screen, but the scanlines must be a multiple of the font height. 640 pixel wide canvases use an 8x16 font for 80 columns. 320 pixel wide canvases use an 8x8 font for 40 columns. Only one console may be visible, programming again will remove the previous console.</p>
+<p>The console may be rendered on any canvas plane. ANSI color 0-black is transparent, which makes it easy to show text over a background image using planes. The console may be a partial screen, but the scanlines must be a multiple of the font height. 640 pixel wide canvases use an 8x16 font for 80 columns. 320 pixel wide canvases use an 8x8 font for 40 columns. Only one console may be visible, programming again will remove the previous console.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -153,7 +155,7 @@
 </tr>
 <tr class="row-odd"><td><p>$1:0:02</p></td>
 <td><p>PLANE</p></td>
-<td><p>0-3 to select which fill plane of scanlines to program.</p></td>
+<td><p>0-2 to select which fill plane of scanlines to program.</p></td>
 </tr>
 <tr class="row-even"><td><p>$1:0:03</p></td>
 <td><p>BEGIN</p></td>
@@ -200,7 +202,7 @@
 </tr>
 <tr class="row-odd"><td><p>$1:0:04</p></td>
 <td><p>PLANE</p></td>
-<td><p>0-3 to select which fill plane of scanlines to program.</p></td>
+<td><p>0-2 to select which fill plane of scanlines to program.</p></td>
 </tr>
 <tr class="row-even"><td><p>$1:0:05</p></td>
 <td><p>BEGIN</p></td>
@@ -264,7 +266,7 @@
 <span class="p">}</span> <span class="n">data</span><span class="p">[</span><span class="n">width_chars</span> <span class="o">*</span> <span class="n">height_chars</span><span class="p">];</span>
 </pre></div>
 </div>
-<p>Fonts are encoded in wide format. The first 256 bytes are the first row of each of the 256 glyphs. This is the fastest layout, but wastes memory when not using the entire character set.</p>
+<p>Fonts are encoded in wide format. The first 256 bytes are the first row of each of the 256 glyphs.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
   <span class="k">struct</span> <span class="p">{</span>
       <span class="kt">uint8_t</span> <span class="n">col</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
@@ -275,7 +277,7 @@
 </div>
 <div class="section" id="mode-2-tile">
 <h3><a class="toc-backref" href="#id6">Mode 2: Tile</a><a class="headerlink" href="#mode-2-tile" title="Permalink to this headline">¶</a></h3>
-<p>Tile modes have color information encoded in the tile bitmap. This is the mode you want for showing a video game playfield.</p>
+<p>Tile modes have color information encoded in the tile bitmap. This is the mode you want for showing a video game playfield. Hi-res canvases (640x480 and 640x360) support one plane of 1-bit color. Standard canvases (320x240 and 328x180) support two planes of any option.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -307,7 +309,7 @@
 </tr>
 <tr class="row-odd"><td><p>$1:0:04</p></td>
 <td><p>PLANE</p></td>
-<td><p>0-3 to select which fill plane of scanlines to program.</p></td>
+<td><p>0-2 to select which fill plane of scanlines to program.</p></td>
 </tr>
 <tr class="row-even"><td><p>$1:0:05</p></td>
 <td><p>BEGIN</p></td>
@@ -390,7 +392,7 @@
 </tr>
 <tr class="row-odd"><td><p>$1:0:04</p></td>
 <td><p>PLANE</p></td>
-<td><p>0-3 to select which fill plane of scanlines to program.</p></td>
+<td><p>0-2 to select which fill plane of scanlines to program.</p></td>
 </tr>
 <tr class="row-even"><td><p>$1:0:05</p></td>
 <td><p>BEGIN</p></td>
@@ -429,7 +431,7 @@
 <div class="section" id="mode-4-sprite">
 <h3><a class="toc-backref" href="#id8">Mode 4: Sprite</a><a class="headerlink" href="#mode-4-sprite" title="Permalink to this headline">¶</a></h3>
 <p>Sprites may be drawn over each fill plane. This is the 16-bit sprite system from the Pi Pico Playground. Lower bit depths are planned for a different mode.</p>
-<p>WARNING! Highly experimental! Rumbledethumps did not write this code. This code can crash the entire VGA module.</p>
+<p>WARNING! Slightly experimental! It is unknown how well the structure data is validated. Please submit a reproducable test program if you encounter a VGA system lockup.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -467,7 +469,7 @@
 </tr>
 <tr class="row-even"><td><p>$1:0:05</p></td>
 <td><p>PLANE</p></td>
-<td><p>0-3 to select which fill plane of scanlines to program.</p></td>
+<td><p>0-2 to select which sprite plane of scanlines to program.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$1:0:06</p></td>
 <td><p>BEGIN</p></td>
@@ -566,7 +568,7 @@
 </div>
 </div>
 <div class="section" id="backchannel">
-<h2><a class="toc-backref" href="#id10">3. Backchannel</a><a class="headerlink" href="#backchannel" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id10">1. Backchannel</a><a class="headerlink" href="#backchannel" title="Permalink to this headline">¶</a></h2>
 <p>Because the PIX bus is unidirectional, it can’t be used for sending data from the VGA system back to the RIA. Using the UART Rx path is undesirable since there would be framing overhead or unusable control characters. Since there is a lot of unused bandwidth on the PIX bus, which is only used when the 6502 is writing to XRAM, it can be used for the UART Tx path allowing the UART Tx pin to switch directions.</p>
 <p>This is not interesting to the 6502 programmer as it happens automatically. RIA Kernel developers can extend its usefulness. The backchannel is simply a UART implemented in PIO so it sends 8-bit values.</p>
 <p>Values 0x00 to 0x7F are used to send a version string as ASCII terminated with a 0x0D or 0x0A. This must be sent immediately after the backchannel enable message is received for it to be displayed as part of the boot message. It may be updated any time after that and inspected with the STATUS CLI command, but currently there is no reason to do so.</p>
@@ -609,7 +611,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#control-channel-f">Control Channel $F</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#backchannel">3. Backchannel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#backchannel">1. Backchannel</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
