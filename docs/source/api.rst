@@ -141,31 +141,34 @@ xreg
 phi2
 ----
 
-.. c:function:: unsigned phi2(void)
+.. c:function:: int phi2(void)
 
    Retrieves the PHI2 setting from the RIA. Applications can use this for adjusting to or rejecting different clock speeds.
 
-   :returns: The 6502 clock speed in kHz.
+   :returns: The 6502 clock speed in kHz. 500 <= x <= 8000
+   :errno: will not fail
 
 
 codepage
 --------
 
-.. c:function:: unsigned codepage(void)
+.. c:function:: int codepage(void)
 
    Retrieves the CP setting from the RIA. This is the encoding the filesystem is using and, if VGA is installed, the console and default font.
 
    :returns: The code page. One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862, 863, 864, 865, 866, 869, 932, 936, 949, 950.
+   :errno: will not fail
 
 
 lrand
 -----
 
-.. c:function:: unsigned long lrand(void)
+.. c:function:: long lrand(void)
 
    Generates a random number starting with entropy on the RIA. This is suitable for seeding a RNG or general use. The 16-bit rand() in the CC65 library can be seeded with this by calling its non-standard _randomize() function.
 
-   :returns: Chaos.
+   :returns: Chaos. 0x0 <= x <= 0x7FFFFFFF
+   :errno: will not fail
 
 
 clock_getres
