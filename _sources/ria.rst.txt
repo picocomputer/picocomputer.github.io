@@ -109,8 +109,8 @@ WARNING! Do not hook up a physical button to RESB. The RIA must remain in contro
      - OP
      - Write the API operation id here to begin a kernel call.
    * - $FFF0
-     - NOP
-     - Always $EA.
+     - IRQ
+     - Set bit 0 high to enable VSYNC interrupts. Verify source with VSYNC then read or write this register to clear interrupt.
    * - $FFF1
      - RETURN
      - Always $80, BRA. Entry to blocking API return.
@@ -198,8 +198,8 @@ This is 256 bytes of last-in, first-out, top-down stack used for the fastcall me
     - | Sets the address in extended RAM for a bit array of USB HID keyboard codes. Note that these are not the same as PS/2 scancodes. Each bit represents one key with the first four bits having special meaning.
       | * 0 - No key pressed
       | * 1 - Overflow - too many keys pressed
-      | * 2 - Unused - POST error
-      | * 3 - Unused - Undefined error
+      | * 2 - Num Lock on
+      | * 3 - Caps Lock on
       | This is intended for applications that need to detect both key up and down events or the modifier keys. Use the UART or stdin if you don't need this kind of direct access.
 
       .. code-block:: C

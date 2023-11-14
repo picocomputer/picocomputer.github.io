@@ -184,8 +184,8 @@
 <td><p>Write the API operation id here to begin a kernel call.</p></td>
 </tr>
 <tr class="row-even"><td><p>$FFF0</p></td>
-<td><p>NOP</p></td>
-<td><p>Always $EA.</p></td>
+<td><p>IRQ</p></td>
+<td><p>Set bit 0 high to enable VSYNC interrupts. Verify source with VSYNC then read or write this register to clear interrupt.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$FFF1</p></td>
 <td><p>RETURN</p></td>
@@ -296,8 +296,8 @@
 <div class="line">Sets the address in extended RAM for a bit array of USB HID keyboard codes. Note that these are not the same as PS/2 scancodes. Each bit represents one key with the first four bits having special meaning.</div>
 <div class="line">* 0 - No key pressed</div>
 <div class="line">* 1 - Overflow - too many keys pressed</div>
-<div class="line">* 2 - Unused - POST error</div>
-<div class="line">* 3 - Unused - Undefined error</div>
+<div class="line">* 2 - Num Lock on</div>
+<div class="line">* 3 - Caps Lock on</div>
 <div class="line">This is intended for applications that need to detect both key up and down events or the modifier keys. Use the UART or stdin if you don’t need this kind of direct access.</div>
 </div>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">uint8_t</span> <span class="n">keyboard</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
