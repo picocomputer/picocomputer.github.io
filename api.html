@@ -58,25 +58,25 @@
 <li><p><a class="reference internal" href="#phi2" id="id11">phi2</a></p></li>
 <li><p><a class="reference internal" href="#codepage" id="id12">codepage</a></p></li>
 <li><p><a class="reference internal" href="#lrand" id="id13">lrand</a></p></li>
-<li><p><a class="reference internal" href="#clock-getres" id="id14">clock_getres</a></p></li>
-<li><p><a class="reference internal" href="#clock-gettime" id="id15">clock_gettime</a></p></li>
-<li><p><a class="reference internal" href="#clock-settime" id="id16">clock_settime</a></p></li>
-<li><p><a class="reference internal" href="#clock-gettimezone" id="id17">clock_gettimezone</a></p></li>
-<li><p><a class="reference internal" href="#open" id="id18">open</a></p></li>
-<li><p><a class="reference internal" href="#close" id="id19">close</a></p></li>
-<li><p><a class="reference internal" href="#read" id="id20">read</a></p></li>
-<li><p><a class="reference internal" href="#read-xstack" id="id21">read_xstack</a></p></li>
-<li><p><a class="reference internal" href="#read-xram" id="id22">read_xram</a></p></li>
-<li><p><a class="reference internal" href="#write" id="id23">write</a></p></li>
-<li><p><a class="reference internal" href="#write-xstack" id="id24">write_xstack</a></p></li>
-<li><p><a class="reference internal" href="#write-xram" id="id25">write_xram</a></p></li>
-<li><p><a class="reference internal" href="#lseek" id="id26">lseek</a></p></li>
-<li><p><a class="reference internal" href="#unlink" id="id27">unlink</a></p></li>
-<li><p><a class="reference internal" href="#rename" id="id28">rename</a></p></li>
-<li><p><a class="reference internal" href="#exit" id="id29">exit</a></p></li>
+<li><p><a class="reference internal" href="#stdin-opt" id="id14">stdin_opt</a></p></li>
+<li><p><a class="reference internal" href="#clock-getres" id="id15">clock_getres</a></p></li>
+<li><p><a class="reference internal" href="#clock-gettime" id="id16">clock_gettime</a></p></li>
+<li><p><a class="reference internal" href="#clock-settime" id="id17">clock_settime</a></p></li>
+<li><p><a class="reference internal" href="#clock-gettimezone" id="id18">clock_gettimezone</a></p></li>
+<li><p><a class="reference internal" href="#open" id="id19">open</a></p></li>
+<li><p><a class="reference internal" href="#close" id="id20">close</a></p></li>
+<li><p><a class="reference internal" href="#read" id="id21">read</a></p></li>
+<li><p><a class="reference internal" href="#read-xstack" id="id22">read_xstack</a></p></li>
+<li><p><a class="reference internal" href="#read-xram" id="id23">read_xram</a></p></li>
+<li><p><a class="reference internal" href="#write" id="id24">write</a></p></li>
+<li><p><a class="reference internal" href="#write-xstack" id="id25">write_xstack</a></p></li>
+<li><p><a class="reference internal" href="#write-xram" id="id26">write_xram</a></p></li>
+<li><p><a class="reference internal" href="#lseek" id="id27">lseek</a></p></li>
+<li><p><a class="reference internal" href="#unlink" id="id28">unlink</a></p></li>
+<li><p><a class="reference internal" href="#rename" id="id29">rename</a></p></li>
+<li><p><a class="reference internal" href="#exit" id="id30">exit</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#tips-and-tricks" id="id30">4. Tips and Tricks</a></p></li>
 </ul>
 </div>
 <div class="section" id="introduction">
@@ -246,8 +246,34 @@ long <code class="sig-name descname">lrand</code><span class="sig-paren">(</span
 </dd></dl>
 
 </div>
+<div class="section" id="stdin-opt">
+<h3><a class="toc-backref" href="#id14">stdin_opt</a><a class="headerlink" href="#stdin-opt" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.stdin_opt">
+int <code class="sig-name descname">stdin_opt</code><span class="sig-paren">(</span>unsigned long<em> ctrl_bits</em>, unsigned char<em> str_length</em><span class="sig-paren">)</span><a class="headerlink" href="#c.stdin_opt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional options for the STDIN line editor. Set the str_length to your buffer size - 1 to make gets() safe. This can also guarantee no split lines when using fgets() on STDIN.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctrl_bits</strong> – Bitmap of ASCII 0-31 defines which CTRL characters can abort an input. When CTRL key is pressed, any typed input remains on the screen but the applicaion receives a line containing only the CTRL character. e.g. CTRL-C + newline.</p></li>
+<li><p><strong>str_length</strong> – 0-255 default 254. The input line editor won’t allow user input greater than this length.</p></li>
+</ul>
+</dd>
+<dt class="field-even">A regs</dt>
+<dd class="field-even"><p>return, str_length</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>0 on success</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>will not fail</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 <div class="section" id="clock-getres">
-<h3><a class="toc-backref" href="#id14">clock_getres</a><a class="headerlink" href="#clock-getres" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id15">clock_getres</a><a class="headerlink" href="#clock-getres" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.clock_getres">
 int <code class="sig-name descname">clock_getres</code><span class="sig-paren">(</span>clockid_t<em> clock_id</em>, struct timespec<em> *res</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_getres" title="Permalink to this definition">¶</a></dt>
@@ -261,15 +287,18 @@ int <code class="sig-name descname">clock_getres</code><span class="sig-paren">(
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>0 on success. -1 on error.</p>
 </dd>
-<dt class="field-odd">Errno</dt>
-<dd class="field-odd"><p>EINVAL</p>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, clock_id</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL</p>
 </dd>
 </dl>
 </dd></dl>
 
 </div>
 <div class="section" id="clock-gettime">
-<h3><a class="toc-backref" href="#id15">clock_gettime</a><a class="headerlink" href="#clock-gettime" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16">clock_gettime</a><a class="headerlink" href="#clock-gettime" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.clock_gettime">
 int <code class="sig-name descname">clock_gettime</code><span class="sig-paren">(</span>clockid_t<em> clock_id</em>, struct timespec<em> *tp</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_gettime" title="Permalink to this definition">¶</a></dt>
@@ -283,15 +312,18 @@ int <code class="sig-name descname">clock_gettime</code><span class="sig-paren">
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>0 on success. -1 on error.</p>
 </dd>
-<dt class="field-odd">Errno</dt>
-<dd class="field-odd"><p>EINVAL, EUNKNOWN</p>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, clock_id</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, EUNKNOWN</p>
 </dd>
 </dl>
 </dd></dl>
 
 </div>
 <div class="section" id="clock-settime">
-<h3><a class="toc-backref" href="#id16">clock_settime</a><a class="headerlink" href="#clock-settime" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17">clock_settime</a><a class="headerlink" href="#clock-settime" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.clock_settime">
 int <code class="sig-name descname">clock_settime</code><span class="sig-paren">(</span>clockid_t<em> clock_id</em>, const struct timespec<em> *tp</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_settime" title="Permalink to this definition">¶</a></dt>
@@ -305,15 +337,18 @@ int <code class="sig-name descname">clock_settime</code><span class="sig-paren">
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>0 on success. -1 on error.</p>
 </dd>
-<dt class="field-odd">Errno</dt>
-<dd class="field-odd"><p>EINVAL, EUNKNOWN</p>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, clock_id</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, EUNKNOWN</p>
 </dd>
 </dl>
 </dd></dl>
 
 </div>
 <div class="section" id="clock-gettimezone">
-<h3><a class="toc-backref" href="#id17">clock_gettimezone</a><a class="headerlink" href="#clock-gettimezone" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18">clock_gettimezone</a><a class="headerlink" href="#clock-gettimezone" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.clock_gettimezone">
 int <code class="sig-name descname">clock_gettimezone</code><span class="sig-paren">(</span>clockid_t<em> clock_id</em>, struct _timezone<em> *tz</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_gettimezone" title="Permalink to this definition">¶</a></dt>
@@ -327,15 +362,18 @@ int <code class="sig-name descname">clock_gettimezone</code><span class="sig-par
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>-1 always.</p>
 </dd>
-<dt class="field-odd">Errno</dt>
-<dd class="field-odd"><p>ENOSYS</p>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, clock_id</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>ENOSYS</p>
 </dd>
 </dl>
 </dd></dl>
 
 </div>
 <div class="section" id="open">
-<h3><a class="toc-backref" href="#id18">open</a><a class="headerlink" href="#open" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19">open</a><a class="headerlink" href="#open" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.open">
 int <code class="sig-name descname">open</code><span class="sig-paren">(</span>const char<em> *path</em>, int<em> oflag</em><span class="sig-paren">)</span><a class="headerlink" href="#c.open" title="Permalink to this definition">¶</a></dt>
@@ -393,7 +431,7 @@ int <code class="sig-name descname">open</code><span class="sig-paren">(</span>c
 
 </div>
 <div class="section" id="close">
-<h3><a class="toc-backref" href="#id19">close</a><a class="headerlink" href="#close" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20">close</a><a class="headerlink" href="#close" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.close">
 int <code class="sig-name descname">close</code><span class="sig-paren">(</span>int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.close" title="Permalink to this definition">¶</a></dt>
@@ -418,7 +456,7 @@ int <code class="sig-name descname">close</code><span class="sig-paren">(</span>
 
 </div>
 <div class="section" id="read">
-<h3><a class="toc-backref" href="#id20">read</a><a class="headerlink" href="#read" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id21">read</a><a class="headerlink" href="#read" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.read">
 int <code class="sig-name descname">read</code><span class="sig-paren">(</span>int<em> fildes</em>, void<em> *buf</em>, unsigned<em> count</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read" title="Permalink to this definition">¶</a></dt>
@@ -445,7 +483,7 @@ int <code class="sig-name descname">read</code><span class="sig-paren">(</span>i
 
 </div>
 <div class="section" id="read-xstack">
-<h3><a class="toc-backref" href="#id21">read_xstack</a><a class="headerlink" href="#read-xstack" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id22">read_xstack</a><a class="headerlink" href="#read-xstack" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.read_xstack">
 int <code class="sig-name descname">read_xstack</code><span class="sig-paren">(</span>void<em> *buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read_xstack" title="Permalink to this definition">¶</a></dt>
@@ -472,7 +510,7 @@ int <code class="sig-name descname">read_xstack</code><span class="sig-paren">(<
 
 </div>
 <div class="section" id="read-xram">
-<h3><a class="toc-backref" href="#id22">read_xram</a><a class="headerlink" href="#read-xram" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id23">read_xram</a><a class="headerlink" href="#read-xram" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.read_xram">
 int <code class="sig-name descname">read_xram</code><span class="sig-paren">(</span>unsigned<em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read_xram" title="Permalink to this definition">¶</a></dt>
@@ -499,7 +537,7 @@ int <code class="sig-name descname">read_xram</code><span class="sig-paren">(</s
 
 </div>
 <div class="section" id="write">
-<h3><a class="toc-backref" href="#id23">write</a><a class="headerlink" href="#write" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id24">write</a><a class="headerlink" href="#write" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.write">
 int <code class="sig-name descname">write</code><span class="sig-paren">(</span>int<em> fildes</em>, const void<em> *buf</em>, unsigned<em> count</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write" title="Permalink to this definition">¶</a></dt>
@@ -526,7 +564,7 @@ int <code class="sig-name descname">write</code><span class="sig-paren">(</span>
 
 </div>
 <div class="section" id="write-xstack">
-<h3><a class="toc-backref" href="#id24">write_xstack</a><a class="headerlink" href="#write-xstack" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25">write_xstack</a><a class="headerlink" href="#write-xstack" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.write_xstack">
 int <code class="sig-name descname">write_xstack</code><span class="sig-paren">(</span>const void<em> *buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write_xstack" title="Permalink to this definition">¶</a></dt>
@@ -553,7 +591,7 @@ int <code class="sig-name descname">write_xstack</code><span class="sig-paren">(
 
 </div>
 <div class="section" id="write-xram">
-<h3><a class="toc-backref" href="#id25">write_xram</a><a class="headerlink" href="#write-xram" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id26">write_xram</a><a class="headerlink" href="#write-xram" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.write_xram">
 int <code class="sig-name descname">write_xram</code><span class="sig-paren">(</span>unsigned<em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write_xram" title="Permalink to this definition">¶</a></dt>
@@ -580,7 +618,7 @@ int <code class="sig-name descname">write_xram</code><span class="sig-paren">(</
 
 </div>
 <div class="section" id="lseek">
-<h3><a class="toc-backref" href="#id26">lseek</a><a class="headerlink" href="#lseek" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id27">lseek</a><a class="headerlink" href="#lseek" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.lseek">
 off_t <code class="sig-name descname">lseek</code><span class="sig-paren">(</span>int<em> fildes</em>, off_t<em> offset</em>, int<em> whence</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek" title="Permalink to this definition">¶</a></dt>
@@ -628,7 +666,7 @@ static long <code class="sig-name descname">lseek_impl</code><span class="sig-pa
 
 </div>
 <div class="section" id="unlink">
-<h3><a class="toc-backref" href="#id27">unlink</a><a class="headerlink" href="#unlink" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id28">unlink</a><a class="headerlink" href="#unlink" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.unlink">
 int <code class="sig-name descname">unlink</code><span class="sig-paren">(</span>const char*<em> name</em><span class="sig-paren">)</span><a class="headerlink" href="#c.unlink" title="Permalink to this definition">¶</a></dt>
@@ -650,7 +688,7 @@ int <code class="sig-name descname">unlink</code><span class="sig-paren">(</span
 
 </div>
 <div class="section" id="rename">
-<h3><a class="toc-backref" href="#id28">rename</a><a class="headerlink" href="#rename" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id29">rename</a><a class="headerlink" href="#rename" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.rename">
 int <code class="sig-name descname">rename</code><span class="sig-paren">(</span>const char*<em> oldname</em>, const char*<em> newname</em><span class="sig-paren">)</span><a class="headerlink" href="#c.rename" title="Permalink to this definition">¶</a></dt>
@@ -673,7 +711,7 @@ int <code class="sig-name descname">rename</code><span class="sig-paren">(</span
 
 </div>
 <div class="section" id="exit">
-<h3><a class="toc-backref" href="#id29">exit</a><a class="headerlink" href="#exit" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id30">exit</a><a class="headerlink" href="#exit" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.exit">
 void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>int<em> status</em><span class="sig-paren">)</span><a class="headerlink" href="#c.exit" title="Permalink to this definition">¶</a></dt>
@@ -691,10 +729,6 @@ void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>
 </dd></dl>
 
 </div>
-</div>
-<div class="section" id="tips-and-tricks">
-<h2><a class="toc-backref" href="#id30">4. Tips and Tricks</a><a class="headerlink" href="#tips-and-tricks" title="Permalink to this headline">¶</a></h2>
-<p>The CC65 C standard library has a hidden secret. Typically unsafe calls like fgets become possible because of a 255 char string length limit. You’re always safe as long as you provide a 256 byte buffer. The size becomes easier to justify when you consider you’d need some of that for bounds checking.</p>
 </div>
 </div>
 
@@ -737,6 +771,7 @@ void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>
 <li class="toctree-l3"><a class="reference internal" href="#phi2">phi2</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#codepage">codepage</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#lrand">lrand</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stdin-opt">stdin_opt</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#clock-getres">clock_getres</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#clock-gettime">clock_gettime</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#clock-settime">clock_settime</a></li>
@@ -755,7 +790,6 @@ void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>
 <li class="toctree-l3"><a class="reference internal" href="#exit">exit</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#tips-and-tricks">4. Tips and Tricks</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="rfc.html">RFC</a></li>

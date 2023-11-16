@@ -171,6 +171,20 @@ lrand
    :errno: will not fail
 
 
+stdin_opt
+---------
+
+.. c:function:: int stdin_opt(unsigned long ctrl_bits, unsigned char str_length)
+
+   Additional options for the STDIN line editor. Set the str_length to your buffer size - 1 to make gets() safe. This can also guarantee no split lines when using fgets() on STDIN.
+
+   :param ctrl_bits: Bitmap of ASCII 0-31 defines which CTRL characters can abort an input. When CTRL key is pressed, any typed input remains on the screen but the applicaion receives a line containing only the CTRL character. e.g. CTRL-C + newline.
+   :param str_length: 0-255 default 254. The input line editor won't allow user input greater than this length.
+   :a regs: return, str_length
+   :returns: 0 on success
+   :errno: will not fail
+
+
 clock_getres
 ------------
 
@@ -180,6 +194,7 @@ clock_getres
 
    :param clock_id: 0 for CLOCK_REALTIME.
    :returns: 0 on success. -1 on error.
+   :a regs: return, clock_id
    :errno: EINVAL
 
 
@@ -192,6 +207,7 @@ clock_gettime
 
    :param clock_id: 0 for CLOCK_REALTIME.
    :returns: 0 on success. -1 on error.
+   :a regs: return, clock_id
    :errno: EINVAL, EUNKNOWN
 
 
@@ -204,6 +220,7 @@ clock_settime
 
    :param clock_id: 0 for CLOCK_REALTIME.
    :returns: 0 on success. -1 on error.
+   :a regs: return, clock_id
    :errno: EINVAL, EUNKNOWN
 
 
@@ -216,6 +233,7 @@ clock_gettimezone
 
    :param clock_id: 0 for CLOCK_REALTIME.
    :returns: -1 always.
+   :a regs: return, clock_id
    :errno: ENOSYS
 
 
@@ -406,9 +424,3 @@ exit
 
    :param status: 0 is good, 1-255 for error.
    :a regs: status
-
-
-4. Tips and Tricks
-==================
-
-The CC65 C standard library has a hidden secret. Typically unsafe calls like fgets become possible because of a 255 char string length limit. You're always safe as long as you provide a 256 byte buffer. The size becomes easier to justify when you consider you'd need some of that for bounds checking.

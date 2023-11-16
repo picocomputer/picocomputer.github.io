@@ -50,7 +50,7 @@
 <li><p><a class="reference internal" href="#control-channel-f" id="id9">Control Channel $F</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#backchannel" id="id10">1. Backchannel</a></p></li>
+<li><p><a class="reference internal" href="#backchannel" id="id10">3. Backchannel</a></p></li>
 </ul>
 </div>
 <div class="section" id="introduction">
@@ -568,7 +568,7 @@
 </div>
 </div>
 <div class="section" id="backchannel">
-<h2><a class="toc-backref" href="#id10">1. Backchannel</a><a class="headerlink" href="#backchannel" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id10">3. Backchannel</a><a class="headerlink" href="#backchannel" title="Permalink to this headline">¶</a></h2>
 <p>Because the PIX bus is unidirectional, it can’t be used for sending data from the VGA system back to the RIA. Using the UART Rx path is undesirable since there would be framing overhead or unusable control characters. Since there is a lot of unused bandwidth on the PIX bus, which is only used when the 6502 is writing to XRAM, it can be used for the UART Tx path allowing the UART Tx pin to switch directions.</p>
 <p>This is not interesting to the 6502 programmer as it happens automatically. RIA Kernel developers can extend its usefulness. The backchannel is simply a UART implemented in PIO so it sends 8-bit values.</p>
 <p>Values 0x00 to 0x7F are used to send a version string as ASCII terminated with a 0x0D or 0x0A. This must be sent immediately after the backchannel enable message is received for it to be displayed as part of the boot message. It may be updated any time after that and inspected with the STATUS CLI command, but currently there is no reason to do so.</p>
@@ -611,7 +611,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#control-channel-f">Control Channel $F</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#backchannel">1. Backchannel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#backchannel">3. Backchannel</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
