@@ -92,6 +92,15 @@ Active Parts List
    :file: _static/rp6502-reva-active.csv
    :header-rows: 1
 
+Pi Picos Parts List
+-------------------
+
+Alternative part numbers for the Pi Picos.
+
+.. csv-table::
+   :file: _static/rp6502-reva-picos.csv
+   :header-rows: 1
+
 
 Parts Substitution
 ------------------
