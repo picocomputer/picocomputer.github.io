@@ -15,7 +15,16 @@ You will need to place two orders. First, for the Printed Circuit Board. Second,
 
 I have circuit boards in a `Tindie store <https://www.tindie.com/stores/rumbledethumps/>`_ that ships to the United States. International shipping is either too slow or too much when compared to getting boards made locally or in China.
 
-To financially support this open source project, consider joining `Patreon <https://www.patreon.com/rumbledethumps>`_ or give a Super Thanks on any of my YouTube Videos.
+To financially support this open source project, consider joining `Patreon <https://www.patreon.com/rumbledethumps>`_.
+
+Step 0. Read This
+=================
+
+USB hub and device support isn't perfect but everyone so far has been able to find working devices. Sometimes swapping hub ports helps.
+
+The three-pin debug connections under the RIA aren't used anymore. This is an artifact of early development.
+
+Most VGA-to-HDMI cables can get power from the Picocomputer. Some will need external power applied. All are zero lag.
 
 Step 1. Watch the Videos
 ========================
