@@ -60,7 +60,7 @@
 <li><p><a class="reference internal" href="#pix-extended-registers-xreg" id="id13">3.3. PIX Extended Registers (XREG)</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#fm-audio-synthesizer" id="id14">4. FM Audio Synthesizer</a></p></li>
+<li><p><a class="reference internal" href="#programmable-sound-generator" id="id14">4. Programmable Sound Generator</a></p></li>
 </ul>
 </div>
 <div class="section" id="introduction">
@@ -369,9 +369,177 @@
 <p>So we have seven PIX devices, each with 16 internal channels having 256 16-bit registers. The idea is to use extended registers to point to structures in XRAM. Changing XREG is setup, changing XRAM causes the device to respond.</p>
 </div>
 </div>
-<div class="section" id="fm-audio-synthesizer">
-<h2><a class="toc-backref" href="#id14">4. FM Audio Synthesizer</a><a class="headerlink" href="#fm-audio-synthesizer" title="Permalink to this headline">¶</a></h2>
-<p>The RIA will include an FM Audio Synthesizer on PIX device 0 channel 0.</p>
+<div class="section" id="programmable-sound-generator">
+<h2><a class="toc-backref" href="#id14">4. Programmable Sound Generator</a><a class="headerlink" href="#programmable-sound-generator" title="Permalink to this headline">¶</a></h2>
+<p>The RIA includes a Programmable Sound Generator on PIX device 0 channel 1 address 0. Each of eight voices requires eight bytes of XRAM for configuration for a total of 64 bytes.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span> <span class="k">struct</span>
+<span class="p">{</span>
+    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">freq</span><span class="p">;</span>
+    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">duty</span><span class="p">;</span>
+    <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">vol_attack</span><span class="p">;</span>
+    <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">vol_decay</span><span class="p">;</span>
+    <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">wave_release</span><span class="p">;</span>
+    <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">pan_gate</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">ria_psg_t</span><span class="p">;</span>
+</pre></div>
+</div>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 95%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>freq</p></td>
+<td><p>0-65535 Oscillator frequency in Hertz.</p></td>
+</tr>
+<tr class="row-odd"><td><p>duty</p></td>
+<td><p>0-65535 (0-100%) Duty cycle of oscillator. This affects all waveforms.</p></td>
+</tr>
+<tr class="row-even"><td><p>vol_attack</p></td>
+<td><dl class="simple">
+<dt>Attack volume and rate.</dt><dd><ul class="simple">
+<li><p>bits 7-4 - 0-15 volume attenuation.</p></li>
+<li><p>bits 3-0 - 0-15 attack rate.</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="row-odd"><td><p>vol_decay</p></td>
+<td><dl class="simple">
+<dt>Decay volume and rate.</dt><dd><ul class="simple">
+<li><p>bits 7-4 - 0-15 volume attenuation.</p></li>
+<li><p>bits 3-0 - 0-15 decay rate.</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="row-even"><td><p>wave_release</p></td>
+<td><dl class="simple">
+<dt>Waveform and release rate.</dt><dd><ul class="simple">
+<li><p>bits 7-4 - 0=sine, 1=square, 2=sawtooth, 3=triangle, 4=noise.</p></li>
+<li><p>bits 3-0 - 0-15 release rate.</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="row-odd"><td><p>pan_gate</p></td>
+<td><dl class="simple">
+<dt>Stereo pan and gate.</dt><dd><ul class="simple">
+<li><p>bits 7-1 - Pan -63(left) to 63(right).</p></li>
+<li><p>bits 0 - 1=attack/decay/sustain, 0=release.</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Value table. ADR rates are the time it takes for a full volume change.</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 4%" />
+<col style="width: 4%" />
+<col style="width: 4%" />
+<col style="width: 87%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Value</p></th>
+<th class="head"><p>Attack</p></th>
+<th class="head"><p>Decay/Release</p></th>
+<th class="head"><p>Attenuation Multiplier</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>2ms</p></td>
+<td><p>6ms</p></td>
+<td><p>256/256 (loud)</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>8ms</p></td>
+<td><p>24ms</p></td>
+<td><p>224/256</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>16ms</p></td>
+<td><p>48ms</p></td>
+<td><p>192/256</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>24ms</p></td>
+<td><p>72ms</p></td>
+<td><p>160/256</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>38ms</p></td>
+<td><p>114ms</p></td>
+<td><p>128/256</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>56ms</p></td>
+<td><p>168ms</p></td>
+<td><p>112/256</p></td>
+</tr>
+<tr class="row-even"><td><p>6</p></td>
+<td><p>68ms</p></td>
+<td><p>204ms</p></td>
+<td><p>96/256</p></td>
+</tr>
+<tr class="row-odd"><td><p>7</p></td>
+<td><p>80ms</p></td>
+<td><p>240ms</p></td>
+<td><p>80/256</p></td>
+</tr>
+<tr class="row-even"><td><p>8</p></td>
+<td><p>100ms</p></td>
+<td><p>300ms</p></td>
+<td><p>52/256</p></td>
+</tr>
+<tr class="row-odd"><td><p>9</p></td>
+<td><p>250ms</p></td>
+<td><p>750ms</p></td>
+<td><p>64/256</p></td>
+</tr>
+<tr class="row-even"><td><p>10</p></td>
+<td><p>500ms</p></td>
+<td><p>1.5s</p></td>
+<td><p>40/256</p></td>
+</tr>
+<tr class="row-odd"><td><p>11</p></td>
+<td><p>800ms</p></td>
+<td><p>2.4s</p></td>
+<td><p>32/256</p></td>
+</tr>
+<tr class="row-even"><td><p>12</p></td>
+<td><p>1s</p></td>
+<td><p>3s</p></td>
+<td><p>24/256</p></td>
+</tr>
+<tr class="row-odd"><td><p>13</p></td>
+<td><p>3s</p></td>
+<td><p>9s</p></td>
+<td><p>16/256</p></td>
+</tr>
+<tr class="row-even"><td><p>14</p></td>
+<td><p>5s</p></td>
+<td><p>15s</p></td>
+<td><p>8/256</p></td>
+</tr>
+<tr class="row-odd"><td><p>15</p></td>
+<td><p>8s</p></td>
+<td><p>24s</p></td>
+<td><p>0/256 (silent)</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -414,7 +582,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#pix-extended-registers-xreg">3.3. PIX Extended Registers (XREG)</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#fm-audio-synthesizer">4. FM Audio Synthesizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#programmable-sound-generator">4. Programmable Sound Generator</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="vga.html">VGA</a></li>

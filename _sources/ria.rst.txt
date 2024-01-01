@@ -279,7 +279,122 @@ Bits 27-24 indicate a channel. For example, the RIA device has a channel for aud
 
 So we have seven PIX devices, each with 16 internal channels having 256 16-bit registers. The idea is to use extended registers to point to structures in XRAM. Changing XREG is setup, changing XRAM causes the device to respond.
 
-4. FM Audio Synthesizer
-=======================
+4. Programmable Sound Generator
+===============================
 
-The RIA will include an FM Audio Synthesizer on PIX device 0 channel 0.
+The RIA includes a Programmable Sound Generator on PIX device 0 channel 1 address 0. Each of eight voices requires eight bytes of XRAM for configuration for a total of 64 bytes.
+
+.. code-block:: C
+
+  typedef struct
+  {
+      unsigned int freq;
+      unsigned int duty;
+      unsigned char vol_attack;
+      unsigned char vol_decay;
+      unsigned char wave_release;
+      unsigned char pan_gate;
+  } ria_psg_t;
+
+
+.. list-table::
+   :widths: 5 90
+   :header-rows: 1
+
+   * - Name
+     - Description
+   * - freq
+     - 0-65535 Oscillator frequency in Hertz.
+   * - duty
+     - 0-65535 (0-100%) Duty cycle of oscillator. This affects all waveforms.
+   * - vol_attack
+     - Attack volume and rate.
+         * bits 7-4 - 0-15 volume attenuation.
+         * bits 3-0 - 0-15 attack rate.
+   * - vol_decay
+     - Decay volume and rate.
+         * bits 7-4 - 0-15 volume attenuation.
+         * bits 3-0 - 0-15 decay rate.
+   * - wave_release
+     - Waveform and release rate.
+         * bits 7-4 - 0=sine, 1=square, 2=sawtooth, 3=triangle, 4=noise.
+         * bits 3-0 - 0-15 release rate.
+   * - pan_gate
+     - Stereo pan and gate.
+         * bits 7-1 - Pan -63(left) to 63(right).
+         * bits 0 - 1=attack/decay/sustain, 0=release.
+
+Value table. ADR rates are the time it takes for a full volume change.
+
+.. list-table::
+   :widths: 1 1 1 20
+   :header-rows: 1
+
+   * - Value
+     - Attack
+     - Decay/Release
+     - Attenuation Multiplier
+   * - 0
+     - 2ms
+     - 6ms
+     - 256/256 (loud)
+   * - 1
+     - 8ms
+     - 24ms
+     - 224/256
+   * - 2
+     - 16ms
+     - 48ms
+     - 192/256
+   * - 3
+     - 24ms
+     - 72ms
+     - 160/256
+   * - 4
+     - 38ms
+     - 114ms
+     - 128/256
+   * - 5
+     - 56ms
+     - 168ms
+     - 112/256
+   * - 6
+     - 68ms
+     - 204ms
+     - 96/256
+   * - 7
+     - 80ms
+     - 240ms
+     - 80/256
+   * - 8
+     - 100ms
+     - 300ms
+     - 52/256
+   * - 9
+     - 250ms
+     - 750ms
+     - 64/256
+   * - 10
+     - 500ms
+     - 1.5s
+     - 40/256
+   * - 11
+     - 800ms
+     - 2.4s
+     - 32/256
+   * - 12
+     - 1s
+     - 3s
+     - 24/256
+   * - 13
+     - 3s
+     - 9s
+     - 16/256
+   * - 14
+     - 5s
+     - 15s
+     - 8/256
+   * - 15
+     - 8s
+     - 24s
+     - 0/256 (silent)
