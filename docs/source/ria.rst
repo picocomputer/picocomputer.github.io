@@ -325,7 +325,7 @@ The gate is checked at the sample rate of 24kHz. If, for example, you unset and 
    * - Name
      - Description
    * - freq
-     - 0-65535 Oscillator frequency in Hertz.
+     - 0-65535 Oscillator frequency as Hertz * 3. This results in a resolution of 1/3 Hz.
    * - duty
      - 0-255 (0-100%) Duty cycle of oscillator. This affects all waveforms.
    * - vol_attack
@@ -345,7 +345,7 @@ The gate is checked at the sample rate of 24kHz. If, for example, you unset and 
          * bits 7-1 - Pan -63(left) to 63(right).
          * bits 0 - 1=attack/decay/sustain, 0=release.
 
-Value table. ADR rates are the time it takes for a full volume change.
+Value table. ADR rates are the time it takes for a full volume change. Volume attenuation is logarithmic.
 
 .. list-table::
    :widths: 1 1 1 20
@@ -362,39 +362,39 @@ Value table. ADR rates are the time it takes for a full volume change.
    * - 1
      - 8ms
      - 24ms
-     - 224/256
+     - 204/256
    * - 2
      - 16ms
      - 48ms
-     - 192/256
+     - 168/256
    * - 3
      - 24ms
      - 72ms
-     - 160/256
+     - 142/256
    * - 4
      - 38ms
      - 114ms
-     - 128/256
+     - 120/256
    * - 5
      - 56ms
      - 168ms
-     - 112/256
+     - 102/256
    * - 6
      - 68ms
      - 204ms
-     - 96/256
+     - 86/256
    * - 7
      - 80ms
      - 240ms
-     - 80/256
+     - 73/256
    * - 8
      - 100ms
      - 300ms
-     - 52/256
+     - 61/256
    * - 9
      - 250ms
      - 750ms
-     - 64/256
+     - 50/256
    * - 10
      - 500ms
      - 1.5s
@@ -402,19 +402,19 @@ Value table. ADR rates are the time it takes for a full volume change.
    * - 11
      - 800ms
      - 2.4s
-     - 32/256
+     - 31/256
    * - 12
      - 1s
      - 3s
-     - 24/256
+     - 22/256
    * - 13
      - 3s
      - 9s
-     - 16/256
+     - 14/256
    * - 14
      - 5s
      - 15s
-     - 8/256
+     - 7/256
    * - 15
      - 8s
      - 24s
