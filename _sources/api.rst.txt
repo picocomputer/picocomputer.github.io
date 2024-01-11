@@ -185,6 +185,17 @@ stdin_opt
    :errno: will not fail
 
 
+clock
+-----
+
+.. c:function:: unsigned long clock(void)
+
+   Obtain the value of a monotonic clock that updates 100 times per second. Wraps approximately every 497 days.
+
+   :returns: 1/100 second monotonic clock
+   :errno: will not fail
+
+
 clock_getres
 ------------
 
