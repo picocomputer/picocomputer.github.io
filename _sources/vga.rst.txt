@@ -522,3 +522,97 @@ C0 control codes
     - ESC
     - Escape
     - Start an escape sequence.
+
+Fe Escape Sequences
+-------------------
+
+.. list-table::
+  :widths: 10 5 5 5 75
+  :header-rows: 1
+
+  * - Code
+    - C1
+    - Abbr
+    - Name
+    - Effect
+  * - ESC [
+    - 0x9B
+    - CSI
+    - Control Sequence Inducer
+    - Begins most of the interesting sequences.
+
+
+CSI Sequences
+-------------
+Missing numbers are treated as 0. Some functions, like cursor movement, treat 0 as 1 to be useful without parameters.
+
+.. list-table::
+  :widths: 15 5 5 75
+  :header-rows: 1
+
+  * - Code
+    - Abbr
+    - Name
+    - Effect
+  * - CSI n C
+    - CUF
+    - Cursor Forward
+    - Move the cursor n cells right.
+  * - CSI n D
+    - CUB
+    - Cursor Back
+    - Move the cursor n cells left.
+  * - CSI n P
+    - DCH
+    - Delete Character
+    - Delete n cells, move line left.
+  * - CSI n m
+    - SGR
+    - Select Graphic Rendition
+    - Selects colors and styles.
+
+
+SGR Parameters
+--------------
+Multiple parameters may be sent separated by semicolons. Reset is performed if no codes (CSI m).
+
+.. list-table::
+  :widths: 10 20 70
+  :header-rows: 1
+
+  * - n
+    - Name
+    - Effect
+  * - 0
+    - Reset or normal
+    - White (7) foreground, black (0) background.
+  * - 1
+    - Bold intensity
+    - Brighter foreground colors. Colors 0-7 brightened.
+  * - 22
+    - Normal intensity
+    - Normal foreground colors. Colors 8-15 dimmed.
+  * - 30-37
+    - Set foreground color
+    - Colors 0-7
+  * - 38
+    - Set foreground color
+    - Followed by 1 or 5;n or 2;r;g;b or 2::r:g:b
+  * - 39
+    - Default foreground color
+    - Color 7 white.
+  * - 40-47
+    - Set background color
+    - Colors 0-7
+  * - 48
+    - Set background color
+    - Followed by 1 or 5;n or 2;r;g;b or 2::r:g:b
+  * - 49
+    - Default background color
+    - Color 0 transparent black.
+  * - 90-97
+    - Set bright foreground color
+    - Colors 8-15
+  * - 100-107
+    - Set bright background color
+    - Colors 8-15

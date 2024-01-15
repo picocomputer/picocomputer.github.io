@@ -54,6 +54,9 @@
 <li><p><a class="reference internal" href="#terminal" id="id11">4. Terminal</a></p>
 <ul>
 <li><p><a class="reference internal" href="#c0-control-codes" id="id12">C0 control codes</a></p></li>
+<li><p><a class="reference internal" href="#fe-escape-sequences" id="id13">Fe Escape Sequences</a></p></li>
+<li><p><a class="reference internal" href="#csi-sequences" id="id14">CSI Sequences</a></p></li>
+<li><p><a class="reference internal" href="#sgr-parameters" id="id15">SGR Parameters</a></p></li>
 </ul>
 </li>
 </ul>
@@ -643,6 +646,138 @@
 </tbody>
 </table>
 </div>
+<div class="section" id="fe-escape-sequences">
+<h3><a class="toc-backref" href="#id13">Fe Escape Sequences</a><a class="headerlink" href="#fe-escape-sequences" title="Permalink to this headline">¶</a></h3>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Code</p></th>
+<th class="head"><p>C1</p></th>
+<th class="head"><p>Abbr</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Effect</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>ESC [</p></td>
+<td><p>0x9B</p></td>
+<td><p>CSI</p></td>
+<td><p>Control Sequence Inducer</p></td>
+<td><p>Begins most of the interesting sequences.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="csi-sequences">
+<h3><a class="toc-backref" href="#id14">CSI Sequences</a><a class="headerlink" href="#csi-sequences" title="Permalink to this headline">¶</a></h3>
+<p>Missing numbers are treated as 0. Some functions, like cursor movement, treat 0 as 1 to be useful without parameters.</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Code</p></th>
+<th class="head"><p>Abbr</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Effect</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>CSI n C</p></td>
+<td><p>CUF</p></td>
+<td><p>Cursor Forward</p></td>
+<td><p>Move the cursor n cells right.</p></td>
+</tr>
+<tr class="row-odd"><td><p>CSI n D</p></td>
+<td><p>CUB</p></td>
+<td><p>Cursor Back</p></td>
+<td><p>Move the cursor n cells left.</p></td>
+</tr>
+<tr class="row-even"><td><p>CSI n P</p></td>
+<td><p>DCH</p></td>
+<td><p>Delete Character</p></td>
+<td><p>Delete n cells, move line left.</p></td>
+</tr>
+<tr class="row-odd"><td><p>CSI n m</p></td>
+<td><p>SGR</p></td>
+<td><p>Select Graphic Rendition</p></td>
+<td><p>Selects colors and styles.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="sgr-parameters">
+<h3><a class="toc-backref" href="#id15">SGR Parameters</a><a class="headerlink" href="#sgr-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Multiple parameters may be sent separated by semicolons. Reset is performed if no codes (CSI m).</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 20%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>n</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Effect</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>Reset or normal</p></td>
+<td><p>White (7) foreground, black (0) background.</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>Bold intensity</p></td>
+<td><p>Brighter foreground colors. Colors 0-7 brightened.</p></td>
+</tr>
+<tr class="row-even"><td><p>22</p></td>
+<td><p>Normal intensity</p></td>
+<td><p>Normal foreground colors. Colors 8-15 dimmed.</p></td>
+</tr>
+<tr class="row-odd"><td><p>30-37</p></td>
+<td><p>Set foreground color</p></td>
+<td><p>Colors 0-7</p></td>
+</tr>
+<tr class="row-even"><td><p>38</p></td>
+<td><p>Set foreground color</p></td>
+<td><p>Followed by 1 or 5;n or 2;r;g;b or 2::r:g:b</p></td>
+</tr>
+<tr class="row-odd"><td><p>39</p></td>
+<td><p>Default foreground color</p></td>
+<td><p>Color 7 white.</p></td>
+</tr>
+<tr class="row-even"><td><p>40-47</p></td>
+<td><p>Set background color</p></td>
+<td><p>Colors 0-7</p></td>
+</tr>
+<tr class="row-odd"><td><p>48</p></td>
+<td><p>Set background color</p></td>
+<td><p>Followed by 1 or 5;n or 2;r;g;b or 2::r:g:b</p></td>
+</tr>
+<tr class="row-even"><td><p>49</p></td>
+<td><p>Default background color</p></td>
+<td><p>Color 0 transparent black.</p></td>
+</tr>
+<tr class="row-odd"><td><p>90-97</p></td>
+<td><p>Set bright foreground color</p></td>
+<td><p>Colors 8-15</p></td>
+</tr>
+<tr class="row-even"><td><p>100-107</p></td>
+<td><p>Set bright background color</p></td>
+<td><p>Colors 8-15</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 </div>
 
@@ -681,6 +816,9 @@
 <li class="toctree-l2"><a class="reference internal" href="#backchannel">3. Backchannel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#terminal">4. Terminal</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#c0-control-codes">C0 control codes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fe-escape-sequences">Fe Escape Sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#csi-sequences">CSI Sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sgr-parameters">SGR Parameters</a></li>
 </ul>
 </li>
 </ul>
