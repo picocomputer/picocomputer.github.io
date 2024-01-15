@@ -51,6 +51,11 @@
 </ul>
 </li>
 <li><p><a class="reference internal" href="#backchannel" id="id10">3. Backchannel</a></p></li>
+<li><p><a class="reference internal" href="#terminal" id="id11">4. Terminal</a></p>
+<ul>
+<li><p><a class="reference internal" href="#c0-control-codes" id="id12">C0 control codes</a></p></li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="section" id="introduction">
@@ -577,6 +582,68 @@
 <p>0x90 OP_ACK - Some XREG locations are triggers for remote calls which may fail or take time to complete. This acknowledges a successful completion.</p>
 <p>0xA0 OP_NAK - This acknowledges a failure.</p>
 </div>
+<div class="section" id="terminal">
+<h2><a class="toc-backref" href="#id11">4. Terminal</a><a class="headerlink" href="#terminal" title="Permalink to this headline">¶</a></h2>
+<p>The RP6502 VGA system includes a color ANSI terminal attached as the console.</p>
+<div class="section" id="c0-control-codes">
+<h3><a class="toc-backref" href="#id12">C0 control codes</a><a class="headerlink" href="#c0-control-codes" title="Permalink to this headline">¶</a></h3>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 80%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>^</p></th>
+<th class="head"><p>C0</p></th>
+<th class="head"><p>Abbr</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Effect</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>^H</p></td>
+<td><p>0x08</p></td>
+<td><p>BS</p></td>
+<td><p>Backspace</p></td>
+<td><p>Move cursor left.</p></td>
+</tr>
+<tr class="row-odd"><td><p>^I</p></td>
+<td><p>0x09</p></td>
+<td><p>HT</p></td>
+<td><p>Tab</p></td>
+<td><p>Move cursor right to multiple of 8 column.</p></td>
+</tr>
+<tr class="row-even"><td><p>^J</p></td>
+<td><p>0x0A</p></td>
+<td><p>LF</p></td>
+<td><p>Line Feed</p></td>
+<td><p>Move to next line.</p></td>
+</tr>
+<tr class="row-odd"><td><p>^L</p></td>
+<td><p>0x0C</p></td>
+<td><p>FF</p></td>
+<td><p>Form Feed</p></td>
+<td><p>Clear screen and move cursor to top left.</p></td>
+</tr>
+<tr class="row-even"><td><p>^M</p></td>
+<td><p>0x0D</p></td>
+<td><p>CR</p></td>
+<td><p>Carriage Return</p></td>
+<td><p>Move cursor to first column.</p></td>
+</tr>
+<tr class="row-odd"><td><p>^[</p></td>
+<td><p>0x1B</p></td>
+<td><p>ESC</p></td>
+<td><p>Escape</p></td>
+<td><p>Start an escape sequence.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 
 
@@ -612,6 +679,10 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#backchannel">3. Backchannel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#terminal">4. Terminal</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#c0-control-codes">C0 control codes</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>

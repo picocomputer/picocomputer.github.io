@@ -473,3 +473,52 @@ When bit 0x80 is set, the 0x70 bits indicate the command type, and the 0x0F bits
 0x90 OP_ACK - Some XREG locations are triggers for remote calls which may fail or take time to complete. This acknowledges a successful completion.
 
 0xA0 OP_NAK - This acknowledges a failure.
+
+
+4. Terminal
+===========
+
+The RP6502 VGA system includes a color ANSI terminal attached as the console.
+
+C0 control codes
+----------------
+
+.. list-table::
+  :widths: 5 5 5 5 80
+  :header-rows: 1
+
+  * - ^
+    - C0
+    - Abbr
+    - Name
+    - Effect
+  * - ^H
+    - 0x08
+    - BS
+    - Backspace
+    - Move cursor left.
+  * - ^I
+    - 0x09
+    - HT
+    - Tab
+    - Move cursor right to multiple of 8 column.
+  * - ^J
+    - 0x0A
+    - LF
+    - Line Feed
+    - Move to next line.
+  * - ^L
+    - 0x0C
+    - FF
+    - Form Feed
+    - Clear screen and move cursor to top left.
+  * - ^M
+    - 0x0D
+    - CR
+    - Carriage Return
+    - Move cursor to first column.
+  * - ^[
+    - 0x1B
+    - ESC
+    - Escape
+    - Start an escape sequence.
