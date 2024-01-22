@@ -235,7 +235,7 @@ This is 256 bytes of last-in, first-out, top-down stack used for the fastcall me
       | 4 - FORWARD
 
 
-1. Pico Information Exchange (PIX)
+3. Pico Information Exchange (PIX)
 ==================================
 
 The limited numbers of GPIO pins on the Raspberry Pi Pico required creating a new bus for high bandwidth devices like video systems. This is an addressable broadcast system which any number of devices can listen to.
