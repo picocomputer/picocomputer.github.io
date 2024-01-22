@@ -38,7 +38,7 @@ To solder, or not to solder, that is the question. We're living in the future. Y
 Step 2. Order Printed Circuit Boards
 ====================================
 
-Download `the gerbers <_static/rp6502-reva-gerbers.zip>`_.
+Order from the project page at `PCBWay <https://www.pcbway.com/project/shareproject/Picocomputer_6502_RP6502_03a79f88.html>`_ or download `the gerbers <_static/rp6502-reva-gerbers.zip>`_ to have the boards made anywhere you prefer.
 
 Gerbers are like PDFs for circuit boards. You'll be asked to upload these; simply upload the zip file from above. The PCB manufacturer's website should detect that this is a two-layer 150x100mm board.
 
