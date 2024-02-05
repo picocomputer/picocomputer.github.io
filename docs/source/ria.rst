@@ -118,17 +118,17 @@ WARNING! Do not hook up a physical button to RESB. The RIA must remain in contro
      - BUSY
      - Bit 7 high while operation is running.
    * - $FFF3
-     - LDX
-     - Always $A2.
-   * - $FFF4
-     - X
-     - Kernel register X.
-   * - $FFF5
      - LDA
      - Always $A9.
-   * - $FFF6
+   * - $FFF4
      - A
      - Kernel register A.
+   * - $FFF5
+     - LDX
+     - Always $A2.
+   * - $FFF6
+     - X
+     - Kernel register X.
    * - $FFF7
      - RTS
      - Always $60.
