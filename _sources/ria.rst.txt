@@ -98,7 +98,7 @@ WARNING! Do not hook up a physical button to RESB. The RIA must remain in contro
      - Address of XRAM for RW1.
    * - $FFEC
      - XSTACK
-     - 256 bytes for passing kernel parameters.
+     - 512 bytes for passing call parameters.
    * - $FFED
      - ERRNO_LO
      - Low byte of errno. All errors fit in this byte.
@@ -181,7 +181,7 @@ Setting ADDR after the expected XRAM change will latch RW to the latest value.
 2.5. Extended Stack (XSTACK)
 ----------------------------
 
-This is 256 bytes of last-in, first-out, top-down stack used for the fastcall mechanism described in the :doc:`api`. Reading past the end is guaranteed to return zeros.
+This is 512 bytes of last-in, first-out, top-down stack used for the fastcall mechanism described in the :doc:`api`. Reading past the end is guaranteed to return zeros.
 
 2.6. Extended Registers (XREG)
 ------------------------------
@@ -419,3 +419,67 @@ Value table. ADR rates are the time it takes for a full volume change. Volume at
      - 8s
      - 24s
      - 0/256 (silent)
+
+5. Gamepads
+===========
+
+The RIA supports up to two Sony DualShock 4 controllers connected via USB.
+
+Enable and disable access to the RIA gamepad XRAM registers by setting the extended register. The register value is the XRAM start address of the XRAM registers. Any invalid address disables the gamepads.
+
+.. code-block:: C
+
+  xreg(0, 0, 0x02, xaddr); // enable
+  xreg(0, 0, 0x02, 0xFFFF); // disable
+
+The XRAM registers repeat for the second controller. Disconnected controllers will report BTN1 bits 0-4 as 0xF.
+
+.. list-table::
+   :widths: 1 1 20
+   :header-rows: 1
+
+   * - Offset
+     - Name
+     - Description
+   * - 0
+     - LX
+     - Left stick X position. 0=left, 128=center, 255=right
+   * - 1
+     - LY
+     - Left stick Y position. 0=up, 128=center, 255=down
+   * - 2
+     - RX
+     - Right stick X position.
+   * - 3
+     - RY
+     - Right stick Y position.
+   * - 4
+     - BTN1
+     - Main buttons
+         * bits 0-3: Direction pad. 15=disconnected, 8=released, 7=NW, 6=W, 5=SW, 4=S, 3=SE, 2=E, 1=NE, 0=N
+         * bit 4: square button
+         * bit 5: cross button
+         * bit 6: circle button
+         * bit 7: triangle button
+   * - 5
+     - BTN2
+     - Extended buttons
+         * bit 0: L1 button
+         * bit 1: R1 button
+         * bit 2: L2 button
+         * bit 3: R2 button
+         * bit 4: Share button
+         * bit 5: Option button
+         * bit 6: L3 button
+         * bit 7: R3 button
+   * - 6
+     - BTN3
+     - Sony buttons
+         * bit 0: PlayStation button
+         * bit 1: Touch Pad button
+   * - 7
+     - L2
+     - Left analog trigger position. 0-255
+   * - 8
+     - R2
+     - Right analog trigger position. 0-255
