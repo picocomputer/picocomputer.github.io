@@ -195,44 +195,16 @@ This is 512 bytes of last-in, first-out, top-down stack used for the fastcall me
     - Description
   * - $0:0:00
     - KEYBOARD
-    - | Sets the address in extended RAM for a bit array of USB HID keyboard codes. Note that these are not the same as PS/2 scancodes. Each bit represents one key with the first four bits having special meaning.
-      | * 0 - No key pressed
-      | * 1 - Overflow - too many keys pressed
-      | * 2 - Num Lock on
-      | * 3 - Caps Lock on
-      | This is intended for applications that need to detect both key up and down events or the modifier keys. Use the UART or stdin if you don't need this kind of direct access.
-
-      .. code-block:: C
-
-        uint8_t keyboard[32];
-        #define key(code) (keyboard[code >> 3] & \
-                           (1 << (code & 7)))
+    - See Keyboard section
   * - $0:0:01
     - MOUSE
-    - | Sets the address in extended RAM for a structure containing direct mouse input.
-
-      .. code-block:: C
-
-        struct {
-            uint8_t buttons;
-            uint8_t x;
-            uint8_t y;
-            uint8_t wheel;
-            uint8_t pan;
-        } mouse;
-
-      | The amount of movement is computed by keeping track of the previous values and subtracting from the current value. Vsync timing (60Hz) isn't always fast enough. For perfect mouse input with fast mice, use an ISR at 8ms or faster (125Hz).
-
-      .. code-block:: C
-
-        int8_t delta_x = current_x - prev_x;
-
-      | Mouse buttons are a bitfield:
-      | 0 - LEFT
-      | 1 - RIGHT
-      | 2 - MIDDLE
-      | 3 - BACKWARD
-      | 4 - FORWARD
+    - See Mouse section
+  * - $0:0:02
+    - GAMEPADS
+    - See Gamepads section
+  * - $0:1:00
+    - PSG
+    - See Programmable Sound Generator section
 
 
 3. Pico Information Exchange (PIX)
@@ -279,7 +251,135 @@ Bits 27-24 indicate a channel. For example, the RIA device has a channel for aud
 
 So we have seven PIX devices, each with 16 internal channels having 256 16-bit registers. The idea is to use extended registers to point to structures in XRAM. Changing XREG is setup, changing XRAM causes the device to respond.
 
-4. Programmable Sound Generator
+
+4. Keyboard
+===========
+
+The RIA can provide direct access to keyboard data. This is intended for applications that need to detect both key up and down events or the modifier keys. You may instead use the UART or stdin if you don't need this kind of direct access.
+
+Enable and disable direct keyboard access by mapping it to an address in extended RAM.
+
+.. code-block:: C
+
+  xreg(0, 0, 0x00, xaddr); // enable
+  xreg(0, 0, 0x00, 0xFFFF); // disable
+
+Extended RAM will be continuously updated with a bit array of USB HID keyboard codes. Note that these are not the same as PS/2 scancodes. Each bit represents one key with the first four bits having special meaning.
+
+| * 0 - No key pressed
+| * 1 - Overflow - too many keys pressed
+| * 2 - Num Lock on
+| * 3 - Caps Lock on
+
+.. code-block:: C
+
+  uint8_t keyboard[32];
+  #define key(code) (keyboard[code >> 3] & \
+                    (1 << (code & 7)))
+
+
+5. Mouse
+========
+
+The RIA can provide direct access to mouse information. Enable and disable by mapping it to an address in extended RAM.
+
+.. code-block:: C
+
+  xreg(0, 0, 0x01, xaddr); // enable
+  xreg(0, 0, 0x01, 0xFFFF); // disable
+
+This sets the address in extended RAM for a structure containing direct mouse input.
+
+.. code-block:: C
+
+  struct {
+      uint8_t buttons;
+      uint8_t x;
+      uint8_t y;
+      uint8_t wheel;
+      uint8_t pan;
+  } mouse;
+
+The amount of movement is computed by keeping track of the previous values and subtracting from the current value. Vsync timing (60Hz) isn't always fast enough. For perfect mouse input with fast mice, use an ISR at 8ms or faster (125Hz).
+
+.. code-block:: C
+
+  int8_t delta_x = current_x - prev_x;
+
+| Mouse buttons are a bitfield:
+| 0 - LEFT
+| 1 - RIGHT
+| 2 - MIDDLE
+| 3 - BACKWARD
+| 4 - FORWARD
+
+
+6. Gamepads
+===========
+
+The RIA supports up to two Sony DualShock 4 controllers connected via USB.
+
+Enable and disable access to the RIA gamepad XRAM registers by setting the extended register. The register value is the XRAM start address of the XRAM registers. Any invalid address disables the gamepads.
+
+.. code-block:: C
+
+  xreg(0, 0, 0x02, xaddr); // enable
+  xreg(0, 0, 0x02, 0xFFFF); // disable
+
+Extended memory will be continuously updated with gamepad information. The 9 byte structure described here repeats for a total of 18 bytes representing two controllers. Disconnected controllers will report BTN1 bits 0-4 as 0xF.
+
+.. list-table::
+   :widths: 1 1 20
+   :header-rows: 1
+
+   * - Offset
+     - Name
+     - Description
+   * - 0
+     - LX
+     - Left stick X position. 0=left, 128=center, 255=right
+   * - 1
+     - LY
+     - Left stick Y position. 0=up, 128=center, 255=down
+   * - 2
+     - RX
+     - Right stick X position.
+   * - 3
+     - RY
+     - Right stick Y position.
+   * - 4
+     - BTN1
+     - Main buttons
+         * bits 0-3: Direction pad. 15=disconnected, 8=released, 7=NW, 6=W, 5=SW, 4=S, 3=SE, 2=E, 1=NE, 0=N
+         * bit 4: square button
+         * bit 5: cross button
+         * bit 6: circle button
+         * bit 7: triangle button
+   * - 5
+     - BTN2
+     - Extended buttons
+         * bit 0: L1 button
+         * bit 1: R1 button
+         * bit 2: L2 button
+         * bit 3: R2 button
+         * bit 4: Share button
+         * bit 5: Option button
+         * bit 6: L3 button
+         * bit 7: R3 button
+   * - 6
+     - BTN3
+     - Sony buttons
+         * bit 0: PlayStation button
+         * bit 1: Touch Pad button
+   * - 7
+     - L2
+     - Left analog trigger position. 0-255
+   * - 8
+     - R2
+     - Right analog trigger position. 0-255
+
+
+7. Programmable Sound Generator
 ===============================
 
 The RIA includes a Programmable Sound Generator (PSG). It is configured with extended register device 0 channel 1 address 0x00.
@@ -419,67 +519,3 @@ Value table. ADR rates are the time it takes for a full volume change. Volume at
      - 8s
      - 24s
      - 0/256 (silent)
-
-5. Gamepads
-===========
-
-The RIA supports up to two Sony DualShock 4 controllers connected via USB.
-
-Enable and disable access to the RIA gamepad XRAM registers by setting the extended register. The register value is the XRAM start address of the XRAM registers. Any invalid address disables the gamepads.
-
-.. code-block:: C
-
-  xreg(0, 0, 0x02, xaddr); // enable
-  xreg(0, 0, 0x02, 0xFFFF); // disable
-
-The XRAM registers repeat for the second controller. Disconnected controllers will report BTN1 bits 0-4 as 0xF.
-
-.. list-table::
-   :widths: 1 1 20
-   :header-rows: 1
-
-   * - Offset
-     - Name
-     - Description
-   * - 0
-     - LX
-     - Left stick X position. 0=left, 128=center, 255=right
-   * - 1
-     - LY
-     - Left stick Y position. 0=up, 128=center, 255=down
-   * - 2
-     - RX
-     - Right stick X position.
-   * - 3
-     - RY
-     - Right stick Y position.
-   * - 4
-     - BTN1
-     - Main buttons
-         * bits 0-3: Direction pad. 15=disconnected, 8=released, 7=NW, 6=W, 5=SW, 4=S, 3=SE, 2=E, 1=NE, 0=N
-         * bit 4: square button
-         * bit 5: cross button
-         * bit 6: circle button
-         * bit 7: triangle button
-   * - 5
-     - BTN2
-     - Extended buttons
-         * bit 0: L1 button
-         * bit 1: R1 button
-         * bit 2: L2 button
-         * bit 3: R2 button
-         * bit 4: Share button
-         * bit 5: Option button
-         * bit 6: L3 button
-         * bit 7: R3 button
-   * - 6
-     - BTN3
-     - Sony buttons
-         * bit 0: PlayStation button
-         * bit 1: Touch Pad button
-   * - 7
-     - L2
-     - Left analog trigger position. 0-255
-   * - 8
-     - R2
-     - Right analog trigger position. 0-255
