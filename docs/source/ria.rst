@@ -326,7 +326,7 @@ Enable and disable access to the RIA gamepad XRAM registers by setting the exten
   xreg(0, 0, 0x02, xaddr); // enable
   xreg(0, 0, 0x02, 0xFFFF); // disable
 
-Extended memory will be continuously updated with gamepad information. The 9 byte structure described here repeats for a total of 18 bytes representing two controllers. Disconnected controllers will report BTN1 bits 0-4 as 0xF.
+Extended memory will be continuously updated with gamepad information. The 9 byte structure described here repeats for a total of 18 bytes representing two controllers. Disconnected controllers will report BTN1 bits 0-3 as 0xF.
 
 .. list-table::
    :widths: 1 1 20
