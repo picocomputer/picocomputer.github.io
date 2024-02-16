@@ -17,6 +17,7 @@ The Picocomputer explores retro computing and game development by removing the b
 
 * GitHub: https://github.com/picocomputer
 * Forums: https://github.com/picocomputer/community/discussions
+* Discord: https://discord.gg/TC6X8kTr6d
 * Wiki: https://github.com/picocomputer/community/wiki
 * YouTube: https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r
 
