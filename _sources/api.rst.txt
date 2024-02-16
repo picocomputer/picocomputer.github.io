@@ -129,6 +129,10 @@ xreg
 
 .. c:function:: int xreg(char device, char channel, unsigned char address, ...);
 
+.. c:function:: int xregn(char device, char channel, unsigned char address, unsigned count, ...);
+
+   Use xreg() with cc65 and xregn() with LLVM-MOS. The only difference is that xregn() requires a count of the variadic arguments.
+
    Set extended registers on a PIX device. See the :doc:`ria` and :doc:`vga` documentation for what each register does. Setting extended registers can fail, which you should use for feature detection. EINVAL means the device responded with a negative acknowledgementg. EIO means there was a timeout waiting for ack/nak.
 
    :param device: PIX device ID. 0-6

@@ -178,7 +178,13 @@
 <dl class="function">
 <dt>
 <code class="sig-name descname">int xreg(char device, char channel, unsigned char address, ...);</code></dt>
-<dd><p>Set extended registers on a PIX device. See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. Setting extended registers can fail, which you should use for feature detection. EINVAL means the device responded with a negative acknowledgementg. EIO means there was a timeout waiting for ack/nak.</p>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<code class="sig-name descname">int xregn(char device, char channel, unsigned char address, unsigned count, ...);</code></dt>
+<dd><p>Use xreg() with cc65 and xregn() with LLVM-MOS. The only difference is that xregn() requires a count of the variadic arguments.</p>
+<p>Set extended registers on a PIX device. See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. Setting extended registers can fail, which you should use for feature detection. EINVAL means the device responded with a negative acknowledgementg. EIO means there was a timeout waiting for ack/nak.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
