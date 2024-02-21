@@ -20,6 +20,8 @@ To financially support this open source project, consider joining `Patreon <http
 Step 0. Read This
 =================
 
+The boot message does not say COLOR anymore. Do not assume your device will behave exactly the same as an old YouTube video.
+
 USB hub and device support isn't perfect but everyone so far has been able to find working devices. Sometimes swapping hub ports helps.
 
 The three-pin debug connections under the RIA aren't used anymore. This is an artifact of early development.
