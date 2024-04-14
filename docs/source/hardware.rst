@@ -15,8 +15,6 @@ You will need to place two orders. First, for the Printed Circuit Board. Second,
 
 I have circuit boards in a `Tindie store <https://www.tindie.com/stores/rumbledethumps/>`_ that ships to the United States. International shipping is either too slow or too much when compared to getting boards made locally or in China.
 
-To financially support this open source project, consider joining `Patreon <https://www.patreon.com/rumbledethumps>`_.
-
 Step 0. Read This
 =================
 
