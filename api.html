@@ -135,7 +135,7 @@
 <p>Functions that move bulk data may come in two flavors. These are any function with a pointer parameter. This pointer is meaningless to the kernel because it can not change 6502 RAM. Instead, we use the XSTACK or XRAM for data buffers.</p>
 <div class="section" id="bulk-xstack-operations">
 <h4><a class="toc-backref" href="#id6">2.3.1. Bulk XSTACK Operations</a><a class="headerlink" href="#bulk-xstack-operations" title="Permalink to this headline">¶</a></h4>
-<p>These only work if the count is 256 or less. Bulk data is passed on the XSTACK, which is 256 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let’s look at some examples.</p>
+<p>These only work if the count is 512 or less. Bulk data is passed on the XSTACK, which is 512 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let’s look at some examples.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">open</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">path</span><span class="p">,</span> <span class="kt">int</span> <span class="n">oflag</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -183,8 +183,8 @@
 <dl class="function">
 <dt>
 <code class="sig-name descname">int xregn(char device, char channel, unsigned char address, unsigned count, ...);</code></dt>
-<dd><p>Use xreg() with cc65 and xregn() with LLVM-MOS. The only difference is that xregn() requires a count of the variadic arguments.</p>
-<p>Set extended registers on a PIX device. See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. Setting extended registers can fail, which you should use for feature detection. EINVAL means the device responded with a negative acknowledgementg. EIO means there was a timeout waiting for ack/nak.</p>
+<dd><p>The only difference is that xregn() requires a count of the variadic arguments. Using xreg() avoids making a counting error and is slightly smaller in CC65.</p>
+<p>Set extended registers on a PIX device. See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. Setting extended registers can fail, which you should use for feature detection. EINVAL means the device responded with a negative acknowledgement. EIO means there was a timeout waiting for ack/nak.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -209,7 +209,7 @@ int <code class="sig-name descname">phi2</code><span class="sig-paren">(</span>v
 <dd><p>Retrieves the PHI2 setting from the RIA. Applications can use this for adjusting to or rejecting different clock speeds.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The 6502 clock speed in kHz. 500 &lt;= x &lt;= 8000</p>
+<dd class="field-odd"><p>The 6502 clock speed in kHz. Typically 750 &lt;= x &lt;= 8000.</p>
 </dd>
 <dt class="field-even">Errno</dt>
 <dd class="field-even"><p>will not fail</p>
@@ -300,7 +300,13 @@ unsigned long <code class="sig-name descname">clock</code><span class="sig-paren
 <dl class="function">
 <dt id="c.clock_getres">
 int <code class="sig-name descname">clock_getres</code><span class="sig-paren">(</span>clockid_t<em> clock_id</em>, struct timespec<em> *res</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_getres" title="Permalink to this definition">¶</a></dt>
-<dd><p>Copies the clock resolution to <cite>res</cite>.</p>
+<dd><div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">timespec</span> <span class="p">{</span>
+   <span class="kt">uint32_t</span> <span class="n">tv_sec</span><span class="p">;</span> <span class="cm">/* seconds */</span>
+   <span class="kt">int32_t</span> <span class="n">tv_nsec</span><span class="p">;</span> <span class="cm">/* nanoseconds */</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Copies the clock resolution to <cite>res</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -374,22 +380,32 @@ int <code class="sig-name descname">clock_settime</code><span class="sig-paren">
 <h3><a class="toc-backref" href="#id19">clock_gettimezone</a><a class="headerlink" href="#clock-gettimezone" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
 <dt id="c.clock_gettimezone">
-int <code class="sig-name descname">clock_gettimezone</code><span class="sig-paren">(</span>clockid_t<em> clock_id</em>, struct _timezone<em> *tz</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_gettimezone" title="Permalink to this definition">¶</a></dt>
-<dd><p>Not implemented. Always fails.</p>
+int <code class="sig-name descname">clock_gettimezone</code><span class="sig-paren">(</span>uint32_t<em> time</em>, clockid_t<em> clock_id</em>, struct _timezone<em> *tz</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_gettimezone" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">_timezone</span>
+<span class="p">{</span>
+   <span class="kt">int8_t</span> <span class="n">daylight</span><span class="p">;</span>  <span class="cm">/* &gt;0 if daylight savings time active */</span>
+   <span class="kt">int32_t</span> <span class="n">timezone</span><span class="p">;</span> <span class="cm">/* Number of seconds behind UTC */</span>
+   <span class="kt">char</span> <span class="n">tzname</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>   <span class="cm">/* Name of timezone, e.g. CET */</span>
+   <span class="kt">char</span> <span class="n">dstname</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>  <span class="cm">/* Name when daylight true, e.g. CEST */</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Populates a CC65 _timezone structure for the requested time. Use <cite>help set tz</cite> on the monitor to learn about configuring your time zone.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> – time_t compatible integer.</p></li>
 <li><p><strong>clock_id</strong> – 0 for CLOCK_REALTIME.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>-1 always.</p>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
 </dd>
 <dt class="field-odd">A regs</dt>
 <dd class="field-odd"><p>return, clock_id</p>
 </dd>
 <dt class="field-even">Errno</dt>
-<dd class="field-even"><p>ENOSYS</p>
+<dd class="field-even"><p>EINVAL</p>
 </dd>
 </dl>
 </dd></dl>

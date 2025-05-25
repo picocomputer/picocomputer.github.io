@@ -37,16 +37,49 @@
 <div class="section" id="schematic">
 <h2>Schematic<a class="headerlink" href="#schematic" title="Permalink to this headline">¶</a></h2>
 <p><a class="reference external" href="_static/2023-06-07-rp6502.pdf">Picocomputer 6502</a> (pdf)</p>
-<p>I use “Picocomputer 6502” to refer to the reference design. Please use a differentiating name if you change the hardware. For example, “Picocomputer VERA” or “Ulf’s Dream Computer”. Think about what people asking for help should call the device and go with that.</p>
+</div>
+<div class="section" id="memory-map">
+<h2>Memory Map<a class="headerlink" href="#memory-map" title="Permalink to this headline">¶</a></h2>
+<p>There is no ROM. Nothing in zero page is used or reserved. There isn’t a book-sized list to study. The Picocomputer design lets you start with a clean slate for every project. VGA, USB, and WiFi are all accessed using the 32 registers of the RIA.</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Address</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0000-FEFF</p></td>
+<td><p>RAM, 63.75K</p></td>
+</tr>
+<tr class="row-odd"><td><p>FF00-FFCF</p></td>
+<td><p>Unassigned</p></td>
+</tr>
+<tr class="row-even"><td><p>FFD0-FFDF</p></td>
+<td><p>VIA, see the <a class="reference external" href="https://www.westerndesigncenter.com/wdc/w65c22-chip.php">WDC datasheet</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>FFE0-FFFF</p></td>
+<td><p>RIA, see the <a class="reference internal" href="ria.html"><span class="doc">RP6502 datasheet</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>10000-1FFFF</p></td>
+<td><p>RAM, 64K for <a class="reference internal" href="ria.html"><span class="doc">RIA</span></a> and <a class="reference internal" href="vga.html"><span class="doc">VGA</span></a></p></td>
+</tr>
+</tbody>
+</table>
+<p>The unassigned space is available for hardware experimenters. You will need to redesign the address decoder logic hardware to use this address space. It is recommended that additional VIAs be added “down” and other hardware added “up”. For example: VIA0 at FFD0, VIA1 at FFC0, SID0 at FF00, and SID1 at FF20.</p>
+<p>I use “Picocomputer 6502” to refer to the reference design with the above memory map. Please use a differentiating name if you change the hardware. For example, “Picocomputer VERA” or “Ulf’s Dream Computer”. Think about what people asking for help should call the device and go with that.</p>
 </div>
 <div class="section" id="buying-a-picocomputer">
 <h2>Buying a Picocomputer<a class="headerlink" href="#buying-a-picocomputer" title="Permalink to this headline">¶</a></h2>
 <p>You will need to place two orders. First, for the Printed Circuit Board. Second, for the electronic components. Some PCB factories will do the soldering for you, but you’ll still need to order the ICs and plug them into sockets.</p>
-<p>I have circuit boards in a <a class="reference external" href="https://www.tindie.com/stores/rumbledethumps/">Tindie store</a> that ships to the United States. International shipping is either too slow or too much when compared to getting boards made locally or in China.</p>
+<p>I have circuit boards in a <a class="reference external" href="https://www.tindie.com/stores/rumbledethumps/">Tindie store</a> that ships only to the United States. International shipping is either too slow or too expensive when compared to getting boards made locally or in China.</p>
+<p>USA import tariffs are not an issue with this project. Only a few dollars of resistors are made in China. Orders to my store and Mouser ship from the USA so you won’t get a surprise bill from the courier.</p>
 <div class="section" id="step-0-read-this">
 <h3>Step 0. Read This<a class="headerlink" href="#step-0-read-this" title="Permalink to this headline">¶</a></h3>
 <p>The boot message does not say COLOR anymore. Do not assume your device will behave exactly the same as an old YouTube video.</p>
-<p>USB hub and device support isn’t perfect but everyone so far has been able to find working devices. Sometimes swapping hub ports helps.</p>
 <p>The three-pin debug connections under the RIA aren’t used anymore. This is an artifact of early development.</p>
 <p>Most VGA-to-HDMI cables can get power from the Picocomputer. Some will need external power applied. All are zero lag.</p>
 </div>
@@ -81,7 +114,7 @@
 <div class="section" id="step-5-pi-pico-firmware">
 <h3>Step 5. Pi Pico Firmware<a class="headerlink" href="#step-5-pi-pico-firmware" title="Permalink to this headline">¶</a></h3>
 <p>Download the <a class="reference external" href="https://github.com/picocomputer/rp6502/releases">UF2 files</a>.</p>
-<p>To load firmware on a Pi Pico, hold its BOOTSEL button down while plugging it into a computer. The Pi Pico will appear as a storage device. Copy the VGA UF2 file to make a Pico VGA and the RIA UF2 file to make a Pico RIA. It should take less than 15 seconds to copy. The LED turns on when done.</p>
+<p>To load firmware on a Pi Pico, hold its BOOTSEL button down while plugging it into a computer. The Pi Pico will appear as a storage device. Copy the VGA UF2 file to make a Pico VGA and the RIA UF2 file to make a Pico RIA. It should take less than 30 seconds to copy. The LED turns on when done.</p>
 </div>
 </div>
 <div class="section" id="acrylic-sandwich-case">
@@ -440,7 +473,7 @@
 <p>The 74xx ICs must be true CMOS. Use AC or HC, do not use ACT or HCT. Two out of three must be AC for 8MHz. You may use 74HC00 and 74HC02 instead of AC, but 8MHz will not be achievable. I’ve never seen a DIP 74AC30, but if you find one then it would be preferred over the 74HC30.</p>
 <p>The RAM IC is 128k because 2x32k is more expensive. Speed must be &lt;=70ns for 8MHz.</p>
 <p>The WDC W65C02S and W65C22S must not be substituted. Do not attempt to use NMOS chips (without the C in the number). Some older CMOS designs may work but there are no plans to support out-of-production ICs.</p>
-<p>Only the Raspberry Pi design of the Pi Pico has been tested. Both original and “H” (header) versions work great. Pin-compatible alternatives may work, check the forums. The 3-pin SWD connection on the Pi Pico RIA is no longer used internally and may be ignored when looking for alternatives.</p>
+<p>Only the Raspberry Pi design of the Pi Pico has been tested. Both original and “H” (header) versions work great. Pin-compatible alternatives may work, check the forums. The 3-pin SWD connection on the Pi Pico RIA is no longer used and may be ignored when looking for alternatives.</p>
 </div>
 </div>
 
@@ -464,6 +497,7 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Hardware</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#schematic">Schematic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#memory-map">Memory Map</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#buying-a-picocomputer">Buying a Picocomputer</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#step-0-read-this">Step 0. Read This</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#step-1-watch-the-videos">Step 1. Watch the Videos</a></li>
