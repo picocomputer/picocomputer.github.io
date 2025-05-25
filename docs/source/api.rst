@@ -79,7 +79,7 @@ Functions that move bulk data may come in two flavors. These are any function wi
 2.3.1. Bulk XSTACK Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-These only work if the count is 256 or less. Bulk data is passed on the XSTACK, which is 256 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let's look at some examples.
+These only work if the count is 512 or less. Bulk data is passed on the XSTACK, which is 512 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let's look at some examples.
 
 .. code-block:: C
 
@@ -131,9 +131,9 @@ xreg
 
 .. c:function:: int xregn(char device, char channel, unsigned char address, unsigned count, ...);
 
-   Use xreg() with cc65 and xregn() with LLVM-MOS. The only difference is that xregn() requires a count of the variadic arguments.
+   The only difference is that xregn() requires a count of the variadic arguments. Using xreg() avoids making a counting error and is slightly smaller in CC65.
 
-   Set extended registers on a PIX device. See the :doc:`ria` and :doc:`vga` documentation for what each register does. Setting extended registers can fail, which you should use for feature detection. EINVAL means the device responded with a negative acknowledgementg. EIO means there was a timeout waiting for ack/nak.
+   Set extended registers on a PIX device. See the :doc:`ria` and :doc:`vga` documentation for what each register does. Setting extended registers can fail, which you should use for feature detection. EINVAL means the device responded with a negative acknowledgement. EIO means there was a timeout waiting for ack/nak.
 
    :param device: PIX device ID. 0-6
    :param channel: PIX channel. 0-15
@@ -149,7 +149,7 @@ phi2
 
    Retrieves the PHI2 setting from the RIA. Applications can use this for adjusting to or rejecting different clock speeds.
 
-   :returns: The 6502 clock speed in kHz. 500 <= x <= 8000
+   :returns: The 6502 clock speed in kHz. Typically 750 <= x <= 8000.
    :errno: will not fail
 
 
@@ -205,6 +205,13 @@ clock_getres
 
 .. c:function:: int clock_getres(clockid_t clock_id, struct timespec *res)
 
+   .. code-block:: c
+
+      struct timespec {
+         uint32_t tv_sec; /* seconds */
+         int32_t tv_nsec; /* nanoseconds */
+      };
+
    Copies the clock resolution to `res`.
 
    :param clock_id: 0 for CLOCK_REALTIME.
@@ -242,14 +249,25 @@ clock_settime
 clock_gettimezone
 -----------------
 
-.. c:function:: int clock_gettimezone(clockid_t clock_id, struct _timezone *tz)
+.. c:function:: int clock_gettimezone(uint32_t time, clockid_t clock_id, struct _timezone *tz)
 
-   Not implemented. Always fails.
+   .. code-block:: c
 
+      struct _timezone
+      {
+         int8_t daylight;  /* >0 if daylight savings time active */
+         int32_t timezone; /* Number of seconds behind UTC */
+         char tzname[5];   /* Name of timezone, e.g. CET */
+         char dstname[5];  /* Name when daylight true, e.g. CEST */
+      };
+
+   Populates a CC65 _timezone structure for the requested time. Use `help set tz` on the monitor to learn about configuring your time zone.
+
+   :param time: time_t compatible integer.
    :param clock_id: 0 for CLOCK_REALTIME.
-   :returns: -1 always.
+   :returns: 0 on success. -1 on error.
    :a regs: return, clock_id
-   :errno: ENOSYS
+   :errno: EINVAL
 
 
 open

@@ -6,21 +6,46 @@ Schematic
 
 `Picocomputer 6502 <_static/2023-06-07-rp6502.pdf>`_ (pdf)
 
-I use "Picocomputer 6502" to refer to the reference design. Please use a differentiating name if you change the hardware. For example, "Picocomputer VERA" or "Ulf's Dream Computer". Think about what people asking for help should call the device and go with that.
+
+Memory Map
+----------
+
+There is no ROM. Nothing in zero page is used or reserved. There isn't a book-sized list to study. The Picocomputer design lets you start with a clean slate for every project. VGA, USB, and WiFi are all accessed using the 32 registers of the RIA.
+
+.. list-table::
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Address
+     - Description
+   * - 0000-FEFF
+     - RAM, 63.75K
+   * - FF00-FFCF
+     - Unassigned
+   * - FFD0-FFDF
+     - VIA, see the `WDC datasheet <https://www.westerndesigncenter.com/wdc/w65c22-chip.php>`_
+   * - FFE0-FFFF
+     - RIA, see the :doc:`RP6502 datasheet <ria>`
+   * - 10000-1FFFF
+     - RAM, 64K for :doc:`RIA <ria>` and :doc:`VGA <vga>`
+
+The unassigned space is available for hardware experimenters. You will need to redesign the address decoder logic hardware to use this address space. It is recommended that additional VIAs be added "down" and other hardware added "up". For example: VIA0 at FFD0, VIA1 at FFC0, SID0 at FF00, and SID1 at FF20.
+
+I use "Picocomputer 6502" to refer to the reference design with the above memory map. Please use a differentiating name if you change the hardware. For example, "Picocomputer VERA" or "Ulf's Dream Computer". Think about what people asking for help should call the device and go with that.
 
 Buying a Picocomputer
 ---------------------
 
 You will need to place two orders. First, for the Printed Circuit Board. Second, for the electronic components. Some PCB factories will do the soldering for you, but you'll still need to order the ICs and plug them into sockets.
 
-I have circuit boards in a `Tindie store <https://www.tindie.com/stores/rumbledethumps/>`_ that ships to the United States. International shipping is either too slow or too much when compared to getting boards made locally or in China.
+I have circuit boards in a `Tindie store <https://www.tindie.com/stores/rumbledethumps/>`_ that ships only to the United States. International shipping is either too slow or too expensive when compared to getting boards made locally or in China.
+
+USA import tariffs are not an issue with this project. Only a few dollars of resistors are made in China. Orders to my store and Mouser ship from the USA so you won't get a surprise bill from the courier.
 
 Step 0. Read This
 =================
 
 The boot message does not say COLOR anymore. Do not assume your device will behave exactly the same as an old YouTube video.
-
-USB hub and device support isn't perfect but everyone so far has been able to find working devices. Sometimes swapping hub ports helps.
 
 The three-pin debug connections under the RIA aren't used anymore. This is an artifact of early development.
 
@@ -75,7 +100,7 @@ Step 5. Pi Pico Firmware
 
 Download the `UF2 files  <https://github.com/picocomputer/rp6502/releases>`_.
 
-To load firmware on a Pi Pico, hold its BOOTSEL button down while plugging it into a computer. The Pi Pico will appear as a storage device. Copy the VGA UF2 file to make a Pico VGA and the RIA UF2 file to make a Pico RIA. It should take less than 15 seconds to copy. The LED turns on when done.
+To load firmware on a Pi Pico, hold its BOOTSEL button down while plugging it into a computer. The Pi Pico will appear as a storage device. Copy the VGA UF2 file to make a Pico VGA and the RIA UF2 file to make a Pico RIA. It should take less than 30 seconds to copy. The LED turns on when done.
 
 Acrylic Sandwich Case
 ---------------------
@@ -132,4 +157,4 @@ The RAM IC is 128k because 2x32k is more expensive. Speed must be \<=70ns for 8M
 
 The WDC W65C02S and W65C22S must not be substituted. Do not attempt to use NMOS chips (without the C in the number). Some older CMOS designs may work but there are no plans to support out-of-production ICs.
 
-Only the Raspberry Pi design of the Pi Pico has been tested. Both original and "H" (header) versions work great. Pin-compatible alternatives may work, check the forums. The 3-pin SWD connection on the Pi Pico RIA is no longer used internally and may be ignored when looking for alternatives.
+Only the Raspberry Pi design of the Pi Pico has been tested. Both original and "H" (header) versions work great. Pin-compatible alternatives may work, check the forums. The 3-pin SWD connection on the Pi Pico RIA is no longer used and may be ignored when looking for alternatives.
