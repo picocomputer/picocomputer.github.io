@@ -625,9 +625,15 @@ Multiple parameters may be sent separated by semicolons. Reset is performed if n
   * - 1
     - Bold intensity
     - Brighter foreground colors. Colors 0-7 brightened.
+  * - 5
+    - Blink
+    - Some ANSI art uses this to brighten the background color.
   * - 22
     - Normal intensity
     - Normal foreground colors. Colors 8-15 dimmed.
+  * - 25
+    - Blink off
+    - Returns to normal intensity background.
   * - 30-37
     - Set foreground color
     - Colors 0-7
