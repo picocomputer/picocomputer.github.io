@@ -10,38 +10,49 @@
 Picocomputer 6502
 =================
 
-The Picocomputer explores retro computing and game development by bridging the void between genuine 8-bit hardware and modern devices.
+The **Picocomputer 6502** is a platform for exploring retro computing and game development, bridging the gap between authentic 8-bit hardware and modern devices.
 
 .. image:: _static/founders.jpg
-  :width: 600
-  :alt: Alternative text
+   :width: 600
+   :alt: Picocomputer Photo
 
 Key Features
 ------------
-* 64KB of System RAM
-* 64KB of Extended RAM
-* VGA Graphics
-* 8-channel Stereo Sound Generator
-* USB for Keyboard, Mouse, and Gamepads
-* 100% through-hole
+
+- **64KB System RAM**
+- **64KB Extended RAM**
+- **VGA Graphics Output**
+- **8-Channel Stereo Sound Generator**
+- **USB Support** for Keyboard, Mouse, and Gamepads
+- **WiFi** for NTP and modem emulation
+- **100% Through-Hole Construction**
 
 Resources
 ---------
 
-Please use GitHub and the Forums for support, Discord for casual chat.
+For support and community interaction, please use the following channels:
 
-* GitHub: https://github.com/picocomputer
-* Forums: https://github.com/picocomputer/community/discussions
-* Discord: https://discord.gg/TC6X8kTr6d
-* Wiki: https://github.com/picocomputer/community/wiki
-* YouTube: https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r
+- **GitHub:** https://github.com/picocomputer
+- **Forums:** https://github.com/picocomputer/community/discussions
+- **Discord:** https://discord.gg/TC6X8kTr6d
+- **Wiki:** https://github.com/picocomputer/community/wiki
+- **YouTube:** https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r
 
-Datasheets
-----------
+Datasheets & Documentation
+--------------------------
 
-The RP6502 chipset comes in two parts. The RP6502-RIA is an interface adapter that connects to a 6502 much like CIA, VIA, and ACIA devices. The RP6502-VGA is an optional video chip that connects to the RP6502-RIA. Both of these are simply Raspberry Pi Picos with the RP6502 firmware.
+The RP6502 chipset consists of three main components:
 
-* :doc:`Schematic, PCB, and Parts <hardware>`
-* :doc:`RIA Interface Adapter <ria>`
-* :doc:`VGA Graphics Processing Unit <vga>`
-* :doc:`API for 6502 Programing <api>`
+- :doc:`RP6502-RIA<ria>`: An interface adapter for the 6502, similar to CIA, VIA, and ACIA devices.
+- :doc:`RP6502-RIA-W<ria_w>`: An alternative RIA with wireless radio technology.
+- :doc:`RP6502-VGA<vga>`: An optional video chip that connects to the RP6502-RIA.
+
+All components are based on Raspberry Pi Pico 2 boards running RP6502 firmware.
+
+Further documentation:
+
+- :doc:`Schematic, PCB, and Parts <hardware>`
+- :doc:`RIA Interface Adapter <ria>`
+- :doc:`RIA W Interface Adapter <ria_w>`
+- :doc:`VGA Graphics Processing Unit <vga>`
+- :doc:`API for 6502 Programming <api>`

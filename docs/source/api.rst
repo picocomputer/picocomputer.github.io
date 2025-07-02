@@ -156,9 +156,11 @@ phi2
 codepage
 --------
 
-.. c:function:: int codepage(void)
+.. c:function:: int codepage(int cp)
 
-   Retrieves the CP setting from the RIA. This is the encoding the filesystem is using and, if VGA is installed, the console and default font.
+   Temporarily overrides the code page if non zero. Returns to system setting when 6502 stops. This is the encoding the filesystem is using and, if VGA is installed, the console and default font. If zero, the system CP setting is selected and returned. If the requested code page is unavailable, a different code page will be selected and returned. For example: ``if (850!=codepage(850)) puts("error");``
+
+   :param cp: code page or 0 for system setting.
 
    :returns: The code page. One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862, 863, 864, 865, 866, 869, 932, 936, 949, 950.
    :errno: will not fail
