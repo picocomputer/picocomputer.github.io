@@ -478,7 +478,7 @@ When bit 0x80 is set, the 0x70 bits indicate the command type, and the 0x0F bits
 4. Terminal
 ===========
 
-The RP6502 VGA system includes a color ANSI terminal attached as the console.
+The RP6502 VGA system includes a color ANSI terminal attached to stdout.
 
 C0 control codes
 ----------------
@@ -511,7 +511,7 @@ C0 control codes
     - 0x0C
     - FF
     - Form Feed
-    - Clear screen and move cursor to top left.
+    - Clear screen and move cursor to top row.
   * - ^M
     - 0x0D
     - CR
