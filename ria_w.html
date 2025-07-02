@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>RP6502-RIA-W &#8212; RP6502 0.0-pre documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="RP6502-VGA" href="vga.html" />
+    <link rel="prev" title="RP6502-RIA" href="ria.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="rp6502-ria-w">
+<h1>RP6502-RIA-W<a class="headerlink" href="#rp6502-ria-w" title="Permalink to this headline">¶</a></h1>
+<p>Rumbledethumps Picocomputer 6502 Interface Adapter W.</p>
+<div class="contents local topic" id="table-of-contents">
+<p class="topic-title">Table of Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#introduction" id="id1">1. Introduction</a></p></li>
+<li><p><a class="reference internal" href="#wifi-setup" id="id2">2. WiFi Setup</a></p></li>
+<li><p><a class="reference internal" href="#network-time-protocol" id="id3">3. Network Time Protocol</a></p></li>
+<li><p><a class="reference internal" href="#modem" id="id4">4. Modem</a></p>
+<ul>
+<li><p><a class="reference internal" href="#at-commands" id="id5">3.1. AT Commands</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id1">1. Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The RP6502 Interface Adapter W (RIA W) is a Raspberry Pi Pico 2 W with RP6502-RIA-W firmware. The RIA W provides everythiung the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> does along with the wireless services described in this document.</p>
+</div>
+<div class="section" id="wifi-setup">
+<h2><a class="toc-backref" href="#id2">2. WiFi Setup</a><a class="headerlink" href="#wifi-setup" title="Permalink to this headline">¶</a></h2>
+<p>The WiFi hardware is an Infineon CYW43439 supporting Wi-Fi 4 (802.11n). Configuration is done from the console.</p>
+<p><cite>SET RF (0|1)</cite> is used to disable all radios without clearing any other settings. It defaults to 1 (enabled).</p>
+<p><cite>SET RFCC (cc|-)</cite> can be used to improve WiFi performance. <cite>help set rfcc</cite> will show the supported country codes. Clearing with “-” will use the Worldwide default.</p>
+<p><cite>SET SSID (ssid|-)</cite> sets the name of your WiFi network, also called the Service Set Identifier.</p>
+<p><cite>SET PASS (pass|-)</cite> sets the password for your WiFi network, if you have one.</p>
+<p>You can check WiFi status with the <cite>status</cite> command.</p>
+</div>
+<div class="section" id="network-time-protocol">
+<h2><a class="toc-backref" href="#id3">3. Network Time Protocol</a><a class="headerlink" href="#network-time-protocol" title="Permalink to this headline">¶</a></h2>
+<p>The real time clock will automatically update its time whenever connected to the internet.You can check NTP status with the <cite>status</cite> command.</p>
+<p>If you prefer local time instead of UTC, set the TZ. Always remember <cite>help set tz</cite> is there for you. Once set, it will adjust for daylight savings time if your locale uses it.</p>
+<p>Once your Wifi and time zone are set, you can forget about time. Drift isn’t a problem and there’s no battery to replace.</p>
+</div>
+<div class="section" id="modem">
+<h2><a class="toc-backref" href="#id4">4. Modem</a><a class="headerlink" href="#modem" title="Permalink to this headline">¶</a></h2>
+<p>lorem ipsum</p>
+<div class="section" id="at-commands">
+<h3><a class="toc-backref" href="#id5">3.1. AT Commands</a><a class="headerlink" href="#at-commands" title="Permalink to this headline">¶</a></h3>
+<p>dolar sit amet</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">RP6502</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ria.html">RIA</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">RIA W</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">1. Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#wifi-setup">2. WiFi Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#network-time-protocol">3. Network Time Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#modem">4. Modem</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#at-commands">3.1. AT Commands</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="vga.html">VGA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="ria.html" title="previous chapter">RP6502-RIA</a></li>
+      <li>Next: <a href="vga.html" title="next chapter">RP6502-VGA</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023 Rumbledethumps.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/ria_w.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
