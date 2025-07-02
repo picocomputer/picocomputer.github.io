@@ -692,6 +692,16 @@
 </tr>
 </thead>
 <tbody>
+<tr class="row-even"><td><p>CSI n A</p></td>
+<td><p>CUU</p></td>
+<td><p>Cursor Up</p></td>
+<td><p>Move the cursor n cells up.</p></td>
+</tr>
+<tr class="row-odd"><td><p>CSI n B</p></td>
+<td><p>CUD</p></td>
+<td><p>Cursor Down</p></td>
+<td><p>Move the cursor n cells down.</p></td>
+</tr>
 <tr class="row-even"><td><p>CSI n C</p></td>
 <td><p>CUF</p></td>
 <td><p>Cursor Forward</p></td>
@@ -707,10 +717,50 @@
 <td><p>Delete Character</p></td>
 <td><p>Delete n cells, move line left.</p></td>
 </tr>
-<tr class="row-odd"><td><p>CSI n m</p></td>
+<tr class="row-odd"><td><p>CSI n ; m H</p></td>
+<td><p>CUP</p></td>
+<td><p>Cursor Position</p></td>
+<td><p>Move the cursor to row n column m. 1-indexed.</p></td>
+</tr>
+<tr class="row-even"><td><p>CSI n J</p></td>
+<td><p>ED</p></td>
+<td><p>Erase in Display</p></td>
+<td><ul class="simple">
+<li><p>0: Erases from the cursor position to the end of the screen.</p></li>
+<li><p>1: Erases from the beginning of the screen to the cursor position.</p></li>
+<li><p>2, 3: Erases the entire screen.</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>CSI n K</p></td>
+<td><p>EL</p></td>
+<td><p>Erase in Line</p></td>
+<td><ul class="simple">
+<li><p>0: Erases from the cursor position to the end of the line.</p></li>
+<li><p>1: Erases from the beginning of the line to the cursor position.</p></li>
+<li><p>2: Erases the entire line.</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>CSI n m</p></td>
 <td><p>SGR</p></td>
 <td><p>Select Graphic Rendition</p></td>
 <td><p>Selects colors and styles.</p></td>
+</tr>
+<tr class="row-odd"><td><p>CSI 6n</p></td>
+<td><p>DSR</p></td>
+<td><p>Device Status Report</p></td>
+<td><p>Responds with the cursor position (CPR) ESC[n;mR, where n is the row and m is the column. 1-indexed.</p></td>
+</tr>
+<tr class="row-even"><td><p>CSI s</p></td>
+<td><p>SCP</p></td>
+<td><p>Save Current Cursor Position</p></td>
+<td><p>Save cursor row and col for retrieval with RCP.</p></td>
+</tr>
+<tr class="row-odd"><td><p>CSI u</p></td>
+<td><p>RCP</p></td>
+<td><p>Restore Saved Cursor Position</p></td>
+<td><p>Moves cursor to position stored by SCP.</p></td>
 </tr>
 </tbody>
 </table>

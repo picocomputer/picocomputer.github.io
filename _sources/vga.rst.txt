@@ -487,7 +487,7 @@ C0 control codes
   :widths: 5 5 5 5 80
   :header-rows: 1
 
-  * - ^
+  * - \^
     - C0
     - Abbr
     - Name
@@ -554,6 +554,14 @@ Missing numbers are treated as 0. Some functions, like cursor movement, treat 0 
     - Abbr
     - Name
     - Effect
+  * - CSI n A
+    - CUU
+    - Cursor Up
+    - Move the cursor n cells up.
+  * - CSI n B
+    - CUD
+    - Cursor Down
+    - Move the cursor n cells down.
   * - CSI n C
     - CUF
     - Cursor Forward
@@ -566,10 +574,38 @@ Missing numbers are treated as 0. Some functions, like cursor movement, treat 0 
     - DCH
     - Delete Character
     - Delete n cells, move line left.
+  * - CSI n ; m H
+    - CUP
+    - Cursor Position
+    - Move the cursor to row n column m. 1-indexed.
+  * - CSI n J
+    - ED
+    - Erase in Display
+    - - 0: Erases from the cursor position to the end of the screen.
+      - 1: Erases from the beginning of the screen to the cursor position.
+      - 2, 3: Erases the entire screen.
+  * - CSI n K
+    - EL
+    - Erase in Line
+    - - 0: Erases from the cursor position to the end of the line.
+      - 1: Erases from the beginning of the line to the cursor position.
+      - 2: Erases the entire line.
   * - CSI n m
     - SGR
     - Select Graphic Rendition
     - Selects colors and styles.
+  * - CSI 6n
+    - DSR
+    - Device Status Report
+    - Responds with the cursor position (CPR) ESC\[n;mR, where n is the row and m is the column. 1-indexed.
+  * - CSI s
+    - SCP
+    - Save Current Cursor Position
+    - Save cursor row and col for retrieval with RCP.
+  * - CSI u
+    - RCP
+    - Restore Saved Cursor Position
+    - Moves cursor to position stored by SCP.
 
 
 SGR Parameters

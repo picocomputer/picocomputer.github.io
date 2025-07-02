@@ -35,38 +35,47 @@
 </div>
 <div class="section" id="picocomputer-6502">
 <h1>Picocomputer 6502<a class="headerlink" href="#picocomputer-6502" title="Permalink to this headline">¶</a></h1>
-<p>The Picocomputer explores retro computing and game development by bridging the void between genuine 8-bit hardware and modern devices.</p>
-<a class="reference internal image-reference" href="_images/founders.jpg"><img alt="Alternative text" src="_images/founders.jpg" style="width: 600px;" /></a>
+<p>The <strong>Picocomputer 6502</strong> is a platform for exploring retro computing and game development, bridging the gap between authentic 8-bit hardware and modern devices.</p>
+<a class="reference internal image-reference" href="_images/founders.jpg"><img alt="Picocomputer Photo" src="_images/founders.jpg" style="width: 600px;" /></a>
 <div class="section" id="key-features">
 <h2>Key Features<a class="headerlink" href="#key-features" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>64KB of System RAM</p></li>
-<li><p>64KB of Extended RAM</p></li>
-<li><p>VGA Graphics</p></li>
-<li><p>8-channel Stereo Sound Generator</p></li>
-<li><p>USB for Keyboard, Mouse, and Gamepads</p></li>
-<li><p>100% through-hole</p></li>
+<li><p><strong>64KB System RAM</strong></p></li>
+<li><p><strong>64KB Extended RAM</strong></p></li>
+<li><p><strong>VGA Graphics Output</strong></p></li>
+<li><p><strong>8-Channel Stereo Sound Generator</strong></p></li>
+<li><p><strong>USB Support</strong> for Keyboard, Mouse, and Gamepads</p></li>
+<li><p><strong>WiFi</strong> for NTP and modem emulation</p></li>
+<li><p><strong>100% Through-Hole Construction</strong></p></li>
 </ul>
 </div>
 <div class="section" id="resources">
 <h2>Resources<a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h2>
-<p>Please use GitHub and the Forums for support, Discord for casual chat.</p>
+<p>For support and community interaction, please use the following channels:</p>
 <ul class="simple">
-<li><p>GitHub: <a class="reference external" href="https://github.com/picocomputer">https://github.com/picocomputer</a></p></li>
-<li><p>Forums: <a class="reference external" href="https://github.com/picocomputer/community/discussions">https://github.com/picocomputer/community/discussions</a></p></li>
-<li><p>Discord: <a class="reference external" href="https://discord.gg/TC6X8kTr6d">https://discord.gg/TC6X8kTr6d</a></p></li>
-<li><p>Wiki: <a class="reference external" href="https://github.com/picocomputer/community/wiki">https://github.com/picocomputer/community/wiki</a></p></li>
-<li><p>YouTube: <a class="reference external" href="https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r">https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r</a></p></li>
+<li><p><strong>GitHub:</strong> <a class="reference external" href="https://github.com/picocomputer">https://github.com/picocomputer</a></p></li>
+<li><p><strong>Forums:</strong> <a class="reference external" href="https://github.com/picocomputer/community/discussions">https://github.com/picocomputer/community/discussions</a></p></li>
+<li><p><strong>Discord:</strong> <a class="reference external" href="https://discord.gg/TC6X8kTr6d">https://discord.gg/TC6X8kTr6d</a></p></li>
+<li><p><strong>Wiki:</strong> <a class="reference external" href="https://github.com/picocomputer/community/wiki">https://github.com/picocomputer/community/wiki</a></p></li>
+<li><p><strong>YouTube:</strong> <a class="reference external" href="https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r">https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r</a></p></li>
 </ul>
 </div>
-<div class="section" id="datasheets">
-<h2>Datasheets<a class="headerlink" href="#datasheets" title="Permalink to this headline">¶</a></h2>
-<p>The RP6502 chipset comes in two parts. The RP6502-RIA is an interface adapter that connects to a 6502 much like CIA, VIA, and ACIA devices. The RP6502-VGA is an optional video chip that connects to the RP6502-RIA. Both of these are simply Raspberry Pi Picos with the RP6502 firmware.</p>
+<div class="section" id="datasheets-documentation">
+<h2>Datasheets &amp; Documentation<a class="headerlink" href="#datasheets-documentation" title="Permalink to this headline">¶</a></h2>
+<p>The RP6502 chipset consists of three main components:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a>: An interface adapter for the 6502, similar to CIA, VIA, and ACIA devices.</p></li>
+<li><p><a class="reference internal" href="ria_w.html"><span class="doc">RP6502-RIA-W</span></a>: An alternative RIA with wireless radio technology.</p></li>
+<li><p><a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a>: An optional video chip that connects to the RP6502-RIA.</p></li>
+</ul>
+<p>All components are based on Raspberry Pi Pico 2 boards running RP6502 firmware.</p>
+<p>Further documentation:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="hardware.html"><span class="doc">Schematic, PCB, and Parts</span></a></p></li>
 <li><p><a class="reference internal" href="ria.html"><span class="doc">RIA Interface Adapter</span></a></p></li>
+<li><p><a class="reference internal" href="ria_w.html"><span class="doc">RIA W Interface Adapter</span></a></p></li>
 <li><p><a class="reference internal" href="vga.html"><span class="doc">VGA Graphics Processing Unit</span></a></p></li>
-<li><p><a class="reference internal" href="api.html"><span class="doc">API for 6502 Programing</span></a></p></li>
+<li><p><a class="reference internal" href="api.html"><span class="doc">API for 6502 Programming</span></a></p></li>
 </ul>
 </div>
 </div>
