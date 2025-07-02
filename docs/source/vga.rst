@@ -9,7 +9,7 @@ Rumbledethumps Picocomputer 6502 Video Graphics Array.
 1. Introduction
 ===============
 
-The RP6502 Video Graphics Array is a Raspberry Pi Pico with RP6502-VGA firmware. Its primary data connection is to a :doc:`ria` over a 5-wire PIX bus. More than one VGA module can be put on a PIX bus. Note that all VGA modules share the same 64K of XRAM and only one module can generate frame numbers and vsync interrupts.
+The RP6502 Video Graphics Array is a Raspberry Pi Pico 2 with RP6502-VGA firmware. Its primary data connection is to a :doc:`ria` over a 5-wire PIX bus. More than one VGA module can be put on a PIX bus. Note that all VGA modules share the same 64K of XRAM and only one module can generate frame numbers and vsync interrupts.
 
 2. Video Programming
 ====================

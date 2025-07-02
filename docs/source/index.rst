@@ -3,6 +3,7 @@
 
    Hardware <hardware>
    RIA <ria>
+   RIA W <ria_w>
    VGA <vga>
    API <api>
 

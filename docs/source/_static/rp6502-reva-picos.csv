@@ -1,3 +1,4 @@
 "Qty","Reference","Description","Mfr Name","Mfr Part Number","Mouser Part Number"
-"2","U2, U4","Raspberry Pi Pico 2 no headers","Raspberry Pi","SC1631","358-SC1631"
-"4","U2, U4","Pico 20 Pin Header (x2)","Amp","10129378-920001BLF","649-1012937892001BLF"
+"1","U2","Raspberry Pi Pico 2 W no headers","Raspberry Pi","SC1633","358-SC1633"
+"1","U4","Raspberry Pi Pico 2 no headers","Raspberry Pi","SC1631","358-SC1631"
+"4","U2, U4","Pico 20 Pin Header (2 per Pico)","Amp","10129378-920001BLF","649-1012937892001BLF"

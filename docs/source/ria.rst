@@ -9,7 +9,7 @@ Rumbledethumps Picocomputer 6502 Interface Adapter.
 1. Introduction
 ===============
 
-The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico with RP6502-RIA firmware. The RIA provides all essential services to support a WDC W65C02S microprocessor.
+The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico 2 with RP6502-RIA firmware. The RIA provides all essential services to support a WDC W65C02S microprocessor.
 
 1.1. Features of the RP6502-RIA
 -------------------------------
