@@ -527,19 +527,29 @@ Fe Escape Sequences
 -------------------
 
 .. list-table::
-  :widths: 10 5 5 5 75
+  :widths: 15 5 5 75
   :header-rows: 1
 
   * - Code
-    - C1
     - Abbr
     - Name
     - Effect
-  * - ESC [
-    - 0x9B
+  * - ESC \[
     - CSI
     - Control Sequence Inducer
     - Begins most of the interesting sequences.
+  * - ESC N
+    - SS2
+    - Single Shift Two
+    - No SS2 commands implemented.
+  * - ESC O
+    - SS3
+    - Single Shift Three
+    - No SS3 commands implemented.
+  * - ESC c
+    - RIS
+    - Reset to Initial State
+    - Completely resets the terminal.
 
 
 CSI Sequences

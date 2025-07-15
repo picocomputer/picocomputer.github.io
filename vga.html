@@ -650,15 +650,13 @@
 <h3><a class="toc-backref" href="#id13">Fe Escape Sequences</a><a class="headerlink" href="#fe-escape-sequences" title="Permalink to this headline">¶</a></h3>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 10%" />
-<col style="width: 5%" />
+<col style="width: 15%" />
 <col style="width: 5%" />
 <col style="width: 5%" />
 <col style="width: 75%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Code</p></th>
-<th class="head"><p>C1</p></th>
 <th class="head"><p>Abbr</p></th>
 <th class="head"><p>Name</p></th>
 <th class="head"><p>Effect</p></th>
@@ -666,10 +664,24 @@
 </thead>
 <tbody>
 <tr class="row-even"><td><p>ESC [</p></td>
-<td><p>0x9B</p></td>
 <td><p>CSI</p></td>
 <td><p>Control Sequence Inducer</p></td>
 <td><p>Begins most of the interesting sequences.</p></td>
+</tr>
+<tr class="row-odd"><td><p>ESC N</p></td>
+<td><p>SS2</p></td>
+<td><p>Single Shift Two</p></td>
+<td><p>No SS2 commands implemented.</p></td>
+</tr>
+<tr class="row-even"><td><p>ESC O</p></td>
+<td><p>SS3</p></td>
+<td><p>Single Shift Three</p></td>
+<td><p>No SS3 commands implemented.</p></td>
+</tr>
+<tr class="row-odd"><td><p>ESC c</p></td>
+<td><p>RIS</p></td>
+<td><p>Reset to Initial State</p></td>
+<td><p>Completely resets the terminal.</p></td>
 </tr>
 </tbody>
 </table>
