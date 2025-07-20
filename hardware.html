@@ -40,7 +40,10 @@
 </div>
 <div class="section" id="memory-map">
 <h2>Memory Map<a class="headerlink" href="#memory-map" title="Permalink to this headline">¶</a></h2>
-<p>There is no ROM. Nothing in zero page is used or reserved. There isn’t a book-sized list to study. The Picocomputer design lets you start with a clean slate for every project. VGA, USB, and WiFi are all accessed using the 32 registers of the RIA.</p>
+<p>There is no ROM. Nothing in zero page is used or reserved. There isn’t a
+book-sized list to study. The Picocomputer design lets you start with a clean
+slate for every project. VGA, USB, and WiFi are all accessed using the 32
+registers of the RIA.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 25%" />
@@ -69,60 +72,110 @@
 </tr>
 </tbody>
 </table>
-<p>The unassigned space is available for hardware experimenters. You will need to redesign the address decoder logic hardware to use this address space. It is recommended that additional VIAs be added “down” and other hardware added “up”. For example: VIA0 at FFD0, VIA1 at FFC0, SID0 at FF00, and SID1 at FF20.</p>
-<p>I use “Picocomputer 6502” to refer to the reference design with the above memory map. Please use a differentiating name if you change the hardware. For example, “Picocomputer VERA” or “Ulf’s Dream Computer”. Think about what people asking for help should call the device and go with that.</p>
+<p>The unassigned space is available for hardware experimenters. You will need to
+redesign the address decoder logic hardware to use this address space. It is
+recommended that additional VIAs be added “down” and other hardware added
+“up”. For example: VIA0 at FFD0, VIA1 at FFC0, SID0 at FF00, and SID1 at
+FF20.</p>
+<p>I use “Picocomputer 6502” to refer to the reference design with the above
+memory map. Please use a differentiating name if you change the hardware. For
+example, “Picocomputer VERA” or “Ulf’s Dream Computer”. Think about what
+people asking for help should call the device and go with that.</p>
 </div>
 <div class="section" id="buying-a-picocomputer">
 <h2>Buying a Picocomputer<a class="headerlink" href="#buying-a-picocomputer" title="Permalink to this headline">¶</a></h2>
-<p>You will need to place two orders. First, for the Printed Circuit Board. Second, for the electronic components. Some PCB factories will do the soldering for you, but you’ll still need to order the ICs and plug them into sockets.</p>
-<p>I have circuit boards in a <a class="reference external" href="https://www.tindie.com/stores/rumbledethumps/">Tindie store</a> that ships only to the United States. International shipping is either too slow or too expensive when compared to getting boards made locally or in China.</p>
-<p>USA import tariffs are not an issue with this project. Only a few dollars of resistors are made in China. Orders to my store and Mouser ship from the USA so you won’t get a surprise bill from the courier.</p>
+<p>You will need to place two orders. First, for the Printed Circuit Board.
+Second, for the electronic components. Some PCB factories will do the soldering
+for you, but you’ll still need to order the ICs and plug them into sockets.</p>
+<p>I have circuit boards in a <a class="reference external" href="https://www.tindie.com/stores/rumbledethumps/">Tindie store</a> that ships only to the United
+States. International shipping is either too slow or too expensive when
+compared to getting boards made locally or in China.</p>
+<p>USA import tariffs are not an issue with this project. Only a few dollars of
+resistors are made in China. Orders to my store and Mouser ship from the USA,
+so you won’t get a surprise bill from the courier.</p>
 <div class="section" id="step-0-read-this">
 <h3>Step 0. Read This<a class="headerlink" href="#step-0-read-this" title="Permalink to this headline">¶</a></h3>
-<p>The boot message does not say COLOR anymore. Do not assume your device will behave exactly the same as an old YouTube video.</p>
-<p>The three-pin debug connections under the RIA aren’t used anymore. This is an artifact of early development.</p>
-<p>Most VGA-to-HDMI cables can get power from the Picocomputer. Some will need external power applied. All are zero lag.</p>
+<p>The debug header on the Pi Pico 2 W with headers doesn’t fix any of the
+existing cases. It’s only useful for attaching a debugger to the kernel,
+so just pull it off and get on with things. The Pi Picos you solder your
+own headers to do not have this clearance issue.</p>
+<p>The boot message does not say COLOR anymore. Do not assume your device will
+behave exactly the same as an old YouTube video.</p>
+<p>The three-pin debug connections under the RIA aren’t used anymore. This is an
+artifact of early development.</p>
+<p>Most VGA-to-HDMI cables can get power from the Picocomputer. Some will need
+external power applied. All are zero lag.</p>
 </div>
 <div class="section" id="step-1-watch-the-videos">
 <h3>Step 1. Watch the Videos<a class="headerlink" href="#step-1-watch-the-videos" title="Permalink to this headline">¶</a></h3>
-<p>To solder, or not to solder, that is the question. We’re living in the future. You can homebrew a 6502 without a soldering iron. Choose your path:</p>
+<p>To solder, or not to solder, that is the question. We’re living in the future.
+You can homebrew a 6502 without a soldering iron. Choose your path:</p>
 <p><a class="reference external" href="https://youtu.be/4CjouKoCMUw">Here’s the video where I build one without soldering.</a></p>
 <p><a class="reference external" href="https://youtu.be/bwgLXEQdq20">Here’s the video where I solder one myself.</a></p>
 </div>
 <div class="section" id="step-2-order-printed-circuit-boards">
 <h3>Step 2. Order Printed Circuit Boards<a class="headerlink" href="#step-2-order-printed-circuit-boards" title="Permalink to this headline">¶</a></h3>
-<p>Order from the project page at <a class="reference external" href="https://www.pcbway.com/project/shareproject/Picocomputer_6502_RP6502_03a79f88.html">PCBWay</a> or download <a class="reference external" href="_static/rp6502-reva-gerbers.zip">the gerbers</a> to have the boards made anywhere you prefer.</p>
-<p>Gerbers are like PDFs for circuit boards. You’ll be asked to upload these; simply upload the zip file from above. The PCB manufacturer’s website should detect that this is a two-layer 150x100mm board.</p>
-<p>PCB manufacturers that welcome hobbyists have optimized their basic services for production in multiples of five. You won’t be able to order only one board.</p>
-<p>There’s a ton of options you can change if you like. The defaults will get you a classic green and white board with lead (Pb) HASL. Consider getting the lead-free HASL upgrade if the other four boards will be kicking around a drawer for the next 20 years.</p>
+<p>Order from the project page at <a class="reference external" href="https://www.pcbway.com/project/shareproject/Picocomputer_6502_RP6502_03a79f88.html">PCBWay</a>
+or download <a class="reference external" href="_static/rp6502-reva-gerbers.zip">the gerbers</a> to have the boards
+made anywhere you prefer.</p>
+<p>Gerbers are like PDFs for circuit boards. You’ll be asked to upload these;
+simply upload the zip file from above. The PCB manufacturer’s website should
+detect that this is a two-layer 150x100mm board.</p>
+<p>PCB manufacturers that welcome hobbyists have optimized their basic services
+for production in multiples of five. You won’t be able to order only one board.</p>
+<p>There are a ton of options you can change if you like. The defaults will get
+you a classic green and white board with lead (Pb) HASL. Consider getting the
+lead-free HASL upgrade if the other four boards will be kicking around a drawer
+for the next 20 years.</p>
 </div>
 <div class="section" id="step-3-order-assembly">
 <h3>Step 3. Order Assembly<a class="headerlink" href="#step-3-order-assembly" title="Permalink to this headline">¶</a></h3>
 <p>Skip this step if you want to solder it yourself.</p>
-<p>PCBWay has a minimum quantity of one for assembly. They will use the boards you ordered in step 2. What you’ll have them make is a “board of sockets” - the ICs will be installed by you later. It should never be constrained on parts availability since there are multiple vendors for every part.</p>
+<p>PCBWay has a minimum quantity of one for assembly. They will use the boards you
+ordered in step 2. What you’ll have them make is a “board of sockets” - the
+ICs will be installed by you later. It should never be constrained on parts
+availability since there are multiple vendors for every part.</p>
 <p>Download <a class="reference external" href="_static/rp6502-reva-assembly.zip">the BOM, notes, and photos</a>.</p>
-<p>Request assembly with your PCB order and send the <a class="reference external" href="_static/rp6502-reva-assembly.zip">BOM, notes, and photos</a>. There is no centroid file because there are no surface mount parts. The default options will work. Let them source the parts. Let them make substitutions.</p>
-<p>There will be a short delay as they get you a price for the bill-of-materials. Then you can pay and wait. I was estimated four weeks and got it in three.</p>
-<p>If they have a question, make sure you both you and your sales rep read the notes you sent them. If you have a question about options on their web site, ask your sales rep before asking on the forums. They help people all day long with projects far more complex than this. Even if you don’t understand what you are doing, they can figure it out by looking at the zip files. Really, they do this all day long, and will probably enjoy the easy win.</p>
+<p>Request assembly with your PCB order and send the <a class="reference external" href="_static/rp6502-reva-assembly.zip">BOM, notes, and photos</a>. There is no centroid file because there
+are no surface mount parts. The default options will work. Let them source the
+parts. Let them make substitutions.</p>
+<p>There will be a short delay as they get you a price for the bill-of-materials.
+Then you can pay and wait. I was estimated four weeks and got it in three.</p>
+<p>If they have a question, make sure both you and your sales rep read the notes
+you sent them. If you have a question about options on their web site, ask
+your sales rep before asking on the forums. They help people all day long with
+projects far more complex than this. Even if you don’t understand what you are
+doing, they can figure it out by looking at the zip files. Really, they do
+this all day long, and will probably enjoy the easy win.</p>
 </div>
 <div class="section" id="step-4-more-parts">
 <h3>Step 4. More Parts<a class="headerlink" href="#step-4-more-parts" title="Permalink to this headline">¶</a></h3>
-<p>Factory assembled boards will need the eight ICs added to them. Upload the <a class="reference external" href="_static/rp6502-reva-active.csv">active parts list</a> to a <a class="reference external" href="https://mouser.com">Mouser</a> shopping cart.</p>
-<p>If you are soldering it yourself, upload the <a class="reference external" href="_static/rp6502-reva-full.csv">full parts list</a> to a <a class="reference external" href="https://mouser.com">Mouser</a> shopping cart.</p>
-<p>If something is out of stock, consult the substitution notes below. If it’s the Pi Pico or Pi Pico H, do a text search since marketplace vendors often have them.</p>
+<p>Factory assembled boards will need the eight ICs added to them. Upload the
+<a class="reference external" href="_static/rp6502-reva-active.csv">active parts list</a> to a <a class="reference external" href="https://mouser.com">Mouser</a> shopping cart.</p>
+<p>If you are soldering it yourself, upload the <a class="reference external" href="_static/rp6502-reva-full.csv">full parts list</a> to a <a class="reference external" href="https://mouser.com">Mouser</a> shopping
+cart.</p>
+<p>If something is out of stock, consult the substitution notes below. If it’s the
+Pi Pico or Pi Pico H, do a text search since marketplace vendors often have
+them.</p>
 </div>
 <div class="section" id="step-5-pi-pico-firmware">
 <h3>Step 5. Pi Pico Firmware<a class="headerlink" href="#step-5-pi-pico-firmware" title="Permalink to this headline">¶</a></h3>
 <p>Download the <a class="reference external" href="https://github.com/picocomputer/rp6502/releases">UF2 files</a>.</p>
-<p>To load firmware on a Pi Pico, hold its BOOTSEL button down while plugging it into a computer. The Pi Pico will appear as a storage device. Copy the VGA UF2 file to make a Pico VGA and the RIA UF2 file to make a Pico RIA. It should take less than 30 seconds to copy. The LED turns on when done.</p>
+<p>To load firmware on a Pi Pico, hold its BOOTSEL button down while plugging it
+into a computer. The Pi Pico will appear as a storage device. Copy the VGA UF2
+file to make a Pico VGA and the RIA UF2 file to make a Pico RIA. It should take
+less than 30 seconds to copy. The LED turns on when done.</p>
 </div>
 </div>
 <div class="section" id="acrylic-sandwich-case">
 <h2>Acrylic Sandwich Case<a class="headerlink" href="#acrylic-sandwich-case" title="Permalink to this headline">¶</a></h2>
-<p>The circuit board is 150 x 100mm (4x6 inches). I regularly see vendors on Amazon and eBay selling 150 x 100 x 3mm acrylic sheets. You’ll need to drill 3mm holes for M3 standoffs. The recommended standoff height is &gt;=16mm for the top and &gt;=3.5mm for the bottom.</p>
+<p>The circuit board is 150 x 100mm (4x6 inches). I regularly see vendors on
+Amazon and eBay selling 150 x 100 x 3mm acrylic sheets. You’ll need to drill
+3mm holes for M3 standoffs. The recommended standoff height is &gt;=16mm for the
+top and &gt;=3.5mm for the bottom.</p>
 </div>
-<div class="section" id="id2">
-<h2>Full Parts List<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="full-parts-list-all-components">
+<h2>Full Parts List (All Components)<a class="headerlink" href="#full-parts-list-all-components" title="Permalink to this headline">¶</a></h2>
 <p><a class="reference external" href="_static/rp6502-reva-full.csv">All Parts CSV</a></p>
 <table class="docutils align-default">
 <colgroup>
@@ -349,8 +402,8 @@
 </tbody>
 </table>
 </div>
-<div class="section" id="id3">
-<h2>Active Parts List<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="active-parts-list-ics-only">
+<h2>Active Parts List (ICs Only)<a class="headerlink" href="#active-parts-list-ics-only" title="Permalink to this headline">¶</a></h2>
 <p><a class="reference external" href="_static/rp6502-reva-active.csv">Active Parts CSV</a></p>
 <table class="docutils align-default">
 <colgroup>
@@ -485,16 +538,37 @@
 </div>
 <div class="section" id="parts-substitution">
 <h2>Parts Substitution<a class="headerlink" href="#parts-substitution" title="Permalink to this headline">¶</a></h2>
-<p>All resistors are &lt;= 1% tolerance. Any power rating. Leads must fit 0.8mm plated holes spaced 10mm apart. Recommended size is approximately 0.1” x 0.25” (2.4-2.6mm x 6-8mm).</p>
-<p>0.1 μF ceramic capacitors are available in axial packaging (like resistors) but you may use classic radial (disc) capacitors if you prefer. Leads must fit 0.8mm plated holes spaced 10mm apart. Only a voltage of &gt;=10V is required. Tolerance and temperature coefficient do not matter.</p>
-<p>Yes, 47 μF ceramic capacitors are expensive, but you only need two and they never leak. Leads must fit 0.8mm plated holes spaced 5mm apart. Only a voltage of &gt;=10V is required. Tolerance and temperature coefficient do not matter.</p>
-<p>The CUI audio jack is available in many colors and with optional switches. The switches are not used, but the circuit board can accept the extra leads.</p>
-<p>The REBOOT switch is available from multiple manufacturers in various lengths, colors, and activation forces. Nothing matters except that it’s “momentary on”.</p>
-<p>The VGA jack is available from multiple manufacturers. This style has been around since the beginning, so if it looks like it’ll fit then it probably will. Newer VGA jacks are designed to use less PCB space or be oven soldered and will be visibly different enough to avoid.</p>
-<p>The 74xx ICs must be true CMOS. Use AC or HC, do not use ACT or HCT. Two out of three must be AC for 8MHz. You may use 74HC00 and 74HC02 instead of AC, but 8MHz will not be achievable. I’ve never seen a DIP 74AC30, but if you find one then it would be preferred over the 74HC30.</p>
-<p>The RAM IC is 128k because 2x32k is more expensive. Speed must be &lt;=70ns for 8MHz.</p>
-<p>The WDC W65C02S and W65C22S must not be substituted. Do not attempt to use NMOS chips (without the C in the number). Some older CMOS designs may work but there are no plans to support out-of-production ICs.</p>
-<p>Only the Raspberry Pi design of the Pi Pico has been tested. Both original and “H” (header) versions work great. Pin-compatible alternatives may work, check the forums. The 3-pin SWD connection on the Pi Pico RIA is no longer used and may be ignored when looking for alternatives.</p>
+<p>All resistors are &lt;= 1% tolerance. Any power rating. Leads must fit 0.8mm
+plated holes spaced 10mm apart. Recommended size is approximately 0.1” x 0.25”
+(2.4-2.6mm x 6-8mm).</p>
+<p>0.1 μF ceramic capacitors are available in axial packaging (like resistors) but
+you may use classic radial (disc) capacitors if you prefer. Leads must fit
+0.8mm plated holes spaced 10mm apart. Only a voltage of &gt;=10V is required.
+Tolerance and temperature coefficient do not matter.</p>
+<p>Yes, 47 μF ceramic capacitors are expensive, but you only need two and they
+never leak. Leads must fit 0.8mm plated holes spaced 5mm apart. Only a voltage
+of &gt;=10V is required. Tolerance and temperature coefficient do not matter.</p>
+<p>The CUI audio jack is available in many colors and with optional switches. The
+switches are not used, but the circuit board can accept the extra leads.</p>
+<p>The REBOOT switch is available from multiple manufacturers in various lengths,
+colors, and activation forces. Nothing matters except that it’s “momentary on”.</p>
+<p>The VGA jack is available from multiple manufacturers. This style has been
+around since the beginning, so if it looks like it’ll fit then it probably
+will. Newer VGA jacks are designed to use less PCB space or be oven soldered
+and will be visibly different enough to avoid.</p>
+<p>The 74xx ICs must be true CMOS. Use AC or HC, do not use ACT or HCT. Two out of
+three must be AC for 8MHz. You may use 74HC00 and 74HC02 instead of AC, but
+8MHz will not be achievable. I’ve never seen a DIP 74AC30, but if you find one
+then it would be preferred over the 74HC30.</p>
+<p>The RAM IC is 128k because 2x32k is more expensive. Speed must be &lt;=70ns for
+8MHz.</p>
+<p>The WDC W65C02S and W65C22S must not be substituted. Do not attempt to use
+NMOS chips (without the C in the number). Some older CMOS designs may work but
+there are no plans to support out-of-production ICs.</p>
+<p>Only the Raspberry Pi design of the Pi Pico has been tested. Both original and
+“H” (header) versions work great. Pin-compatible alternatives may work, check
+the forums. The 3-pin SWD connection on the Pi Pico RIA is no longer used and
+may be ignored when looking for alternatives.</p>
 </div>
 </div>
 
@@ -529,8 +603,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#acrylic-sandwich-case">Acrylic Sandwich Case</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id2">Full Parts List</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id3">Active Parts List</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#full-parts-list-all-components">Full Parts List (All Components)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#active-parts-list-ics-only">Active Parts List (ICs Only)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#pi-picos-parts-list">Pi Picos Parts List</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#parts-substitution">Parts Substitution</a></li>
 </ul>
