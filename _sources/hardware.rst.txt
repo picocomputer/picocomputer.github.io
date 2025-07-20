@@ -65,7 +65,7 @@ so you won't get a surprise bill from the courier.
 Step 0. Read This
 =================
 
-The debug header on the Pi Pico 2 W with headers doesn't fix any of the
+The debug header on the Pi Pico 2 W with headers doesn't fit any of the
 existing cases. It's only useful for attaching a debugger to the kernel,
 so just pull it off and get on with things. The Pi Picos you solder your
 own headers to do not have this clearance issue.
@@ -144,7 +144,7 @@ Factory assembled boards will need the eight ICs added to them. Upload the
 <https://mouser.com>`_ shopping cart.
 
 If you are soldering it yourself, upload the `full parts list
-<_static/rp6502-reva-full.csv>`_ to a `Mouser <https://mouser.com>`_ shopping
+<_static/rp6502-reva-full.csv>`_ to a Mouser_ shopping
 cart.
 
 If something is out of stock, consult the substitution notes below. If it's the
