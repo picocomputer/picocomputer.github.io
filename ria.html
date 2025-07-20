@@ -473,26 +473,24 @@ faster (125Hz).</p>
 <div class="section" id="gamepads">
 <h2><a class="toc-backref" href="#id16">6. Gamepads</a><a class="headerlink" href="#gamepads" title="Permalink to this headline">¶</a></h2>
 <p>The RIA supports up to four gamepads connected via USB. There is no way to
-support all controllers without writing three different classes of
-drivers: XInput, Sony, and HID. So that’s what’s in the RIA. Even so,
-there is no standard button layout for HID so <code class="docutils literal notranslate"><span class="pre">des.c</span></code> will need to be
-adjusted to support new gamepads.</p>
-<p>Therefore the recommended gamepads for the Picocomputer are: Xbox 360,
-Xbox One/Series, DualShock 4, and DualSense 5. There are plenty of
-third-party Xbox and PlayStation controllers which should work fine as
-well.</p>
+support all controllers without writing three different classes of drivers:
+XInput, Sony, and HID. So that’s what’s in the RIA. Even so, there is no
+standard button layout for HID so <code class="docutils literal notranslate"><span class="pre">des.c</span></code> will need to be adjusted to
+support new gamepads.</p>
+<p>Therefore, the recommended gamepads for the Picocomputer are: Xbox 360, Xbox
+One/Series, DualShock 4, and DualSense 5. There are plenty of third-party
+Xbox and PlayStation controllers which should work fine as well.</p>
 <p>If your HID or third-party gamepad doesn’t work, it probably needs to be
-added to <code class="docutils literal notranslate"><span class="pre">des.c</span></code>. Be aware that any issues submitted in this regard
-cannot be resolved by Rumbledethumps—who doesn’t have your gamepad. The
-community needs to step up here if excellent HID controller support is
+added to <code class="docutils literal notranslate"><span class="pre">des.c</span></code>. Any issues submitted in this regard cannot be resolved
+by Rumbledethumps—who doesn’t have your gamepad. The community needs to
+step up here if excellent third-party and HID controller support is
 desired.</p>
 <p>Be aware that this project pushes TinyUSB to its limit. Okay, let’s be
 frank here: the TinyUSB stack is janky as hell and doesn’t have any
 documentation. If you do a lot of plugging and unplugging it will
-eventually crash. Some devices will also break the boot sequence. Be
-aware that any issues submitted in this regard cannot be resolved by
-Rumbledethumps. The community needs to step up here if an excellent USB
-stack is desired.</p>
+eventually crash. Some devices will also break the boot sequence. Any
+issues submitted in this regard cannot be resolved by Rumbledethumps. The
+community needs to step up here if an excellent USB stack is desired.</p>
 <p>Enable and disable access to the RIA gamepad XRAM registers by setting the
 extended register. The register value is the XRAM start address of the
 gamepad registers. Any invalid address disables the gamepads.</p>
@@ -542,8 +540,7 @@ your favorite 4-way game without worry.</p>
 <tbody>
 <tr class="row-even"><td><p>0</p></td>
 <td><p>DPAD</p></td>
-<td><dl class="simple">
-<dt>Extended buttons</dt><dd><ul class="simple">
+<td><ul class="simple">
 <li><p>bit 0: Direction pad up</p></li>
 <li><p>bit 1: Direction pad down</p></li>
 <li><p>bit 2: Direction pad left</p></li>
@@ -553,14 +550,11 @@ your favorite 4-way game without worry.</p>
 <li><p>bit 6: Sony button faces</p></li>
 <li><p>bit 7: Connected</p></li>
 </ul>
-</dd>
-</dl>
 </td>
 </tr>
 <tr class="row-odd"><td><p>1</p></td>
 <td><p>STICKS</p></td>
-<td><dl class="simple">
-<dt>Extended buttons</dt><dd><ul class="simple">
+<td><ul class="simple">
 <li><p>bit 0: Left stick up</p></li>
 <li><p>bit 1: Left stick down</p></li>
 <li><p>bit 2: Left stick left</p></li>
@@ -570,14 +564,11 @@ your favorite 4-way game without worry.</p>
 <li><p>bit 6: Right stick left</p></li>
 <li><p>bit 7: Right stick right</p></li>
 </ul>
-</dd>
-</dl>
 </td>
 </tr>
 <tr class="row-even"><td><p>2</p></td>
 <td><p>BTN0</p></td>
-<td><dl class="simple">
-<dt>Extended buttons</dt><dd><ul class="simple">
+<td><ul class="simple">
 <li><p>bit 0: A or Cross</p></li>
 <li><p>bit 1: B or Circle</p></li>
 <li><p>bit 2: X or Square</p></li>
@@ -587,14 +578,11 @@ your favorite 4-way game without worry.</p>
 <li><p>bit 6: Select/Back</p></li>
 <li><p>bit 7: Start/Menu</p></li>
 </ul>
-</dd>
-</dl>
 </td>
 </tr>
 <tr class="row-odd"><td><p>3</p></td>
 <td><p>BTN1</p></td>
-<td><dl class="simple">
-<dt>Extended buttons</dt><dd><ul class="simple">
+<td><ul class="simple">
 <li><p>bit 0: L2</p></li>
 <li><p>bit 1: R2</p></li>
 <li><p>bit 2: L3</p></li>
@@ -604,8 +592,6 @@ your favorite 4-way game without worry.</p>
 <li><p>bit 6: Undefined</p></li>
 <li><p>bit 7: Undefined</p></li>
 </ul>
-</dd>
-</dl>
 </td>
 </tr>
 <tr class="row-even"><td><p>4</p></td>
