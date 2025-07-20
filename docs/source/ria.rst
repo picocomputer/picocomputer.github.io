@@ -393,29 +393,27 @@ faster (125Hz).
 ===========
 
 The RIA supports up to four gamepads connected via USB. There is no way to
-support all controllers without writing three different classes of
-drivers: XInput, Sony, and HID. So that's what's in the RIA. Even so,
-there is no standard button layout for HID so ``des.c`` will need to be
-adjusted to support new gamepads.
+support all controllers without writing three different classes of drivers:
+XInput, Sony, and HID. So that's what's in the RIA. Even so, there is no
+standard button layout for HID so ``des.c`` will need to be adjusted to
+support new gamepads.
 
-Therefore the recommended gamepads for the Picocomputer are: Xbox 360,
-Xbox One/Series, DualShock 4, and DualSense 5. There are plenty of
-third-party Xbox and PlayStation controllers which should work fine as
-well.
+Therefore, the recommended gamepads for the Picocomputer are: Xbox 360, Xbox
+One/Series, DualShock 4, and DualSense 5. There are plenty of third-party
+Xbox and PlayStation controllers which should work fine as well.
 
 If your HID or third-party gamepad doesn't work, it probably needs to be
-added to ``des.c``. Be aware that any issues submitted in this regard
-cannot be resolved by Rumbledethumps—who doesn't have your gamepad. The
-community needs to step up here if excellent HID controller support is
+added to ``des.c``. Any issues submitted in this regard cannot be resolved
+by Rumbledethumps—who doesn't have your gamepad. The community needs to
+step up here if excellent third-party and HID controller support is
 desired.
 
 Be aware that this project pushes TinyUSB to its limit. Okay, let's be
 frank here: the TinyUSB stack is janky as hell and doesn't have any
 documentation. If you do a lot of plugging and unplugging it will
-eventually crash. Some devices will also break the boot sequence. Be
-aware that any issues submitted in this regard cannot be resolved by
-Rumbledethumps. The community needs to step up here if an excellent USB
-stack is desired.
+eventually crash. Some devices will also break the boot sequence. Any
+issues submitted in this regard cannot be resolved by Rumbledethumps. The
+community needs to step up here if an excellent USB stack is desired.
 
 Enable and disable access to the RIA gamepad XRAM registers by setting the
 extended register. The register value is the XRAM start address of the
@@ -468,7 +466,7 @@ your favorite 4-way game without worry.
      - Description
    * - 0
      - DPAD
-     - Extended buttons
+     -
          * bit 0: Direction pad up
          * bit 1: Direction pad down
          * bit 2: Direction pad left
@@ -479,7 +477,7 @@ your favorite 4-way game without worry.
          * bit 7: Connected
    * - 1
      - STICKS
-     - Extended buttons
+     -
          * bit 0: Left stick up
          * bit 1: Left stick down
          * bit 2: Left stick left
@@ -490,7 +488,7 @@ your favorite 4-way game without worry.
          * bit 7: Right stick right
    * - 2
      - BTN0
-     - Extended buttons
+     -
          * bit 0: A or Cross
          * bit 1: B or Circle
          * bit 2: X or Square
@@ -501,7 +499,7 @@ your favorite 4-way game without worry.
          * bit 7: Start/Menu
    * - 3
      - BTN1
-     - Extended buttons
+     -
          * bit 0: L2
          * bit 1: R2
          * bit 2: L3
