@@ -74,13 +74,24 @@ Example AT commands:
 
 A full telnet stack has yet to be written so all connections are raw TCP.
 
-"Telephone Numbers" are saved immadiately and are not linked to profiles.
+"Telephone Numbers" are saved immediately and are not linked to profiles.
 
 `Please contribute to this documentation. <https://github.com/picocomputer/picocomputer.github.io>`_
 
-5. Additional Resources
-=======================
+5. Bluetooth
+============
 
-- :doc:`RIA Interface Adapter <ria>`
-- :doc:`API for 6502 Programming <api>`
-- :doc:`Schematic, PCB, and Case Files <hardware>`
+The RIA W supports Bluetooth LE (BLE) keyboards, mice, and gamepads.
+It does not support the older Bluetooth Classic aka BR/EDR.
+The RIA W uses BTStack which can only support one Bluetooth Classic device
+at a time so it's not worth the memory.
+BLE was introduced in June 2010 with Bluetooth 4.0 so it's not difficult
+to find devices but you will find an occassional oddball. Of particular
+note are Sony DualShock and DualSense controllers - which you can use on
+USB instead.
+
+To add a new device, use monitor command ``set ble 2`` to enable pairing
+mode. The LED on the RIA W will blink when in pairing mode. See your device's
+manual to enable its pairing mode - probably a button and more blinking.
+When the blinking stops, the device is connected and will be remembered
+(bonded) so it reconnects automatically in the future.

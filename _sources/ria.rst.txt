@@ -374,8 +374,12 @@ mouse input.
 
 The amount of movement is computed by keeping track of the previous values
 and subtracting from the current value. Vsync timing (60Hz) isn't always
-fast enough. For perfect mouse input with fast mice, use an ISR at 8ms or
-faster (125Hz).
+fast enough. For perfect mouse input, use an ISR at 8ms or faster (125Hz).
+
+It is recommended that applications consider the canvas resolution when
+interpreting the movement. For 640x480 and 640x360 resolutions, each unit
+of movement equates to one pixel. For 320x240 and 320x180 resolutions, two
+units of movement for each pixel.
 
 .. code-block:: C
 
@@ -392,28 +396,24 @@ faster (125Hz).
 6. Gamepads
 ===========
 
-The RIA supports up to four gamepads connected via USB. There is no way to
-support all controllers without writing three different classes of drivers:
-XInput, Sony, and HID. So that's what's in the RIA. Even so, there is no
-standard button layout for HID so ``des.c`` will need to be adjusted to
-support new gamepads.
+The RIA supports up to four gamepads. Generic HID, XInput, and Playstation
+controllers all work. Unfortunately, the TinyUSB stack that the RIA uses
+is unstable on the Pi Pico and not likely to get fixed. A new stack called
+CherryUSB is in the pipeline. In the meantime, Bluetooth is stable so get
+a BLE gamepad if you end up buying a new one. Some gamepads let you select
+between HID/DInput/Android and XInput. The XInput driver is more unstable
+that the HID driver, but try both.
 
-Therefore, the recommended gamepads for the Picocomputer are: Xbox 360, Xbox
-One/Series, DualShock 4, and DualSense 5. There are plenty of third-party
-Xbox and PlayStation controllers which should work fine as well.
+Modern gamepads all have evolved to the same four buttons and two sticks
+design with some minor variations in the face buttons which are either
+XY/AB, YX/BA, or Square/Triangle/Cross/Circle. This is generally of no
+consequence to the application unless those buttons are intended to
+represent a direction. In that case, the Square/Triangle/Cross/Circle and
+XY/AB layouts are "the official" layout of the RP6502. You can, of course,
+do your own thing and request players use a specific gamepad.
 
-If your HID or third-party gamepad doesn't work, it probably needs to be
-added to ``des.c``. Any issues submitted in this regard cannot be resolved
-by Rumbledethumps—who doesn't have your gamepad. The community needs to
-step up here if excellent third-party and HID controller support is
-desired.
-
-Be aware that this project pushes TinyUSB to its limit. Okay, let's be
-frank here: the TinyUSB stack is janky as hell and doesn't have any
-documentation. If you do a lot of plugging and unplugging it will
-eventually crash. Some devices will also break the boot sequence. Any
-issues submitted in this regard cannot be resolved by Rumbledethumps. The
-community needs to step up here if an excellent USB stack is desired.
+Be aware that some gamepads will attempt to charge over USB. You can use
+a powered USB hub if needed.
 
 Enable and disable access to the RIA gamepad XRAM registers by setting the
 extended register. The register value is the XRAM start address of the
@@ -438,24 +438,12 @@ Note that there are both digital and analog values for the left and right
 analog sticks and analog triggers L2/R2. This lets an application
 completely ignore the analog values if it desires.
 
-Applications that want to use a simple "one stick and buttons" approach
-are encouraged to support both the dpad and left stick (merged). This is
-because gamepads without analog sticks usually present their direction
-pad as an emulated left analog stick. It also gives players using modern
-gamepads the option of using the dpad or analog stick.
-
 Applications supporting L2 and R2 should be aware that some gamepads
 will only present digital information so the analog values will only
-ever be 0 or 255. This is seen on 8BitDo controllers in Dinput mode—
-see your controller's manual to learn how to switch to Xinput mode which
-will give you the analog information.
+ever be 0 or 255.
 
-Note that the DPAD and STICKS registers are 8-way. You wouldn't see a
-4-way joystick on an early home computer unless it was custom made.
-Some games, like Pac-Man and Donkey Kong, are well known for using
-4-way joysticks. It's easy to decode the analog stick values into
-quadrants using only the 8-bit adder of a 6502, so go ahead and port
-your favorite 4-way game without worry.
+Applications that want to use a simple "one stick and buttons" approach
+are encouraged to support both the dpad and left stick (merged).
 
 .. list-table::
    :widths: 1 1 20
@@ -491,22 +479,22 @@ your favorite 4-way game without worry.
      -
          * bit 0: A or Cross
          * bit 1: B or Circle
-         * bit 2: X or Square
-         * bit 3: Y or Triangle
-         * bit 4: L1
-         * bit 5: R1
-         * bit 6: Select/Back
-         * bit 7: Start/Menu
+         * bit 2: C or Right Paddle
+         * bit 3: X or Square
+         * bit 4: Y or Triangle
+         * bit 5: Z or Left Paddle
+         * bit 6: L1
+         * bit 7: R1
    * - 3
      - BTN1
      -
          * bit 0: L2
          * bit 1: R2
-         * bit 2: L3
-         * bit 3: R3
+         * bit 2: Select/Back
+         * bit 3: Start/Menu
          * bit 4: Home button
-         * bit 5: Undefined
-         * bit 6: Undefined
+         * bit 5: L3
+         * bit 6: R3
          * bit 7: Undefined
    * - 4
      - LX
