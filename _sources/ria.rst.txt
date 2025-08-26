@@ -396,13 +396,14 @@ units of movement for each pixel.
 6. Gamepads
 ===========
 
-The RIA supports up to four gamepads. Generic HID, XInput, and Playstation
-controllers all work. Unfortunately, the TinyUSB stack that the RIA uses
-is unstable on the Pi Pico and not likely to get fixed. A new stack called
-CherryUSB is in the pipeline. In the meantime, Bluetooth is stable so get
-a BLE gamepad if you end up buying a new one. Some gamepads let you select
-between HID/DInput/Android and XInput. The XInput driver is more unstable
-that the HID driver, but try both.
+The RIA supports up to four gamepads. There are drivers for Generic HID,
+XInput, and Playstation controllers. Unfortunately, the TinyUSB stack that
+the RIA uses is unstable on the Pi Pico and the information needed to fix
+is not part of the Pi Pico documentation. XInput is currently disabled and
+you may find USB instability on other devices.
+
+Some gamepads let you select between HID/DInput/Android, XInput, and other
+system. Choose HID/DInput/Android for the best chance of working.
 
 Modern gamepads all have evolved to the same four buttons and two sticks
 design with some minor variations in the face buttons which are either
@@ -516,7 +517,7 @@ are encouraged to support both the dpad and left stick (merged).
      - Right analog trigger position. 0-255
 
 
-7. Programmable Sound Generator
+1. Programmable Sound Generator
 ===============================
 
 The RIA includes a Programmable Sound Generator (PSG). It is configured
