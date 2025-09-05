@@ -24,6 +24,7 @@ Key Features
 - **VGA Graphics Output**
 - **8-Channel Stereo Sound Generator**
 - **USB Support** for Keyboard, Mouse, and Gamepads
+- **Bluetooth LE** for Keyboard, Mouse, and Gamepads
 - **WiFi** for NTP and modem emulation
 - **100% Through-Hole Construction**
 
