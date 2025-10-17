@@ -7,45 +7,6 @@ Schematic
 `Picocomputer 6502 <_static/2023-06-07-rp6502.pdf>`_ (pdf)
 
 
-Memory Map
-----------
-
-
-There is no ROM. Nothing in zero page is used or reserved. There isn't a
-book-sized list to study. The Picocomputer design lets you start with a clean
-slate for every project. VGA, USB, and WiFi are all accessed using the 32
-registers of the RIA.
-
-.. list-table::
-   :widths: 25 75
-   :header-rows: 1
-
-   * - Address
-     - Description
-   * - 0000-FEFF
-     - RAM, 63.75K
-   * - FF00-FFCF
-     - Unassigned
-   * - FFD0-FFDF
-     - VIA, see the `WDC datasheet <https://www.westerndesigncenter.com/wdc/w65c22-chip.php>`_
-   * - FFE0-FFFF
-     - RIA, see the :doc:`RP6502 datasheet <ria>`
-   * - 10000-1FFFF
-     - RAM, 64K for :doc:`RIA <ria>` and :doc:`VGA <vga>`
-
-
-The unassigned space is available for hardware experimenters. You will need to
-redesign the address decoder logic hardware to use this address space. It is
-recommended that additional VIAs be added "down" and other hardware added
-"up". For example: VIA0 at FFD0, VIA1 at FFC0, SID0 at FF00, and SID1 at
-FF20.
-
-
-I use "Picocomputer 6502" to refer to the reference design with the above
-memory map. Please use a differentiating name if you change the hardware. For
-example, "Picocomputer VERA" or "Ulf's Dream Computer". Think about what
-people asking for help should call the device and go with that.
-
 Buying a Picocomputer
 ---------------------
 
@@ -58,9 +19,8 @@ I have circuit boards in a `Tindie store
 States. International shipping is either too slow or too expensive when
 compared to getting boards made locally or in China.
 
-USA import tariffs are not an issue with this project. Only a few dollars of
-resistors are made in China. Orders to my store and Mouser ship from the USA,
-so you won't get a surprise bill from the courier.
+USA import tariffs are not an issue with this project. Orders to my store and
+Mouser ship from the USA, so you won't get a surprise bill from the courier.
 
 Step 0. Read This
 =================

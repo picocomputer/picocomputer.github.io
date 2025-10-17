@@ -1,7 +1,7 @@
-RP6502-API
-##########
+RP6502-OS
+#########
 
-Rumbledethumps Picocomputer 6502 Application Programming Interface.
+RP6502 Operating System Application Programming Interface.
 
 .. contents:: Table of Contents
    :local:
@@ -9,20 +9,57 @@ Rumbledethumps Picocomputer 6502 Application Programming Interface.
 1. Introduction
 ===============
 
-The :doc:`ria` runs a protected 32-bit kernel that you can call from the 6502. The kernel runs on a processor that is significantly faster than a 6502. This is the only practical way to run modern file systems, networking, and USB host stacks.
+The :doc:`ria` runs a protected 32-bit protected operating system that you can call from the 6502. The operating system runs on a separate processor. This is not entirely unprecedented - Commodore 64 disc drives had their own CPU which managed the file system. What is unprecedented is a POSIX-like operating system for the 6502. This enables a modern systems programmer to immediately begin programming the Picocomputer. And if you don't already have those skills, you can obtain them from modern documentation.
 
-The RP6502 presents an opportunity to create a new type of operating system. A 6502 OS based on the C programming language with familiar POSIX-like operations.
 
-2. Calling with fastcall
+2. Memory Map
+=============
+
+There is no ROM. Nothing in zero page is used or reserved. There isn't a
+book-sized list to study. The Picocomputer design lets you start with a clean
+slate for every project. VGA, audio, storage, keyboards, mice, gamepads, RTC,
+and networking are all accessed using only the 32 registers of the RIA.
+
+.. list-table::
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Address
+     - Description
+   * - 0000-FEFF
+     - RAM, 63.75K
+   * - FF00-FFCF
+     - Unassigned
+   * - FFD0-FFDF
+     - VIA, see the `WDC datasheet <https://www.westerndesigncenter.com/wdc/w65c22-chip.php>`_
+   * - FFE0-FFFF
+     - RIA, see the :doc:`RP6502-RIA datasheet <ria>`
+   * - 10000-1FFFF
+     - XRAM, 64K for :doc:`RP6502-RIA <ria>` and :doc:`RP6502-VGA <vga>`
+
+The unassigned space is available for hardware experimenters. You will need to
+design your own address decoder logic hardware to use this address space. It is
+recommended that additional VIAs be added "down" and other hardware added
+"up". For example: VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and SID1 at
+$FF20.
+
+I use "Picocomputer 6502" to refer to the reference design with the above
+memory map. Please use a differentiating name if you change the hardware. For
+example, "Picocomputer VERA" or "Ulf's Dream Computer". Think about what
+people asking for help should call the device and go with that.
+
+
+3. Calling with fastcall
 ========================
 
-The binary interface is based on fastcall from the `CC65 Internals <https://cc65.github.io/doc/cc65-intern.html>`_. The RP6502 fastcall does not use or require anything from CC65 and is easy for assembly programmers to use. At its core, the API is based on a C ABI with three simple rules.
+The binary interface for calling the operating system is based on fastcall from the `CC65 Internals <https://cc65.github.io/doc/cc65-intern.html>`_. The RP6502-OS fastcall does not use or require anything from CC65 and is easy for assembly programmers to use. At its core, the API ABI is based on a C ABI with four simple rules.
 
 * Stack arguments are pushed left to right.
-* Last argument optionally passed by register A, AX, or AXSREG.
+* Last argument passed by register A, AX, or AXSREG.
 * Return value in register AX or AXSREG.
+* Returned structures on the stack.
 
-A and X are the 6502 registers. The register AX combines them for 16 bits. AXSREG is 32 bits with the SREG bits in zero page.  Let's look at how to make an OS call through the RIA registers. All kernel calls are specified as a C declaration like so:
+A and X are the 6502 registers. The pseudo register AX combines them for 16 bits. AXSREG is 32 bits with 16 SREG bits.  Let's look at how to make an OS call through the RIA registers. All kernel calls are specified as a C declaration like so:
 
 .. c:function:: int doit(int arg0, int arg1);
 
@@ -53,30 +90,30 @@ Polling is simply snooping on the above program. The RIA_BUSY register is the -2
 
 All operations returning RIA_A will also return RIA_X to assist with CC65's integer promotion requirements. RIA_SREG is only updated for 32-bit returns. RIA_ERRNO is only updated if there is an error.
 
-Some operations return data on the stack. You must pull the entire stack before the next call. However, tail call optimizations are possible. For example, you can chain read_xstack() and write_xstack() to copy a file without using any RAM or XRAM.
+Some operations return data structures on the stack. You must pull the entire stack before the next call. However, tail call optimizations are possible. For example, you can chain read_xstack() and write_xstack() to copy a file without using any RAM or XRAM.
 
-2.1. Short Stacking
+3.1. Short Stacking
 -------------------
 
 In the never ending pursuit of saving all the clocks, it is possible to save a few on the stack push if you don't need all the range. This only works on the stack argument that gets pushed first. For example:
 
 .. code-block:: C
 
-   long lseek_impl(long offset, char whence, int fildes)
+   long f_lseek(long offset, char whence, int fildes)
 
 Here we are asked for a 64 bit value. Not coincidentally, it's in the right position for short stacking. If, for example, you only need 24 bits, push only three bytes. The significant bytes will be implicit.
 
-2.2. Shorter Integers
+3.2. Shorter Integers
 ---------------------
 
-Many operations can save a few clocks by ignoring REG_X. All integers are always available as 16 bits to assist with CC65 and integer promotion. However, many operations will ignore REG_X on the register parameter and limit their return to fit in REG_A. This will be documented below as "A regs".
+Many operations can save a few clocks by ignoring REG_X. All integers are always available as 16 bits to assist with C integer promotion. However, many operations will ignore REG_X on the register parameter and limit their return to fit in REG_A. This will be documented below as "A regs".
 
-2.3. Bulk Data
+3.3. Bulk Data
 --------------
 
 Functions that move bulk data may come in two flavors. These are any function with a pointer parameter. This pointer is meaningless to the kernel because it can not change 6502 RAM. Instead, we use the XSTACK or XRAM for data buffers.
 
-2.3.1. Bulk XSTACK Operations
+3.3.1. Bulk XSTACK Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These only work if the count is 512 or less. Bulk data is passed on the XSTACK, which is 512 bytes. A pointer appears in the C prototype to indicate the type and direction of this data. Let's look at some examples.
@@ -97,11 +134,11 @@ Send `count` as a short stack and `fildes` in AX. The returned value in AX indic
 
    int write_xstack(const void *buf, unsigned count, int fildes)
 
-Send `fildes` in AX. Push the data to XSTACK. Do not send `count`, the kernel knows this from its internal stack pointer. If you call this from the C SDK then it will copy buf[] to XSTACK for you.
+Send `fildes` in AX. Push the data to XSTACK. Do not send `count`, the kernel knows this from its internal stack pointer. If you call this from the C SDK then it will copy count bytes of buf[] to XSTACK for you.
 
-Note that read() and write() are part of the C SDK, not a kernel operation. CC65 requires them to support more than 256 bytes, so they have wrapper logic to make multiple kernel calls when necessary.
+Note that read() and write() are part of the C SDK, not a kernel operation. CC65 requires them to support more than 512 bytes, so they have wrapper logic to make multiple kernel calls when necessary.
 
-2.3.2. Bulk XRAM Operations
+3.3.2. Bulk XRAM Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These load and save XRAM directly. You can load game assets without going through 6502 RAM or capture a screenshot with ease.
@@ -113,16 +150,16 @@ These load and save XRAM directly. You can load game assets without going throug
 
 The kernel expects `buf` and `count` on the XSTACK as integers with `filedes` in AX. The buffer is effectively &XRAM[buf] here. There's nothing special about these calls in regards to how the binary interface rules are applied. They are interesting because of their high performance for loading assets.
 
-3. Function Reference
+4. Function Reference
 =====================
 
-Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, some operations will have different argument orders or bitfield values than what you're used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice the differences if you only work in C because the standard library has wrapper functions and familiar prototypes. For example, the lseek_impl() described below has reorderd arguments that are optimized for short stacking the long argument. But you never call lseek_impl() from C, you call the usual lseek() which has the traditional argument order.
+Much of this API is based on CC65 and POSIX. In particular, filesystem access should feel extremely modern. However, some operations will have different argument orders or bitfield values than what you're used to. The reason for this becomes apparent when you start to work in assembly and fine tune short stacking and integer demotions. You might not notice the differences if you only work in C because the standard library has wrapper functions and familiar prototypes. For example, the f_lseek() described below has reorderd arguments that are optimized for short stacking the long argument. But you don't have to call f_lseek() from C, you call the usual lseek() which has the traditional argument order.
 
 zxstack
 -------
 .. c:function:: void zxstack(void);
 
-Abandon the xstack by resetting the pointer. Not needed for normal operation. This is the only operation that doesn't require waiting for completion.
+Abandon the xstack by resetting the xstack pointer. This is the only operation that doesn't require waiting for completion. You do not need to call this for failed operations. It can be useful if you want to quickly ignore part of a returned structure.
 
 xreg
 ----
@@ -134,6 +171,8 @@ xreg
    The only difference is that xregn() requires a count of the variadic arguments. Using xreg() avoids making a counting error and is slightly smaller in CC65.
 
    Set extended registers on a PIX device. See the :doc:`ria` and :doc:`vga` documentation for what each register does. Setting extended registers can fail, which you should use for feature detection. EINVAL means the device responded with a negative acknowledgement. EIO means there was a timeout waiting for ack/nak.
+
+   This is how you add virtual hardware to extended RAM. The 64K of system RAM is mapped by address decode logic ICs. The 64K of extended RAM is mapped with this command. Mapping a real sound chip to system RAM requires schematics and wires. Mapping a virtual sound chip to extended RAM is a single xreg() command.
 
    :param device: PIX device ID. 0-6
    :param channel: PIX channel. 0-15

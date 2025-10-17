@@ -6,10 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'RP6502'
+project = 'Picocomputer'
 copyright = '2023 Rumbledethumps'
 author = 'Rumbledethumps'
-release = '0.0-pre'
+release = ''
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
