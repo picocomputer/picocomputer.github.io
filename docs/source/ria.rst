@@ -10,40 +10,54 @@ Rumbledethumps Picocomputer 6502 Interface Adapter.
 ===============
 
 The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico 2 with
-RP6502-RIA firmware. The RIA provides all essential services to support a
-WDC W65C02S microprocessor.
-
-1.1. Features of the RP6502-RIA
--------------------------------
-
-* Advanced CMOS process technology for low power consumption
-* Real time clock with automatic daylight savings time
-* 6502 reset and clock management
-* ROM loader instead of ROM chips
-* A proper UART
-* Stereo audio
-* USB keyboards and mice
-* USB mass storage aka thumb drives
-* USB gamepads for up to four player fun
-* PIX bus for GPUs like the RP6502-VGA
+RP6502-RIA firmware. The RP6502-RIA provides all essential services to
+support a WDC W65C02S microprocessor.
 
 2. Functional Description
 =========================
 
 The RIA must be installed at $FFE0-$FFFF and must be in control of RESB
 and PHI2. These are the only requirements. Everything else about your
-Picocomputer can be customized.
+Picocomputer can be customized. Even the :doc:`vga` is optional.
 
-A new RIA will boot to the console interface. This console can be accessed
-in one of three ways: from a VGA monitor and USB keyboard if you are using
-an RP6502-VGA; from the USB CDC device which the RP6502-VGA presents when
+A new RIA will boot to the RIA monitor which you can access from the console.
+The console can be accessed in one of three ways: from a VGA monitor and USB keyboard if you are using
+an :doc:`vga`; from the USB CDC device which the :doc:`vga` presents when
 plugged into a host PC like a development system; or from UART RX/TX
-(115200 8N1) pins on the RIA if you aren't using an RP6502-VGA. The
-console interface is not currently documented here. The built-in help is
+(115200 8N1) pins on the RIA if you aren't using an :doc:`vga`. The
+monitor is not currently documented here. The built-in help is
 extensive and always up-to-date. Type ``help`` to get started and don't
 forget there is deep help like ``help set phi2``.
 
-The console interface is not meant to be an operating system CLI.
+The RIA monitor is not meant to be an operating system CLI.
+
+Loading ROMs. Type ``help load`` to learn about the file format for ROMs. These aren't ROMs
+in the traditional (obsolete) sense. A ROM is a file, typically with .rp6502 suffix, that
+contains a memory image to be loaded in RAM before starting the 6502.
+
+Interfacing with development tools. Some of the monitor commands, like ``upload`` and ``binary``
+are designed for use by developer tools. The rp6502.py script, included with the examples and
+templates, can be used to automate packaging of a ROM and executing it,
+
+Provide basic IO services and and operating system. The RIA includes
+everything you'd expect from a desktop operating system. Running the OS on modern hardware
+is the only way to access modern conveniences like USB, WiFi, and Bluetooth.
+The RIA OS will translate these modern protocols into virtual devices that are close to
+something you see in a traditional OSs.
+
+ For example, USB or Bluetooth
+keyboards aren't a stream of HID messages, they present as an array of bits in extended memory.
+
+
+
+ array with each key
+
+doesn't present these dev
+
+ This includes a USB stack,
+network stacks, a complete FAT32 filesystem. ExFAT is also ready to go and will be enabled once
+the patents expire in a few years.
+
 Everything about its design is meant to achieve two goals. The first is to
 enable installing ROM files to the RIA EEPROM which can then boot on power
 up—this delivers the instant-on experience of early home computers. The
@@ -54,16 +68,12 @@ ROMs directly from a USB drive or send them from a development system.
 ----------
 
 When the 6502 is in reset, meaning RESB is low and it is not running, the
-RIA console is available for use. If the 6502 has crashed or the current
+RIA monitor is available for use. If the 6502 has crashed or the current
 application has no way to exit, you can put the 6502 back into reset in
 two ways.
 
-Using a USB keyboard, press CTRL-ALT-DEL. The USB stack runs on the Pi
-Pico so this will work even if the 6502 has crashed.
-
-Over the UART, send a break. The tools included with the "Hello, world!"
-project templates use this to stop the 6502, upload a new ROM, and execute
-the new ROM. All with the push of one button.
+1. Using a USB keyboard, press CTRL-ALT-DEL.
+2. Over the UART, send a break.
 
 WARNING! Do not hook up a physical button to RESB. The RIA must remain in
 control of RESB. What you probably want is the reset that happens from the
@@ -289,11 +299,9 @@ Bits 15-0 (0x0000FFFF) is a value to store in the register.
 3.2. PIX Extended RAM (XRAM)
 ----------------------------
 
-All changes to the 64KB of XRAM on the RIA will be broadcast on PIX
+All changes to the 64KB of XRAM on the RIA will be broadcast to PIX
 device 0. Bits 15-0 contain the XRAM address. Bits 23-16 contain the XRAM
-data. This goes out on the wire, but is never seen by the SDK. Device 0,
-as seen by the SDK, is the RIA itself and has no need to go out on the
-wire.
+data.
 
 PIX devices will maintain a replica of the XRAM they use. Typically, all
 64K is replicated and an XREG set by the application will point to a
@@ -306,17 +314,15 @@ PIX devices may use bits 27-0 however they choose. The suggested division
 of these bits is:
 
 Bits 27-24 indicate a channel. For example, the RIA device has a channel
-for audio, a channel for keyboard and mouse, a channel for Wifi, and so
+for audio, a channel for keyboard, a channel for mice, and so
 on. Bits 23-16 contain an extended register address. Bits 15-0 contain the
-payload.
+value to be stored.
 
 So we have seven PIX devices, each with 16 internal channels having 256
-16-bit registers. The idea is to use extended registers to point to
-structures in XRAM. Changing XREG is setup; changing XRAM causes the
-device to respond.
+16-bit registers. The idea is to use these extended registers to configure
+virtual hardware and map it into extended memory.
 
-
-4. Keyboard
+1. Keyboard
 ===========
 
 The RIA can provide direct access to keyboard data. This is intended for
@@ -331,15 +337,16 @@ extended RAM.
 
   xreg(0, 0, 0x00, xaddr);  // enable
   xreg(0, 0, 0x00, 0xFFFF); // disable
+  xreg_ria_keyboard(xaddr); // macro shortcut
 
 Extended RAM will be continuously updated with a bit array of USB HID
 keyboard codes. Note that these are not the same as PS/2 scancodes. Each
 bit represents one key with the first four bits having special meaning:
 
 | * 0 - No key pressed
-| * 1 - Overflow - too many keys pressed
-| * 2 - Num Lock on
-| * 3 - Caps Lock on
+| * 1 - Num Lock on
+| * 2 - Caps Lock on
+| * 3 - Scroll Lock on
 
 .. code-block:: C
 
@@ -358,6 +365,7 @@ by mapping it to an address in extended RAM.
 
   xreg(0, 0, 0x01, xaddr);  // enable
   xreg(0, 0, 0x01, 0xFFFF); // disable
+  xreg_ria_mouse(xaddr);    // macro shortcut
 
 This sets the address in extended RAM for a structure containing direct
 mouse input.
@@ -403,18 +411,16 @@ is not part of the Pi Pico documentation. XInput is currently disabled and
 you may find USB instability on other devices.
 
 Some gamepads let you select between HID/DInput/Android, XInput, and other
-system. Choose HID/DInput/Android for the best chance of working.
+systems. Choose HID/DInput/Android for the best chance of working.
 
-Modern gamepads all have evolved to the same four buttons and two sticks
-design with some minor variations in the face buttons which are either
+Modern gamepads have all evolved to the same four face buttons, d-pad, dual
+analog sticks, and quad shoulders. The minor variations of the four face buttons are
 XY/AB, YX/BA, or Square/Triangle/Cross/Circle. This is generally of no
 consequence to the application unless those buttons are intended to
 represent a direction. In that case, the Square/Triangle/Cross/Circle and
 XY/AB layouts are "the official" layout of the RP6502. You can, of course,
-do your own thing and request players use a specific gamepad.
-
-Be aware that some gamepads will attempt to charge over USB. You can use
-a powered USB hub if needed.
+do your own thing and request players use a specific gamepad or include a
+"AB or BA" option.
 
 Enable and disable access to the RIA gamepad XRAM registers by setting the
 extended register. The register value is the XRAM start address of the
@@ -422,8 +428,9 @@ gamepad registers. Any invalid address disables the gamepads.
 
 .. code-block:: C
 
-  xreg(0, 0, 2, xaddr);  // enable
-  xreg(0, 0, 2, 0xFFFF); // disable
+  xreg(0, 0, 2, xaddr);    // enable
+  xreg(0, 0, 2, 0xFFFF);   // disable
+  xreg_ria_gamepad(xaddr); // macro shortcut
 
 Extended memory will be continuously updated with gamepad information. The
 10-byte structure described here repeats for a total of 40 bytes
