@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Picocomputer'
-copyright = '2023 Rumbledethumps'
+copyright = '2025 Rumbledethumps'
 author = 'Rumbledethumps'
 release = ''
 
@@ -25,5 +25,11 @@ exclude_patterns = []
 html_theme = 'alabaster'
 html_static_path = ['_static']
 html_theme_options = {
-    'font_family': 'Arial',
+    'font_family': 'Arial, sans-serif',
+    'github_banner': True,
+    'github_user': 'picocomputer',
+    'github_repo': '',
+    'fixed_sidebar': True,
+    'show_relbars': True,
+    'sidebar_width': '230px', # undo alabaster's override
 }

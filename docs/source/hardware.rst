@@ -1,5 +1,9 @@
-Schematic, PCB, and Parts
-#########################
+Hardware
+########
+
+The Picocomputer 6502 is a homebrew computer you build yourself. You don't
+need to understand the electronics and you don't need to solder but you will need
+to plug the eight ICs into their sockets.
 
 Schematic
 ---------

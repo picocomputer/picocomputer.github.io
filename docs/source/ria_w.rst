@@ -1,7 +1,7 @@
 RP6502-RIA-W
 ############
 
-Rumbledethumps Picocomputer 6502 Interface Adapter W
+RP6502 Interface Adapter W
 
 .. contents:: Table of Contents
    :local:

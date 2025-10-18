@@ -7,8 +7,8 @@
    RP6502-VGA <vga>
    RP6502-OS <api>
 
-Picocomputer 6502
-=================
+Picocomputer
+============
 
 The **Picocomputer 6502** is a tribute to the processor that launched a computing revolution. Don't let the low parts count and simple construction fool you. The lack of apparent complexity is a by product of the design philosophy: Keep the essence of programming a 6502 and 6522 and rethink everything else.
 
