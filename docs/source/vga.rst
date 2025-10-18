@@ -1,7 +1,7 @@
 RP6502-VGA
 ##########
 
-Rumbledethumps Picocomputer 6502 Video Graphics Array.
+RP6502 - Video Graphics Array.
 
 .. contents:: Table of Contents
    :local:

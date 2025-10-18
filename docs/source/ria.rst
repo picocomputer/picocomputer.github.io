@@ -1,7 +1,7 @@
 RP6502-RIA
 ##########
 
-Rumbledethumps Picocomputer 6502 Interface Adapter.
+RP6502 - RP6502 Interface Adapter.
 
 .. contents:: Table of Contents
    :local:
@@ -13,79 +13,61 @@ The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico 2 with
 RP6502-RIA firmware. The RP6502-RIA provides all essential services to
 support a WDC W65C02S microprocessor.
 
-2. Functional Description
-=========================
-
 The RIA must be installed at $FFE0-$FFFF and must be in control of RESB
 and PHI2. These are the only requirements. Everything else about your
 Picocomputer can be customized. Even the :doc:`vga` is optional.
 
 A new RIA will boot to the RIA monitor which you can access from the console.
-The console can be accessed in one of three ways: from a VGA monitor and USB keyboard if you are using
+The console can be accessed in one of three ways: from a VGA monitor and USB or Bluetooth
+keyboard if you are using
 an :doc:`vga`; from the USB CDC device which the :doc:`vga` presents when
 plugged into a host PC like a development system; or from UART RX/TX
 (115200 8N1) pins on the RIA if you aren't using an :doc:`vga`. The
-monitor is not currently documented here. The built-in help is
+monitor is not documented here beyond highlighting some common commands. The built-in help is
 extensive and always up-to-date. Type ``help`` to get started and don't
 forget there is deep help like ``help set phi2``.
 
-The RIA monitor is not meant to be an operating system CLI.
+The RIA monitor is not an operating system shell. It's analogous to a UEFI shell. The RIA monitor
+is primarily designed to load ROMs on your Picocomputer. It also has a small amount of hardware
+and locale configuration, which is intentionally kept minimal.
 
-Loading ROMs. Type ``help load`` to learn about the file format for ROMs. These aren't ROMs
-in the traditional (obsolete) sense. A ROM is a file, typically with .rp6502 suffix, that
-contains a memory image to be loaded in RAM before starting the 6502.
+Loading ROMs you downloaded in .rp6502 format is done with the ``load`` command.
+Type ``help load`` to learn about the file format for ROMs. These aren't ROMs
+in the traditional (obsolete) sense. A ROM is a file that contains a memory image
+to be loaded in RAM before starting the 6502. The RIA includes 1MB
+of EEPROM which you can ``install`` ROMs to. Once a ROM is installed, you can run it
+directly or ``set boot`` so it loads when the RIA boots.
 
-Interfacing with development tools. Some of the monitor commands, like ``upload`` and ``binary``
-are designed for use by developer tools. The rp6502.py script, included with the examples and
-templates, can be used to automate packaging of a ROM and executing it,
+Some of the monitor commands, like ``upload`` and ``binary`` are designed for
+use by developer tools. The rp6502.py script, included with the examples and
+templates, can be used to automate packaging of a ROM and then executing it.
 
-Provide basic IO services and and operating system. The RIA includes
-everything you'd expect from a desktop operating system. Running the OS on modern hardware
-is the only way to access modern conveniences like USB, WiFi, and Bluetooth.
-The RIA OS will translate these modern protocols into virtual devices that are close to
-something you see in a traditional OSs.
+2. Reset
+========
 
- For example, USB or Bluetooth
-keyboards aren't a stream of HID messages, they present as an array of bits in extended memory.
+It helps to think about reset as two states instead of a pulse on RESB.
+When reset is low, the 6502 is stopped and the console is connected to the RIA monitor.
+When reset is high, the 6502 is running and the console is connected both to the :doc:`api`
+and the TX/RX registers described below.
 
+If you want to move reset from low to high, either ``load`` a ROM with a reset vector,
+or use the ``reset`` command if you have prepared RAM some other way.
 
+To move reset from high to low and return to the monitor, even with a crashed
+or halted 6502, you have two options:
 
- array with each key
-
-doesn't present these dev
-
- This includes a USB stack,
-network stacks, a complete FAT32 filesystem. ExFAT is also ready to go and will be enabled once
-the patents expire in a few years.
-
-Everything about its design is meant to achieve two goals. The first is to
-enable installing ROM files to the RIA EEPROM which can then boot on power
-up—this delivers the instant-on experience of early home computers. The
-other goal is to enable easy development and experimentation—you can load
-ROMs directly from a USB drive or send them from a development system.
-
-2.1. Reset
-----------
-
-When the 6502 is in reset, meaning RESB is low and it is not running, the
-RIA monitor is available for use. If the 6502 has crashed or the current
-application has no way to exit, you can put the 6502 back into reset in
-two ways.
-
-1. Using a USB keyboard, press CTRL-ALT-DEL.
-2. Over the UART, send a break.
+1. Using a Bluetooth or USB keyboard, press CTRL-ALT-DEL.
+2. Over the RIA UART RX, send a break.
 
 WARNING! Do not hook up a physical button to RESB. The RIA must remain in
 control of RESB. What you probably want is the reset that happens from the
-RIA RUN pin. We call this a reboot. The reference hardware reboot button
+RIA RUN pin. We call this a ``reboot``. The reference hardware reboot button
 is hooked up to the RIA RUN pin. Rebooting the Pi Pico RIA like this will
 cause any configured boot ROM to load, like at power on. Resetting the
-6502 from keyboard or UART will only return you to the console interface,
-which is great for development and hacking.
+6502 from keyboard or UART will only return you to the RIA console.
 
-
-2.2. Registers
---------------
+3. Registers
+------------
 
 .. list-table::
    :widths: 5 5 90
@@ -107,7 +89,7 @@ which is great for development and hacking.
      - Read bytes from the UART.
    * - $FFE3
      - VSYNC
-     - Increments every 1/60 second when PIX VGA device is connected.
+     - Increments every 1/60 second when PIX VGA device 1 is connected.
    * - $FFE4
      - RW0
      - Read or write the XRAM referenced by ADDR0.
@@ -255,7 +237,7 @@ guaranteed to return zeros. Simply write to push and read to pull.
     - See Programmable Sound Generator section
 
 
-3. Pico Information Exchange (PIX)
+1. Pico Information Exchange (PIX)
 ==================================
 
 The limited number of GPIO pins on the Raspberry Pi Pico required creating

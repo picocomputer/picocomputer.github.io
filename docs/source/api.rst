@@ -9,10 +9,16 @@ RP6502 Operating System Application Programming Interface.
 1. Introduction
 ===============
 
-The :doc:`ria` runs a protected 32-bit protected operating system that you can call from the 6502. The operating system runs on a separate processor. This is not entirely unprecedented - Commodore 64 disc drives had their own CPU which managed the file system. What is unprecedented is a POSIX-like operating system for the 6502. This enables a modern systems programmer to immediately begin programming the Picocomputer. And if you don't already have those skills, you can obtain them from modern documentation.
+The :doc:`ria` runs a protected 32-bit protected operating system that you can call from the 6502.
+The :doc:`api` does not use any 6502 RAM and will not interfere with developing a native 6502 OS.
+
+The :doc:`api` is loosely based on POSIX with an ABI similar to CC65's fastcall.
+It provides stdio.h services to both CC65 and LLVM-MOS compilers.
+There are also calls access Picocomputer features and manage FAT32 filesystems.
+ExFAT is ready to go and will be enabled when the patents expire.
 
 
-2. Memory Map
+1. Memory Map
 =============
 
 There is no ROM. Nothing in zero page is used or reserved. There isn't a
