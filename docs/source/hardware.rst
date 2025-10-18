@@ -1,9 +1,10 @@
+========
 Hardware
-########
+========
 
 The Picocomputer 6502 is a homebrew computer you build yourself. You don't
-need to understand the electronics and you don't need to solder but you will need
-to plug the eight ICs into their sockets.
+need to understand the electronics and you don't need to solder but you will
+need to plug the eight ICs into their sockets.
 
 Schematic
 ---------
@@ -15,16 +16,18 @@ Buying a Picocomputer
 ---------------------
 
 You will need to place two orders. First, for the Printed Circuit Board.
-Second, for the electronic components. Some PCB factories will do the soldering
-for you, but you'll still need to order the ICs and plug them into sockets.
+Second, for the electronic components. Some PCB factories will do the
+soldering for you, but you'll still need to order the ICs and plug them
+into sockets.
 
 I have circuit boards in a `Tindie store
-<https://www.tindie.com/stores/rumbledethumps/>`_ that ships only to the United
-States. International shipping is either too slow or too expensive when
-compared to getting boards made locally or in China.
+<https://www.tindie.com/stores/rumbledethumps/>`_ that ships only to the
+United States. International shipping is either too slow or too expensive
+when compared to getting boards made locally or in China.
 
-USA import tariffs are not an issue with this project. Orders to my store and
-Mouser ship from the USA, so you won't get a surprise bill from the courier.
+USA import tariffs are not an issue with this project. Orders to my store
+and Mouser ship from the USA, so you won't get a surprise bill from the
+courier.
 
 Step 0. Read This
 =================
@@ -37,8 +40,8 @@ own headers to do not have this clearance issue.
 The boot message does not say COLOR anymore. Do not assume your device will
 behave exactly the same as an old YouTube video.
 
-The three-pin debug connections under the RIA aren't used anymore. This is an
-artifact of early development.
+The three-pin debug connections under the RIA aren't used anymore. This is
+an artifact of early development.
 
 Most VGA-to-HDMI cables can get power from the Picocomputer. Some will need
 external power applied. All are zero lag.
@@ -46,12 +49,14 @@ external power applied. All are zero lag.
 Step 1. Watch the Videos
 ========================
 
-To solder, or not to solder, that is the question. We're living in the future.
-You can homebrew a 6502 without a soldering iron. Choose your path:
+To solder, or not to solder, that is the question. We're living in the
+future. You can homebrew a 6502 without a soldering iron. Choose your path:
 
-`Here's the video where I build one without soldering. <https://youtu.be/4CjouKoCMUw>`_
+`Here's the video where I build one without soldering.
+<https://youtu.be/4CjouKoCMUw>`_
 
-`Here's the video where I solder one myself. <https://youtu.be/bwgLXEQdq20>`_
+`Here's the video where I solder one myself.
+<https://youtu.be/bwgLXEQdq20>`_
 
 Step 2. Order Printed Circuit Boards
 ====================================
@@ -78,8 +83,8 @@ Step 3. Order Assembly
 
 Skip this step if you want to solder it yourself.
 
-PCBWay has a minimum quantity of one for assembly. They will use the boards you
-ordered in step 2. What you'll have them make is a "board of sockets" - the
+PCBWay has a minimum quantity of one for assembly. They will use the boards
+you ordered in step 2. What you'll have them make is a "board of sockets" - the
 ICs will be installed by you later. It should never be constrained on parts
 availability since there are multiple vendors for every part.
 
@@ -90,15 +95,16 @@ Request assembly with your PCB order and send the `BOM, notes, and photos
 are no surface mount parts. The default options will work. Let them source the
 parts. Let them make substitutions.
 
-There will be a short delay as they get you a price for the bill-of-materials.
-Then you can pay and wait. I was estimated four weeks and got it in three.
+There will be a short delay as they get you a price for the
+bill-of-materials. Then you can pay and wait. I was estimated four weeks and
+got it in three.
 
 If they have a question, make sure both you and your sales rep read the notes
-you sent them. If you have a question about options on their web site, ask
-your sales rep before asking on the forums. They help people all day long with
+you sent them. If you have a question about options on their web site, ask your
+sales rep before asking on the forums. They help people all day long with
 projects far more complex than this. Even if you don't understand what you are
-doing, they can figure it out by looking at the zip files. Really, they do
-this all day long, and will probably enjoy the easy win.
+doing, they can figure it out by looking at the zip files. Really, they do this
+all day long, and will probably enjoy the easy win.
 
 Step 4. More Parts
 ==================
@@ -108,8 +114,7 @@ Factory assembled boards will need the eight ICs added to them. Upload the
 <https://mouser.com>`_ shopping cart.
 
 If you are soldering it yourself, upload the `full parts list
-<_static/rp6502-reva-full.csv>`_ to a Mouser_ shopping
-cart.
+<_static/rp6502-reva-full.csv>`_ to a Mouser_ shopping cart.
 
 If something is out of stock, consult the substitution notes below. If it's the
 Pi Pico or Pi Pico H, do a text search since marketplace vendors often have
@@ -118,15 +123,16 @@ them.
 Step 5. Pi Pico Firmware
 =========================
 
-Download the `UF2 files <https://github.com/picocomputer/rp6502/releases>`_.
+Download the `UF2 files
+<https://github.com/picocomputer/rp6502/releases>`_.
 
 To load firmware on a Pi Pico, hold its BOOTSEL button down while plugging it
 into a computer. The Pi Pico will appear as a storage device. Copy the VGA UF2
-file to make a Pico VGA and the RIA UF2 file to make a Pico RIA. It should take
-less than 30 seconds to copy. The LED turns on when done.
+file to make a Pico VGA and the RIA UF2 file to make a Pico RIA. It should
+take less than 30 seconds to copy. The LED turns on when done.
 
 Acrylic Sandwich Case
----------------------
+=====================
 
 The circuit board is 150 x 100mm (4x6 inches). I regularly see vendors on
 Amazon and eBay selling 150 x 100 x 3mm acrylic sheets. You'll need to drill
@@ -134,7 +140,7 @@ Amazon and eBay selling 150 x 100 x 3mm acrylic sheets. You'll need to drill
 top and >=3.5mm for the bottom.
 
 Full Parts List (All Components)
---------------------------------
+=================================
 
 `All Parts CSV <_static/rp6502-reva-full.csv>`_
 
@@ -145,7 +151,7 @@ Full Parts List (All Components)
 
 
 Active Parts List (ICs Only)
-----------------------------
+=============================
 
 `Active Parts CSV <_static/rp6502-reva-active.csv>`_
 
@@ -154,7 +160,7 @@ Active Parts List (ICs Only)
    :header-rows: 1
 
 Pi Picos Parts List
--------------------
+===================
 
 Alternative part numbers for the Pi Picos.
 
@@ -164,7 +170,7 @@ Alternative part numbers for the Pi Picos.
 
 
 Parts Substitution
-------------------
+===================
 
 All resistors are <= 1% tolerance. Any power rating. Leads must fit 0.8mm
 plated holes spaced 10mm apart. Recommended size is approximately 0.1" x 0.25"
