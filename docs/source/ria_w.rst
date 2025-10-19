@@ -8,9 +8,8 @@ Introduction
 ============
 
 The **RP6502 Interface Adapter W** is a Raspberry Pi Pico 2 W running
-the RP6502-RIA-W firmware. The RP6502-RIA-W provides all the features
-of the :doc:`ria` plus integrated wireless services, as described
-below.
+the RP6502-RIA-W firmware. The :doc:`ria_w` provides all the features
+of the :doc:`ria` plus wireless services, as described below.
 
 WiFi Setup
 ==========
@@ -54,7 +53,7 @@ Once WiFi and time zone are configured, timekeeping is automatic.
 Modem Emulation
 ===============
 
-The RP6502-RIA-W can emulate a Hayes modem for BBS access. Beware that
+The :doc:`ria_w` can emulate a Hayes modem for BBS access. Beware that
 raw TCP and telnet protocols are plain text in transit.
 
 - **AT Commands:**
@@ -95,7 +94,7 @@ profiles.
 Bluetooth
 =========
 
-The RP6502-RIA-W supports Bluetooth LE (BLE) keyboards, mice, and
+The :doc:`ria_w` supports Bluetooth LE (BLE) keyboards, mice, and
 gamepads. It does not support the older Bluetooth Classic aka BR/EDR.
 The RP6502-RIA-W uses BTStack which can only support one Bluetooth
 Classic device at a time so it's not worth the memory. BLE was introduced

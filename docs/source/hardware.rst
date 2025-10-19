@@ -3,8 +3,15 @@ Hardware
 ========
 
 The Picocomputer 6502 is a homebrew computer you build yourself. You don't
-need to understand the electronics and you don't need to solder but you will
+need to understand the electronics, you don't need to solder, but you will
 need to plug the eight ICs into their sockets.
+
+All parts are currently in production. The Raspberry Pi Pico 2 will
+remain in production until at least `January 2040
+<https://www.raspberrypi.com/products/raspberry-pi-pico-2/>`_.
+The hardware design has already survived the Pico 1 to Pico 2 transition.
+The manufacturing lifetime of this project is expected to extend into a time
+where hobbyist ASICs are democratized.
 
 Schematic
 ---------
@@ -15,7 +22,7 @@ Schematic
 Buying a Picocomputer
 ---------------------
 
-You will need to place two orders. First, for the Printed Circuit Board.
+You will need to place two orders. First, for the Printed Circuit Board (PCB).
 Second, for the electronic components. Some PCB factories will do the
 soldering for you, but you'll still need to order the ICs and plug them
 into sockets.
@@ -33,8 +40,8 @@ Step 0. Read This
 =================
 
 The debug header on the Pi Pico 2 W with headers doesn't fit any of the
-existing cases. It's only useful for attaching a debugger to the kernel,
-so just pull it off and get on with things. The Pi Picos you solder your
+existing cases. It's only useful for attaching a debugger,
+so just pull it off and get on with things. The Pi Picos where you solder your
 own headers to do not have this clearance issue.
 
 The boot message does not say COLOR anymore. Do not assume your device will
@@ -116,9 +123,11 @@ Factory assembled boards will need the eight ICs added to them. Upload the
 If you are soldering it yourself, upload the `full parts list
 <_static/rp6502-reva-full.csv>`_ to a Mouser_ shopping cart.
 
-If something is out of stock, consult the substitution notes below. If it's the
-Pi Pico or Pi Pico H, do a text search since marketplace vendors often have
-them.
+Mouser will print the Customer# on each of the parts bags. Assign this
+column to the CSV reference column to get your bags labelled like "C1-C9, C11"
+etc. If you forget, no problem becuase the PCB silkscreen has location info.
+
+If something is out of stock, consult the substitution notes below.
 
 Step 5. Pi Pico Firmware
 =========================
@@ -126,9 +135,9 @@ Step 5. Pi Pico Firmware
 Download the `UF2 files
 <https://github.com/picocomputer/rp6502/releases>`_.
 
-To load firmware on a Pi Pico, hold its BOOTSEL button down while plugging it
-into a computer. The Pi Pico will appear as a storage device. Copy the VGA UF2
-file to make a Pico VGA and the RIA UF2 file to make a Pico RIA. It should
+To load firmware on a Pi Pico 2, hold its BOOTSEL button down while plugging it
+into a computer. The Pi Pico 2 will appear as a storage device. Copy the RIA UF2
+file to make a :doc:`ria_w` and the VGA UF2 file to make a :doc:`vga`. It should
 take less than 30 seconds to copy. The LED turns on when done.
 
 Acrylic Sandwich Case
@@ -147,8 +156,6 @@ Full Parts List (All Components)
 .. csv-table::
    :file: _static/rp6502-reva-full.csv
    :header-rows: 1
-
-
 
 Active Parts List (ICs Only)
 =============================
@@ -208,7 +215,7 @@ The WDC W65C02S and W65C22S must not be substituted. Do not attempt to use
 NMOS chips (without the C in the number). Some older CMOS designs may work but
 there are no plans to support out-of-production ICs.
 
-Only the Raspberry Pi design of the Pi Pico has been tested. Both original and
-"H" (header) versions work great. Pin-compatible alternatives may work, check
+Only the Raspberry Pi design of the Pi Pico 2 has been tested. Both original and
+"H" (header) versions work great. Pin-compatible alternatives usually work, check
 the forums. The 3-pin SWD connection on the Pi Pico RIA is no longer used and
 may be ignored when looking for alternatives.

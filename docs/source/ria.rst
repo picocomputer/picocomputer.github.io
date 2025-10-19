@@ -8,14 +8,14 @@ Introduction
 ============
 
 The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico 2 with
-RP6502-RIA firmware. The RP6502-RIA provides all essential services to
+:doc:`ria` firmware. The :doc:`ria` provides all essential services to
 support a WDC W65C02S microprocessor.
 
-The RIA must be installed at $FFE0-$FFFF and must be in control of
+The :doc:`ria` must be installed at $FFE0-$FFFF and must be in control of
 RESB and PHI2. These are the only requirements. Everything else about
 your Picocomputer can be customized. Even the :doc:`vga` is optional.
 
-A new RIA will boot to the RIA monitor which you can access from the
+A new :doc:`ria` will boot to the RP6502 monitor which you can access from the
 console. The console can be accessed in one of three ways: from a VGA
 monitor and USB or Bluetooth keyboard if you are using an :doc:`vga`;
 from the USB CDC device which the :doc:`vga` presents when plugged
@@ -26,31 +26,31 @@ commands. The built-in help is extensive and always up-to-date. Type
 ``help`` to get started and don't forget there is deep help like
 ``help set phi2``.
 
-The RIA monitor is not an operating system shell. It's analogous to a
-UEFI shell. The RIA monitor is primarily designed to load ROMs on your
-Picocomputer. It also has a small amount of hardware and locale
+The RP6502 monitor is not an operating system shell. It is analogous to a
+UEFI shell. The RP6502 monitor is primarily designed to load ROMs.
+It also has a small amount of hardware and locale
 configuration, which is intentionally kept minimal.
 
-Loading ROMs you downloaded in .rp6502 format is done with the ``load``
+Loading ROMs in .rp6502 format is done with the ``load``
 command. Type ``help load`` to learn about the file format for ROMs.
 These aren't ROMs in the traditional (obsolete) sense. A ROM is a file
 that contains a memory image to be loaded in RAM before starting the
-6502. The RIA includes 1MB of EEPROM which you can ``install`` ROMs to.
+6502. The :doc:`ria` includes 1MB of EEPROM which you can ``install`` ROMs to.
 Once a ROM is installed, you can run it directly or ``set boot`` so it
-loads when the RIA boots.
+loads when the :doc:`ria` boots.
 
 Some of the monitor commands, like ``upload`` and ``binary`` are
 designed for use by developer tools. The rp6502.py script, included
 with the examples and templates, can be used to automate packaging of a
-ROM and then executing it.
+ROM and executing it.
 
 Reset
 =====
 
 It helps to think about reset as two states instead of a pulse on
 RESB. When reset is low, the 6502 is stopped and the console is
-connected to the RIA monitor. When reset is high, the 6502 is running
-and the console is connected both to the :doc:`os` and the TX/RX
+connected to the RP6502 monitor. When reset is high, the 6502 is running
+and the console is connected both stdio in the :doc:`os` and the UART TX/RX
 registers described below.
 
 If you want to move reset from low to high, either ``load`` a ROM with
@@ -61,15 +61,15 @@ To move reset from high to low and return to the monitor, even with a
 crashed or halted 6502, you have two options:
 
 1. Using a Bluetooth or USB keyboard, press CTRL-ALT-DEL.
-2. Over the RIA UART RX, send a break.
+2. Send a break to the RIA UART.
 
-WARNING! Do not hook up a physical button to RESB. The RIA must remain
+WARNING! Do not hook up a physical button to RESB. The :doc:`ria` must remain
 in control of RESB. What you probably want is the reset that happens
 from the RIA RUN pin. We call this a ``reboot``. The reference hardware
-reboot button is hooked up to the RIA RUN pin. Rebooting the Pi Pico
-RIA like this will cause any configured boot ROM to load, like at power
+reboot button is hooked up to the RIA RUN pin. Rebooting the :doc:`ria`
+like this will cause any configured boot ROM to load, like at power
 on. Resetting the 6502 from keyboard or UART will only return you to
-the RIA console.
+the RP6502 console.
 
 Registers
 =========
@@ -120,7 +120,7 @@ Registers
      - Address of XRAM for RW1.
    * - $FFEC
      - XSTACK
-     - 512 bytes for passing call parameters.
+     - 512 bytes for OS call stack.
    * - $FFED
      - ERRNO_LO
      - Low byte of errno. All errors fit in this byte.
@@ -129,30 +129,30 @@ Registers
      - Ensures errno is optionally a 16-bit int.
    * - $FFEF
      - OP
-     - Write the API operation id here to begin a kernel call.
+     - Write the OS operation id here to begin a kernel call.
    * - $FFF0
      - IRQ
      - Set bit 0 high to enable VSYNC interrupts. Verify source
-       with VSYNC then read or write this register to clear
+       with VSYNC increment then read or write this register to clear
        interrupt.
    * - $FFF1
      - RETURN
-     - Always $80, BRA. Entry to blocking API return.
+     - Always $80, BRA. Entry to blocking OS call.
    * - $FFF2
      - BUSY
-     - Bit 7 high while operation is running.
+     - Bit 7 high while OS operation is running.
    * - $FFF3
      - LDA
      - Always $A9.
    * - $FFF4
      - A
-     - Kernel register A.
+     - OS call register A.
    * - $FFF5
      - LDX
      - Always $A2.
    * - $FFF6
      - X
-     - Kernel register X.
+     - OS call register X.
    * - $FFF7
      - RTS
      - Always $60.
@@ -179,9 +179,10 @@ UART
 
 Easy and direct access to the UART RX/TX pins of the :doc:`ria` is
 available from $FFE0-$FFE2. The ready flags on bits 6-7 enable testing
-with the BIT operator. You may choose to use these or STDIN and STDOUT
-from the :doc:`os`. Using the UART directly while a STDIN or STDOUT
+with the BIT operator. You may choose to use these or stdio
+from the :doc:`os`. Using the UART directly while a stdio
 kernel function is in progress will result in undefined behavior.
+The UART hardware runs at 115200 bps, 8 bit words, no parity, 1 stop bit.
 
 Extended RAM (XRAM)
 -------------------
@@ -194,7 +195,7 @@ for better optimizations.
 STEP0 and STEP1 are reset to 1. These are signed so you can go
 backwards and reverse data. These adders allow for very fast sequential
 access, which typically makes up for the slightly slower random access
-compared to 6502 RAM.
+compared to 6502 system RAM.
 
 RW0 and RW1 are latching. This is important to remember when other
 systems change XRAM. For example, when using read_xram() to load XRAM
@@ -202,9 +203,9 @@ from a mass storage device, this will not work as expected:
 
 .. code-block:: C
 
-  RIA_ADDR0 = 0x1000;
+  RIA.addr0 = 0x1000;
   read_xram(0x1000, 1, fd);
-  uint8_t result = RIA_RW0; // wrong
+  uint8_t result = RIA.rw0; // wrong
 
 Setting ADDR after the expected XRAM change will latch RW to the
 latest value.
@@ -212,8 +213,8 @@ latest value.
 .. code-block:: C
 
   read_xram(0x1000, 1, fd);
-  RIA_ADDR0 = 0x1000;
-  uint8_t result = RIA_RW0; // correct
+  RIA.addr0 = 0x1000;
+  uint8_t result = RIA.rw0; // correct
 
 Extended Stack (XSTACK)
 -----------------------
@@ -224,6 +225,9 @@ is guaranteed to return zeros. Simply write to push and read to pull.
 
 Extended Registers (XREG)
 -------------------------
+
+The :doc:`RIA` is both the host of the PIX bus (documented below)
+and device 0 on the PIX bus.
 
 .. list-table::
   :widths: 5 5 90
@@ -296,8 +300,8 @@ device 0. Bits 15-0 contain the XRAM address. Bits 23-16 contain the
 XRAM data.
 
 PIX devices will maintain a replica of the XRAM they use. Typically,
-all 64K is replicated and an XREG set by the application will point to
-a configuration structure in XRAM.
+all 64K is replicated and an XREG set by a 6502 application will
+install virtual hardware at a location in XRAM.
 
 PIX Extended Registers (XREG)
 -----------------------------
@@ -323,7 +327,7 @@ modifier keys. You may instead use the UART or stdin if you don't need
 this kind of direct access.
 
 Enable and disable direct keyboard access by mapping it to an address
-in extended RAM.
+in XRAM.
 
 .. code-block:: C
 
@@ -331,15 +335,15 @@ in extended RAM.
   xreg(0, 0, 0x00, 0xFFFF); // disable
   xreg_ria_keyboard(xaddr); // macro shortcut
 
-Extended RAM will be continuously updated with a bit array of USB HID
+XRAM will be continuously updated with a bit array of USB HID
 keyboard codes. Note that these are not the same as PS/2 scancodes.
-Each bit represents one key with the first four bits having special
+Each bit represents one key with the first four bits/codes having special
 meaning:
 
-| * 0 - No key pressed
-| * 1 - Num Lock on
-| * 2 - Caps Lock on
-| * 3 - Scroll Lock on
+- 0 - No key pressed
+- 1 - Num Lock on
+- 2 - Caps Lock on
+- 3 - Scroll Lock on
 
 .. code-block:: C
 
@@ -352,7 +356,7 @@ Mouse
 =====
 
 The RIA can provide direct access to mouse information. Enable and
-disable by mapping it to an address in extended RAM.
+disable by mapping it to an address in XRAM.
 
 .. code-block:: C
 
@@ -360,7 +364,7 @@ disable by mapping it to an address in extended RAM.
   xreg(0, 0, 0x01, 0xFFFF); // disable
   xreg_ria_mouse(xaddr);    // macro shortcut
 
-This sets the address in extended RAM for a structure containing direct
+This sets the address in XRAM for a structure containing direct
 mouse input.
 
 .. code-block:: C
@@ -373,35 +377,37 @@ mouse input.
       uint8_t pan;
   } mouse;
 
-The amount of movement is computed by keeping track of the previous
-values and subtracting from the current value. Vsync timing (60Hz)
-isn't always fast enough. For perfect mouse input, use an ISR at 8ms
-or faster (125Hz).
+The amount of movement is computed by way of the application subtracting
+the previous value from the current value. Vsync timing (60Hz) is period correct
+but isn't fast enough by modern standards. For perfect mouse input, use an ISR
+at 8ms or faster (125Hz).
 
 It is recommended that applications consider the canvas resolution when
 interpreting the movement. For 640x480 and 640x360 resolutions, each
 unit of movement equates to one pixel. For 320x240 and 320x180
-resolutions, two units of movement for each pixel.
+resolutions, use two units of movement for each pixel.
 
 .. code-block:: C
 
   int8_t delta_x = current_x - prev_x;
+  int8_t delta_y = current_y - prev_y;
 
-| Mouse buttons are a bitfield:
-| * 0 - LEFT
-| * 1 - RIGHT
-| * 2 - MIDDLE
-| * 3 - BACKWARD
-| * 4 - FORWARD
+Mouse buttons are a bitfield:
+
+- 0 - LEFT
+- 1 - RIGHT
+- 2 - MIDDLE
+- 3 - BACKWARD
+- 4 - FORWARD
 
 
 Gamepads
 ========
 
-The RIA supports up to four gamepads. There are drivers for Generic HID,
+The :doc:`ria` supports up to four gamepads. There are drivers for Generic HID,
 XInput, and Playstation controllers. Unfortunately, the TinyUSB stack
 that the RIA uses is unstable on the Pi Pico and the information needed
-to fix is not part of the Pi Pico documentation. XInput is currently
+to fix it is not part of the Pi Pico documentation. XInput is currently
 disabled and you may find USB instability on other devices.
 
 Some gamepads let you select between HID/DInput/Android, XInput, and
@@ -418,7 +424,7 @@ use a specific gamepad or include a "AB or BA" option.
 
 Enable and disable access to the RIA gamepad XRAM registers by setting
 the extended register. The register value is the XRAM start address of
-the gamepad registers. Any invalid address disables the gamepads.
+the gamepad data. Any invalid address disables the gamepads.
 
 .. code-block:: C
 
