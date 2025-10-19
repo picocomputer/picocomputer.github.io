@@ -8,34 +8,34 @@ Introduction
 =============
 
 The RP6502 Video Graphics Array is a Raspberry Pi Pico 2 with
-RP6502-VGA firmware. Its primary data connection is to a :doc:`ria`
+:doc:`vga` firmware. Its primary data connection is to a :doc:`ria`
 over a 5-wire PIX bus. More than one VGA module can be put on a PIX
 bus. Note that all VGA modules share the same 64K of XRAM and only
-one module can generate frame numbers and vsync interrupts.
+the first one will generate frame numbers and vsync interrupts.
 
 Video Programming
 ==================
 
-The design philosophy for the VGA system is to enable the full power
-of the Pi Pico while maintaining some 8-bit purity. To that end, two
-paths must be created. The VGA system must help you get the most value
-from 64K of extended memory (XRAM) and the VGA modes must inflict
-nostaligia. You may follow either or both paths.
+The VGA system provides virtual video hardware that is similar
+to home computer and arcade hardware from the 8-bit and early
+16-bit era. It is very easy to add new video modes and sprite
+systems. The 6502 application programmer can mix and match these
+modes.
 
-The VGA system is built around the scanvideo library from Pi Pico
-Extras. All three planes are enabled with RGB555 color plus
+The VGA system is built around the scanvideo library from Pi
+Pico Extras. All three planes are enabled with RGB555 color plus
 transparency. The mode 4 sprite system is from Pi Pico Playground.
-The programming system and all other modes are original work for the
-RP6502.
+The programming system and all other modes are original work for
+the RP6502.
 
-The RP6502 VGA system exposes per-scanline configuration of the video
-system to your 6502 application. At the broadest scope we have three
-planes. Each plane has two layers, a fill layer and a sprite layer.
-Your application can assign different fill and sprite modes to
-specific planes and scanlines. There's plenty of fill rate to exceed
-the capabilities of any classic 8-bit system, but if you like to push
-the limits then you may see a half-blue screen indicating you went too
-far.
+The RP6502 VGA system exposes per-scanline configuration of the
+video system to your 6502 application. At the broadest scope we
+have three planes. Each plane has two layers, a fill layer and a
+sprite layer. Your application can assign different fill and
+sprite modes to specific planes and scanlines. There's plenty of
+fill rate to exceed the capabilities of any classic 8-bit system,
+but if you like to push the limits then you may see a half-blue
+screen indicating you went too far.
 
 The built-in 8x8 and 8x16 fonts are available by using the special
 XRAM pointer $FFFF. Glyphs 0-127 are ASCII, glyphs 128-255 vary
@@ -47,8 +47,8 @@ ANSI color palette of 16 colors, followed by 216 colors (6x6x6),
 followed by 24 greys.
 
 16-bit colors are built with the following bit logic. Setting the
-alpha bit will make the color opaque. The built-in ANSI color palette
-has the alpha bit set on all colors except color 0 black.
+alpha bit will make the color opaque. The built-in ANSI color
+palette has the alpha bit set on all colors except color 0 black.
 
 .. code-block:: C
 
@@ -96,8 +96,8 @@ Setting key registers may return a failure (-1) with errno EINVAL.
   * - $1:0:00
     - CANVAS
     - Select a graphics canvas. This clears $1:0:02-$1:0:FF and all
-      scanline programming. The 80 column console canvas is used as a
-      failsafe and therefore not scanline programmable.
+      scanline programming. The 80 column console canvas is used as
+      a failsafe and therefore not scanline programmable.
 
       * 0 - 80 column console. (4:3 or 5:4)
       * 1 - 320x240 (4:3)
@@ -125,8 +125,8 @@ The console may be rendered on any canvas plane. ANSI color 0-black
 is transparent, which makes it easy to show text over a background
 image using planes. The console may be a partial screen, but the
 scanlines must be a multiple of the font height. 640 pixel wide
-canvases use an 8x16 font for 80 columns. 320 pixel wide canvases use
-an 8x8 font for 40 columns. Only one console may be visible,
+canvases use an 8x16 font for 80 columns. 320 pixel wide canvases
+use an 8x8 font for 40 columns. Only one console may be visible,
 programming again will remove the previous console.
 
 .. list-table::
@@ -410,12 +410,8 @@ Mode 4: Sprite
 --------------
 
 Sprites may be drawn over each fill plane. This is the 16-bit sprite
-system from the Pi Pico Playground. Lower bit depths are planned for a
-different mode.
-
-WARNING! Slightly experimental! It is unknown how well the structure
-data is validated. Please submit a reproducable test program if you
-encounter a VGA system lockup.
+system from the Pi Pico Playground. Lower bit depths are planned for
+a different mode.
 
 .. list-table::
   :widths: 5 5 90
@@ -525,7 +521,7 @@ that set these.
 
       * 0 - Disable
       * 1 - Enable
-      * 2 - Request acknowledgment
+      * 2 - Request
 
 
 Backchannel
@@ -539,16 +535,15 @@ which is only used when the 6502 is writing to XRAM, it can be used
 for the UART Tx path allowing the UART Tx pin to switch directions.
 
 This is not interesting to the 6502 programmer as it happens
-automatically. RIA Kernel developers can extend its usefulness. The
-backchannel is simply a UART implemented in PIO so it sends 8-bit
-values.
+automatically. It is documented mainly for the hardware explorers
+who might be probing UART Tx.
 
 Values 0x00 to 0x7F are used to send a version string as ASCII
 terminated with a 0x0D or 0x0A. This must be sent immediately after
 the backchannel enable message is received for it to be displayed as
 part of the boot message. It may be updated any time after that and
-inspected with the STATUS CLI command, but currently there is no
-reason to do so.
+inspected with the ``status`` monitor command, but currently there is
+no reason to do so.
 
 When bit 0x80 is set, the 0x70 bits indicate the command type, and the
 0x0F bits are a scalar for the command.
@@ -566,7 +561,9 @@ completion.
 Terminal
 ========
 
-The RP6502 VGA system includes a color ANSI terminal attached to stdout.
+The RP6502 VGA system includes a color ANSI terminal attached as the
+console. This terminal does not require flow control to keep up with
+115200 bps.
 
 C0 control codes
 ----------------
@@ -714,7 +711,8 @@ movement, treat 0 as 1 to be useful without parameters.
 
 SGR Parameters
 --------------
-Multiple parameters may be sent separated by semicolons. Reset is performed if no codes (CSI m).
+Multiple parameters may be sent separated by semicolons. Reset is
+performed if no codes (CSI m).
 
 .. list-table::
   :widths: 10 20 70
@@ -732,6 +730,7 @@ Multiple parameters may be sent separated by semicolons. Reset is performed if n
   * - 5
     - Blink
     - Some ANSI art uses this to brighten the background color.
+      It's a quirk of ANSI.SYS on IBM VGA.
   * - 22
     - Normal intensity
     - Normal foreground colors. Colors 8-15 dimmed.
