@@ -50,7 +50,7 @@ Reset
 It helps to think about reset as two states instead of a pulse on
 RESB. When reset is low, the 6502 is stopped and the console is
 connected to the RIA monitor. When reset is high, the 6502 is running
-and the console is connected both to the :doc:`api` and the TX/RX
+and the console is connected both to the :doc:`os` and the TX/RX
 registers described below.
 
 If you want to move reset from low to high, either ``load`` a ROM with
@@ -180,7 +180,7 @@ UART
 Easy and direct access to the UART RX/TX pins of the :doc:`ria` is
 available from $FFE0-$FFE2. The ready flags on bits 6-7 enable testing
 with the BIT operator. You may choose to use these or STDIN and STDOUT
-from the :doc:`api`. Using the UART directly while a STDIN or STDOUT
+from the :doc:`os`. Using the UART directly while a STDIN or STDOUT
 kernel function is in progress will result in undefined behavior.
 
 Extended RAM (XRAM)
@@ -219,7 +219,7 @@ Extended Stack (XSTACK)
 -----------------------
 
 This is 512 bytes of last-in, first-out, top-down stack used for the
-fastcall mechanism described in the :doc:`api`. Reading past the end
+fastcall mechanism described in the :doc:`os`. Reading past the end
 is guaranteed to return zeros. Simply write to push and read to pull.
 
 Extended Registers (XREG)

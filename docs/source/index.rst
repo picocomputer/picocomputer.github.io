@@ -5,7 +5,7 @@
    RP6502-RIA <ria>
    RP6502-RIA-W <ria_w>
    RP6502-VGA <vga>
-   RP6502-OS <api>
+   RP6502-OS <os>
 
 ============
 Picocomputer
@@ -14,7 +14,7 @@ Picocomputer
 The **Picocomputer 6502** is a tribute to the processor that launched a
 computing revolution. The lack of apparent complexity is a by product of
 the design philosophy: Keep the essence of programming a 6502 and 6522
-and rethink everything else.
+then rethink everything else.
 
 .. image:: _static/founders.jpg
    :width: 600
@@ -25,26 +25,18 @@ Key Features
 
 - **64KB System RAM**
 - **64KB Extended RAM**
-- **VGA Graphics Output**
+- **VGA and HD Output**
 - **8-Channel Stereo Sound Generator**
 - **Protected Operating System**
 - **USB** for Keyboard, Mouse, and Gamepads
 - **Bluetooth LE** for Keyboard, Mouse, and Gamepads
 - **WiFi** for modem emulation
-- **Real Time Clock with DST** with NTP
-
-How To Obtain
-=============
-
-The **Picocomputer 6502** is a single board computer you build yourself. It has
-been built by hundreds of people. You can also have a single unit manufactured
-especially for you in China. The whole process is documented and well tested.
-Everything you need to know is on the :doc:`hardware` page:
+- **Real Time Clock** with DST and NTP
 
 Resources
 =========
 
-For support and community interaction, please use the following channels:
+For support and community interaction, use the following channels:
 
 - **GitHub:** https://github.com/picocomputer
 - **Forums:** https://github.com/picocomputer/community/discussions
@@ -58,19 +50,25 @@ made during development.
 - **YouTube:**
   https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r
 
+How To Obtain
+=============
+
+The **Picocomputer 6502** is a single board computer you build yourself. It has
+been built by hundreds of people. You can also have a single unit manufactured
+especially for you in China. The whole process is documented and well tested.
+
+- :doc:`hardware`: Schematic and manufacturing information.
+
 Datasheets
 ==========
 
-The RP6502 chipset consists of three main components:
+The **Picocomputer 6502** is a reference design for RP6502 modular hardware.
+The only required module is a RP6502-RIA.
 
-- :doc:`RP6502-RIA <ria>`: Interface adapter for the 6502, similar to CIA,
+- :doc:`ria`: Interface adapter for the 6502, akin to CIA,
   VIA, and ACIA devices.
-- :doc:`RP6502-RIA-W <ria_w>`: Wireless features available when using the
+- :doc:`ria_w`: Wireless features available when using the
   recommended "Pico 2 W".
-- :doc:`RP6502-VGA <vga>`: Optional video adapter that connects to the
+- :doc:`vga`: Optional video adapter that connects to the
   RP6502-RIA.
-
-The RP6502-RIA runs a protected operating system which you can use from the
-6502.
-
-- :doc:`RP6502-OS <api>`
+- :doc:`os`: The operating system and application programming interface.

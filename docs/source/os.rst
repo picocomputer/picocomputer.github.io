@@ -8,10 +8,10 @@ Introduction
 ============
 
 The :doc:`ria` runs a protected 32-bit protected operating system that
-you can call from the 6502. The :doc:`api` does not use any 6502 RAM
+you can call from the 6502. The :doc:`os` does not use any 6502 RAM
 and will not interfere with developing a native 6502 OS.
 
-The :doc:`api` is loosely based on POSIX with an ABI similar to
+The :doc:`os` is loosely based on POSIX with an ABI similar to
 CC65's fastcall. It provides stdio.h services to both CC65 and
 LLVM-MOS compilers. There are also calls access Picocomputer features
 and manage FAT32 filesystems. ExFAT is ready to go and will be enabled
