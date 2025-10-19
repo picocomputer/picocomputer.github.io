@@ -88,9 +88,6 @@ TCP.
 "Telephone Numbers" are saved immediately and are not linked to
 profiles.
 
-`Please contribute to this documentation.
-<https://github.com/picocomputer/picocomputer.github.io>`_
-
 Bluetooth
 =========
 

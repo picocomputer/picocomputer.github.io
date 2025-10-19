@@ -72,3 +72,6 @@ The only required module is a RP6502-RIA.
 - :doc:`vga`: Optional video adapter that connects to the
   RP6502-RIA.
 - :doc:`os`: The operating system and application programming interface.
+
+`Please contribute to this documentation.
+<https://github.com/picocomputer/picocomputer.github.io>`_

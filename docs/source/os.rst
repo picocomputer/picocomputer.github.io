@@ -7,15 +7,15 @@ RP6502 - Operating System
 Introduction
 ============
 
-The :doc:`ria` runs a protected 32-bit protected operating system that
+The :doc:`ria` runs a 32-bit protected operating system that
 you can call from the 6502. The :doc:`os` does not use any 6502 RAM
 and will not interfere with developing a native 6502 OS.
 
 The :doc:`os` is loosely based on POSIX with an ABI similar to
-CC65's fastcall. It provides stdio.h services to both CC65 and
-LLVM-MOS compilers. There are also calls access Picocomputer features
-and manage FAT32 filesystems. ExFAT is ready to go and will be enabled
-when the patents expire.
+CC65's fastcall. It provides stdio.h and unistd.h services to both
+CC65 and LLVM-MOS compilers. There are also calls access RP6502
+features and manage FAT32 filesystems. ExFAT is ready to go and will
+be enabled when the patents expire.
 
 
 Memory Map
@@ -43,8 +43,7 @@ registers of the RIA.
    * - FFE0-FFFF
      - RIA, see the :doc:`RP6502-RIA datasheet <ria>`
    * - 10000-1FFFF
-     - XRAM, 64K for :doc:`RP6502-RIA <ria>` and
-       :doc:`RP6502-VGA <vga>`
+     - XRAM, 64K for :doc:`ria` and :doc:`vga`
 
 The unassigned space is available for hardware experimenters. You will
 need to design your own address decoder logic hardware to use this
@@ -52,31 +51,25 @@ address space. It is recommended that additional VIAs be added "down"
 and other hardware added "up". For example: VIA0 at $FFD0, VIA1 at
 $FFC0, SID0 at $FF00, and SID1 at $FF20.
 
-I use "Picocomputer 6502" to refer to the reference design with the
-above memory map. Please use a differentiating name if you change the
-hardware. For example, "Picocomputer VERA" or "Ulf's Dream Computer".
-Think about what people asking for help should call the device and go
-with that.
 
-
-Calling with fastcall
-=====================
+Application Binary Interface (ABI)
+==================================
 
 The binary interface for calling the operating system is based on
 fastcall from the `CC65 Internals
-<https://cc65.github.io/doc/cc65-intern.html>`_. The RP6502-OS fastcall
-does not use or require anything from CC65 and is easy for assembly
-programmers to use. At its core, the API ABI is based on a C ABI with
-four simple rules.
+<https://cc65.github.io/doc/cc65-intern.html>`_. The RP6502-OS
+fastcall does not use or require anything from CC65 and is easy for
+assembly programmers to use. At its core, the OS API ABI is based on
+a C ABI with four simple rules.
 
 * Stack arguments are pushed left to right.
 * Last argument passed by register A, AX, or AXSREG.
 * Return value in register AX or AXSREG.
-* Returned structures on the stack.
+* May return data on the stack.
 
 A and X are the 6502 registers. The pseudo register AX combines them
 for 16 bits. AXSREG is 32 bits with 16 SREG bits.  Let's look at how
-to make an OS call through the RIA registers. All kernel calls are
+to make an OS call through the RIA registers. All OS calls are
 specified as a C declaration like so:
 
 .. c:function:: int doit(int arg0, int arg1);
@@ -118,22 +111,22 @@ absolute instructions.
    wait:
    BIT RIA_BUSY
    BMI wait
-   LDA RIA_A
-   LDX RIA_X
+   LDA #RIA_A
+   LDX #RIA_X
 
 All operations returning RIA_A will also return RIA_X to assist with
-CC65's integer promotion requirements. RIA_SREG is only updated for
+C integer promotion. RIA_SREG is only updated for
 32-bit returns. RIA_ERRNO is only updated if there is an error.
 
-Some operations return data structures on the stack. You must pull the
-entire stack before the next call. However, tail call optimizations are
-possible. For example, you can chain read_xstack() and write_xstack()
-to copy a file without using any RAM or XRAM.
+Some operations return strings or structures on the stack. You must
+pull the entire stack before the next call. However, tail call
+optimizations are possible. For example, you can chain read_xstack()
+and write_xstack() to copy a file without using any RAM or XRAM.
 
 Short Stacking
 ---------------
 
-In the never ending pursuit of saving all the clocks, it is possible to
+In the never ending pursuit of saving all the cycles, it is possible to
 save a few on the stack push if you don't need all the range. This only
 works on the stack argument that gets pushed first. For example:
 
@@ -148,7 +141,7 @@ bits, push only three bytes. The significant bytes will be implicit.
 Shorter Integers
 -----------------
 
-Many operations can save a few clocks by ignoring REG_X. All integers
+Many operations can save a few cycles by ignoring REG_X. All integers
 are always available as 16 bits to assist with C integer promotion.
 However, many operations will ignore REG_X on the register parameter
 and limit their return to fit in REG_A. This will be documented below
@@ -158,8 +151,8 @@ Bulk Data
 ---------
 
 Functions that move bulk data may come in two flavors. These are any
-function with a pointer parameter. This pointer is meaningless to the
-kernel because it can not change 6502 RAM. Instead, we use the XSTACK
+function with a pointer parameter. A RAM pointer is meaningless to the
+RIA because it can not change 6502 RAM. Instead, we use the XSTACK
 or XRAM for data buffers.
 
 Bulk XSTACK Operations
@@ -174,31 +167,33 @@ examples.
 
    int open(const char *path, int oflag);
 
-Send `oflag` in AX. Send the path on XSTACK by pushing the string
-starting with the last character. You may omit pushing the terminating
-zero, but strings are limited to a length of 255. Calling this from the
-C SDK will "just work" because there's an implementation that pushes
-the string for you.
+Send `oflag` in RIA_A and RIA_X. Send the path on XSTACK by pushing the
+string starting with the last character. You may omit pushing the
+terminating zero, but strings are limited to a length of 255. Calling
+this from the C SDK will "just work" because there's an implementation
+that pushes the string for you.
 
 .. code-block:: C
 
    int read_xstack(void *buf, unsigned count, int fildes)
 
-Send `count` as a short stack and `fildes` in AX. The returned value in
-AX indicates how many values must be pulled from the stack. If you call
+Send `count` as a short stack and `fildes` in RIA_A. RIA_X doesn't need
+to be set according the to docs below. The returned value in AX
+indicates how many values must be pulled from the stack. If you call
 this from the C SDK then it will copy XSTACK to buf[] for you.
 
 .. code-block:: C
 
    int write_xstack(const void *buf, unsigned count, int fildes)
 
-Send `fildes` in AX. Push the data to XSTACK. Do not send `count`, the
-kernel knows this from its internal stack pointer. If you call this from
-the C SDK then it will copy count bytes of buf[] to XSTACK for you.
+Send `fildes` in RIA_A. Push the buf data to XSTACK. Do not send
+`count`, the OS knows this from its internal stack pointer. If you call
+this from the C SDK then it will copy count bytes of buf[] to XSTACK
+for you.
 
-Note that read() and write() are part of the C SDK, not a kernel
-operation. CC65 requires them to support more than 512 bytes, so they
-have wrapper logic to make multiple kernel calls when necessary.
+Note that read() and write() are part of the C SDK, not an OS
+operation. C requires these to support a count larger than the XSTACK
+can return so the implementation makes multiple OS calls as necessary.
 
 Bulk XRAM Operations
 ~~~~~~~~~~~~~~~~~~~~
@@ -211,31 +206,49 @@ going through 6502 RAM or capture a screenshot with ease.
    int read_xram(xram_addr buf, unsigned count, int fildes)
    int write_xram(xram_addr buf, unsigned count, int fildes)
 
-The kernel expects `buf` and `count` on the XSTACK as integers with
-`filedes` in AX. The buffer is effectively &XRAM[buf] here. There's
-nothing special about these calls in regards to how the binary interface
-rules are applied. They are interesting because of their high
-performance for loading assets.
+The OS expects `buf` and `count` on the XSTACK as integers with
+`filedes` in RIA_A. The buffer is effectively &XRAM[buf] here.
+
+These operations are interesting because of their high performance and
+ability to work in the background while the 6502 is doing something
+else. You can expect close to 64KB/sec, which means loading a game
+level's worth of assets will take less than a second.
+
+Bulk XRAM operations are why the Picocomputer 6502 was designed
+without paged memory.
 
 Function Reference
 ===================
 
-Much of this API is based on CC65 and POSIX. In particular, filesystem
-access should feel extremely modern. However, some operations will have
-different argument orders or bitfield values than what you're used to.
-The reason for this becomes apparent when you start to work in assembly
-and fine tune short stacking and integer demotions. You might not notice
-the differences if you only work in C because the standard library has
-wrapper functions and familiar prototypes. For example, the f_lseek()
-described below has reorderd arguments that are optimized for short
-stacking the long argument. But you don't have to call f_lseek() from C,
-you call the usual lseek() which has the traditional argument order.
+Much of this API is based on POSIX and FatFs. In particular, filesystem
+and console access should feel extremely familiar. However, some
+operations will have different argument orders or bitfield values than
+what you're used to. The reason for this becomes apparent when you start
+to work in assembly and fine tune short stacking and integer demotions.
+You might not notice the differences if you only work in C because the
+standard library has wrapper functions and familiar prototypes. For
+example, the f_lseek() described below has reordered arguments that are
+optimized for short stacking the long argument. But you don't have to
+call f_lseek() from C, you can call the usual lseek() which has the
+traditional argument order.
+
+The RP6502 is built around FAT filesystems, which is the defacto standard
+for USB storage devices. POSIX filesystems are not fully compatible with
+FAT but there is a solid intersection of basic IO that is 100% compatible.
+You will see some familiar POSIX functions like open() and others like
+f_stat() which are similar to the POSIX function but tailored to FAT.
+Should it ever become necessary to have a POSIX stat(), it can be
+implemented in the C standard library or in an application by translating
+f_stat() data.
 
 zxstack
 -------
 .. c:function:: void zxstack(void);
 
-Abandon the xstack by resetting the xstack pointer. This is the only operation that doesn't require waiting for completion. You do not need to call this for failed operations. It can be useful if you want to quickly ignore part of a returned structure.
+Abandon the xstack by resetting the xstack pointer. This is the only
+operation that doesn't require waiting for completion. You do not need
+to call this for failed operations. It can be useful if you want to
+quickly ignore part of a returned structure.
 
 xreg
 ----
@@ -274,7 +287,7 @@ phi2
    Retrieves the PHI2 setting from the RIA. Applications can use this
    for adjusting to or rejecting different clock speeds.
 
-   :returns: The 6502 clock speed in kHz. Typically 750 <= x <= 8000.
+   :returns: The 6502 clock speed in kHz. Typically 800 <= x <= 8000.
    :errno: will not fail
 
 
@@ -316,6 +329,8 @@ stdin_opt
 ---------
 
 .. c:function:: int stdin_opt(unsigned long ctrl_bits, unsigned char str_length)
+
+   *** Experimental *** (likely to be replaced with stty-like something)
 
    Additional options for the STDIN line editor. Set the str_length to
    your buffer size - 1 to make gets() safe. This can also guarantee no
@@ -629,10 +644,9 @@ exit
 
 .. c:function:: void exit(int status)
 
-   Halt the 6502 and return to the kernel command interface. This is the
-   only operation that does not return. RESB will be pulled down before
-   the next instruction can execute. Status is currently ignored but will
-   be used in the future.
+   Halt the 6502 and return the console to RP6502 monitor control. This
+   is the only operation that does not return. RESB will be pulled down
+   before the next instruction can execute. Status is currently ignored
+   but will be used in the future.
 
-   :param status: 0 is good, 1-255 for error.
-   :a regs: status
+   :param status: 0 is good, !0 for error.

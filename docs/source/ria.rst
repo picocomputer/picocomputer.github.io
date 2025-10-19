@@ -129,7 +129,7 @@ Registers
      - Ensures errno is optionally a 16-bit int.
    * - $FFEF
      - OP
-     - Write the OS operation id here to begin a kernel call.
+     - Write the OS operation id here to begin an OS call.
    * - $FFF0
      - IRQ
      - Set bit 0 high to enable VSYNC interrupts. Verify source
@@ -181,7 +181,7 @@ Easy and direct access to the UART RX/TX pins of the :doc:`ria` is
 available from $FFE0-$FFE2. The ready flags on bits 6-7 enable testing
 with the BIT operator. You may choose to use these or stdio
 from the :doc:`os`. Using the UART directly while a stdio
-kernel function is in progress will result in undefined behavior.
+OS function is in progress will result in undefined behavior.
 The UART hardware runs at 115200 bps, 8 bit words, no parity, 1 stop bit.
 
 Extended RAM (XRAM)
