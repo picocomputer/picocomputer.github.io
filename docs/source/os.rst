@@ -8,24 +8,27 @@ Introduction
 ============
 
 The :doc:`ria` runs a 32-bit protected operating system that
-you can call from the 6502. The :doc:`os` does not use any 6502 RAM
+you can call from the 6502. The :doc:`os` does not use any 6502 system RAM
 and will not interfere with developing a native 6502 OS.
 
-The :doc:`os` is loosely based on POSIX with an ABI similar to
-CC65's fastcall. It provides stdio.h and unistd.h services to both
-CC65 and LLVM-MOS compilers. There are also calls access RP6502
-features and manage FAT32 filesystems. ExFAT is ready to go and will
-be enabled when the patents expire.
+The :doc:`os` is loosely based on POSIX with an Application Binary
+Interface (ABI) similar to `cc65 <https://cc65.github.io>`_'s fastcall.
+It provides stdio.h and unistd.h services to both `cc65
+<https://cc65.github.io>`_ and `llvm-mos <https://llvm-mos.org/>`_
+compilers. There are also calls to access RP6502 features and manage
+FAT32 filesystems. ExFAT is ready to go and will be enabled when the
+patents expire.
+
+
 
 
 Memory Map
 ==========
 
-There is no ROM. Nothing in zero page is used or reserved. There isn't
-a book-sized list to study. The Picocomputer design lets you start with
-a clean slate for every project. VGA, audio, storage, keyboards, mice,
-gamepads, RTC, and networking are all accessed using only the 32
-registers of the RIA.
+There is no ROM. Nothing in zero page is used or reserved. The
+Picocomputer starts as a clean slate for every project. VGA, audio,
+storage, keyboards, mice, gamepads, RTC, and networking are all accessed
+using only the 32 registers of the RIA.
 
 .. list-table::
    :widths: 25 75
@@ -33,20 +36,20 @@ registers of the RIA.
 
    * - Address
      - Description
-   * - 0000-FEFF
+   * - $0000-$FEFF
      - RAM, 63.75K
-   * - FF00-FFCF
+   * - $FF00-$FFCF
      - Unassigned
-   * - FFD0-FFDF
+   * - $FFD0-$FFDF
      - VIA, see the `WDC datasheet
        <https://www.westerndesigncenter.com/wdc/w65c22-chip.php>`_
-   * - FFE0-FFFF
+   * - $FFE0-$FFFF
      - RIA, see the :doc:`RP6502-RIA datasheet <ria>`
-   * - 10000-1FFFF
+   * - $10000-$1FFFF
      - XRAM, 64K for :doc:`ria` and :doc:`vga`
 
 The unassigned space is available for hardware experimenters. You will
-need to design your own address decoder logic hardware to use this
+need to design your own chip select hardware to use this
 address space. It is recommended that additional VIAs be added "down"
 and other hardware added "up". For example: VIA0 at $FFD0, VIA1 at
 $FFC0, SID0 at $FF00, and SID1 at $FF20.
@@ -56,21 +59,20 @@ Application Binary Interface (ABI)
 ==================================
 
 The binary interface for calling the operating system is based on
-fastcall from the `CC65 Internals
-<https://cc65.github.io/doc/cc65-intern.html>`_. The RP6502-OS
-fastcall does not use or require anything from CC65 and is easy for
-assembly programmers to use. At its core, the OS API ABI is based on
-a C ABI with four simple rules.
+fastcall from the `cc65 internals
+<https://cc65.github.io/doc/cc65-intern.html>`_. The :doc:`os`
+fastcall does not use or require anything from cc65 and is easy for
+assembly programmers to use. At its core, the OS ABI is four simple rules.
 
 * Stack arguments are pushed left to right.
 * Last argument passed by register A, AX, or AXSREG.
 * Return value in register AX or AXSREG.
 * May return data on the stack.
 
-A and X are the 6502 registers. The pseudo register AX combines them
-for 16 bits. AXSREG is 32 bits with 16 SREG bits.  Let's look at how
-to make an OS call through the RIA registers. All OS calls are
-specified as a C declaration like so:
+A and X are the 6502 registers. The pseudo register AX combines them for
+16 bits. AXSREG allows 32 bits with the 16 additional SREG bits. Let's
+look at how to make an OS call through the RIA registers. All OS calls
+are specified as a C declaration like so:
 
 .. c:function:: int doit(int arg0, int arg1);
 
@@ -111,8 +113,8 @@ absolute instructions.
    wait:
    BIT RIA_BUSY
    BMI wait
-   LDA #RIA_A
-   LDX #RIA_X
+   LDA RIA_A
+   LDX RIA_X
 
 All operations returning RIA_A will also return RIA_X to assist with
 C integer promotion. RIA_SREG is only updated for
@@ -134,32 +136,32 @@ works on the stack argument that gets pushed first. For example:
 
    long f_lseek(long offset, char whence, int fildes)
 
-Here we are asked for a 64 bit value. Not coincidentally, it's in the
-right position for short stacking. If, for example, you only need 24
-bits, push only three bytes. The significant bytes will be implicit.
+Here we need to push a 32 bit value. Not coincidentally, it's in the
+right position for short stacking. If, for example, the offset always
+fits in 16 bits, push only two bytes instead of four.
 
-Shorter Integers
------------------
+Shorter AX
+----------
 
-Many operations can save a few cycles by ignoring REG_X. All integers
-are always available as 16 bits to assist with C integer promotion.
-However, many operations will ignore REG_X on the register parameter
-and limit their return to fit in REG_A. This will be documented below
-as "A regs".
+Many operations can save a few cycles by ignoring REG_X. All returned
+integers are always available as at least 16 bits to assist with C
+integer promotion. However, many operations will ignore REG_X in the
+register parameter and limit their return to fit in REG_A. These will be
+documented below as "A regs".
 
 Bulk Data
 ---------
 
 Functions that move bulk data may come in two flavors. These are any
-function with a pointer parameter. A RAM pointer is meaningless to the
-RIA because it can not change 6502 RAM. Instead, we use the XSTACK
-or XRAM for data buffers.
+function with a mutable pointer parameter. A RAM pointer is meaningless
+to the RIA because it can not change 6502 RAM. Instead, we use the
+XSTACK or XRAM to move data.
 
 Bulk XSTACK Operations
 ~~~~~~~~~~~~~~~~~~~~~~
 
-These only work if the count is 512 or less. Bulk data is passed on the
-XSTACK, which is 512 bytes. A pointer appears in the C prototype to
+These only work if the size is 512 bytes or less. Bulk data is passed on
+the XSTACK, which is 512 bytes. A pointer appears in the C prototype to
 indicate the type and direction of this data. Let's look at some
 examples.
 
@@ -167,11 +169,12 @@ examples.
 
    int open(const char *path, int oflag);
 
-Send `oflag` in RIA_A and RIA_X. Send the path on XSTACK by pushing the
-string starting with the last character. You may omit pushing the
-terminating zero, but strings are limited to a length of 255. Calling
-this from the C SDK will "just work" because there's an implementation
-that pushes the string for you.
+Send `oflag` in RIA_A. RIA_X doesn't need to be set according the to
+docs below. Send the path on XSTACK by pushing the string starting with
+the last character. You may omit pushing the terminating zero, but
+strings are limited to a length of 255. Calling this from the C SDK will
+"just work" because there's an implementation that pushes the string for
+you.
 
 .. code-block:: C
 
@@ -186,10 +189,10 @@ this from the C SDK then it will copy XSTACK to buf[] for you.
 
    int write_xstack(const void *buf, unsigned count, int fildes)
 
-Send `fildes` in RIA_A. Push the buf data to XSTACK. Do not send
-`count`, the OS knows this from its internal stack pointer. If you call
-this from the C SDK then it will copy count bytes of buf[] to XSTACK
-for you.
+Send `fildes` in RIA_A. RIA_X doesn't need to be set according the to
+docs below. Push the buf data to XSTACK. Do not send `count`, the OS
+knows this from its internal stack pointer. If you call this from the C
+SDK then it will copy count bytes of buf[] to XSTACK for you.
 
 Note that read() and write() are part of the C SDK, not an OS
 operation. C requires these to support a count larger than the XSTACK
@@ -207,7 +210,9 @@ going through 6502 RAM or capture a screenshot with ease.
    int write_xram(xram_addr buf, unsigned count, int fildes)
 
 The OS expects `buf` and `count` on the XSTACK as integers with
-`filedes` in RIA_A. The buffer is effectively &XRAM[buf] here.
+`filedes` in RIA_A. The :doc:`os` has direct access to XRAM so
+internally it will use something like &XRAM[buf]. You will need to use
+RIA_RW0 or RIA_RW1 to access this memory from the 6502.
 
 These operations are interesting because of their high performance and
 ability to work in the background while the 6502 is doing something
@@ -217,12 +222,12 @@ level's worth of assets will take less than a second.
 Bulk XRAM operations are why the Picocomputer 6502 was designed
 without paged memory.
 
-Function Reference
-===================
+Application Programmer Interface
+================================
 
 Much of this API is based on POSIX and FatFs. In particular, filesystem
 and console access should feel extremely familiar. However, some
-operations will have different argument orders or bitfield values than
+operations will have a different argument order or data structures than
 what you're used to. The reason for this becomes apparent when you start
 to work in assembly and fine tune short stacking and integer demotions.
 You might not notice the differences if you only work in C because the
@@ -232,14 +237,14 @@ optimized for short stacking the long argument. But you don't have to
 call f_lseek() from C, you can call the usual lseek() which has the
 traditional argument order.
 
-The RP6502 is built around FAT filesystems, which is the defacto standard
-for USB storage devices. POSIX filesystems are not fully compatible with
-FAT but there is a solid intersection of basic IO that is 100% compatible.
-You will see some familiar POSIX functions like open() and others like
-f_stat() which are similar to the POSIX function but tailored to FAT.
-Should it ever become necessary to have a POSIX stat(), it can be
-implemented in the C standard library or in an application by translating
-f_stat() data.
+The :doc:`os` is built around FAT filesystems, which is the defacto
+standard for unsecured USB storage devices. POSIX filesystems are not
+fully compatible with FAT but there is a solid intersection of basic IO
+that is 100% compatible. You will see some familiar POSIX functions like
+open() and others like f_stat() which are similar to the POSIX function
+but tailored to FAT. Should it ever become necessary to have a POSIX
+stat(), it can be implemented in the C standard library or in an
+application by translating f_stat() data.
 
 zxstack
 -------
@@ -258,7 +263,7 @@ xreg
 
    The only difference is that xregn() requires a count of the variadic
    arguments. Using xreg() avoids making a counting error and is
-   slightly smaller in CC65.
+   slightly smaller in cc65.
 
    Set extended registers on a PIX device. See the :doc:`ria` and
    :doc:`vga` documentation for what each register does. Setting
@@ -299,9 +304,9 @@ codepage
    Temporarily overrides the code page if non zero. Returns to system
    setting when 6502 stops. This is the encoding the filesystem is using
    and, if VGA is installed, the console and default font. If zero, the
-   system CP setting is selected and returned. If the requested code page
-   is unavailable, a different code page will be selected and returned.
-   For example: ``if (850!=codepage(850)) puts("error");``
+   system CP setting is selected and returned. If the requested code
+   page is unavailable, a different code page will be selected and
+   returned. For example: ``if (850!=codepage(850)) puts("error");``
 
    :param cp: code page or 0 for system setting.
 
@@ -318,7 +323,7 @@ lrand
 
    Generates a random number starting with entropy on the RIA. This is
    suitable for seeding a RNG or general use. The 16-bit rand() in the
-   CC65 library can be seeded with this by calling its non-standard
+   cc65 library can be seeded with this by calling its non-standard
    _randomize() function.
 
    :returns: Chaos. 0x0 <= x <= 0x7FFFFFFF
@@ -338,8 +343,8 @@ stdin_opt
 
    :param ctrl_bits: Bitmap of ASCII 0-31 defines which CTRL characters
       can abort an input. When CTRL key is pressed, any typed input
-      remains on the screen but the applicaion receives a line
-      containing only the CTRL character. e.g. CTRL-C + newline.
+      remains on the screen but the applicaion receives a line containing
+      only the CTRL character. e.g. CTRL-C + newline.
    :param str_length: 0-255 default 254. The input line editor won't
       allow user input greater than this length.
    :a regs: return, str_length
@@ -420,7 +425,7 @@ clock_gettimezone
          char dstname[5];  /* Name when daylight true, e.g. CEST */
       };
 
-   Populates a CC65 _timezone structure for the requested time. Use
+   Populates a cc65 _timezone structure for the requested time. Use
    `help set tz` on the monitor to learn about configuring your time
    zone.
 
@@ -585,27 +590,36 @@ lseek
 -----
 
 .. c:function:: off_t lseek(int fildes, off_t offset, int whence)
-.. c:function:: static long lseek_impl(long offset, char whence, int fildes)
+.. c:function:: static long f_lseek(long offset, char whence, int fildes)
 
    Move the read/write pointer. This is implemented internally with an
    argument order to take advantage of short stacking the offset.
 
    :param offset: How far you wish to seek.
-   :param whence: From whence you wish to seek.
+   :param whence: From whence you wish to seek. See table below.
    :param fildes: File descriptor from open().
-   :returns: Read/write position. -1 on error. If this value would be
-      too large for a long, the returned value will be 0x7FFFFFFF.
+   :returns: Read/write position. -1 on error. If this value would be too
+      large for a long, the returned value will be 0x7FFFFFFF.
    :a regs: fildes
    :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
       FR_TIMEOUT
-   :whence:
 
-      | SEEK_SET = 2
-      |    The start of the file plus offset bytes.
-      | SEEK_CUR = 0
-      |    The current location plus offset bytes.
-      | SEEK_END = 1
-      |    The size of the file plus offset bytes.
+   .. list-table::
+      :header-rows: 1
+      :widths: 25 25 25
+
+      * - Whence
+        - RIA_OP_LSEEK_LLVM
+        - RIA_OP_LSEEK_CC65
+      * - SEEK_SET
+        - 0
+        - 2
+      * - SEEK_CUR
+        - 1
+        - 0
+      * - SEEK_END
+        - 2
+        - 1
 
 
 unlink
