@@ -4,6 +4,7 @@ RP6502-OS
 
 RP6502 - Operating System
 
+
 Introduction
 ============
 
@@ -18,8 +19,6 @@ It provides stdio.h and unistd.h services to both `cc65
 compilers. There are also calls to access RP6502 features and manage
 FAT32 filesystems. ExFAT is ready to go and will be enabled when the
 patents expire.
-
-
 
 
 Memory Map
@@ -222,6 +221,7 @@ level's worth of assets will take less than a second.
 Bulk XRAM operations are why the Picocomputer 6502 was designed
 without paged memory.
 
+
 Application Programmer Interface
 ================================
 
@@ -246,9 +246,11 @@ but tailored to FAT. Should it ever become necessary to have a POSIX
 stat(), it can be implemented in the C standard library or in an
 application by translating f_stat() data.
 
-zxstack
+ZXSTACK
 -------
 .. c:function:: void zxstack(void);
+
+   |
 
    Abandon the xstack by resetting the xstack pointer. This is the only
    operation that doesn't require waiting for completion. You do not need
@@ -258,11 +260,13 @@ zxstack
    :Op code: RIA_OP_ZXSTACK 0x00
    :C proto: rp6502.h
 
-xreg
+XREG
 ----
 
 .. c:function:: int xreg(char device, char channel, unsigned char address, ...);
 .. c:function:: int xregn(char device, char channel, unsigned char address, unsigned count, ...);
+
+   |
 
    Using xreg() from C is preferred to avoid making a counting error.
    Count doesn't need to be sent in the ABI so both prototypes are correct.
@@ -289,10 +293,12 @@ xreg
    :errno: EINVAL, EIO
 
 
-phi2
+PHI2
 ----
 
 .. c:function:: int phi2(void)
+
+   |
 
    Retrieves the PHI2 setting from the RIA. Applications can use this
    for adjusting to or rejecting different clock speeds.
@@ -303,19 +309,21 @@ phi2
    :errno: will not fail
 
 
-codepage
---------
+CODE_PAGE
+---------
 
-.. c:function:: int codepage(int cp)
+.. c:function:: int code_page(int cp)
+
+   |
 
    Temporarily overrides the code page if non zero. Returns to system
    setting when 6502 stops. This is the encoding the filesystem is using
    and, if VGA is installed, the console and default font. If zero, the
    system CP setting is selected and returned. If the requested code
    page is unavailable, a different code page will be selected and
-   returned. For example: ``if (850!=codepage(850)) puts("error");``
+   returned. For example: ``if (850!=code_page(850)) puts("error");``
 
-   :Op code: RIA_OP_CODEPAGE 0x03
+   :Op code: RIA_OP_CODE_PAGE 0x03
    :C proto: rp6502.h
    :param cp: code page or 0 for system setting.
    :returns: The code page. One of: 437, 720, 737, 771, 775, 850, 852,
@@ -328,6 +336,8 @@ lrand
 -----
 
 .. c:function:: long lrand(void)
+
+   |
 
    Generates a random number starting with entropy on the RIA. This is
    suitable for seeding a RNG or general use. The 16-bit rand() in the
@@ -344,6 +354,8 @@ stdin_opt
 ---------
 
 .. c:function:: int stdin_opt(unsigned long ctrl_bits, unsigned char str_length)
+
+   |
 
    Additional options for the STDIN line editor. Set the str_length to
    your buffer size - 1 to make gets() safe. This can also guarantee no
@@ -370,6 +382,8 @@ clock
 
 .. c:function:: unsigned long clock(void)
 
+   |
+
    Obtain the value of a monotonic clock that updates 100 times per
    second. Wraps approximately every 497 days.
 
@@ -384,6 +398,8 @@ clock_getres
 
 .. c:function:: int clock_getres(clockid_t clock_id, struct timespec *res)
 
+   |
+
    .. code-block:: c
 
       struct timespec {
@@ -391,7 +407,7 @@ clock_getres
          int32_t tv_nsec; /* nanoseconds */
       };
 
-   Obtains the clock resolution for `res`.
+   Obtains the clock resolution.
 
    :Op code: RIA_OP_CLOCK_GETRES 0x10
    :C proto: time.h
@@ -406,7 +422,9 @@ clock_gettime
 
 .. c:function:: int clock_gettime(clockid_t clock_id, struct timespec *tp)
 
-   Obtains the current time for `tp`.
+   |
+
+   Obtains the current time.
 
    :Op code: RIA_OP_CLOCK_GETTIME 0x11
    :C proto: time.h
@@ -421,7 +439,9 @@ clock_settime
 
 .. c:function:: int clock_settime(clockid_t clock_id, const struct timespec *tp)
 
-   Sets the current time as `tp`.
+   |
+
+   Sets the current time.
 
    :Op code: RIA_OP_CLOCK_SETTIME 0x12
    :C proto: time.h
@@ -446,7 +466,7 @@ clock_gettimezone
          char dstname[5];  /* Name when daylight true, e.g. CEST */
       };
 
-   Populates a cc65 _timezone structure for the requested time. Use
+   Returns a cc65 _timezone structure for the requested time. Use
    `help set tz` on the monitor to learn about configuring your time
    zone.
 
@@ -466,6 +486,8 @@ open
 ----
 
 .. c:function:: int open(const char *path, int oflag)
+
+   |
 
    Create a connection between a file and a file descriptor. Up to 8
    files may be open at once.
@@ -504,9 +526,13 @@ close
 
 .. c:function:: int close(int fildes)
 
+   |
+
    Finish pending writes and release the file descriptor. File descriptor
    will rejoin the pool available for use by open().
 
+   :Op code: RIA_OP_CLOSE 0x15
+   :C proto: fcntl.h
    :param fildes: File descriptor from open().
    :returns: 0 on success. -1 on error.
    :a regs: return, fildes
@@ -519,8 +545,13 @@ read
 
 .. c:function:: int read(int fildes, void *buf, unsigned count)
 
-   Read `count` bytes from a file to a buffer.
+   |
 
+   Read `count` bytes from a file to a buffer. This is implemented in
+   the compiler library as a series of calls to read_xstack().
+
+   :Op code: None
+   :C proto: unistd.h
    :param buf: Destination for the returned data.
    :param count: Quantity of bytes to read. 0x7FFF max.
    :param fildes: File descriptor from open().
@@ -536,8 +567,12 @@ read_xstack
 
 .. c:function:: int read_xstack(void *buf, unsigned count, int fildes)
 
+   |
+
    Read `count` bytes from a file to xstack.
 
+   :Op code: RIA_OP_READ_XSTACK 0x16
+   :C proto: rp6502.h
    :param buf: Destination for the returned data.
    :param count: Quantity of bytes to read. 0x100 max.
    :param fildes: File descriptor from open().
@@ -552,8 +587,12 @@ read_xram
 
 .. c:function:: int read_xram(unsigned buf, unsigned count, int fildes)
 
+   |
+
    Read `count` bytes from a file to xram.
 
+   :Op code: RIA_OP_READ_XRAM 0x17
+   :C proto: rp6502.h
    :param buf: Destination for the returned data.
    :param count: Quantity of bytes to read. 0x7FFF max.
    :param fildes: File descriptor from open().
@@ -569,8 +608,13 @@ write
 
 .. c:function:: int write(int fildes, const void *buf, unsigned count)
 
-   Write `count` bytes from buffer to a file.
+   |
 
+   Write `count` bytes from buffer to a file. This is implemented in
+   the compiler library as a series of calls to write_xstack().
+
+   :Op code: None
+   :C proto: unistd.h
    :param buf: Location of the data.
    :param count: Quantity of bytes to write. 0x7FFF max.
    :param fildes: File descriptor from open().
@@ -586,8 +630,12 @@ write_xstack
 
 .. c:function:: int write_xstack(const void *buf, unsigned count, int fildes)
 
+   |
+
    Write `count` bytes from xstack to a file.
 
+   :Op code: RIA_OP_WRITE_XSTACK 0x18
+   :C proto: rp6502.h
    :param buf: Location of the data.
    :param count: Quantity of bytes to write. 0x100 max.
    :param fildes: File descriptor from open().
@@ -603,8 +651,12 @@ write_xram
 
 .. c:function:: int write_xram(unsigned buf, unsigned count, int fildes)
 
+   |
+
    Write `count` bytes from xram to a file.
 
+   :Op code: RIA_OP_WRITE_XRAM 0x19
+   :C proto: rp6502.h
    :param buf: Location of the data.
    :param count: Quantity of bytes to write. 0x7FFF max.
    :param fildes: File descriptor from open().
@@ -618,12 +670,16 @@ write_xram
 lseek
 -----
 
-.. c:function:: off_t lseek(int fildes, off_t offset, int whence)
 .. c:function:: static long f_lseek(long offset, char whence, int fildes)
+.. c:function:: off_t lseek(int fildes, off_t offset, int whence)
 
-   Move the read/write pointer. This is implemented internally with an
-   argument order to take advantage of short stacking the offset.
+   |
 
+   Move the read/write pointer. The OS uses the ABI format of f_seek().
+   An lseek() compatible wrapper is provided with the compiler library.
+
+   :Op code: See table below.
+   :C proto: f_lseek: rp6502.h, lseek: unistd.h
    :param offset: How far you wish to seek.
    :param whence: From whence you wish to seek. See table below.
    :param fildes: File descriptor from open().
@@ -637,9 +693,12 @@ lseek
       :header-rows: 1
       :widths: 25 25 25
 
-      * - Whence
+      * -
         - RIA_OP_LSEEK_LLVM
         - RIA_OP_LSEEK_CC65
+      * - RIA_OP_LSEEK
+        - 0x1D
+        - 0x1A
       * - SEEK_SET
         - 0
         - 2
@@ -656,8 +715,12 @@ unlink
 
 .. c:function:: int unlink (const char* name)
 
+   |
+
    Removes a file or directory from the volume.
 
+   :Op code: RIA_OP_UNLINK 0x1B
+   :C proto: unistd.h
    :param name: File or directory name to unlink (remove).
    :returns: 0 on success. -1 on error.
    :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
@@ -671,8 +734,12 @@ rename
 
 .. c:function:: int rename (const char* oldname, const char* newname)
 
+   |
+
    Renames and/or moves a file or directory.
 
+   :Op code: RIA_OP_RENAME 0x1C
+   :C proto: stdio.h
    :param oldname: Existing file or directory name to rename.
    :param newname: New object name.
    :returns: 0 on success. -1 on error.
@@ -687,9 +754,17 @@ exit
 
 .. c:function:: void exit(int status)
 
+   |
+
    Halt the 6502 and return the console to RP6502 monitor control. This
    is the only operation that does not return. RESB will be pulled down
    before the next instruction can execute. Status is currently ignored
    but will be used in the future.
 
-   :param status: 0 is good, !0 for error.
+   In general, dropping the user back to the monitor is discouraged. But
+   calling exit() or falling off main() is preferred to locking up.
+
+   :Op code: RIA_OP_EXIT 0xFF
+   :C proto: stdlib.h
+   :a regs: status
+   :param status: 0 is success, 1-255 for error.

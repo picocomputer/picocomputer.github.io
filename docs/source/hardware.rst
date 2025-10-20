@@ -14,13 +14,13 @@ The manufacturing lifetime of this project is expected to extend into a time
 where hobbyist ASICs are democratized.
 
 Schematic
----------
+=========
 
 `Picocomputer 6502 <_static/2023-06-07-rp6502.pdf>`_ (pdf)
 
 
 Buying a Picocomputer
----------------------
+=====================
 
 You will need to place two orders. First, for the Printed Circuit Board (PCB).
 Second, for the electronic components. Some PCB factories will do the
@@ -53,6 +53,7 @@ an artifact of early development.
 Most VGA-to-HDMI cables can get power from the Picocomputer. Some will need
 external power applied. All are zero lag.
 
+
 Step 1. Watch the Videos
 ========================
 
@@ -64,6 +65,7 @@ future. You can homebrew a 6502 without a soldering iron. Choose your path:
 
 `Here's the video where I solder one myself.
 <https://youtu.be/bwgLXEQdq20>`_
+
 
 Step 2. Order Printed Circuit Boards
 ====================================
@@ -84,6 +86,7 @@ There are a ton of options you can change if you like. The defaults will get
 you a classic green and white board with lead (Pb) HASL. Consider getting the
 lead-free HASL upgrade if the other four boards will be kicking around a drawer
 for the next 20 years.
+
 
 Step 3. Order Assembly
 ======================
@@ -113,6 +116,7 @@ projects far more complex than this. Even if you don't understand what you are
 doing, they can figure it out by looking at the zip files. Really, they do this
 all day long, and will probably enjoy the easy win.
 
+
 Step 4. More Parts
 ==================
 
@@ -129,6 +133,7 @@ etc. If you forget, no problem becuase the PCB silkscreen has location info.
 
 If something is out of stock, consult the substitution notes below.
 
+
 Step 5. Pi Pico Firmware
 =========================
 
@@ -140,6 +145,7 @@ into a computer. The Pi Pico 2 will appear as a storage device. Copy the RIA UF2
 file to make a :doc:`ria_w` and the VGA UF2 file to make a :doc:`vga`. It should
 take less than 30 seconds to copy. The LED turns on when done.
 
+
 Acrylic Sandwich Case
 =====================
 
@@ -147,6 +153,7 @@ The circuit board is 150 x 100mm (4x6 inches). I regularly see vendors on
 Amazon and eBay selling 150 x 100 x 3mm acrylic sheets. You'll need to drill
 3mm holes for M3 standoffs. The recommended standoff height is >=16mm for the
 top and >=3.5mm for the bottom.
+
 
 Full Parts List (All Components)
 =================================
@@ -157,6 +164,7 @@ Full Parts List (All Components)
    :file: _static/rp6502-reva-full.csv
    :header-rows: 1
 
+
 Active Parts List (ICs Only)
 =============================
 
@@ -165,6 +173,7 @@ Active Parts List (ICs Only)
 .. csv-table::
    :file: _static/rp6502-reva-active.csv
    :header-rows: 1
+
 
 Pi Picos Parts List
 ===================

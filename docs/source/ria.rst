@@ -4,6 +4,7 @@ RP6502-RIA
 
 RP6502 - RP6502 Interface Adapter
 
+
 Introduction
 ============
 
@@ -44,6 +45,7 @@ designed for use by developer tools. The rp6502.py script, included
 with the examples and templates, can be used to automate packaging of a
 ROM and executing it.
 
+
 Reset
 =====
 
@@ -70,6 +72,7 @@ reboot button is hooked up to the RIA RUN pin. Rebooting the :doc:`ria`
 like this will cause any configured boot ROM to load, like at power
 on. Resetting the 6502 from keyboard or UART will only return you to
 the RP6502 console.
+
 
 Registers
 =========
@@ -172,7 +175,6 @@ Registers
        | $FFFF
      - BRK/IRQB
      - 6502 vector.
-
 
 UART
 ----
@@ -317,6 +319,7 @@ the value to be stored.
 So we have seven PIX devices, each with 16 internal channels having 256
 16-bit registers. The idea is to use these extended registers to
 configure virtual hardware and map it into extended memory.
+
 
 Keyboard
 ========

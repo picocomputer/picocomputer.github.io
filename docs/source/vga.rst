@@ -507,11 +507,11 @@ that set these.
       * 2 - SXGA (5:4) 1280x1024
 
   * - $1:F:01
-    - CODEPAGE
+    - CODE_PAGE
     - Set code page for built-in font.
   * - $1:F:02
     - UART
-    - Set baud rate. Reserved, not implemented.
+    - Set bit rate. Reserved, not implemented.
   * - $1:F:03
     - UART_TX
     - Alternate path for UART Tx when using backchannel.

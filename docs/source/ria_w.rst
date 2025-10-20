@@ -4,12 +4,14 @@ RP6502-RIA-W
 
 RP6502 - RP6502 Interface Adapter W
 
+
 Introduction
 ============
 
 The **RP6502 Interface Adapter W** is a Raspberry Pi Pico 2 W running
 the RP6502-RIA-W firmware. The :doc:`ria_w` provides all the features
 of the :doc:`ria` plus wireless services, as described below.
+
 
 WiFi Setup
 ==========
@@ -37,6 +39,7 @@ via the console interface.
   Use the ``status`` command to view current WiFi connection and
   settings.
 
+
 Network Time Protocol (NTP)
 ===========================
 
@@ -49,6 +52,7 @@ servers when connected. Check NTP status with the ``status`` command.
   automatic if your locale observes them.
 
 Once WiFi and time zone are configured, timekeeping is automatic.
+
 
 Modem Emulation
 ===============
@@ -87,6 +91,7 @@ TCP.
 
 "Telephone Numbers" are saved immediately and are not linked to
 profiles.
+
 
 Bluetooth
 =========

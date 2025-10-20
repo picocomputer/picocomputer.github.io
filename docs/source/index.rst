@@ -20,6 +20,7 @@ then rethink everything else.
    :width: 600
    :alt: Picocomputer Photo
 
+
 Key Features
 ============
 
@@ -30,8 +31,9 @@ Key Features
 - **Protected Operating System**
 - **USB** for Keyboard, Mouse, and Gamepads
 - **Bluetooth LE** for Keyboard, Mouse, and Gamepads
-- **WiFi** for modem emulation
+- **WiFi** modem emulation
 - **Real Time Clock** with DST and NTP
+
 
 Resources
 =========
@@ -50,6 +52,7 @@ made during development.
 - **YouTube:**
   https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r
 
+
 How To Obtain
 =============
 
@@ -58,6 +61,7 @@ been built by hundreds of people. You can also have a single unit manufactured
 especially for you in China. The whole process is documented and well tested.
 
 - :doc:`hardware`: Schematic and manufacturing information.
+
 
 Datasheets
 ==========
