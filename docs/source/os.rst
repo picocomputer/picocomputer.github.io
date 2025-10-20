@@ -12,9 +12,9 @@ you can call from the 6502. The :doc:`os` does not use any 6502 system RAM
 and will not interfere with developing a native 6502 OS.
 
 The :doc:`os` is loosely based on POSIX with an Application Binary
-Interface (ABI) similar to `cc65 <https://cc65.github.io>`_'s fastcall.
+Interface (ABI) similar to `cc65 <https://cc65.github.io>`__'s fastcall.
 It provides stdio.h and unistd.h services to both `cc65
-<https://cc65.github.io>`_ and `llvm-mos <https://llvm-mos.org/>`_
+<https://cc65.github.io>`__ and `llvm-mos <https://llvm-mos.org/>`_
 compilers. There are also calls to access RP6502 features and manage
 FAT32 filesystems. ExFAT is ready to go and will be enabled when the
 patents expire.
@@ -61,7 +61,7 @@ Application Binary Interface (ABI)
 The binary interface for calling the operating system is based on
 fastcall from the `cc65 internals
 <https://cc65.github.io/doc/cc65-intern.html>`_. The :doc:`os`
-fastcall does not use or require anything from cc65 and is easy for
+does not use or require anything from cc65 and is easy for
 assembly programmers to use. At its core, the OS ABI is four simple rules.
 
 * Stack arguments are pushed left to right.
@@ -250,10 +250,13 @@ zxstack
 -------
 .. c:function:: void zxstack(void);
 
-Abandon the xstack by resetting the xstack pointer. This is the only
-operation that doesn't require waiting for completion. You do not need
-to call this for failed operations. It can be useful if you want to
-quickly ignore part of a returned structure.
+   Abandon the xstack by resetting the xstack pointer. This is the only
+   operation that doesn't require waiting for completion. You do not need
+   to call this for failed operations. It can be useful if you want to
+   quickly ignore part of a returned structure.
+
+   :Op code: RIA_OP_ZXSTACK 0x00
+   :C proto: rp6502.h
 
 xreg
 ----
@@ -261,26 +264,28 @@ xreg
 .. c:function:: int xreg(char device, char channel, unsigned char address, ...);
 .. c:function:: int xregn(char device, char channel, unsigned char address, unsigned count, ...);
 
-   The only difference is that xregn() requires a count of the variadic
-   arguments. Using xreg() avoids making a counting error and is
-   slightly smaller in cc65.
+   Using xreg() from C is preferred to avoid making a counting error.
+   Count doesn't need to be sent in the ABI so both prototypes are correct.
 
-   Set extended registers on a PIX device. See the :doc:`ria` and
+   The variadic argument is a list of ints to be stored in extended registers
+   starting at address on the specified device and channel.
+   See the :doc:`ria` and
    :doc:`vga` documentation for what each register does. Setting
-   extended registers can fail, which you should use for feature
+   extended registers can fail, which you can use for feature
    detection. EINVAL means the device responded with a negative
    acknowledgement. EIO means there was a timeout waiting for ack/nak.
 
-   This is how you add virtual hardware to extended RAM. The 64K of
-   system RAM is mapped by address decode logic ICs. The 64K of extended
-   RAM is mapped with this command. Mapping a real sound chip to system
-   RAM requires schematics and wires. Mapping a virtual sound chip to
-   extended RAM is a single xreg() command.
+   This is how you add virtual hardware to extended RAM. Both the :doc:`ria` and
+   :doc:`vga` have a selection of virtual devices you can install. You can also
+   make your own hardware for the PIX bus and configure it with this call.
 
-   :param device: PIX device ID. 0-6
+   :Op code: RIA_OP_XREG 0x01
+   :C proto: rp6502.h
+   :param device: PIX device ID. 0:RIA, 1:VGA, 2-6:unassigned
    :param channel: PIX channel. 0-15
    :param address: PIX address. 0-255
    :param ...: 16 bit integers to set starting at address.
+   :a regs: return
    :errno: EINVAL, EIO
 
 
@@ -292,6 +297,8 @@ phi2
    Retrieves the PHI2 setting from the RIA. Applications can use this
    for adjusting to or rejecting different clock speeds.
 
+   :Op code: RIA_OP_PHI2 0x02
+   :C proto: rp6502.h
    :returns: The 6502 clock speed in kHz. Typically 800 <= x <= 8000.
    :errno: will not fail
 
@@ -308,8 +315,9 @@ codepage
    page is unavailable, a different code page will be selected and
    returned. For example: ``if (850!=codepage(850)) puts("error");``
 
+   :Op code: RIA_OP_CODEPAGE 0x03
+   :C proto: rp6502.h
    :param cp: code page or 0 for system setting.
-
    :returns: The code page. One of: 437, 720, 737, 771, 775, 850, 852,
       855, 857, 860, 861, 862, 863, 864, 865, 866, 869, 932, 936, 949,
       950.
@@ -326,6 +334,8 @@ lrand
    cc65 library can be seeded with this by calling its non-standard
    _randomize() function.
 
+   :Op code: RIA_OP_LRAND 0x04
+   :C proto: rp6502.h
    :returns: Chaos. 0x0 <= x <= 0x7FFFFFFF
    :errno: will not fail
 
@@ -335,12 +345,15 @@ stdin_opt
 
 .. c:function:: int stdin_opt(unsigned long ctrl_bits, unsigned char str_length)
 
-   *** Experimental *** (likely to be replaced with stty-like something)
-
    Additional options for the STDIN line editor. Set the str_length to
    your buffer size - 1 to make gets() safe. This can also guarantee no
    split lines when using fgets() on STDIN.
 
+   *** Experimental *** Likely to be replaced with stty-like something. Drop your
+   thoughts on the forums if you have specific needs.
+
+   :Op code: RIA_OP_STDIN_OPT 0x05
+   :C proto: rp6502.h
    :param ctrl_bits: Bitmap of ASCII 0-31 defines which CTRL characters
       can abort an input. When CTRL key is pressed, any typed input
       remains on the screen but the applicaion receives a line containing
@@ -360,6 +373,8 @@ clock
    Obtain the value of a monotonic clock that updates 100 times per
    second. Wraps approximately every 497 days.
 
+   :Op code: RIA_OP_CLOCK 0x0F
+   :C proto: time.h
    :returns: 1/100 second monotonic clock
    :errno: will not fail
 
@@ -376,8 +391,10 @@ clock_getres
          int32_t tv_nsec; /* nanoseconds */
       };
 
-   Copies the clock resolution to `res`.
+   Obtains the clock resolution for `res`.
 
+   :Op code: RIA_OP_CLOCK_GETRES 0x10
+   :C proto: time.h
    :param clock_id: 0 for CLOCK_REALTIME.
    :returns: 0 on success. -1 on error.
    :a regs: return, clock_id
@@ -389,8 +406,10 @@ clock_gettime
 
 .. c:function:: int clock_gettime(clockid_t clock_id, struct timespec *tp)
 
-   Copies the current time to `tp`.
+   Obtains the current time for `tp`.
 
+   :Op code: RIA_OP_CLOCK_GETTIME 0x11
+   :C proto: time.h
    :param clock_id: 0 for CLOCK_REALTIME.
    :returns: 0 on success. -1 on error.
    :a regs: return, clock_id
@@ -402,8 +421,10 @@ clock_settime
 
 .. c:function:: int clock_settime(clockid_t clock_id, const struct timespec *tp)
 
-   Sets the current time to `tp`.
+   Sets the current time as `tp`.
 
+   :Op code: RIA_OP_CLOCK_SETTIME 0x12
+   :C proto: time.h
    :param clock_id: 0 for CLOCK_REALTIME.
    :returns: 0 on success. -1 on error.
    :a regs: return, clock_id
@@ -429,6 +450,11 @@ clock_gettimezone
    `help set tz` on the monitor to learn about configuring your time
    zone.
 
+   *** Experimental *** time zones in cc65 are incomplete probably because
+   no other 6502 OS supports them.
+
+   :Op code: RIA_OP_CLOCK_GETTIMEZONE 0x13
+   :C proto: None, Experimental
    :param time: time_t compatible integer.
    :param clock_id: 0 for CLOCK_REALTIME.
    :returns: 0 on success. -1 on error.
@@ -441,8 +467,11 @@ open
 
 .. c:function:: int open(const char *path, int oflag)
 
-   Create a connection between a file and a file descriptor.
+   Create a connection between a file and a file descriptor. Up to 8
+   files may be open at once.
 
+   :Op code: RIA_OP_OPEN 0x14
+   :C proto: fcntl.h
    :param path: Pathname to a file.
    :param oflag: Bitfield of options.
    :returns: File descriptor. -1 on error.
@@ -475,8 +504,8 @@ close
 
 .. c:function:: int close(int fildes)
 
-   Release the file descriptor. File descriptor will rejoin the pool
-   available for use by open().
+   Finish pending writes and release the file descriptor. File descriptor
+   will rejoin the pool available for use by open().
 
    :param fildes: File descriptor from open().
    :returns: 0 on success. -1 on error.
