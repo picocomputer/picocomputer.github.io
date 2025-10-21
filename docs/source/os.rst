@@ -975,6 +975,96 @@ CLOSEDIR
    :errno: EINVAL, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
 
 
+TELLDIR
+-------
+
+.. c:function:: long f_telldir (int dirdes)
+
+   |
+
+   Returns the read position of the directory descriptor.
+
+   :Op code: RIA_OP_TELLDIR 0x23
+   :C proto: rp6502.h
+   :param dirdes: Directory descriptor from f_opendir().
+   :returns: Read position. -1 on error.
+   :a regs: dirdes
+   :errno: EINVAL, EBADF
+
+
+SEEKDIR
+-------
+
+.. c:function:: int f_seekdir (long offs, int dirdes)
+
+   |
+
+   Set the read position for the directory descriptor. Internally,
+   the FatFs directory read position can only move forward by one,
+   so use this for convienence, not performance.
+
+   :Op code: RIA_OP_SEEKDIR 0x24
+   :C proto: rp6502.h
+   :param dirdes: Directory descriptor from f_opendir().
+   :returns: Read position. -1 on error.
+   :a regs: return, dirdes
+   :errno: EINVAL, EBADF, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+
+
+REWINDDIR
+---------
+
+.. c:function:: int f_rewinddir (int dirdes)
+
+   |
+
+   Rewind the read position of the directory descriptor.
+
+   :Op code: RIA_OP_REWINDDIR 0x25
+   :C proto: rp6502.h
+   :param dirdes: Directory descriptor from f_opendir().
+   :returns: 0 on success. -1 on error.
+   :a regs: dirdes
+   :errno: EINVAL, EBADF, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+
+
+CHMOD
+-----
+
+.. c:function:: int f_chmod (const char* path, unsigned char attr, unsigned char mask)
+
+   |
+
+   Change the attributes of a file or directory.
+
+   :Op code: RIA_OP_CHMOD 0x26
+   :C proto: rp6502.h
+   :param path: Pathname to a file or directory.
+   :param attr: New bitfield of attributes. See table.
+   :param mask: Only attributes with bits set here will be changed.
+   :returns: 0 on success. -1 on error.
+   :a regs: return, mask
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+
+   .. list-table::
+      :header-rows: 1
+      :widths: 25 25
+
+      * - Attribute
+        - Bit
+      * - Read Only
+        - 0x01
+      * - Hidden
+        - 0x02
+      * - System
+        - 0x04
+      * - Directory
+        - 0x10
+      * - Archive
+        - 0x20
+
+
+
 EXIT
 ----
 
