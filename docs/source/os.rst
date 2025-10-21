@@ -249,7 +249,7 @@ application by translating f_stat() data.
 
 ZXSTACK
 -------
-.. c:function:: void zxstack(void);
+.. c:function:: void zxstack (void);
 
    |
 
@@ -264,8 +264,8 @@ ZXSTACK
 XREG
 ----
 
-.. c:function:: int xreg(char device, char channel, unsigned char address, ...);
-.. c:function:: int xregn(char device, char channel, unsigned char address, unsigned count, ...);
+.. c:function:: int xreg (char device, char channel, unsigned char address, ...);
+.. c:function:: int xregn (char device, char channel, unsigned char address, unsigned count, ...);
 
    |
 
@@ -297,7 +297,7 @@ XREG
 PHI2
 ----
 
-.. c:function:: int phi2(void)
+.. c:function:: int phi2 (void)
 
    |
 
@@ -313,7 +313,7 @@ PHI2
 CODE_PAGE
 ---------
 
-.. c:function:: int code_page(int cp)
+.. c:function:: int code_page (int cp)
 
    |
 
@@ -336,7 +336,7 @@ CODE_PAGE
 LRAND
 -----
 
-.. c:function:: long lrand(void)
+.. c:function:: long lrand (void)
 
    |
 
@@ -354,7 +354,7 @@ LRAND
 STDIN_OPT
 ---------
 
-.. c:function:: int stdin_opt(unsigned long ctrl_bits, unsigned char str_length)
+.. c:function:: int stdin_opt (unsigned long ctrl_bits, unsigned char str_length)
 
    |
 
@@ -381,7 +381,7 @@ STDIN_OPT
 ERRNO_OPT
 ---------
 
-.. c:function:: int errno_opt(char option)
+.. c:function:: int errno_opt (char option)
 
    |
 
@@ -500,7 +500,7 @@ ERRNO_OPT
 CLOCK
 -----
 
-.. c:function:: unsigned long clock(void)
+.. c:function:: unsigned long clock (void)
 
    |
 
@@ -516,7 +516,7 @@ CLOCK
 CLOCK_GETRES
 ------------
 
-.. c:function:: int clock_getres(clockid_t clock_id, struct timespec *res)
+.. c:function:: int clock_getres (clockid_t clock_id, struct timespec *res)
 
    |
 
@@ -540,7 +540,7 @@ CLOCK_GETRES
 CLOCK_GETTIME
 -------------
 
-.. c:function:: int clock_gettime(clockid_t clock_id, struct timespec *tp)
+.. c:function:: int clock_gettime (clockid_t clock_id, struct timespec *tp)
 
    |
 
@@ -557,7 +557,7 @@ CLOCK_GETTIME
 CLOCK_SETTIME
 -------------
 
-.. c:function:: int clock_settime(clockid_t clock_id, const struct timespec *tp)
+.. c:function:: int clock_settime (clockid_t clock_id, const struct timespec *tp)
 
    |
 
@@ -574,7 +574,7 @@ CLOCK_SETTIME
 CLOCK_GETTIMEZONE
 -----------------
 
-.. c:function:: int clock_gettimezone(uint32_t time, clockid_t clock_id, struct _timezone *tz)
+.. c:function:: int clock_gettimezone (uint32_t time, clockid_t clock_id, struct _timezone *tz)
 
    .. code-block:: c
 
@@ -605,7 +605,7 @@ CLOCK_GETTIMEZONE
 OPEN
 ----
 
-.. c:function:: int open(const char *path, int oflag)
+.. c:function:: int open (const char *path, int oflag)
 
    |
 
@@ -644,7 +644,7 @@ OPEN
 CLOSE
 -----
 
-.. c:function:: int close(int fildes)
+.. c:function:: int close (int fildes)
 
    |
 
@@ -663,7 +663,7 @@ CLOSE
 READ
 ----
 
-.. c:function:: int read(int fildes, void *buf, unsigned count)
+.. c:function:: int read (int fildes, void *buf, unsigned count)
 
    |
 
@@ -685,7 +685,7 @@ READ
 READ_XSTACK
 -----------
 
-.. c:function:: int read_xstack(void *buf, unsigned count, int fildes)
+.. c:function:: int read_xstack (void *buf, unsigned count, int fildes)
 
    |
 
@@ -705,7 +705,7 @@ READ_XSTACK
 READ_XRAM
 ---------
 
-.. c:function:: int read_xram(unsigned buf, unsigned count, int fildes)
+.. c:function:: int read_xram (unsigned buf, unsigned count, int fildes)
 
    |
 
@@ -726,7 +726,7 @@ READ_XRAM
 WRITE
 -----
 
-.. c:function:: int write(int fildes, const void *buf, unsigned count)
+.. c:function:: int write (int fildes, const void *buf, unsigned count)
 
    |
 
@@ -748,7 +748,7 @@ WRITE
 WRITE_XSTACK
 ------------
 
-.. c:function:: int write_xstack(const void *buf, unsigned count, int fildes)
+.. c:function:: int write_xstack (const void *buf, unsigned count, int fildes)
 
    |
 
@@ -769,7 +769,7 @@ WRITE_XSTACK
 WRITE_XRAM
 ----------
 
-.. c:function:: int write_xram(unsigned buf, unsigned count, int fildes)
+.. c:function:: int write_xram (unsigned buf, unsigned count, int fildes)
 
    |
 
@@ -790,13 +790,16 @@ WRITE_XRAM
 LSEEK
 -----
 
-.. c:function:: static long f_lseek(long offset, char whence, int fildes)
-.. c:function:: off_t lseek(int fildes, off_t offset, int whence)
+.. c:function:: static long f_lseek (long offset, char whence, int fildes)
+.. c:function:: off_t lseek (int fildes, off_t offset, int whence)
 
    |
 
    Move the read/write pointer. The OS uses the ABI format of f_seek().
    An lseek() compatible wrapper is provided with the compiler library.
+
+   This can also be used to obtain the current read/write position
+   with ``f_lseek(0, SEEK_CUR, fd)``.
 
    :Op code: See table below.
    :C proto: f_lseek: rp6502.h, lseek: unistd.h
@@ -833,7 +836,7 @@ LSEEK
 UNLINK
 ------
 
-.. c:function:: int unlink(const char* name)
+.. c:function:: int unlink (const char* name)
 
    |
 
@@ -852,7 +855,7 @@ UNLINK
 RENAME
 ------
 
-.. c:function:: int rename(const char* oldname, const char* newname)
+.. c:function:: int rename (const char* oldname, const char* newname)
 
    |
 
@@ -872,7 +875,7 @@ RENAME
 SYNCFS
 ------
 
-.. c:function:: int syncfs(int fildes)
+.. c:function:: int syncfs (int fildes)
 
    |
 
@@ -915,13 +918,67 @@ STAT
    :param dirent: Returned f_stat_t data.
    :returns: 0 on success. -1 on error.
    :a regs: return, dirent
-   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+
+
+OPENDIR
+-------
+
+.. c:function:: int f_opendir (const char* name)
+
+   |
+
+   Create a connection between a directory and a directory descriptor. Up to 8
+   directories may be open at once.
+
+   :Op code: RIA_OP_OPENDIR 0x20
+   :C proto: rp6502.h
+   :param name: Pathname to a directory.
+   :returns: Directory descriptor. -1 on error.
+   :a regs: return
+   :errno: EINVAL, EMFILE, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_OBJECT, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE, FR_TOO_MANY_OPEN_FILES
+
+
+READDIR
+-------
+
+.. c:function:: int f_readdir (f_stat_t* dirent, int dirdes)
+
+   |
+
+   Returns file or directory info for directory descriptor.
+
+   :Op code: RIA_OP_READDIR 0x21
+   :C proto: rp6502.h
+   :param path: Pathname to a directory entry.
+   :param dirent: Returned f_stat_t data.
+   :returns: 0 on success. -1 on error.
+   :a regs: return, dirent
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+
+
+CLOSEDIR
+--------
+
+.. c:function:: int f_closedir (int dirdes)
+
+   |
+
+   Release the directory descriptor. Directory descriptor
+   will rejoin the pool available for use by f_opendir().
+
+   :Op code: RIA_OP_CLOSEDIR 0x22
+   :C proto: rp6502.h
+   :param dirdes: Directory descriptor from f_opendir().
+   :returns: 0 on success. -1 on error.
+   :a regs: return, dirdes
+   :errno: EINVAL, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
 
 
 EXIT
 ----
 
-.. c:function:: void exit(int status)
+.. c:function:: void exit (int status)
 
    |
 
