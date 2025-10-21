@@ -54,10 +54,10 @@ and other hardware added "up". For example: VIA0 at $FFD0, VIA1 at
 $FFC0, SID0 at $FF00, and SID1 at $FF20.
 
 
-Application Binary Interface (ABI)
-==================================
+Application Binary Interface
+============================
 
-The binary interface for calling the operating system is based on
+The ABI for calling the operating system is based on
 fastcall from the `cc65 internals
 <https://cc65.github.io/doc/cc65-intern.html>`_. The :doc:`os`
 does not use or require anything from cc65 and is easy for
@@ -332,7 +332,7 @@ CODE_PAGE
    :errno: will not fail
 
 
-lrand
+LRAND
 -----
 
 .. c:function:: long lrand(void)
@@ -350,7 +350,7 @@ lrand
    :errno: will not fail
 
 
-stdin_opt
+STDIN_OPT
 ---------
 
 .. c:function:: int stdin_opt(unsigned long ctrl_bits, unsigned char str_length)
@@ -377,7 +377,125 @@ stdin_opt
    :errno: will not fail
 
 
-clock
+ERRNO_OPT
+---------
+
+.. c:function:: int errno_opt(char option)
+
+   |
+
+   :doc:`os` calls will set RIA_ERRNO when an error occurs. The compiler
+   libraries use different constants in errno.h. Both cc65
+   and llvm-mos set this automatically for C programs. The RIA_ERRNO value will not
+   change until it is set. Note that the C `errno` maps directly to RIA_ERRNO.
+
+   :doc:`os` will map FatFs errors onto errno. RP6502 emulation and simulation
+   software is expected to map their native errors as well. The table below
+   shows the FatFs mappings. Because FatFs is to integral to the OS,
+   calls are documented here with their native FatFs names to assist when
+   cross referencing the `FatFs documentation <https://elm-chan.org/fsw/ff/>`__.
+
+   :Op code: RIA_OP_ERRNO_OPT 0x06
+   :C proto: None
+   :param option: One of the values from the table below.
+   :a regs: return, option
+   :returns: 0 on success
+   :errno: EINVAL
+
+   .. list-table::
+      :header-rows: 1
+      :widths: 25 25 25 25
+
+      * -
+        - cc65
+        - llvm_mos
+        - FatFs
+      * - option
+        - 1
+        - 2
+        -
+      * - ENOENT
+        - 1
+        - 2
+        - FR_NO_FILE, FR_NO_PATH
+      * - ENOMEM
+        - 2
+        - 12
+        - FR_NOT_ENOUGH_CORE
+      * - EACCES
+        - 3
+        - 23
+        - FR_DENIED, FR_WRITE_PROTECTED
+      * - ENODEV
+        - 4
+        - 19
+        - FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM
+      * - EMFILE
+        - 5
+        - 24
+        - FR_TOO_MANY_OPEN_FILES
+      * - EBUSY
+        - 6
+        - 16
+        - FR_LOCKED
+      * - EINVAL
+        - 7
+        - 22
+        - FR_INVALID_NAME, FR_INVALID_PARAMETER
+      * - ENOSPC
+        - 8
+        - 28
+        -
+      * - EEXIST
+        - 9
+        - 17
+        - FR_EXIST
+      * - EAGAIN
+        - 10
+        - 11
+        - FR_TIMEOUT
+      * - EIO
+        - 11
+        - 5
+        - FR_DISK_ERR, FR_INT_ERR, FR_MKFS_ABORTED
+      * - EINTR
+        - 12
+        - 4
+        -
+      * - ENOSYS
+        - 13
+        - 38
+        -
+      * - ESPIPE
+        - 14
+        - 29
+        -
+      * - ERANGE
+        - 15
+        - 34
+        -
+      * - EBADF
+        - 16
+        - 9
+        - FR_INVALID_OBJECT
+      * - ENOEXEC
+        - 17
+        - 8
+        -
+      * - EDOM
+        - 18
+        - 33
+        -
+      * - EILSEQ
+        - 18
+        - 84
+        -
+      * - EUNKNOWN
+        - 18
+        - 85
+        -
+
+CLOCK
 -----
 
 .. c:function:: unsigned long clock(void)
@@ -393,7 +511,7 @@ clock
    :errno: will not fail
 
 
-clock_getres
+CLOCK_GETRES
 ------------
 
 .. c:function:: int clock_getres(clockid_t clock_id, struct timespec *res)
@@ -417,7 +535,7 @@ clock_getres
    :errno: EINVAL
 
 
-clock_gettime
+CLOCK_GETTIME
 -------------
 
 .. c:function:: int clock_gettime(clockid_t clock_id, struct timespec *tp)
@@ -434,7 +552,7 @@ clock_gettime
    :errno: EINVAL, EUNKNOWN
 
 
-clock_settime
+CLOCK_SETTIME
 -------------
 
 .. c:function:: int clock_settime(clockid_t clock_id, const struct timespec *tp)
@@ -451,7 +569,7 @@ clock_settime
    :errno: EINVAL, EUNKNOWN
 
 
-clock_gettimezone
+CLOCK_GETTIMEZONE
 -----------------
 
 .. c:function:: int clock_gettimezone(uint32_t time, clockid_t clock_id, struct _timezone *tz)
@@ -482,7 +600,7 @@ clock_gettimezone
    :errno: EINVAL
 
 
-open
+OPEN
 ----
 
 .. c:function:: int open(const char *path, int oflag)
@@ -521,7 +639,7 @@ open
       |    If O_CREAT and O_EXCL are set, fail if the file exists.
 
 
-close
+CLOSE
 -----
 
 .. c:function:: int close(int fildes)
@@ -540,7 +658,7 @@ close
       FR_TIMEOUT
 
 
-read
+READ
 ----
 
 .. c:function:: int read(int fildes, void *buf, unsigned count)
@@ -562,7 +680,7 @@ read
       FR_INVALID_OBJECT, FR_TIMEOUT
 
 
-read_xstack
+READ_XSTACK
 -----------
 
 .. c:function:: int read_xstack(void *buf, unsigned count, int fildes)
@@ -582,7 +700,7 @@ read_xstack
    :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
       FR_INVALID_OBJECT, FR_TIMEOUT
 
-read_xram
+READ_XRAM
 ---------
 
 .. c:function:: int read_xram(unsigned buf, unsigned count, int fildes)
@@ -603,7 +721,7 @@ read_xram
       FR_INVALID_OBJECT, FR_TIMEOUT
 
 
-write
+WRITE
 -----
 
 .. c:function:: int write(int fildes, const void *buf, unsigned count)
@@ -625,7 +743,7 @@ write
       FR_INVALID_OBJECT, FR_TIMEOUT
 
 
-write_xstack
+WRITE_XSTACK
 ------------
 
 .. c:function:: int write_xstack(const void *buf, unsigned count, int fildes)
@@ -646,7 +764,7 @@ write_xstack
       FR_INVALID_OBJECT, FR_TIMEOUT
 
 
-write_xram
+WRITE_XRAM
 ----------
 
 .. c:function:: int write_xram(unsigned buf, unsigned count, int fildes)
@@ -667,7 +785,7 @@ write_xram
       FR_INVALID_OBJECT, FR_TIMEOUT
 
 
-lseek
+LSEEK
 -----
 
 .. c:function:: static long f_lseek(long offset, char whence, int fildes)
@@ -710,7 +828,7 @@ lseek
         - 1
 
 
-unlink
+UNLINK
 ------
 
 .. c:function:: int unlink (const char* name)
@@ -729,7 +847,7 @@ unlink
       FR_LOCKED, FR_NOT_ENOUGH_CORE
 
 
-rename
+RENAME
 ------
 
 .. c:function:: int rename (const char* oldname, const char* newname)
@@ -749,7 +867,7 @@ rename
       FR_LOCKED, FR_NOT_ENOUGH_CORE
 
 
-exit
+EXIT
 ----
 
 .. c:function:: void exit(int status)
