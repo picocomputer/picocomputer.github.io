@@ -13,7 +13,8 @@ you can call from the 6502. The :doc:`os` does not use any 6502 system RAM
 and will not interfere with developing a native 6502 OS.
 
 The :doc:`os` is loosely based on POSIX with an Application Binary
-Interface (ABI) similar to `cc65 <https://cc65.github.io>`__'s fastcall.
+Interface (ABI) similar to `cc65's fastcall
+<https://cc65.github.io/doc/cc65-intern.html>`__.
 It provides stdio.h and unistd.h services to both `cc65
 <https://cc65.github.io>`__ and `llvm-mos <https://llvm-mos.org/>`_
 compilers. There are also calls to access RP6502 features and manage
@@ -59,7 +60,7 @@ Application Binary Interface
 
 The ABI for calling the operating system is based on
 fastcall from the `cc65 internals
-<https://cc65.github.io/doc/cc65-intern.html>`_. The :doc:`os`
+<https://cc65.github.io/doc/cc65-intern.html>`__. The :doc:`os`
 does not use or require anything from cc65 and is easy for
 assembly programmers to use. At its core, the OS ABI is four simple rules.
 
@@ -384,15 +385,16 @@ ERRNO_OPT
 
    |
 
-   :doc:`os` calls will set RIA_ERRNO when an error occurs. The compiler
-   libraries use different constants in errno.h. Both cc65
-   and llvm-mos set this automatically for C programs. The RIA_ERRNO value will not
+   :doc:`os` calls will set RIA_ERRNO when an error occurs.  This is used to
+   select which set of values to use because the compiler
+   libraries each use different constants in errno.h. Both cc65
+   and llvm-mos call this automatically in the C runtime. The RIA_ERRNO value will not
    change until it is set. Note that the C `errno` maps directly to RIA_ERRNO.
 
    :doc:`os` will map FatFs errors onto errno. RP6502 emulation and simulation
    software is expected to map their native errors as well. The table below
-   shows the FatFs mappings. Because FatFs is to integral to the OS,
-   calls are documented here with their native FatFs names to assist when
+   shows the FatFs mappings. Because FatFs is so integral to the OS,
+   calls are documented here with their native FatFs errors to assist when
    cross referencing the `FatFs documentation <https://elm-chan.org/fsw/ff/>`__.
 
    :Op code: RIA_OP_ERRNO_OPT 0x06
@@ -831,7 +833,7 @@ LSEEK
 UNLINK
 ------
 
-.. c:function:: int unlink (const char* name)
+.. c:function:: int unlink(const char* name)
 
    |
 
@@ -850,7 +852,7 @@ UNLINK
 RENAME
 ------
 
-.. c:function:: int rename (const char* oldname, const char* newname)
+.. c:function:: int rename(const char* oldname, const char* newname)
 
    |
 
@@ -865,6 +867,55 @@ RENAME
       FR_NO_PATH, FR_INVALID_NAME, FR_EXIST, FR_WRITE_PROTECTED,
       FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT,
       FR_LOCKED, FR_NOT_ENOUGH_CORE
+
+
+SYNCFS
+------
+
+.. c:function:: int syncfs(int fildes)
+
+   |
+
+   Finish pending writes for the file descriptor.
+
+   :Op code: RIA_OP_SYNCFS 0x1E
+   :C proto: unistd.h
+   :param fildes: File descriptor from open().
+   :returns: 0 on success. -1 on error.
+   :a regs: return, fildes
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
+      FR_TIMEOUT
+
+
+STAT
+----
+
+.. c:function:: int f_stat (const char* path, f_stat_t* dirent)
+
+   .. code-block:: c
+
+      typedef struct {
+         unsigned long fsize;
+         unsigned fdate;
+         unsigned ftime;
+         unsigned crdate;
+         unsigned crtime;
+         unsigned char fattrib;
+         char altname[12 + 1];
+         char fname[255 + 1];
+      } f_stat_t;
+
+   Returns file or directory info for requested path.
+   See the `FatFs documentation <https://elm-chan.org/fsw/ff/doc/sfileinfo.html>`__
+   for details about the data structure.
+
+   :Op code: RIA_OP_STAT 0x1F
+   :C proto: rp6502.h
+   :param path: Pathname to a directory entry.
+   :param dirent: Returned f_stat_t data.
+   :returns: 0 on success. -1 on error.
+   :a regs: return, dirent
+   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
 
 
 EXIT
