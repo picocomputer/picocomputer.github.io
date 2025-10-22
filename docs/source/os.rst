@@ -1064,6 +1064,99 @@ CHMOD
         - 0x20
 
 
+UTIME
+-----
+
+.. c:function:: int f_utime (const char* path, unsigned fdate, unsigned ftime, unsigned crdate, unsigned crtime)
+
+   |
+
+   Update the date and time stamps of a file or directory. A date of 0 (invalid) leaves the date and time unchanged.
+
+   :Op code: RIA_OP_UTIME 0x27
+   :C proto: rp6502.h
+   :param path: Pathname to a file or directory.
+   :param fdate: Modification date.
+   :param ftime: Modification time.
+   :param crdate: Creation date.
+   :param crtime: Creation time.
+   :returns: 0 on success. -1 on error.
+   :a regs: return, mask
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+
+   .. list-table:: Date
+      :header-rows: 0
+      :widths: 10 25
+
+      * - bit15:9
+        - Years since 1980 (0..127)
+      * - bit8:5
+        - Month (1..12)
+      * - bit4:0
+        - Day (1..31)
+
+   .. list-table:: Time
+      :header-rows: 0
+      :widths: 10 25
+
+      * - bit15:11
+        - Hour (0..23)
+      * - bit10:5
+        - Minute (0..59)
+      * - bit4:0
+        - Second / 2 (0..29)
+
+
+MKDIR
+-----
+
+.. c:function:: int f_mkdir (const char* name)
+
+   |
+
+   Make a new directory entry.
+
+   :Op code: RIA_OP_MKDIR 0x28
+   :C proto: rp6502.h
+   :param name: Pathname of the directory to create.
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_EXIST, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+
+
+CHDIR
+-----
+
+.. c:function:: int chdir (const char* name)
+
+   |
+
+   Change to a directory entry.
+
+   :Op code: RIA_OP_CHDIR 0x29
+   :C proto: unistd.h
+   :param name: Pathname of the directory to make current.
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+
+
+CHDRIVE
+-------
+
+.. c:function:: int f_chdrive (const char* name)
+
+   |
+
+   Make a new directory entry.
+
+   :Op code: RIA_OP_CHDRIVE 0x2A
+   :C proto: rp6502.h
+   :param name: Pathname of the directory to make.
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: FR_INVALID_DRIVE
+
 
 EXIT
 ----
