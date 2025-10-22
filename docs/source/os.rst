@@ -1148,7 +1148,8 @@ CHDRIVE
 
    |
 
-   Make a new directory entry.
+   Change durrent drive. Eight USB MSC drives are formally named "USB0:" to "USB7:"
+   with shortcuts "0:" to "7:".
 
    :Op code: RIA_OP_CHDRIVE 0x2A
    :C proto: rp6502.h
@@ -1156,6 +1157,23 @@ CHDRIVE
    :returns: 0 on success. -1 on error.
    :a regs: return
    :errno: FR_INVALID_DRIVE
+
+
+GETCWD
+-------
+
+.. c:function:: int f_getcwd (char* name, int size)
+
+   |
+
+   Get the current working directory.
+
+   :Op code: RIA_OP_GETCWD 0x2B
+   :C proto: rp6502.h
+   :param name: The returned directory.
+   :returns: Size of chars returned. -1 on error.
+   :a regs: return if size <= 255
+   :errno: API_ENOMEM, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
 
 
 EXIT
