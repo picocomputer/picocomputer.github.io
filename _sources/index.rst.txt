@@ -12,7 +12,7 @@ Picocomputer
 ============
 
 The **Picocomputer 6502** is a tribute to the processor that launched a
-computing revolution. The lack of apparent complexity is a by product of
+computing revolution. The lack of apparent complexity is a byproduct of
 the design philosophy: Keep the essence of programming a 6502 and 6522
 then rethink everything else.
 
