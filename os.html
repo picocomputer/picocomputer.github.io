@@ -22,114 +22,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head><body>
-  <div class="document">
-    
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">Picocomputer</a></h1>
+  
 
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="hardware.html">Hardware</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ria.html">RP6502-RIA</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ria_w.html">RP6502-RIA-W</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vga.html">RP6502-VGA</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">RP6502-OS</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#memory-map">Memory Map</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#application-binary-interface">Application Binary Interface</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#short-stacking">Short Stacking</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#shorter-ax">Shorter AX</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#bulk-data">Bulk Data</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bulk-xstack-operations">Bulk XSTACK Operations</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#bulk-xram-operations">Bulk XRAM Operations</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#application-programmer-interface">Application Programmer Interface</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#zxstack">ZXSTACK</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#xreg">XREG</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#phi2">PHI2</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#code-page">CODE_PAGE</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#lrand">LRAND</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#stdin-opt">STDIN_OPT</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#errno-opt">ERRNO_OPT</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#clock">CLOCK</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#clock-getres">CLOCK_GETRES</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#clock-gettime">CLOCK_GETTIME</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#clock-settime">CLOCK_SETTIME</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#clock-gettimezone">CLOCK_GETTIMEZONE</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#open">OPEN</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#close">CLOSE</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#read">READ</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#read-xstack">READ_XSTACK</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#read-xram">READ_XRAM</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#write">WRITE</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#write-xstack">WRITE_XSTACK</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#write-xram">WRITE_XRAM</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#lseek">LSEEK</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#unlink">UNLINK</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#rename">RENAME</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#syncfs">SYNCFS</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#stat">STAT</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#opendir">OPENDIR</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#readdir">READDIR</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#closedir">CLOSEDIR</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#telldir">TELLDIR</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#seekdir">SEEKDIR</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#rewinddir">REWINDDIR</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#chmod">CHMOD</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#utime">UTIME</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#mkdir">MKDIR</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#chdir">CHDIR</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#chdrive">CHDRIVE</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#getcwd">GETCWD</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#setlabel">SETLABEL</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#getlabel">GETLABEL</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#getfree">GETFREE</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#exit">EXIT</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="vga.html" title="previous chapter">RP6502-VGA</a></li>
-  </ul></li>
-</ul>
-</div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</div>
-<script>$('#searchbox').show(0);</script>
-
-
-
-
-
-
-
-
-        </div>
-      </div>
+    <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
               <div class="related top">
@@ -2126,8 +2021,114 @@ calling exit() or falling off main() is preferred to locking up.</p>
           
         </div>
       </div>
-    <div class="clearer"></div>
-  </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Picocomputer</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ria.html">RP6502-RIA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ria_w.html">RP6502-RIA-W</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vga.html">RP6502-VGA</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">RP6502-OS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#memory-map">Memory Map</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#application-binary-interface">Application Binary Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#short-stacking">Short Stacking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#shorter-ax">Shorter AX</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bulk-data">Bulk Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#bulk-xstack-operations">Bulk XSTACK Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bulk-xram-operations">Bulk XRAM Operations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#application-programmer-interface">Application Programmer Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#zxstack">ZXSTACK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xreg">XREG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#phi2">PHI2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#code-page">CODE_PAGE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#lrand">LRAND</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stdin-opt">STDIN_OPT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#errno-opt">ERRNO_OPT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clock">CLOCK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clock-getres">CLOCK_GETRES</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clock-gettime">CLOCK_GETTIME</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clock-settime">CLOCK_SETTIME</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clock-gettimezone">CLOCK_GETTIMEZONE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#open">OPEN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#close">CLOSE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#read">READ</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#read-xstack">READ_XSTACK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#read-xram">READ_XRAM</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#write">WRITE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#write-xstack">WRITE_XSTACK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#write-xram">WRITE_XRAM</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#lseek">LSEEK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unlink">UNLINK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rename">RENAME</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#syncfs">SYNCFS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stat">STAT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#opendir">OPENDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#readdir">READDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#closedir">CLOSEDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#telldir">TELLDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#seekdir">SEEKDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rewinddir">REWINDDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chmod">CHMOD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#utime">UTIME</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mkdir">MKDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chdir">CHDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chdrive">CHDRIVE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#getcwd">GETCWD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setlabel">SETLABEL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#getlabel">GETLABEL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#getfree">GETFREE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#exit">EXIT</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="vga.html" title="previous chapter">RP6502-VGA</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
     <div class="footer">
       &copy;2025 Rumbledethumps.
       
@@ -2140,10 +2141,6 @@ calling exit() or falling off main() is preferred to locking up.</p>
           rel="nofollow">Page source</a>
     </div>
 
-    
-    <a href="https://github.com/picocomputer/" class="github">
-        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
-    </a>
     
 
     
