@@ -1166,14 +1166,49 @@ GETCWD
 
    |
 
-   Get the current working directory.
+   Get the current working directory. Size is ignored by the OS
+   but the C wrapper will use it.
 
    :Op code: RIA_OP_GETCWD 0x2B
    :C proto: rp6502.h
    :param name: The returned directory.
-   :returns: Size of chars returned. -1 on error.
-   :a regs: return if size <= 255
-   :errno: API_ENOMEM, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :returns: Size of returned name. -1 on error.
+   :errno: ENOMEM, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+
+
+SETLABEL
+--------
+
+.. c:function:: int f_setlabel (const char* name)
+
+   |
+
+   Change the volume label. Max 11 characters.
+
+   :Op code: RIA_OP_SETLABEL 0x2C
+   :C proto: rp6502.h
+   :param name: Label with optional volume name.
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
+
+
+GETLABEL
+--------
+
+.. c:function:: int f_getlabel (const char* path, char* label)
+
+   |
+
+   Get the volume label. Label must have room for (11+1) characters.
+
+   :Op code: RIA_OP_GETLABEL 0x2D
+   :C proto: rp6502.h
+   :param name: Volume name.
+   :param label: Storage for returned label.
+   :returns: Size of returned label. -1 on error.
+   :a regs: return
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
 
 
 EXIT
