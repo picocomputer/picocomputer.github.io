@@ -16,7 +16,7 @@ computing revolution. The lack of apparent complexity is a by product of
 the design philosophy: Keep the essence of programming a 6502 and 6522
 then rethink everything else.
 
-.. image:: _static/founders.jpg
+.. image:: _static/ria-w-sandwich.jpg
    :width: 600
    :alt: Picocomputer Photo
 
