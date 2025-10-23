@@ -29,7 +29,7 @@ html_theme_options = {
     # 'github_banner': True,
     'github_user': 'picocomputer',
     'github_repo': '',
-    # 'fixed_sidebar': True,
+    'fixed_sidebar': False,
     'show_relbars': True,
     'sidebar_width': '230px', # undo alabaster's override
 }
