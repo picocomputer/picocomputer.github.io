@@ -26,10 +26,10 @@ html_theme = 'alabaster'
 html_static_path = ['_static']
 html_theme_options = {
     'font_family': 'Arial, sans-serif',
-    'github_banner': True,
+    # 'github_banner': True,
     'github_user': 'picocomputer',
     'github_repo': '',
-    'fixed_sidebar': True,
+    # 'fixed_sidebar': True,
     'show_relbars': True,
     'sidebar_width': '230px', # undo alabaster's override
 }
