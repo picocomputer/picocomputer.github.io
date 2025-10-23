@@ -1211,6 +1211,30 @@ GETLABEL
    :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
 
 
+GETFREE
+-------
+
+.. c:function:: int f_getfree (const char* name, unsigned long* free, unsigned long* total)
+
+   .. code-block:: c
+
+      struct {
+         unsigned long free;
+         unsigned long total;
+      };
+
+   Get the volume free and total space in number of 512 bytes blocks.
+
+   :Op code: RIA_OP_GETFREE 0x2E
+   :C proto: rp6502.h
+   :param name: Volume name.
+   :param free: Storage for returned value.
+   :param total: Storage for returned value.
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
+
+
 EXIT
 ----
 
