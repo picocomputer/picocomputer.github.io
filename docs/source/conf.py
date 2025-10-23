@@ -6,10 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'RP6502'
-copyright = '2023 Rumbledethumps'
+project = 'Picocomputer'
+copyright = '2025 Rumbledethumps'
 author = 'Rumbledethumps'
-release = '0.0-pre'
+release = ''
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -25,5 +25,11 @@ exclude_patterns = []
 html_theme = 'alabaster'
 html_static_path = ['_static']
 html_theme_options = {
-    'font_family': 'Arial',
+    'font_family': 'Arial, sans-serif',
+    'github_banner': True,
+    'github_user': 'picocomputer',
+    'github_repo': '',
+    'fixed_sidebar': True,
+    'show_relbars': True,
+    'sidebar_width': '230px', # undo alabaster's override
 }
