@@ -1,0 +1,2151 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>RP6502-OS &#8212; Picocomputer  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="RP6502-VGA" href="vga.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Picocomputer</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">Hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ria.html">RP6502-RIA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ria_w.html">RP6502-RIA-W</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vga.html">RP6502-VGA</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">RP6502-OS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#memory-map">Memory Map</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#application-binary-interface">Application Binary Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#short-stacking">Short Stacking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#shorter-ax">Shorter AX</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bulk-data">Bulk Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#bulk-xstack-operations">Bulk XSTACK Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bulk-xram-operations">Bulk XRAM Operations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#application-programmer-interface">Application Programmer Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#zxstack">ZXSTACK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xreg">XREG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#phi2">PHI2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#code-page">CODE_PAGE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#lrand">LRAND</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stdin-opt">STDIN_OPT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#errno-opt">ERRNO_OPT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clock">CLOCK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clock-getres">CLOCK_GETRES</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clock-gettime">CLOCK_GETTIME</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clock-settime">CLOCK_SETTIME</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clock-gettimezone">CLOCK_GETTIMEZONE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#open">OPEN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#close">CLOSE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#read">READ</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#read-xstack">READ_XSTACK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#read-xram">READ_XRAM</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#write">WRITE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#write-xstack">WRITE_XSTACK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#write-xram">WRITE_XRAM</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#lseek">LSEEK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unlink">UNLINK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rename">RENAME</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#syncfs">SYNCFS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stat">STAT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#opendir">OPENDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#readdir">READDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#closedir">CLOSEDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#telldir">TELLDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#seekdir">SEEKDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rewinddir">REWINDDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chmod">CHMOD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#utime">UTIME</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mkdir">MKDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chdir">CHDIR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chdrive">CHDRIVE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#getcwd">GETCWD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setlabel">SETLABEL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#getlabel">GETLABEL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#getfree">GETFREE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#exit">EXIT</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="vga.html" title="previous chapter">RP6502-VGA</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="vga.html" title="Previous document">RP6502-VGA</a>
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="rp6502-os">
+<h1>RP6502-OS<a class="headerlink" href="#rp6502-os" title="Permalink to this headline">¶</a></h1>
+<p>RP6502 - Operating System</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> runs a 32-bit protected operating system that
+you can call from the 6502. The <a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> does not use any 6502 system RAM
+and will not interfere with developing a native 6502 OS.</p>
+<p>The <a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> is loosely based on POSIX with an Application Binary
+Interface (ABI) similar to <a class="reference external" href="https://cc65.github.io/doc/cc65-intern.html">cc65’s fastcall</a>.
+It provides stdio.h and unistd.h services to both <a class="reference external" href="https://cc65.github.io">cc65</a> and <a class="reference external" href="https://llvm-mos.org/">llvm-mos</a>
+compilers. There are also calls to access RP6502 features and manage
+FAT32 filesystems. ExFAT is ready to go and will be enabled when the
+patents expire.</p>
+</div>
+<div class="section" id="memory-map">
+<h2>Memory Map<a class="headerlink" href="#memory-map" title="Permalink to this headline">¶</a></h2>
+<p>There is no ROM. Nothing in zero page is used or reserved. The
+Picocomputer starts as a clean slate for every project. VGA, audio,
+storage, keyboards, mice, gamepads, RTC, and networking are all accessed
+using only the 32 registers of the RIA.</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Address</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>$0000-$FEFF</p></td>
+<td><p>RAM, 63.75K</p></td>
+</tr>
+<tr class="row-odd"><td><p>$FF00-$FFCF</p></td>
+<td><p>Unassigned</p></td>
+</tr>
+<tr class="row-even"><td><p>$FFD0-$FFDF</p></td>
+<td><p>VIA, see the <a class="reference external" href="https://www.westerndesigncenter.com/wdc/w65c22-chip.php">WDC datasheet</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>$FFE0-$FFFF</p></td>
+<td><p>RIA, see the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA datasheet</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>$10000-$1FFFF</p></td>
+<td><p>XRAM, 64K for <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> and <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a></p></td>
+</tr>
+</tbody>
+</table>
+<p>The unassigned space is available for hardware experimenters. You will
+need to design your own chip select hardware to use this
+address space. It is recommended that additional VIAs be added “down”
+and other hardware added “up”. For example: VIA0 at $FFD0, VIA1 at
+$FFC0, SID0 at $FF00, and SID1 at $FF20.</p>
+</div>
+<div class="section" id="application-binary-interface">
+<h2>Application Binary Interface<a class="headerlink" href="#application-binary-interface" title="Permalink to this headline">¶</a></h2>
+<p>The ABI for calling the operating system is based on
+fastcall from the <a class="reference external" href="https://cc65.github.io/doc/cc65-intern.html">cc65 internals</a>. The <a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a>
+does not use or require anything from cc65 and is easy for
+assembly programmers to use. At its core, the OS ABI is four simple rules.</p>
+<ul class="simple">
+<li><p>Stack arguments are pushed left to right.</p></li>
+<li><p>Last argument passed by register A, AX, or AXSREG.</p></li>
+<li><p>Return value in register AX or AXSREG.</p></li>
+<li><p>May return data on the stack.</p></li>
+</ul>
+<p>A and X are the 6502 registers. The pseudo register AX combines them for
+16 bits. AXSREG allows 32 bits with the 16 additional SREG bits. Let’s
+look at how to make an OS call through the RIA registers. All OS calls
+are specified as a C declaration like so:</p>
+<dl class="function">
+<dt>
+<code class="sig-name descname">int doit(int arg0, int arg1);</code></dt>
+<dd></dd></dl>
+
+<p>The RIA has registers called RIA_A, RIA_X, and RIA_SREG. An int is 16
+bits, so we set the RIA_A and RIA_X registers with arg1. I’ll use “A”
+for the 6502 register and “RIA_A” for the RIA register in this
+explanation.</p>
+<p>We use the XSTACK for arg0. Reading or writing data to the
+RIA_XSTACK register removes or adds bytes to the XSTACK. It’s a
+top-down stack, so push each argument from left to right and maintain
+little endian-ness in memory.</p>
+<p>To execute the call, store the operation ID in RIA_OP. The operation
+begins immediately. You can keep doing 6502 things, like running a
+loading animation, by polling RIA_BUSY. Or, JSR RIA_SPIN to block.</p>
+<p>The JSR RIA_SPIN method can unblock in less than 3 clock cycles and
+does an immediate load of A and X. Sequential operations will run
+fastest with this technique. Under the hood, you’re jumping into a
+self-modifying program that runs on the RIA registers.</p>
+<div class="highlight-asm notranslate"><div class="highlight"><pre><span></span><span class="nf">BRA</span> <span class="c">#$??      ; RIA_BUSY {-2 or 0}</span>
+<span class="nf">LDA</span> <span class="c">#$??      ; RIA_A</span>
+<span class="nf">LDX</span> <span class="c">#$??      ; RIA_X</span>
+<span class="nf">RTS</span>
+</pre></div>
+</div>
+<p>Polling is simply snooping on the above program. The RIA_BUSY register
+is the -2 or 0 in the BRA above. The RIA datasheet specifies bit 7
+indicates busy, which the 6502 can check quickly by using the BIT
+operator to set flag N. Once clear, we read RIA_A and RIA_X with
+absolute instructions.</p>
+<div class="highlight-asm notranslate"><div class="highlight"><pre><span></span><span class="nl">wait:</span>
+<span class="nf">BIT</span> <span class="no">RIA_BUSY</span>
+<span class="nf">BMI</span> <span class="no">wait</span>
+<span class="nf">LDA</span> <span class="no">RIA_A</span>
+<span class="nf">LDX</span> <span class="no">RIA_X</span>
+</pre></div>
+</div>
+<p>All operations returning RIA_A will also return RIA_X to assist with
+C integer promotion. RIA_SREG is only updated for
+32-bit returns. RIA_ERRNO is only updated if there is an error.</p>
+<p>Some operations return strings or structures on the stack. You must
+pull the entire stack before the next call. However, tail call
+optimizations are possible. For example, you can chain read_xstack()
+and write_xstack() to copy a file without using any RAM or XRAM.</p>
+<div class="section" id="short-stacking">
+<h3>Short Stacking<a class="headerlink" href="#short-stacking" title="Permalink to this headline">¶</a></h3>
+<p>In the never ending pursuit of saving all the cycles, it is possible to
+save a few on the stack push if you don’t need all the range. This only
+works on the stack argument that gets pushed first. For example:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">long</span> <span class="n">f_lseek</span><span class="p">(</span><span class="kt">long</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">char</span> <span class="n">whence</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here we need to push a 32 bit value. Not coincidentally, it’s in the
+right position for short stacking. If, for example, the offset always
+fits in 16 bits, push only two bytes instead of four.</p>
+</div>
+<div class="section" id="shorter-ax">
+<h3>Shorter AX<a class="headerlink" href="#shorter-ax" title="Permalink to this headline">¶</a></h3>
+<p>Many operations can save a few cycles by ignoring REG_X. All returned
+integers are always available as at least 16 bits to assist with C
+integer promotion. However, many operations will ignore REG_X in the
+register parameter and limit their return to fit in REG_A. These will be
+documented below as “A regs”.</p>
+</div>
+<div class="section" id="bulk-data">
+<h3>Bulk Data<a class="headerlink" href="#bulk-data" title="Permalink to this headline">¶</a></h3>
+<p>Functions that move bulk data may come in two flavors. These are any
+function with a mutable pointer parameter. A RAM pointer is meaningless
+to the RIA because it can not change 6502 RAM. Instead, we use the
+XSTACK or XRAM to move data.</p>
+<div class="section" id="bulk-xstack-operations">
+<h4>Bulk XSTACK Operations<a class="headerlink" href="#bulk-xstack-operations" title="Permalink to this headline">¶</a></h4>
+<p>These only work if the size is 512 bytes or less. Bulk data is passed on
+the XSTACK, which is 512 bytes. A pointer appears in the C prototype to
+indicate the type and direction of this data. Let’s look at some
+examples.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">open</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">path</span><span class="p">,</span> <span class="kt">int</span> <span class="n">oflag</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Send <cite>oflag</cite> in RIA_A. RIA_X doesn’t need to be set according the to
+docs below. Send the path on XSTACK by pushing the string starting with
+the last character. You may omit pushing the terminating zero, but
+strings are limited to a length of 255. Calling this from the C SDK will
+“just work” because there’s an implementation that pushes the string for
+you.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read_xstack</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Send <cite>count</cite> as a short stack and <cite>fildes</cite> in RIA_A. RIA_X doesn’t need
+to be set according the to docs below. The returned value in AX
+indicates how many values must be pulled from the stack. If you call
+this from the C SDK then it will copy XSTACK to buf[] for you.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">write_xstack</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Send <cite>fildes</cite> in RIA_A. RIA_X doesn’t need to be set according the to
+docs below. Push the buf data to XSTACK. Do not send <cite>count</cite>, the OS
+knows this from its internal stack pointer. If you call this from the C
+SDK then it will copy count bytes of buf[] to XSTACK for you.</p>
+<p>Note that read() and write() are part of the C SDK, not an OS
+operation. C requires these to support a count larger than the XSTACK
+can return so the implementation makes multiple OS calls as necessary.</p>
+</div>
+<div class="section" id="bulk-xram-operations">
+<h4>Bulk XRAM Operations<a class="headerlink" href="#bulk-xram-operations" title="Permalink to this headline">¶</a></h4>
+<p>These load and save XRAM directly. You can load game assets without
+going through 6502 RAM or capture a screenshot with ease.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read_xram</span><span class="p">(</span><span class="n">xram_addr</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+<span class="kt">int</span> <span class="n">write_xram</span><span class="p">(</span><span class="n">xram_addr</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The OS expects <cite>buf</cite> and <cite>count</cite> on the XSTACK as integers with
+<cite>filedes</cite> in RIA_A. The <a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> has direct access to XRAM so
+internally it will use something like &amp;XRAM[buf]. You will need to use
+RIA_RW0 or RIA_RW1 to access this memory from the 6502.</p>
+<p>These operations are interesting because of their high performance and
+ability to work in the background while the 6502 is doing something
+else. You can expect close to 64KB/sec, which means loading a game
+level’s worth of assets will take less than a second.</p>
+<p>Bulk XRAM operations are why the Picocomputer 6502 was designed
+without paged memory.</p>
+</div>
+</div>
+</div>
+<div class="section" id="application-programmer-interface">
+<h2>Application Programmer Interface<a class="headerlink" href="#application-programmer-interface" title="Permalink to this headline">¶</a></h2>
+<p>Much of this API is based on POSIX and FatFs. In particular, filesystem
+and console access should feel extremely familiar. However, some
+operations will have a different argument order or data structures than
+what you’re used to. The reason for this becomes apparent when you start
+to work in assembly and fine tune short stacking and integer demotions.
+You might not notice the differences if you only work in C because the
+standard library has wrapper functions and familiar prototypes. For
+example, the f_lseek() described below has reordered arguments that are
+optimized for short stacking the long argument. But you don’t have to
+call f_lseek() from C, you can call the usual lseek() which has the
+traditional argument order.</p>
+<p>The <a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> is built around FAT filesystems, which is the defacto
+standard for unsecured USB storage devices. POSIX filesystems are not
+fully compatible with FAT but there is a solid intersection of basic IO
+that is 100% compatible. You will see some familiar POSIX functions like
+open() and others like f_stat() which are similar to the POSIX function
+but tailored to FAT. Should it ever become necessary to have a POSIX
+stat(), it can be implemented in the C standard library or in an
+application by translating f_stat() data.</p>
+<div class="section" id="zxstack">
+<h3>ZXSTACK<a class="headerlink" href="#zxstack" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt>
+<code class="sig-name descname">void zxstack (void);</code></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Abandon the xstack by resetting the xstack pointer. This is the only
+operation that doesn’t require waiting for completion. You do not need
+to call this for failed operations. It can be useful if you want to
+quickly ignore part of a returned structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_ZXSTACK 0x00</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="xreg">
+<h3>XREG<a class="headerlink" href="#xreg" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt>
+<code class="sig-name descname">int xreg (char device, char channel, unsigned char address, ...);</code></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<code class="sig-name descname">int xregn (char device, char channel, unsigned char address, unsigned count, ...);</code></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Using xreg() from C is preferred to avoid making a counting error.
+Count doesn’t need to be sent in the ABI so both prototypes are correct.</p>
+<p>The variadic argument is a list of ints to be stored in extended registers
+starting at address on the specified device and channel.
+See the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> and
+<a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> documentation for what each register does. Setting
+extended registers can fail, which you can use for feature
+detection. EINVAL means the device responded with a negative
+acknowledgement. EIO means there was a timeout waiting for ack/nak.</p>
+<p>This is how you add virtual hardware to extended RAM. Both the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> and
+<a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> have a selection of virtual devices you can install. You can also
+make your own hardware for the PIX bus and configure it with this call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_XREG 0x01</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> – PIX device ID. 0:RIA, 1:VGA, 2-6:unassigned</p></li>
+<li><p><strong>channel</strong> – PIX channel. 0-15</p></li>
+<li><p><strong>address</strong> – PIX address. 0-255</p></li>
+<li><p><strong>...</strong> – 16 bit integers to set starting at address.</p></li>
+</ul>
+</dd>
+<dt class="field-even">A regs</dt>
+<dd class="field-even"><p>return</p>
+</dd>
+<dt class="field-odd">Errno</dt>
+<dd class="field-odd"><p>EINVAL, EIO</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="phi2">
+<h3>PHI2<a class="headerlink" href="#phi2" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.phi2">
+int <code class="sig-name descname">phi2</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.phi2" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Retrieves the PHI2 setting from the RIA. Applications can use this
+for adjusting to or rejecting different clock speeds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_PHI2 0x02</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The 6502 clock speed in kHz. Typically 800 &lt;= x &lt;= 8000.</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>will not fail</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="code-page">
+<h3>CODE_PAGE<a class="headerlink" href="#code-page" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.code_page">
+int <code class="sig-name descname">code_page</code><span class="sig-paren">(</span>int<em> cp</em><span class="sig-paren">)</span><a class="headerlink" href="#c.code_page" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Temporarily overrides the code page if non zero. Returns to system
+setting when 6502 stops. This is the encoding the filesystem is using
+and, if VGA is installed, the console and default font. If zero, the
+system CP setting is selected and returned. If the requested code
+page is unavailable, a different code page will be selected and
+returned. For example: <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">(850!=code_page(850))</span> <span class="pre">puts(&quot;error&quot;);</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_CODE_PAGE 0x03</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cp</strong> – code page or 0 for system setting.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The code page. One of: 437, 720, 737, 771, 775, 850, 852,
+855, 857, 860, 861, 862, 863, 864, 865, 866, 869, 932, 936, 949,
+950.</p>
+</dd>
+<dt class="field-odd">Errno</dt>
+<dd class="field-odd"><p>will not fail</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="lrand">
+<h3>LRAND<a class="headerlink" href="#lrand" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.lrand">
+long <code class="sig-name descname">lrand</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.lrand" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Generates a random number starting with entropy on the RIA. This is
+suitable for seeding a RNG or general use. The 16-bit rand() in the
+cc65 library can be seeded with this by calling its non-standard
+_randomize() function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_LRAND 0x04</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Chaos. 0x0 &lt;= x &lt;= 0x7FFFFFFF</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>will not fail</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="stdin-opt">
+<h3>STDIN_OPT<a class="headerlink" href="#stdin-opt" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.stdin_opt">
+int <code class="sig-name descname">stdin_opt</code><span class="sig-paren">(</span>unsigned long<em> ctrl_bits</em>, unsigned char<em> str_length</em><span class="sig-paren">)</span><a class="headerlink" href="#c.stdin_opt" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Additional options for the STDIN line editor. Set the str_length to
+your buffer size - 1 to make gets() safe. This can also guarantee no
+split lines when using fgets() on STDIN.</p>
+<p><strong>* Experimental *</strong> Likely to be replaced with stty-like something. Drop your
+thoughts on the forums if you have specific needs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_STDIN_OPT 0x05</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctrl_bits</strong> – Bitmap of ASCII 0-31 defines which CTRL characters
+can abort an input. When CTRL key is pressed, any typed input
+remains on the screen but the applicaion receives a line containing
+only the CTRL character. e.g. CTRL-C + newline.</p></li>
+<li><p><strong>str_length</strong> – 0-255 default 254. The input line editor won’t
+allow user input greater than this length.</p></li>
+</ul>
+</dd>
+<dt class="field-even">A regs</dt>
+<dd class="field-even"><p>return, str_length</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>0 on success</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>will not fail</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="errno-opt">
+<h3>ERRNO_OPT<a class="headerlink" href="#errno-opt" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.errno_opt">
+int <code class="sig-name descname">errno_opt</code><span class="sig-paren">(</span>char<em> option</em><span class="sig-paren">)</span><a class="headerlink" href="#c.errno_opt" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> calls will set RIA_ERRNO when an error occurs.  This is used to
+select which set of values to use because the compiler
+libraries each use different constants in errno.h. Both cc65
+and llvm-mos call this automatically in the C runtime. The RIA_ERRNO value will not
+change until it is set. Note that the C <cite>errno</cite> maps directly to RIA_ERRNO.</p>
+<p><a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> will map FatFs errors onto errno. RP6502 emulation and simulation
+software is expected to map their native errors as well. The table below
+shows the FatFs mappings. Because FatFs is so integral to the OS,
+calls are documented here with their native FatFs errors to assist when
+cross referencing the <a class="reference external" href="https://elm-chan.org/fsw/ff/">FatFs documentation</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_ERRNO_OPT 0x06</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>option</strong> – One of the values from the table below.</p></li>
+</ul>
+</dd>
+<dt class="field-even">A regs</dt>
+<dd class="field-even"><p>return, option</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>0 on success</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL</p>
+</dd>
+</dl>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>cc65</p></th>
+<th class="head"><p>llvm_mos</p></th>
+<th class="head"><p>FatFs</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>option</p></td>
+<td><p>1</p></td>
+<td><p>2</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>ENOENT</p></td>
+<td><p>1</p></td>
+<td><p>2</p></td>
+<td><p>FR_NO_FILE, FR_NO_PATH</p></td>
+</tr>
+<tr class="row-even"><td><p>ENOMEM</p></td>
+<td><p>2</p></td>
+<td><p>12</p></td>
+<td><p>FR_NOT_ENOUGH_CORE</p></td>
+</tr>
+<tr class="row-odd"><td><p>EACCES</p></td>
+<td><p>3</p></td>
+<td><p>23</p></td>
+<td><p>FR_DENIED, FR_WRITE_PROTECTED</p></td>
+</tr>
+<tr class="row-even"><td><p>ENODEV</p></td>
+<td><p>4</p></td>
+<td><p>19</p></td>
+<td><p>FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM</p></td>
+</tr>
+<tr class="row-odd"><td><p>EMFILE</p></td>
+<td><p>5</p></td>
+<td><p>24</p></td>
+<td><p>FR_TOO_MANY_OPEN_FILES</p></td>
+</tr>
+<tr class="row-even"><td><p>EBUSY</p></td>
+<td><p>6</p></td>
+<td><p>16</p></td>
+<td><p>FR_LOCKED</p></td>
+</tr>
+<tr class="row-odd"><td><p>EINVAL</p></td>
+<td><p>7</p></td>
+<td><p>22</p></td>
+<td><p>FR_INVALID_NAME, FR_INVALID_PARAMETER</p></td>
+</tr>
+<tr class="row-even"><td><p>ENOSPC</p></td>
+<td><p>8</p></td>
+<td><p>28</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>EEXIST</p></td>
+<td><p>9</p></td>
+<td><p>17</p></td>
+<td><p>FR_EXIST</p></td>
+</tr>
+<tr class="row-even"><td><p>EAGAIN</p></td>
+<td><p>10</p></td>
+<td><p>11</p></td>
+<td><p>FR_TIMEOUT</p></td>
+</tr>
+<tr class="row-odd"><td><p>EIO</p></td>
+<td><p>11</p></td>
+<td><p>5</p></td>
+<td><p>FR_DISK_ERR, FR_INT_ERR, FR_MKFS_ABORTED</p></td>
+</tr>
+<tr class="row-even"><td><p>EINTR</p></td>
+<td><p>12</p></td>
+<td><p>4</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>ENOSYS</p></td>
+<td><p>13</p></td>
+<td><p>38</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>ESPIPE</p></td>
+<td><p>14</p></td>
+<td><p>29</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>ERANGE</p></td>
+<td><p>15</p></td>
+<td><p>34</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>EBADF</p></td>
+<td><p>16</p></td>
+<td><p>9</p></td>
+<td><p>FR_INVALID_OBJECT</p></td>
+</tr>
+<tr class="row-odd"><td><p>ENOEXEC</p></td>
+<td><p>17</p></td>
+<td><p>8</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>EDOM</p></td>
+<td><p>18</p></td>
+<td><p>33</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>EILSEQ</p></td>
+<td><p>18</p></td>
+<td><p>84</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>EUNKNOWN</p></td>
+<td><p>18</p></td>
+<td><p>85</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="clock">
+<h3>CLOCK<a class="headerlink" href="#clock" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.clock">
+unsigned long <code class="sig-name descname">clock</code><span class="sig-paren">(</span>void<span class="sig-paren">)</span><a class="headerlink" href="#c.clock" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Obtain the value of a monotonic clock that updates 100 times per
+second. Wraps approximately every 497 days.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_CLOCK 0x0F</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>time.h</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>1/100 second monotonic clock</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>will not fail</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="clock-getres">
+<h3>CLOCK_GETRES<a class="headerlink" href="#clock-getres" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.clock_getres">
+int <code class="sig-name descname">clock_getres</code><span class="sig-paren">(</span>clockid_t<em> clock_id</em>, struct timespec<em> *res</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_getres" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">timespec</span> <span class="p">{</span>
+   <span class="kt">uint32_t</span> <span class="n">tv_sec</span><span class="p">;</span> <span class="cm">/* seconds */</span>
+   <span class="kt">int32_t</span> <span class="n">tv_nsec</span><span class="p">;</span> <span class="cm">/* nanoseconds */</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Obtains the clock resolution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_CLOCK_GETRES 0x10</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>time.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>clock_id</strong> – 0 for CLOCK_REALTIME.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, clock_id</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="clock-gettime">
+<h3>CLOCK_GETTIME<a class="headerlink" href="#clock-gettime" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.clock_gettime">
+int <code class="sig-name descname">clock_gettime</code><span class="sig-paren">(</span>clockid_t<em> clock_id</em>, struct timespec<em> *tp</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_gettime" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Obtains the current time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_CLOCK_GETTIME 0x11</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>time.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>clock_id</strong> – 0 for CLOCK_REALTIME.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, clock_id</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, EUNKNOWN</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="clock-settime">
+<h3>CLOCK_SETTIME<a class="headerlink" href="#clock-settime" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.clock_settime">
+int <code class="sig-name descname">clock_settime</code><span class="sig-paren">(</span>clockid_t<em> clock_id</em>, const struct timespec<em> *tp</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_settime" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Sets the current time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_CLOCK_SETTIME 0x12</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>time.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>clock_id</strong> – 0 for CLOCK_REALTIME.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, clock_id</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, EUNKNOWN</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="clock-gettimezone">
+<h3>CLOCK_GETTIMEZONE<a class="headerlink" href="#clock-gettimezone" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.clock_gettimezone">
+int <code class="sig-name descname">clock_gettimezone</code><span class="sig-paren">(</span>uint32_t<em> time</em>, clockid_t<em> clock_id</em>, struct _timezone<em> *tz</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_gettimezone" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">_timezone</span>
+<span class="p">{</span>
+   <span class="kt">int8_t</span> <span class="n">daylight</span><span class="p">;</span>  <span class="cm">/* &gt;0 if daylight savings time active */</span>
+   <span class="kt">int32_t</span> <span class="n">timezone</span><span class="p">;</span> <span class="cm">/* Number of seconds behind UTC */</span>
+   <span class="kt">char</span> <span class="n">tzname</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>   <span class="cm">/* Name of timezone, e.g. CET */</span>
+   <span class="kt">char</span> <span class="n">dstname</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>  <span class="cm">/* Name when daylight true, e.g. CEST */</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Returns a cc65 _timezone structure for the requested time. Use
+<cite>help set tz</cite> on the monitor to learn about configuring your time
+zone.</p>
+<p><strong>* Experimental *</strong> time zones in cc65 are incomplete probably because
+no other 6502 OS supports them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_CLOCK_GETTIMEZONE 0x13</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>None, Experimental</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> – time_t compatible integer.</p></li>
+<li><p><strong>clock_id</strong> – 0 for CLOCK_REALTIME.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, clock_id</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="open">
+<h3>OPEN<a class="headerlink" href="#open" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.open">
+int <code class="sig-name descname">open</code><span class="sig-paren">(</span>const char<em> *path</em>, int<em> oflag</em><span class="sig-paren">)</span><a class="headerlink" href="#c.open" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Create a connection between a file and a file descriptor. Up to 8
+files may be open at once.</p>
+<dl class="field-list">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_OPEN 0x14</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>fcntl.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – Pathname to a file.</p></li>
+<li><p><strong>oflag</strong> – Bitfield of options.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>File descriptor. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, oflag</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, EMFILE, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY,
+FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_EXIST,
+FR_INVALID_OBJECT, FR_WRITE_PROTECTED, FR_INVALID_DRIVE,
+FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_LOCKED,
+FR_NOT_ENOUGH_CORE, FR_TOO_MANY_OPEN_FILES</p>
+</dd>
+<dt class="field-odd">Options</dt>
+<dd class="field-odd"><div class="line-block">
+<div class="line">O_RDONLY 0x01</div>
+<div class="line-block">
+<div class="line">Open for reading only.</div>
+</div>
+<div class="line">O_WRONLY 0x02</div>
+<div class="line-block">
+<div class="line">Open for writing only.</div>
+</div>
+<div class="line">O_RDWR 0x03</div>
+<div class="line-block">
+<div class="line">Open for reading and writing.</div>
+</div>
+<div class="line">O_CREAT 0x10</div>
+<div class="line-block">
+<div class="line">Create the file if it does not exist.</div>
+</div>
+<div class="line">O_TRUNC 0x20</div>
+<div class="line-block">
+<div class="line">Truncate the file length to 0 after opening.</div>
+</div>
+<div class="line">O_APPEND 0x40</div>
+<div class="line-block">
+<div class="line">Read/write pointer is set end of the file.</div>
+</div>
+<div class="line">O_EXCL 0x80</div>
+<div class="line-block">
+<div class="line">If O_CREAT and O_EXCL are set, fail if the file exists.</div>
+</div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="close">
+<h3>CLOSE<a class="headerlink" href="#close" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.close">
+int <code class="sig-name descname">close</code><span class="sig-paren">(</span>int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.close" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Finish pending writes and release the file descriptor. File descriptor
+will rejoin the pool available for use by open().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_CLOSE 0x15</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>fcntl.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
+FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="read">
+<h3>READ<a class="headerlink" href="#read" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.read">
+int <code class="sig-name descname">read</code><span class="sig-paren">(</span>int<em> fildes</em>, void<em> *buf</em>, unsigned<em> count</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Read <cite>count</cite> bytes from a file to a buffer. This is implemented in
+the compiler library as a series of calls to read_xstack().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>unistd.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>buf</strong> – Destination for the returned data.</p></li>
+<li><p><strong>count</strong> – Quantity of bytes to read. 0x7FFF max.</p></li>
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>On success, number of bytes read is returned. On error, -1
+is returned.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
+FR_INVALID_OBJECT, FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="read-xstack">
+<h3>READ_XSTACK<a class="headerlink" href="#read-xstack" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.read_xstack">
+int <code class="sig-name descname">read_xstack</code><span class="sig-paren">(</span>void<em> *buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read_xstack" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Read <cite>count</cite> bytes from a file to xstack.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_READ_XSTACK 0x16</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>buf</strong> – Destination for the returned data.</p></li>
+<li><p><strong>count</strong> – Quantity of bytes to read. 0x100 max.</p></li>
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>On success, number of bytes read is returned. On error, -1
+is returned.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
+FR_INVALID_OBJECT, FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="read-xram">
+<h3>READ_XRAM<a class="headerlink" href="#read-xram" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.read_xram">
+int <code class="sig-name descname">read_xram</code><span class="sig-paren">(</span>unsigned<em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.read_xram" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Read <cite>count</cite> bytes from a file to xram.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_READ_XRAM 0x17</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>buf</strong> – Destination for the returned data.</p></li>
+<li><p><strong>count</strong> – Quantity of bytes to read. 0x7FFF max.</p></li>
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>On success, number of bytes read is returned. On error, -1
+is returned.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
+FR_INVALID_OBJECT, FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="write">
+<h3>WRITE<a class="headerlink" href="#write" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.write">
+int <code class="sig-name descname">write</code><span class="sig-paren">(</span>int<em> fildes</em>, const void<em> *buf</em>, unsigned<em> count</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Write <cite>count</cite> bytes from buffer to a file. This is implemented in
+the compiler library as a series of calls to write_xstack().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>unistd.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>buf</strong> – Location of the data.</p></li>
+<li><p><strong>count</strong> – Quantity of bytes to write. 0x7FFF max.</p></li>
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>On success, number of bytes written is returned. On error,
+-1 is returned.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
+FR_INVALID_OBJECT, FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="write-xstack">
+<h3>WRITE_XSTACK<a class="headerlink" href="#write-xstack" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.write_xstack">
+int <code class="sig-name descname">write_xstack</code><span class="sig-paren">(</span>const void<em> *buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write_xstack" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Write <cite>count</cite> bytes from xstack to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_WRITE_XSTACK 0x18</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>buf</strong> – Location of the data.</p></li>
+<li><p><strong>count</strong> – Quantity of bytes to write. 0x100 max.</p></li>
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>On success, number of bytes written is returned. On error,
+-1 is returned.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
+FR_INVALID_OBJECT, FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="write-xram">
+<h3>WRITE_XRAM<a class="headerlink" href="#write-xram" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.write_xram">
+int <code class="sig-name descname">write_xram</code><span class="sig-paren">(</span>unsigned<em> buf</em>, unsigned<em> count</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.write_xram" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Write <cite>count</cite> bytes from xram to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_WRITE_XRAM 0x19</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>buf</strong> – Location of the data.</p></li>
+<li><p><strong>count</strong> – Quantity of bytes to write. 0x7FFF max.</p></li>
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>On success, number of bytes written is returned. On error,
+-1 is returned.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
+FR_INVALID_OBJECT, FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="lseek">
+<h3>LSEEK<a class="headerlink" href="#lseek" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_lseek">
+static long <code class="sig-name descname">f_lseek</code><span class="sig-paren">(</span>long<em> offset</em>, char<em> whence</em>, int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_lseek" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.lseek">
+off_t <code class="sig-name descname">lseek</code><span class="sig-paren">(</span>int<em> fildes</em>, off_t<em> offset</em>, int<em> whence</em><span class="sig-paren">)</span><a class="headerlink" href="#c.lseek" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Move the read/write pointer. The OS uses the ABI format of f_seek().
+An lseek() compatible wrapper is provided with the compiler library.</p>
+<p>This can also be used to obtain the current read/write position
+with <code class="docutils literal notranslate"><span class="pre">f_lseek(0,</span> <span class="pre">SEEK_CUR,</span> <span class="pre">fd)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>See table below.</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>f_lseek: rp6502.h, lseek: unistd.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>offset</strong> – How far you wish to seek.</p></li>
+<li><p><strong>whence</strong> – From whence you wish to seek. See table below.</p></li>
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Read/write position. -1 on error. If this value would be too
+large for a long, the returned value will be 0x7FFFFFFF.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
+FR_TIMEOUT</p>
+</dd>
+</dl>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>RIA_OP_LSEEK_LLVM</p></th>
+<th class="head"><p>RIA_OP_LSEEK_CC65</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>RIA_OP_LSEEK</p></td>
+<td><p>0x1D</p></td>
+<td><p>0x1A</p></td>
+</tr>
+<tr class="row-odd"><td><p>SEEK_SET</p></td>
+<td><p>0</p></td>
+<td><p>2</p></td>
+</tr>
+<tr class="row-even"><td><p>SEEK_CUR</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>SEEK_END</p></td>
+<td><p>2</p></td>
+<td><p>1</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="unlink">
+<h3>UNLINK<a class="headerlink" href="#unlink" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.unlink">
+int <code class="sig-name descname">unlink</code><span class="sig-paren">(</span>const char*<em> name</em><span class="sig-paren">)</span><a class="headerlink" href="#c.unlink" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Removes a file or directory from the volume.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_UNLINK 0x1B</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>unistd.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – File or directory name to unlink (remove).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">Errno</dt>
+<dd class="field-odd"><p>FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
+FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_WRITE_PROTECTED,
+FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT,
+FR_LOCKED, FR_NOT_ENOUGH_CORE</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="rename">
+<h3>RENAME<a class="headerlink" href="#rename" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.rename">
+int <code class="sig-name descname">rename</code><span class="sig-paren">(</span>const char*<em> oldname</em>, const char*<em> newname</em><span class="sig-paren">)</span><a class="headerlink" href="#c.rename" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Renames and/or moves a file or directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_RENAME 0x1C</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>stdio.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>oldname</strong> – Existing file or directory name to rename.</p></li>
+<li><p><strong>newname</strong> – New object name.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">Errno</dt>
+<dd class="field-odd"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
+FR_NO_PATH, FR_INVALID_NAME, FR_EXIST, FR_WRITE_PROTECTED,
+FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT,
+FR_LOCKED, FR_NOT_ENOUGH_CORE</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="syncfs">
+<h3>SYNCFS<a class="headerlink" href="#syncfs" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.syncfs">
+int <code class="sig-name descname">syncfs</code><span class="sig-paren">(</span>int<em> fildes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.syncfs" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Finish pending writes for the file descriptor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_SYNCFS 0x1E</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>unistd.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fildes</strong> – File descriptor from open().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, fildes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
+FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="stat">
+<h3>STAT<a class="headerlink" href="#stat" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_stat">
+int <code class="sig-name descname">f_stat</code><span class="sig-paren">(</span>const char*<em> path</em>, f_stat_t*<em> dirent</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_stat" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
+   <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">fsize</span><span class="p">;</span>
+   <span class="kt">unsigned</span> <span class="n">fdate</span><span class="p">;</span>
+   <span class="kt">unsigned</span> <span class="n">ftime</span><span class="p">;</span>
+   <span class="kt">unsigned</span> <span class="n">crdate</span><span class="p">;</span>
+   <span class="kt">unsigned</span> <span class="n">crtime</span><span class="p">;</span>
+   <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">fattrib</span><span class="p">;</span>
+   <span class="kt">char</span> <span class="n">altname</span><span class="p">[</span><span class="mi">12</span> <span class="o">+</span> <span class="mi">1</span><span class="p">];</span>
+   <span class="kt">char</span> <span class="n">fname</span><span class="p">[</span><span class="mi">255</span> <span class="o">+</span> <span class="mi">1</span><span class="p">];</span>
+<span class="p">}</span> <span class="n">f_stat_t</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Returns file or directory info for requested path.
+See the <a class="reference external" href="https://elm-chan.org/fsw/ff/doc/sfileinfo.html">FatFs documentation</a>
+for details about the data structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_STAT 0x1F</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – Pathname to a directory entry.</p></li>
+<li><p><strong>dirent</strong> – Returned f_stat_t data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, dirent</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="opendir">
+<h3>OPENDIR<a class="headerlink" href="#opendir" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_opendir">
+int <code class="sig-name descname">f_opendir</code><span class="sig-paren">(</span>const char*<em> name</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_opendir" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Create a connection between a directory and a directory descriptor. Up to 8
+directories may be open at once.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_OPENDIR 0x20</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Pathname to a directory.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Directory descriptor. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, EMFILE, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_OBJECT, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE, FR_TOO_MANY_OPEN_FILES</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="readdir">
+<h3>READDIR<a class="headerlink" href="#readdir" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_readdir">
+int <code class="sig-name descname">f_readdir</code><span class="sig-paren">(</span>f_stat_t*<em> dirent</em>, int<em> dirdes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_readdir" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Returns file or directory info for directory descriptor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_READDIR 0x21</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – Pathname to a directory entry.</p></li>
+<li><p><strong>dirent</strong> – Returned f_stat_t data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, dirent</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT, FR_NOT_ENOUGH_CORE</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="closedir">
+<h3>CLOSEDIR<a class="headerlink" href="#closedir" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_closedir">
+int <code class="sig-name descname">f_closedir</code><span class="sig-paren">(</span>int<em> dirdes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_closedir" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Release the directory descriptor. Directory descriptor
+will rejoin the pool available for use by f_opendir().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_CLOSEDIR 0x22</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dirdes</strong> – Directory descriptor from f_opendir().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, dirdes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="telldir">
+<h3>TELLDIR<a class="headerlink" href="#telldir" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_telldir">
+long <code class="sig-name descname">f_telldir</code><span class="sig-paren">(</span>int<em> dirdes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_telldir" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Returns the read position of the directory descriptor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_TELLDIR 0x23</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dirdes</strong> – Directory descriptor from f_opendir().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Read position. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>dirdes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, EBADF</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="seekdir">
+<h3>SEEKDIR<a class="headerlink" href="#seekdir" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_seekdir">
+int <code class="sig-name descname">f_seekdir</code><span class="sig-paren">(</span>long<em> offs</em>, int<em> dirdes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_seekdir" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Set the read position for the directory descriptor. Internally,
+the FatFs directory read position can only move forward by one,
+so use this for convienence, not performance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_SEEKDIR 0x24</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dirdes</strong> – Directory descriptor from f_opendir().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Read position. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, dirdes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, EBADF, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT, FR_NOT_ENOUGH_CORE</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="rewinddir">
+<h3>REWINDDIR<a class="headerlink" href="#rewinddir" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_rewinddir">
+int <code class="sig-name descname">f_rewinddir</code><span class="sig-paren">(</span>int<em> dirdes</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_rewinddir" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Rewind the read position of the directory descriptor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_REWINDDIR 0x25</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dirdes</strong> – Directory descriptor from f_opendir().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>dirdes</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, EBADF, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT, FR_NOT_ENOUGH_CORE</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="chmod">
+<h3>CHMOD<a class="headerlink" href="#chmod" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_chmod">
+int <code class="sig-name descname">f_chmod</code><span class="sig-paren">(</span>const char*<em> path</em>, unsigned char<em> attr</em>, unsigned char<em> mask</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_chmod" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Change the attributes of a file or directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_CHMOD 0x26</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – Pathname to a file or directory.</p></li>
+<li><p><strong>attr</strong> – New bitfield of attributes. See table.</p></li>
+<li><p><strong>mask</strong> – Only attributes with bits set here will be changed.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, mask</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE</p>
+</dd>
+</dl>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Attribute</p></th>
+<th class="head"><p>Bit</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Read Only</p></td>
+<td><p>0x01</p></td>
+</tr>
+<tr class="row-odd"><td><p>Hidden</p></td>
+<td><p>0x02</p></td>
+</tr>
+<tr class="row-even"><td><p>System</p></td>
+<td><p>0x04</p></td>
+</tr>
+<tr class="row-odd"><td><p>Directory</p></td>
+<td><p>0x10</p></td>
+</tr>
+<tr class="row-even"><td><p>Archive</p></td>
+<td><p>0x20</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="utime">
+<h3>UTIME<a class="headerlink" href="#utime" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_utime">
+int <code class="sig-name descname">f_utime</code><span class="sig-paren">(</span>const char*<em> path</em>, unsigned<em> fdate</em>, unsigned<em> ftime</em>, unsigned<em> crdate</em>, unsigned<em> crtime</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_utime" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Update the date and time stamps of a file or directory. A date of 0 (invalid) leaves the date and time unchanged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_UTIME 0x27</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – Pathname to a file or directory.</p></li>
+<li><p><strong>fdate</strong> – Modification date.</p></li>
+<li><p><strong>ftime</strong> – Modification time.</p></li>
+<li><p><strong>crdate</strong> – Creation date.</p></li>
+<li><p><strong>crtime</strong> – Creation time.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return, mask</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE</p>
+</dd>
+</dl>
+<table class="colwidths-given docutils align-default" id="id1">
+<caption><span class="caption-text">Date</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 71%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>bit15:9</p></td>
+<td><p>Years since 1980 (0..127)</p></td>
+</tr>
+<tr class="row-even"><td><p>bit8:5</p></td>
+<td><p>Month (1..12)</p></td>
+</tr>
+<tr class="row-odd"><td><p>bit4:0</p></td>
+<td><p>Day (1..31)</p></td>
+</tr>
+</tbody>
+</table>
+<table class="colwidths-given docutils align-default" id="id2">
+<caption><span class="caption-text">Time</span><a class="headerlink" href="#id2" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 71%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>bit15:11</p></td>
+<td><p>Hour (0..23)</p></td>
+</tr>
+<tr class="row-even"><td><p>bit10:5</p></td>
+<td><p>Minute (0..59)</p></td>
+</tr>
+<tr class="row-odd"><td><p>bit4:0</p></td>
+<td><p>Second / 2 (0..29)</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="mkdir">
+<h3>MKDIR<a class="headerlink" href="#mkdir" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_mkdir">
+int <code class="sig-name descname">f_mkdir</code><span class="sig-paren">(</span>const char*<em> name</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_mkdir" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Make a new directory entry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_MKDIR 0x28</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Pathname of the directory to create.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_EXIST, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="chdir">
+<h3>CHDIR<a class="headerlink" href="#chdir" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.chdir">
+int <code class="sig-name descname">chdir</code><span class="sig-paren">(</span>const char*<em> name</em><span class="sig-paren">)</span><a class="headerlink" href="#c.chdir" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Change to a directory entry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_CHDIR 0x29</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>unistd.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Pathname of the directory to make current.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="chdrive">
+<h3>CHDRIVE<a class="headerlink" href="#chdrive" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_chdrive">
+int <code class="sig-name descname">f_chdrive</code><span class="sig-paren">(</span>const char*<em> name</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_chdrive" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Change durrent drive. Eight USB MSC drives are formally named “USB0:” to “USB7:”
+with shortcuts “0:” to “7:”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_CHDRIVE 0x2A</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Pathname of the directory to make.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>FR_INVALID_DRIVE</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="getcwd">
+<h3>GETCWD<a class="headerlink" href="#getcwd" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_getcwd">
+int <code class="sig-name descname">f_getcwd</code><span class="sig-paren">(</span>char*<em> name</em>, int<em> size</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_getcwd" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Get the current working directory. Size is ignored by the OS
+but the C wrapper will use it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_GETCWD 0x2B</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – The returned directory.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Size of returned name. -1 on error.</p>
+</dd>
+<dt class="field-odd">Errno</dt>
+<dd class="field-odd"><p>ENOMEM, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="setlabel">
+<h3>SETLABEL<a class="headerlink" href="#setlabel" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_setlabel">
+int <code class="sig-name descname">f_setlabel</code><span class="sig-paren">(</span>const char*<em> name</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_setlabel" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Change the volume label. Max 11 characters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_SETLABEL 0x2C</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Label with optional volume name.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="getlabel">
+<h3>GETLABEL<a class="headerlink" href="#getlabel" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_getlabel">
+int <code class="sig-name descname">f_getlabel</code><span class="sig-paren">(</span>const char*<em> path</em>, char*<em> label</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_getlabel" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Get the volume label. Label must have room for (11+1) characters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_GETLABEL 0x2D</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Volume name.</p></li>
+<li><p><strong>label</strong> – Storage for returned label.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Size of returned label. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="getfree">
+<h3>GETFREE<a class="headerlink" href="#getfree" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.f_getfree">
+int <code class="sig-name descname">f_getfree</code><span class="sig-paren">(</span>const char*<em> name</em>, unsigned long*<em> free</em>, unsigned long*<em> total</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_getfree" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
+   <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">free</span><span class="p">;</span>
+   <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">total</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Get the volume free and total space in number of 512 bytes blocks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_GETFREE 0x2E</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>rp6502.h</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Volume name.</p></li>
+<li><p><strong>free</strong> – Storage for returned value.</p></li>
+<li><p><strong>total</strong> – Storage for returned value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="exit">
+<h3>EXIT<a class="headerlink" href="#exit" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="c.exit">
+void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>int<em> status</em><span class="sig-paren">)</span><a class="headerlink" href="#c.exit" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Halt the 6502 and return the console to RP6502 monitor control. This
+is the only operation that does not return. RESB will be pulled down
+before the next instruction can execute. Status is currently ignored
+but will be used in the future.</p>
+<p>In general, dropping the user back to the monitor is discouraged. But
+calling exit() or falling off main() is preferred to locking up.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_EXIT 0xFF</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>stdlib.h</p>
+</dd>
+<dt class="field-odd">A regs</dt>
+<dd class="field-odd"><p>status</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>status</strong> – 0 is success, 1-255 for error.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="vga.html" title="Previous document">RP6502-VGA</a>
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2025 Rumbledethumps.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/os.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/picocomputer/" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

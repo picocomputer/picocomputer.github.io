@@ -1,30 +1,54 @@
+==================================
 RP6502-VGA
-##########
+==================================
 
-Rumbledethumps Picocomputer 6502 Video Graphics Array.
+RP6502 - Video Graphics Array
 
-.. contents:: Table of Contents
-   :local:
+Introduction
+=============
 
-1. Introduction
-===============
+The RP6502 Video Graphics Array is a Raspberry Pi Pico 2 with
+:doc:`vga` firmware. Its primary data connection is to a :doc:`ria`
+over a 5-wire PIX bus. More than one VGA module can be put on a PIX
+bus. Note that all VGA modules share the same 64K of XRAM and only
+the first one will generate frame numbers and vsync interrupts.
 
-The RP6502 Video Graphics Array is a Raspberry Pi Pico 2 with RP6502-VGA firmware. Its primary data connection is to a :doc:`ria` over a 5-wire PIX bus. More than one VGA module can be put on a PIX bus. Note that all VGA modules share the same 64K of XRAM and only one module can generate frame numbers and vsync interrupts.
+Video Programming
+==================
 
-2. Video Programming
-====================
+The VGA system provides virtual video hardware that is similar
+to home computer and arcade hardware from the 8-bit and early
+16-bit era. It is very easy to add new video modes and sprite
+systems. The 6502 application programmer can mix and match these
+modes.
 
-The design philosophy for the VGA system is to enable the full power of the Pi Pico while maintaining some 8-bit purity. To that end, two paths must be created. The VGA system must help you get the most value from 64K of extended memory (XRAM) and the VGA modes must inflict nostaligia. You may follow either or both paths.
+The VGA system is built around the scanvideo library from Pi
+Pico Extras. All three planes are enabled with RGB555 color plus
+transparency. The mode 4 sprite system is from Pi Pico Playground.
+The programming system and all other modes are original work for
+the RP6502.
 
-The VGA system is built around the scanvideo library from Pi Pico Extras. All three planes are enabled with RGB555 color plus transparency. The mode 4 sprite system is from Pi Pico Playground. The programming system and all other modes are original work for the RP6502.
+The RP6502 VGA system exposes per-scanline configuration of the
+video system to your 6502 application. At the broadest scope we
+have three planes. Each plane has two layers, a fill layer and a
+sprite layer. Your application can assign different fill and
+sprite modes to specific planes and scanlines. There's plenty of
+fill rate to exceed the capabilities of any classic 8-bit system,
+but if you like to push the limits then you may see a half-blue
+screen indicating you went too far.
 
-The RP6502 VGA system exposes per-scanline configuration of the video system to your 6502 application. At the broadest scope we have three planes. Each plane has two layers, a fill layer and a sprite layer. Your application can assign different fill and sprite modes to specific planes and scanlines. There's plenty of fill rate to exceed the capabilities of any classic 8-bit system, but if you like to push the limits then you may see a half-blue screen indicating you went too far.
+The built-in 8x8 and 8x16 fonts are available by using the special
+XRAM pointer $FFFF. Glyphs 0-127 are ASCII, glyphs 128-255 vary
+depending on the code page selected.
 
-The built-in 8x8 and 8x16 fonts are available by using the special XRAM pointer $FFFF. Glyphs 0-127 are ASCII, glyphs 128-255 vary depending on the code page selected.
+The built-in color palettes are accessed by using the special XRAM
+pointer $FFFF. 1-bit is black and white. 4 and 8-bits point to an
+ANSI color palette of 16 colors, followed by 216 colors (6x6x6),
+followed by 24 greys.
 
-The built-in color palettes are accessed by using the special XRAM pointer $FFFF. 1-bit is black and white. 4 and 8-bits point to an ANSI color palette of 16 colors, followed by 216 colors (6x6x6), followed by 24 greys.
-
-16-bit colors are built with the following bit logic. Setting the alpha bit will make the color opaque. The built-in ANSI color palette has the alpha bit set on all colors except color 0 black.
+16-bit colors are built with the following bit logic. Setting the
+alpha bit will make the color opaque. The built-in ANSI color
+palette has the alpha bit set on all colors except color 0 black.
 
 .. code-block:: C
 
@@ -32,7 +56,9 @@ The built-in color palettes are accessed by using the special XRAM pointer $FFFF
   #define COLOR_FROM_RGB5(r,g,b) ((b<<11)|(g<<6)|(r))
   #define COLOR_ALPHA_MASK (1u<<5)
 
-Palette information is an array. 8bpp, 4bpp, and 1bpp modes use a palette. 16 bit per pixel modes don't use indexed color and will ignore the palette. Palettes must be 16-bit aligned.
+Palette information is an array. 8bpp, 4bpp, and 1bpp modes use a
+palette. 16 bit per pixel modes don't use indexed color and will
+ignore the palette. Palettes must be 16-bit aligned.
 
 .. code-block:: C
 
@@ -41,7 +67,9 @@ Palette information is an array. 8bpp, 4bpp, and 1bpp modes use a palette. 16 bi
   } palette[2^bits_per_pixel];
 
 
-Programming the VGA device is done with PIX extended registers - XREGS. VGA is PIX device ID 1. Registers are 16 bit values addressed by $device:$channel:register. e.g. $1:0:0F
+Programming the VGA device is done with PIX extended registers -
+XREGS. VGA is PIX device ID 1. Registers are 16 bit values addressed
+by $device:$channel:register. e.g. $1:0:0F
 
 .. code-block:: C
 
@@ -67,26 +95,39 @@ Setting key registers may return a failure (-1) with errno EINVAL.
     - Description
   * - $1:0:00
     - CANVAS
-    - Select a graphics canvas. This clears $1:0:02-$1:0:FF and all scanline programming. The 80 column console canvas is used as a failsafe and therefore not scanline programmable.
-        * 0 - 80 column console. (4:3 or 5:4)
-        * 1 - 320x240 (4:3)
-        * 2 - 320x180 (16:9)
-        * 3 - 640x480 (4:3)
-        * 4 - 640x360 (16:9)
+    - Select a graphics canvas. This clears $1:0:02-$1:0:FF and all
+      scanline programming. The 80 column console canvas is used as
+      a failsafe and therefore not scanline programmable.
+
+      * 0 - 80 column console. (4:3 or 5:4)
+      * 1 - 320x240 (4:3)
+      * 2 - 320x180 (16:9)
+      * 3 - 640x480 (4:3)
+      * 4 - 640x360 (16:9)
+
   * - $1:0:01
     - MODE
-    - Program a mode into a plane of scanlines. $1:0:02-$1:0:FF cleared after programming. Each mode has a section of this document for its own registers.
-        * 0 - Console
-        * 1 - Character
-        * 2 - Tile
-        * 3 - Bitmap
-        * 4 - Sprite
+    - Program a mode into a plane of scanlines.
+      $1:0:02-$1:0:FF cleared after programming. Each mode has a
+      section of this document for its own registers.
+
+      * 0 - Console
+      * 1 - Character
+      * 2 - Tile
+      * 3 - Bitmap
+      * 4 - Sprite
 
 
 Mode 0: Console
 ---------------
 
-The console may be rendered on any canvas plane. ANSI color 0-black is transparent, which makes it easy to show text over a background image using planes. The console may be a partial screen, but the scanlines must be a multiple of the font height. 640 pixel wide canvases use an 8x16 font for 80 columns. 320 pixel wide canvases use an 8x8 font for 40 columns. Only one console may be visible, programming again will remove the previous console.
+The console may be rendered on any canvas plane. ANSI color 0-black
+is transparent, which makes it easy to show text over a background
+image using planes. The console may be a partial screen, but the
+scanlines must be a multiple of the font height. 640 pixel wide
+canvases use an 8x16 font for 80 columns. 320 pixel wide canvases
+use an 8x8 font for 40 columns. Only one console may be visible,
+programming again will remove the previous console.
 
 .. list-table::
   :widths: 5 5 90
@@ -112,7 +153,9 @@ The console may be rendered on any canvas plane. ANSI color 0-black is transpare
 Mode 1: Character
 -----------------
 
-Character modes have color information for each position on the screen. This is the mode you want for showing text in different colors.
+Character modes have color information for each position on the
+screen. This is the mode you want for showing text in different
+colors.
 
 .. list-table::
   :widths: 5 5 90
@@ -139,7 +182,8 @@ Character modes have color information for each position on the screen. This is 
     - First scanline to program. BEGIN \<= n \< END
   * - $1:0:06
     - END
-    - End of scanlines to program. 0 means use canvas height (180-480).
+    - End of scanlines to program. 0 means use canvas height
+      (180-480).
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -201,7 +245,8 @@ Data is encoded based on the color bit depth selected.
       uint16_t bg_color;
   } data[width_chars * height_chars];
 
-Fonts are encoded in wide format. The first 256 bytes are the first row of each of the 256 glyphs.
+Fonts are encoded in wide format. The first 256 bytes are the first
+row of each of the 256 glyphs.
 
 .. code-block:: C
 
@@ -215,7 +260,10 @@ Fonts are encoded in wide format. The first 256 bytes are the first row of each 
 Mode 2: Tile
 ------------
 
-Tile modes have color information encoded in the tile bitmap. This is the mode you want for showing a video game playfield. Hi-res canvases (640x480 and 640x360) support one plane of 1-bit color. Standard canvases (320x240 and 328x180) support two planes of any option.
+Tile modes have color information encoded in the tile bitmap. This is
+the mode you want for showing a video game playfield. Hi-res canvases
+(640x480 and 640x360) support one plane of 1-bit color. Standard
+canvases (320x240 and 328x180) support two planes of any option.
 
 .. list-table::
   :widths: 5 5 90
@@ -242,7 +290,8 @@ Tile modes have color information encoded in the tile bitmap. This is the mode y
     - First scanline to program. BEGIN \<= n \< END
   * - $1:0:06
     - END
-    - End of scanlines to program. 0 means use canvas height (180-480).
+    - End of scanlines to program. 0 means use canvas height
+      (180-480).
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -290,7 +339,9 @@ Tiles are encoded in "tall" bitmap format.
 Mode 3: Bitmap
 --------------
 
-Every pixel can be its own color. 64K XRAM limits the full screen color depth. Monochrome at 640x480, 16 colors at 320x240, 256 colors for 320x180 (16:9).
+Every pixel can be its own color. 64K XRAM limits the full screen
+color depth. Monochrome at 640x480, 16 colors at 320x240, 256 colors
+for 320x180 (16:9).
 
 .. list-table::
   :widths: 5 5 90
@@ -317,7 +368,8 @@ Every pixel can be its own color. 64K XRAM limits the full screen color depth. M
     - First scanline to program. BEGIN \<= n \< END
   * - $1:0:06
     - END
-    - End of scanlines to program. 0 means use canvas height (180-480).
+    - End of scanlines to program. 0 means use canvas height
+      (180-480).
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -334,9 +386,14 @@ Config structure may be updated without reprogramming scanlines.
       uint16_t palette_ptr;
   } config;
 
-Data is the color information packed down to the bit level. 16-bit color encodes the color directly as data. 1, 4, and 8 bit color encodes a palette index as data.
+Data is the color information packed down to the bit level. 16-bit
+color encodes the color directly as data. 1, 4, and 8 bit color
+encodes a palette index as data.
 
-Bit order is traditionally done so that left and right bit shift operations match pixel movement on screen. The reverse bits option change the bit order of 1 and 4 bit modes so bit-level manipulation code is slightly faster and smaller.
+Bit order is traditionally done so that left and right bit shift
+operations match pixel movement on screen. The reverse bits option
+change the bit order of 1 and 4 bit modes so bit-level manipulation
+code is slightly faster and smaller.
 
 Data for 16 bit color must be 16 bit aligned.
 
@@ -352,9 +409,9 @@ Data for 16 bit color must be 16 bit aligned.
 Mode 4: Sprite
 --------------
 
-Sprites may be drawn over each fill plane. This is the 16-bit sprite system from the Pi Pico Playground. Lower bit depths are planned for a different mode.
-
-WARNING! Slightly experimental! It is unknown how well the structure data is validated. Please submit a reproducable test program if you encounter a VGA system lockup.
+Sprites may be drawn over each fill plane. This is the 16-bit sprite
+system from the Pi Pico Playground. Lower bit depths are planned for
+a different mode.
 
 .. list-table::
   :widths: 5 5 90
@@ -383,9 +440,11 @@ WARNING! Slightly experimental! It is unknown how well the structure data is val
     - First scanline to program. BEGIN \<= n \< END
   * - $1:0:07
     - END
-    - End of scanlines to program. 0 means use canvas height (180-480).
+    - End of scanlines to program. 0 means use canvas height
+      (180-480).
 
-Unused sprites should be moved off screen. Non-affine sprites use this config structure.
+Unused sprites should be moved off screen. Non-affine sprites use this
+config structure.
 
 .. code-block:: C
 
@@ -397,7 +456,10 @@ Unused sprites should be moved off screen. Non-affine sprites use this config st
     bool has_opacity_metadata;
   } config[LENGTH];
 
-Affine sprites apply a 3x3 matrix transform. These are slower than plain sprites. Only the first two rows of the matrix is useful, which is why there's only six transform values. These are in signed 8.8 fixed point format.
+Affine sprites apply a 3x3 matrix transform. These are slower than
+plain sprites. Only the first two rows of the matrix is useful, which
+is why there's only six transform values. These are in signed 8.8
+fixed point format.
 
 .. code-block:: C
 
@@ -425,7 +487,8 @@ Sprite image data is an array of 16 bit colors.
 Control Channel $F
 ------------------
 
-These registers are managed by the RIA. Do not distribute applications that set these.
+These registers are managed by the RIA. Do not distribute applications
+that set these.
 
 .. list-table::
   :widths: 5 5 90
@@ -436,49 +499,71 @@ These registers are managed by the RIA. Do not distribute applications that set 
     - Description
   * - $1:F:00
     - DISPLAY
-    - This sets the aspect ratio of your display. This also resets CANVAS to the console.
-       * 0 - VGA (4:3) 640x480
-       * 1 - HD (16:9) 640x480 and 1280x720
-       * 2 - SXGA (5:4) 1280x1024
+    - This sets the aspect ratio of your display. This also resets
+      CANVAS to the console.
+
+      * 0 - VGA (4:3) 640x480
+      * 1 - HD (16:9) 640x480 and 1280x720
+      * 2 - SXGA (5:4) 1280x1024
+
   * - $1:F:01
-    - CODEPAGE
+    - CODE_PAGE
     - Set code page for built-in font.
   * - $1:F:02
     - UART
-    - Set baud rate. Reserved, not implemented.
+    - Set bit rate. Reserved, not implemented.
   * - $1:F:03
     - UART_TX
     - Alternate path for UART Tx when using backchannel.
   * - $1:F:04
     - BACKCHAN
     - Control using UART Tx as backchannel.
-       * 0 - Disable
-       * 1 - Enable
-       * 2 - Request acknowledgment
+
+      * 0 - Disable
+      * 1 - Enable
+      * 2 - Request
 
 
-3. Backchannel
-==============
+Backchannel
+===========
 
-Because the PIX bus is unidirectional, it can't be used for sending data from the VGA system back to the RIA. Using the UART Rx path is undesirable since there would be framing overhead or unusable control characters. Since there is a lot of unused bandwidth on the PIX bus, which is only used when the 6502 is writing to XRAM, it can be used for the UART Tx path allowing the UART Tx pin to switch directions.
+Because the PIX bus is unidirectional, it can't be used for sending
+data from the VGA system back to the RIA. Using the UART Rx path is
+undesirable since there would be framing overhead or unusable control
+characters. Since there is a lot of unused bandwidth on the PIX bus,
+which is only used when the 6502 is writing to XRAM, it can be used
+for the UART Tx path allowing the UART Tx pin to switch directions.
 
-This is not interesting to the 6502 programmer as it happens automatically. RIA Kernel developers can extend its usefulness. The backchannel is simply a UART implemented in PIO so it sends 8-bit values.
+This is not interesting to the 6502 programmer as it happens
+automatically. It is documented mainly for the hardware explorers
+who might be probing UART Tx.
 
-Values 0x00 to 0x7F are used to send a version string as ASCII terminated with a 0x0D or 0x0A. This must be sent immediately after the backchannel enable message is received for it to be displayed as part of the boot message. It may be updated any time after that and inspected with the STATUS CLI command, but currently there is no reason to do so.
+Values 0x00 to 0x7F are used to send a version string as ASCII
+terminated with a 0x0D or 0x0A. This must be sent immediately after
+the backchannel enable message is received for it to be displayed as
+part of the boot message. It may be updated any time after that and
+inspected with the ``status`` monitor command, but currently there is
+no reason to do so.
 
-When bit 0x80 is set, the 0x70 bits indicate the command type, and the 0x0F bits are a scalar for the command.
+When bit 0x80 is set, the 0x70 bits indicate the command type, and the
+0x0F bits are a scalar for the command.
 
-0x80 VSYNC - The scalar will increment and be used for the LSB of the RIA_VSYNC register.
+0x80 VSYNC - The scalar will increment and be used for the LSB of the
+RIA_VSYNC register.
 
-0x90 OP_ACK - Some XREG locations are triggers for remote calls which may fail or take time to complete. This acknowledges a successful completion.
+0x90 OP_ACK - Some XREG locations are triggers for remote calls which
+may fail or take time to complete. This acknowledges a successful
+completion.
 
 0xA0 OP_NAK - This acknowledges a failure.
 
 
-4. Terminal
-===========
+Terminal
+========
 
-The RP6502 VGA system includes a color ANSI terminal attached to stdout.
+The RP6502 VGA system includes a color ANSI terminal attached as the
+console. This terminal does not require flow control to keep up with
+115200 bps.
 
 C0 control codes
 ----------------
@@ -554,7 +639,9 @@ Fe Escape Sequences
 
 CSI Sequences
 -------------
-Missing numbers are treated as 0. Some functions, like cursor movement, treat 0 as 1 to be useful without parameters.
+
+Missing numbers are treated as 0. Some functions, like cursor
+movement, treat 0 as 1 to be useful without parameters.
 
 .. list-table::
   :widths: 15 5 5 75
@@ -591,14 +678,17 @@ Missing numbers are treated as 0. Some functions, like cursor movement, treat 0 
   * - CSI n J
     - ED
     - Erase in Display
-    - - 0: Erases from the cursor position to the end of the screen.
-      - 1: Erases from the beginning of the screen to the cursor position.
+    - - 0: Erases from the cursor position to the end of the
+        screen.
+      - 1: Erases from the beginning of the screen to the cursor
+        position.
       - 2, 3: Erases the entire screen.
   * - CSI n K
     - EL
     - Erase in Line
     - - 0: Erases from the cursor position to the end of the line.
-      - 1: Erases from the beginning of the line to the cursor position.
+      - 1: Erases from the beginning of the line to the cursor
+        position.
       - 2: Erases the entire line.
   * - CSI n m
     - SGR
@@ -607,7 +697,8 @@ Missing numbers are treated as 0. Some functions, like cursor movement, treat 0 
   * - CSI 6n
     - DSR
     - Device Status Report
-    - Responds with the cursor position (CPR) ESC\[n;mR, where n is the row and m is the column. 1-indexed.
+    - Responds with the cursor position (CPR) ESC\[n;mR, where n is
+      the row and m is the column. 1-indexed.
   * - CSI s
     - SCP
     - Save Current Cursor Position
@@ -620,7 +711,8 @@ Missing numbers are treated as 0. Some functions, like cursor movement, treat 0 
 
 SGR Parameters
 --------------
-Multiple parameters may be sent separated by semicolons. Reset is performed if no codes (CSI m).
+Multiple parameters may be sent separated by semicolons. Reset is
+performed if no codes (CSI m).
 
 .. list-table::
   :widths: 10 20 70
@@ -638,6 +730,7 @@ Multiple parameters may be sent separated by semicolons. Reset is performed if n
   * - 5
     - Blink
     - Some ANSI art uses this to brighten the background color.
+      It's a quirk of ANSI.SYS on IBM VGA.
   * - 22
     - Normal intensity
     - Normal foreground colors. Colors 8-15 dimmed.

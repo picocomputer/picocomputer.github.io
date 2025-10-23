@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>RP6502-RIA-W &#8212; RP6502 0.0-pre documentation</title>
+    <title>RP6502-RIA-W &#8212; Picocomputer  documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -23,117 +23,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head><body>
-  
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          
-
-          <div class="body" role="main">
-            
-  <div class="section" id="rp6502-ria-w">
-<h1>RP6502-RIA-W<a class="headerlink" href="#rp6502-ria-w" title="Permalink to this headline">¶</a></h1>
-<p>Rumbledethumps Picocomputer 6502 Interface Adapter W</p>
-<div class="contents local topic" id="table-of-contents">
-<p class="topic-title">Table of Contents</p>
-<ul class="simple">
-<li><p><a class="reference internal" href="#introduction" id="id1">1. Introduction</a></p></li>
-<li><p><a class="reference internal" href="#wifi-setup" id="id2">2. WiFi Setup</a></p></li>
-<li><p><a class="reference internal" href="#network-time-protocol-ntp" id="id3">3. Network Time Protocol (NTP)</a></p></li>
-<li><p><a class="reference internal" href="#modem-emulation" id="id4">4. Modem Emulation</a></p></li>
-<li><p><a class="reference internal" href="#bluetooth" id="id5">5. Bluetooth</a></p></li>
-</ul>
-</div>
-<div class="section" id="introduction">
-<h2><a class="toc-backref" href="#id1">1. Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>The <strong>RP6502 Interface Adapter W (RIA W)</strong> is a Raspberry Pi Pico 2 W running the RP6502-RIA-W firmware. The RIA W provides all the features of the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> plus integrated wireless services, as described below.</p>
-</div>
-<div class="section" id="wifi-setup">
-<h2><a class="toc-backref" href="#id2">2. WiFi Setup</a><a class="headerlink" href="#wifi-setup" title="Permalink to this headline">¶</a></h2>
-<p>The RIA W uses an Infineon CYW43439 chip supporting Wi-Fi 4 (802.11n). Configuration is performed via the console interface.</p>
-<ul class="simple">
-<li><p><strong>Enable/Disable Radio:</strong>
-Use <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">RF</span> <span class="pre">(0|1)</span></code> to enable (1, default) or disable (0) all radios without affecting other settings.</p></li>
-<li><p><strong>Set Country Code:</strong>
-<code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">RFCC</span> <span class="pre">(cc|-)</span></code> sets the WiFi country code for optimal performance (e.g., <code class="docutils literal notranslate"><span class="pre">US</span></code>, <code class="docutils literal notranslate"><span class="pre">GB</span></code>). Use <code class="docutils literal notranslate"><span class="pre">help</span> <span class="pre">set</span> <span class="pre">rfcc</span></code> to list supported codes. Use <code class="docutils literal notranslate"><span class="pre">-</span></code> to reset to the worldwide default.</p></li>
-<li><p><strong>Set Network Name (SSID):</strong>
-<code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">SSID</span> <span class="pre">(ssid|-)</span></code> sets your WiFi network name (Service Set Identifier). Use <code class="docutils literal notranslate"><span class="pre">-</span></code> to clear.</p></li>
-<li><p><strong>Set Network Password:</strong>
-<code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">PASS</span> <span class="pre">(pass|-)</span></code> sets your WiFi password. Use <code class="docutils literal notranslate"><span class="pre">-</span></code> to clear.</p></li>
-<li><p><strong>Check WiFi Status:</strong>
-Use the <code class="docutils literal notranslate"><span class="pre">status</span></code> command to view current WiFi connection and settings.</p></li>
-</ul>
-</div>
-<div class="section" id="network-time-protocol-ntp">
-<h2><a class="toc-backref" href="#id3">3. Network Time Protocol (NTP)</a><a class="headerlink" href="#network-time-protocol-ntp" title="Permalink to this headline">¶</a></h2>
-<p>The real-time clock (RTC) automatically synchronizes with internet time servers when connected.
-Check NTP status with the <cite>status</cite> command.</p>
-<ul class="simple">
-<li><p><strong>Set Time Zone:</strong>
-To use local time instead of UTC, set your time zone with <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">TZ</span></code>. Use <code class="docutils literal notranslate"><span class="pre">help</span> <span class="pre">set</span> <span class="pre">tz</span></code> for guidance. Daylight saving adjustments are automatic if your locale observes them.</p></li>
-</ul>
-<p>Once WiFi and time zone are configured, timekeeping is automatic—no battery required and no drift to worry about.</p>
-</div>
-<div class="section" id="modem-emulation">
-<h2><a class="toc-backref" href="#id4">4. Modem Emulation</a><a class="headerlink" href="#modem-emulation" title="Permalink to this headline">¶</a></h2>
-<p>The RIA W can emulate a Hayes modem for BBS access. Beware that raw TCP and telnet protocols are plain text in transit.</p>
-<ul class="simple">
-<li><p><strong>AT Commands:</strong>
-The modem interface supports standard AT commands for dialing, answering, and configuration.</p></li>
-</ul>
-<p>Example AT commands:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ATDexample.com:23</span></code> — Dial a BBS</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">+++</span></code> — Escape back to command mode</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ATE1</span></code> — Set echo</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ATH</span></code> — Hang up</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ATO</span></code> — Return to call</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ATQ0</span></code> — Set quieting</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ATSxxx?</span></code> — Query register number xxx</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ATSxxx=yyy</span></code> — Set register number xxx with value yyy</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ATV1</span></code> — Set verbosity</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ATX0</span></code> — Set progress messaging</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ATZ</span></code> — Load profile from NVRAM</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">AT&amp;F</span></code> — Load factory profile</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">AT&amp;V</span></code> — View profile</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">AT&amp;W</span></code> — Write profile to NVRAM</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">AT&amp;Z0=example.com:23</span></code> — Save “telephone number” to NVRAM</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">AT+RF=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+RF?</span></code> — Access RIA setting RF</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">AT+RFCC=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+RFCC?</span></code> — Access RIA setting RFCC</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">AT+SSID=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+SSID?</span></code> — Access RIA setting SSID</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">AT+PASSS=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+PASS?</span></code> — Access RIA setting PASS</p></li>
-</ul>
-<p>A full telnet stack has yet to be written so all connections are raw TCP.</p>
-<p>“Telephone Numbers” are saved immediately and are not linked to profiles.</p>
-<p><a class="reference external" href="https://github.com/picocomputer/picocomputer.github.io">Please contribute to this documentation.</a></p>
-</div>
-<div class="section" id="bluetooth">
-<h2><a class="toc-backref" href="#id5">5. Bluetooth</a><a class="headerlink" href="#bluetooth" title="Permalink to this headline">¶</a></h2>
-<p>The RIA W supports Bluetooth LE (BLE) keyboards, mice, and gamepads.
-It does not support the older Bluetooth Classic aka BR/EDR.
-The RIA W uses BTStack which can only support one Bluetooth Classic device
-at a time so it’s not worth the memory.
-BLE was introduced in June 2010 with Bluetooth 4.0 so it’s not difficult
-to find devices but you will find an occassional oddball. Of particular
-note are Sony DualShock and DualSense controllers - which you can use on
-USB instead.</p>
-<p>To add a new device, use monitor command <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">ble</span> <span class="pre">2</span></code> to enable pairing
-mode. The LED on the RIA W will blink when in pairing mode. See your device’s
-manual to enable its pairing mode - probably a button and more blinking.
-When the blinking stops, the device is connected and will be remembered
-(bonded) so it reconnects automatically in the future.</p>
-</div>
-</div>
-
-
-          </div>
-          
-        </div>
-      </div>
+  <div class="document">
+    
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">RP6502</a></h1>
+<h1 class="logo"><a href="index.html">Picocomputer</a></h1>
 
 
 
@@ -145,17 +39,17 @@ When the blinking stops, the device is connected and will be remembered
 <h3>Navigation</h3>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="hardware.html">Hardware</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ria.html">RIA</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">RIA W</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#introduction">1. Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#wifi-setup">2. WiFi Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#network-time-protocol-ntp">3. Network Time Protocol (NTP)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#modem-emulation">4. Modem Emulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#bluetooth">5. Bluetooth</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ria.html">RP6502-RIA</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">RP6502-RIA-W</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#wifi-setup">WiFi Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#network-time-protocol-ntp">Network Time Protocol (NTP)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#modem-emulation">Modem Emulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bluetooth">Bluetooth</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="vga.html">VGA</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vga.html">RP6502-VGA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="os.html">RP6502-OS</a></li>
 </ul>
 
 <div class="relations">
@@ -187,10 +81,147 @@ When the blinking stops, the device is connected and will be remembered
 
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="ria.html" title="Previous document">RP6502-RIA</a>
+        </li>
+        <li>
+          <a href="vga.html" title="Next document">RP6502-VGA</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="rp6502-ria-w">
+<h1>RP6502-RIA-W<a class="headerlink" href="#rp6502-ria-w" title="Permalink to this headline">¶</a></h1>
+<p>RP6502 - RP6502 Interface Adapter W</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The <strong>RP6502 Interface Adapter W</strong> is a Raspberry Pi Pico 2 W running
+the RP6502-RIA-W firmware. The <a class="reference internal" href="#"><span class="doc">RP6502-RIA-W</span></a> provides all the features
+of the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> plus wireless services, as described below.</p>
+</div>
+<div class="section" id="wifi-setup">
+<h2>WiFi Setup<a class="headerlink" href="#wifi-setup" title="Permalink to this headline">¶</a></h2>
+<p>The RP6502-RIA-W supports Wi-Fi 4 (802.11n). Configuration is performed
+via the console interface.</p>
+<ul class="simple">
+<li><p><strong>Enable/Disable Radio:</strong>
+Use <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">RF</span> <span class="pre">(0|1)</span></code> to enable (1, default) or disable (0) all radios
+without affecting other settings.</p></li>
+<li><p><strong>Set Country Code:</strong>
+<code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">RFCC</span> <span class="pre">(cc|-)</span></code> sets the WiFi country code for optimal performance
+(e.g., <code class="docutils literal notranslate"><span class="pre">US</span></code>, <code class="docutils literal notranslate"><span class="pre">GB</span></code>). Use <code class="docutils literal notranslate"><span class="pre">help</span> <span class="pre">set</span> <span class="pre">rfcc</span></code> to list supported codes.
+Use <code class="docutils literal notranslate"><span class="pre">-</span></code> to reset to the worldwide default.</p></li>
+<li><p><strong>Set Network Name (SSID):</strong>
+<code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">SSID</span> <span class="pre">(ssid|-)</span></code> sets your WiFi network name (Service Set
+Identifier). Use <code class="docutils literal notranslate"><span class="pre">-</span></code> to clear.</p></li>
+<li><p><strong>Set Network Password:</strong>
+<code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">PASS</span> <span class="pre">(pass|-)</span></code> sets your WiFi password. Use <code class="docutils literal notranslate"><span class="pre">-</span></code> to clear.</p></li>
+<li><p><strong>Check WiFi Status:</strong>
+Use the <code class="docutils literal notranslate"><span class="pre">status</span></code> command to view current WiFi connection and
+settings.</p></li>
+</ul>
+</div>
+<div class="section" id="network-time-protocol-ntp">
+<h2>Network Time Protocol (NTP)<a class="headerlink" href="#network-time-protocol-ntp" title="Permalink to this headline">¶</a></h2>
+<p>The real-time clock (RTC) automatically synchronizes with internet time
+servers when connected. Check NTP status with the <code class="docutils literal notranslate"><span class="pre">status</span></code> command.</p>
+<ul class="simple">
+<li><p><strong>Set Time Zone:</strong>
+To use local time instead of UTC, set your time zone with <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">TZ</span></code>.
+Use <code class="docutils literal notranslate"><span class="pre">HELP</span> <span class="pre">SET</span> <span class="pre">TZ</span></code> for guidance. Daylight saving adjustments are
+automatic if your locale observes them.</p></li>
+</ul>
+<p>Once WiFi and time zone are configured, timekeeping is automatic.</p>
+</div>
+<div class="section" id="modem-emulation">
+<h2>Modem Emulation<a class="headerlink" href="#modem-emulation" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="#"><span class="doc">RP6502-RIA-W</span></a> can emulate a Hayes modem for BBS access. Beware that
+raw TCP and telnet protocols are plain text in transit.</p>
+<ul class="simple">
+<li><p><strong>AT Commands:</strong>
+The modem interface supports standard AT commands for dialing,
+answering, and configuration.</p></li>
+</ul>
+<p>Example AT commands:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ATDexample.com:23</span></code> — Dial a BBS</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">+++</span></code> — Escape back to command mode</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ATE1</span></code> — Set echo</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ATH</span></code> — Hang up</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ATO</span></code> — Return to call</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ATQ0</span></code> — Set quieting</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ATSxxx?</span></code> — Query register number xxx</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ATSxxx=yyy</span></code> — Set register number xxx with value yyy</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ATV1</span></code> — Set verbosity</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ATX0</span></code> — Set progress messaging</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ATZ</span></code> — Load profile from NVRAM</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AT&amp;F</span></code> — Load factory profile</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AT&amp;V</span></code> — View profile</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AT&amp;W</span></code> — Write profile to NVRAM</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AT&amp;Z0=example.com:23</span></code> — Save “telephone number” to NVRAM</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AT+RF=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+RF?</span></code> — Access RIA setting RF</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AT+RFCC=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+RFCC?</span></code> — Access RIA setting RFCC</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AT+SSID=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+SSID?</span></code> — Access RIA setting SSID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AT+PASSS=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+PASS?</span></code> — Access RIA setting PASS</p></li>
+</ul>
+<p>A full telnet stack has yet to be written so all connections are raw
+TCP.</p>
+<p>“Telephone Numbers” are saved immediately and are not linked to
+profiles.</p>
+</div>
+<div class="section" id="bluetooth">
+<h2>Bluetooth<a class="headerlink" href="#bluetooth" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="#"><span class="doc">RP6502-RIA-W</span></a> supports Bluetooth LE (BLE) keyboards, mice, and
+gamepads. It does not support the older Bluetooth Classic aka BR/EDR.
+The RP6502-RIA-W uses BTStack which can only support one Bluetooth
+Classic device at a time so it’s not worth the memory. BLE was introduced
+in June 2010 with Bluetooth 4.0 so it’s not difficult to find devices but
+you will find an occasional oddball. Of particular note are Sony DualShock
+and DualSense controllers - which you can use on USB instead.</p>
+<p>To add a new device, use monitor command <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">ble</span> <span class="pre">2</span></code> to enable pairing
+mode. The LED on the RP6502-RIA-W will blink when in pairing mode. See
+your device’s manual to enable its pairing mode - probably a button and
+more blinking. When the blinking stops, the device is connected and will
+be remembered (bonded) so it reconnects automatically in the future.</p>
+</div>
+</div>
+
+
+          </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="ria.html" title="Previous document">RP6502-RIA</a>
+        </li>
+        <li>
+          <a href="vga.html" title="Next document">RP6502-VGA</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
     <div class="footer">
-      &copy;2023 Rumbledethumps.
+      &copy;2025 Rumbledethumps.
       
       |
       Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
@@ -201,6 +232,10 @@ When the blinking stops, the device is connected and will be remembered
           rel="nofollow">Page source</a>
     </div>
 
+    
+    <a href="https://github.com/picocomputer/" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
     
 
     

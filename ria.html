@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>RP6502-RIA &#8212; RP6502 0.0-pre documentation</title>
+    <title>RP6502-RIA &#8212; Picocomputer  documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -15,7 +15,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="RP6502-RIA-W" href="ria_w.html" />
-    <link rel="prev" title="Schematic, PCB, and Parts" href="hardware.html" />
+    <link rel="prev" title="Hardware" href="hardware.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -23,110 +23,162 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head><body>
-  
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Picocomputer</a></h1>
 
-    <div class="document">
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="hardware.html">Hardware</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">RP6502-RIA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#reset">Reset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#registers">Registers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#uart">UART</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#extended-ram-xram">Extended RAM (XRAM)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#extended-stack-xstack">Extended Stack (XSTACK)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#extended-registers-xreg">Extended Registers (XREG)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pico-information-exchange-pix">Pico Information Exchange (PIX)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#physical-layer">Physical layer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pix-extended-ram-xram">PIX Extended RAM (XRAM)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pix-extended-registers-xreg">PIX Extended Registers (XREG)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#keyboard">Keyboard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mouse">Mouse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gamepads">Gamepads</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#programmable-sound-generator">Programmable Sound Generator</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ria_w.html">RP6502-RIA-W</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vga.html">RP6502-VGA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="os.html">RP6502-OS</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="hardware.html" title="previous chapter">Hardware</a></li>
+      <li>Next: <a href="ria_w.html" title="next chapter">RP6502-RIA-W</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
       <div class="documentwrapper">
         <div class="bodywrapper">
+              <div class="related top">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="hardware.html" title="Previous document">Hardware</a>
+        </li>
+        <li>
+          <a href="ria_w.html" title="Next document">RP6502-RIA-W</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
           
 
           <div class="body" role="main">
             
   <div class="section" id="rp6502-ria">
 <h1>RP6502-RIA<a class="headerlink" href="#rp6502-ria" title="Permalink to this headline">¶</a></h1>
-<p>Rumbledethumps Picocomputer 6502 Interface Adapter.</p>
-<div class="contents local topic" id="table-of-contents">
-<p class="topic-title">Table of Contents</p>
-<ul class="simple">
-<li><p><a class="reference internal" href="#introduction" id="id1">1. Introduction</a></p>
-<ul>
-<li><p><a class="reference internal" href="#features-of-the-rp6502-ria" id="id2">1.1. Features of the RP6502-RIA</a></p></li>
-</ul>
-</li>
-<li><p><a class="reference internal" href="#functional-description" id="id3">2. Functional Description</a></p>
-<ul>
-<li><p><a class="reference internal" href="#reset" id="id4">2.1. Reset</a></p></li>
-<li><p><a class="reference internal" href="#registers" id="id5">2.2. Registers</a></p></li>
-<li><p><a class="reference internal" href="#uart" id="id6">2.3. UART</a></p></li>
-<li><p><a class="reference internal" href="#extended-ram-xram" id="id7">2.4. Extended RAM (XRAM)</a></p></li>
-<li><p><a class="reference internal" href="#extended-stack-xstack" id="id8">2.5. Extended Stack (XSTACK)</a></p></li>
-<li><p><a class="reference internal" href="#extended-registers-xreg" id="id9">2.6. Extended Registers (XREG)</a></p></li>
-</ul>
-</li>
-<li><p><a class="reference internal" href="#pico-information-exchange-pix" id="id10">3. Pico Information Exchange (PIX)</a></p>
-<ul>
-<li><p><a class="reference internal" href="#physical-layer" id="id11">3.1. Physical layer</a></p></li>
-<li><p><a class="reference internal" href="#pix-extended-ram-xram" id="id12">3.2. PIX Extended RAM (XRAM)</a></p></li>
-<li><p><a class="reference internal" href="#pix-extended-registers-xreg" id="id13">3.3. PIX Extended Registers (XREG)</a></p></li>
-</ul>
-</li>
-<li><p><a class="reference internal" href="#keyboard" id="id14">4. Keyboard</a></p></li>
-<li><p><a class="reference internal" href="#mouse" id="id15">5. Mouse</a></p></li>
-<li><p><a class="reference internal" href="#gamepads" id="id16">6. Gamepads</a></p></li>
-<li><p><a class="reference internal" href="#programmable-sound-generator" id="id17">1. Programmable Sound Generator</a></p></li>
-</ul>
-</div>
+<p>RP6502 - RP6502 Interface Adapter</p>
 <div class="section" id="introduction">
-<h2><a class="toc-backref" href="#id1">1. Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p>The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico 2 with
-RP6502-RIA firmware. The RIA provides all essential services to support a
-WDC W65C02S microprocessor.</p>
-<div class="section" id="features-of-the-rp6502-ria">
-<h3><a class="toc-backref" href="#id2">1.1. Features of the RP6502-RIA</a><a class="headerlink" href="#features-of-the-rp6502-ria" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><p>Advanced CMOS process technology for low power consumption</p></li>
-<li><p>Real time clock with automatic daylight savings time</p></li>
-<li><p>6502 reset and clock management</p></li>
-<li><p>ROM loader instead of ROM chips</p></li>
-<li><p>A proper UART</p></li>
-<li><p>Stereo audio</p></li>
-<li><p>USB keyboards and mice</p></li>
-<li><p>USB mass storage aka thumb drives</p></li>
-<li><p>USB gamepads for up to four player fun</p></li>
-<li><p>PIX bus for GPUs like the RP6502-VGA</p></li>
-</ul>
+<a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> firmware. The <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> provides all essential services to
+support a WDC W65C02S microprocessor.</p>
+<p>The <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> must be installed at $FFE0-$FFFF and must be in control of
+RESB and PHI2. These are the only requirements. Everything else about
+your Picocomputer can be customized. Even the <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> is optional.</p>
+<p>A new <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> will boot to the RP6502 monitor which you can access from the
+console. The console can be accessed in one of three ways: from a VGA
+monitor and USB or Bluetooth keyboard if you are using an <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a>;
+from the USB CDC device which the <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> presents when plugged
+into a host PC like a development system; or from UART RX/TX
+(115200 8N1) pins on the RIA if you aren’t using an <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a>. The
+monitor is not documented here beyond highlighting some common
+commands. The built-in help is extensive and always up-to-date. Type
+<code class="docutils literal notranslate"><span class="pre">help</span></code> to get started and don’t forget there is deep help like
+<code class="docutils literal notranslate"><span class="pre">help</span> <span class="pre">set</span> <span class="pre">phi2</span></code>.</p>
+<p>The RP6502 monitor is not an operating system shell. It is analogous to a
+UEFI shell. The RP6502 monitor is primarily designed to load ROMs.
+It also has a small amount of hardware and locale
+configuration, which is intentionally kept minimal.</p>
+<p>Loading ROMs in .rp6502 format is done with the <code class="docutils literal notranslate"><span class="pre">load</span></code>
+command. Type <code class="docutils literal notranslate"><span class="pre">help</span> <span class="pre">load</span></code> to learn about the file format for ROMs.
+These aren’t ROMs in the traditional (obsolete) sense. A ROM is a file
+that contains a memory image to be loaded in RAM before starting the
+6502. The <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> includes 1MB of EEPROM which you can <code class="docutils literal notranslate"><span class="pre">install</span></code> ROMs to.
+Once a ROM is installed, you can run it directly or <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">boot</span></code> so it
+loads when the <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> boots.</p>
+<p>Some of the monitor commands, like <code class="docutils literal notranslate"><span class="pre">upload</span></code> and <code class="docutils literal notranslate"><span class="pre">binary</span></code> are
+designed for use by developer tools. The rp6502.py script, included
+with the examples and templates, can be used to automate packaging of a
+ROM and executing it.</p>
 </div>
-</div>
-<div class="section" id="functional-description">
-<h2><a class="toc-backref" href="#id3">2. Functional Description</a><a class="headerlink" href="#functional-description" title="Permalink to this headline">¶</a></h2>
-<p>The RIA must be installed at $FFE0-$FFFF and must be in control of RESB
-and PHI2. These are the only requirements. Everything else about your
-Picocomputer can be customized.</p>
-<p>A new RIA will boot to the console interface. This console can be accessed
-in one of three ways: from a VGA monitor and USB keyboard if you are using
-an RP6502-VGA; from the USB CDC device which the RP6502-VGA presents when
-plugged into a host PC like a development system; or from UART RX/TX
-(115200 8N1) pins on the RIA if you aren’t using an RP6502-VGA. The
-console interface is not currently documented here. The built-in help is
-extensive and always up-to-date. Type <code class="docutils literal notranslate"><span class="pre">help</span></code> to get started and don’t
-forget there is deep help like <code class="docutils literal notranslate"><span class="pre">help</span> <span class="pre">set</span> <span class="pre">phi2</span></code>.</p>
-<p>The console interface is not meant to be an operating system CLI.
-Everything about its design is meant to achieve two goals. The first is to
-enable installing ROM files to the RIA EEPROM which can then boot on power
-up—this delivers the instant-on experience of early home computers. The
-other goal is to enable easy development and experimentation—you can load
-ROMs directly from a USB drive or send them from a development system.</p>
 <div class="section" id="reset">
-<h3><a class="toc-backref" href="#id4">2.1. Reset</a><a class="headerlink" href="#reset" title="Permalink to this headline">¶</a></h3>
-<p>When the 6502 is in reset, meaning RESB is low and it is not running, the
-RIA console is available for use. If the 6502 has crashed or the current
-application has no way to exit, you can put the 6502 back into reset in
-two ways.</p>
-<p>Using a USB keyboard, press CTRL-ALT-DEL. The USB stack runs on the Pi
-Pico so this will work even if the 6502 has crashed.</p>
-<p>Over the UART, send a break. The tools included with the “Hello, world!”
-project templates use this to stop the 6502, upload a new ROM, and execute
-the new ROM. All with the push of one button.</p>
-<p>WARNING! Do not hook up a physical button to RESB. The RIA must remain in
-control of RESB. What you probably want is the reset that happens from the
-RIA RUN pin. We call this a reboot. The reference hardware reboot button
-is hooked up to the RIA RUN pin. Rebooting the Pi Pico RIA like this will
-cause any configured boot ROM to load, like at power on. Resetting the
-6502 from keyboard or UART will only return you to the console interface,
-which is great for development and hacking.</p>
+<h2>Reset<a class="headerlink" href="#reset" title="Permalink to this headline">¶</a></h2>
+<p>It helps to think about reset as two states instead of a pulse on
+RESB. When reset is low, the 6502 is stopped and the console is
+connected to the RP6502 monitor. When reset is high, the 6502 is running
+and the console is connected both stdio in the <a class="reference internal" href="os.html"><span class="doc">RP6502-OS</span></a> and the UART TX/RX
+registers described below.</p>
+<p>If you want to move reset from low to high, either <code class="docutils literal notranslate"><span class="pre">load</span></code> a ROM with
+a reset vector, or use the <code class="docutils literal notranslate"><span class="pre">reset</span></code> command if you have prepared RAM
+some other way.</p>
+<p>To move reset from high to low and return to the monitor, even with a
+crashed or halted 6502, you have two options:</p>
+<ol class="arabic simple">
+<li><p>Using a Bluetooth or USB keyboard, press CTRL-ALT-DEL.</p></li>
+<li><p>Send a break to the RIA UART.</p></li>
+</ol>
+<p>WARNING! Do not hook up a physical button to RESB. The <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> must remain
+in control of RESB. What you probably want is the reset that happens
+from the RIA RUN pin. We call this a <code class="docutils literal notranslate"><span class="pre">reboot</span></code>. The reference hardware
+reboot button is hooked up to the RIA RUN pin. Rebooting the <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a>
+like this will cause any configured boot ROM to load, like at power
+on. Resetting the 6502 from keyboard or UART will only return you to
+the RP6502 console.</p>
 </div>
 <div class="section" id="registers">
-<h3><a class="toc-backref" href="#id5">2.2. Registers</a><a class="headerlink" href="#registers" title="Permalink to this headline">¶</a></h3>
+<h2>Registers<a class="headerlink" href="#registers" title="Permalink to this headline">¶</a></h2>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -142,13 +194,11 @@ which is great for development and hacking.</p>
 <tbody>
 <tr class="row-even"><td><p>$FFE0</p></td>
 <td><p>READY</p></td>
-<td><dl class="simple">
-<dt>Flow control for UART FIFO.</dt><dd><ul class="simple">
+<td><p>Flow control for UART FIFO.</p>
+<ul class="simple">
 <li><p>bit 7 - TX FIFO not full. OK to send.</p></li>
 <li><p>bit 6 - RX FIFO has data ready.</p></li>
 </ul>
-</dd>
-</dl>
 </td>
 </tr>
 <tr class="row-odd"><td><p>$FFE1</p></td>
@@ -161,7 +211,8 @@ which is great for development and hacking.</p>
 </tr>
 <tr class="row-odd"><td><p>$FFE3</p></td>
 <td><p>VSYNC</p></td>
-<td><p>Increments every 1/60 second when PIX VGA device is connected.</p></td>
+<td><p>Increments every 1/60 second when PIX VGA device 1 is
+connected.</p></td>
 </tr>
 <tr class="row-even"><td><p>$FFE4</p></td>
 <td><p>RW0</p></td>
@@ -197,7 +248,7 @@ which is great for development and hacking.</p>
 </tr>
 <tr class="row-even"><td><p>$FFEC</p></td>
 <td><p>XSTACK</p></td>
-<td><p>512 bytes for passing call parameters.</p></td>
+<td><p>512 bytes for OS call stack.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$FFED</p></td>
 <td><p>ERRNO_LO</p></td>
@@ -209,20 +260,21 @@ which is great for development and hacking.</p>
 </tr>
 <tr class="row-odd"><td><p>$FFEF</p></td>
 <td><p>OP</p></td>
-<td><p>Write the API operation id here to begin a kernel call.</p></td>
+<td><p>Write the OS operation id here to begin an OS call.</p></td>
 </tr>
 <tr class="row-even"><td><p>$FFF0</p></td>
 <td><p>IRQ</p></td>
-<td><p>Set bit 0 high to enable VSYNC interrupts. Verify source with
-VSYNC then read or write this register to clear interrupt.</p></td>
+<td><p>Set bit 0 high to enable VSYNC interrupts. Verify source
+with VSYNC increment then read or write this register to clear
+interrupt.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$FFF1</p></td>
 <td><p>RETURN</p></td>
-<td><p>Always $80, BRA. Entry to blocking API return.</p></td>
+<td><p>Always $80, BRA. Entry to blocking OS call.</p></td>
 </tr>
 <tr class="row-even"><td><p>$FFF2</p></td>
 <td><p>BUSY</p></td>
-<td><p>Bit 7 high while operation is running.</p></td>
+<td><p>Bit 7 high while OS operation is running.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$FFF3</p></td>
 <td><p>LDA</p></td>
@@ -230,7 +282,7 @@ VSYNC then read or write this register to clear interrupt.</p></td>
 </tr>
 <tr class="row-even"><td><p>$FFF4</p></td>
 <td><p>A</p></td>
-<td><p>Kernel register A.</p></td>
+<td><p>OS call register A.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$FFF5</p></td>
 <td><p>LDX</p></td>
@@ -238,7 +290,7 @@ VSYNC then read or write this register to clear interrupt.</p></td>
 </tr>
 <tr class="row-even"><td><p>$FFF6</p></td>
 <td><p>X</p></td>
-<td><p>Kernel register X.</p></td>
+<td><p>OS call register X.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$FFF7</p></td>
 <td><p>RTS</p></td>
@@ -278,49 +330,51 @@ VSYNC then read or write this register to clear interrupt.</p></td>
 </tr>
 </tbody>
 </table>
-</div>
 <div class="section" id="uart">
-<h3><a class="toc-backref" href="#id6">2.3. UART</a><a class="headerlink" href="#uart" title="Permalink to this headline">¶</a></h3>
+<h3>UART<a class="headerlink" href="#uart" title="Permalink to this headline">¶</a></h3>
 <p>Easy and direct access to the UART RX/TX pins of the <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> is
 available from $FFE0-$FFE2. The ready flags on bits 6-7 enable testing
-with the BIT operator. You may choose to use these or STDIN and STDOUT
-from the <a class="reference internal" href="api.html"><span class="doc">RP6502-API</span></a>. Using the UART directly while a STDIN or STDOUT
-kernel function is in progress will result in undefined behavior.</p>
+with the BIT operator. You may choose to use these or stdio
+from the <a class="reference internal" href="os.html"><span class="doc">RP6502-OS</span></a>. Using the UART directly while a stdio
+OS function is in progress will result in undefined behavior.
+The UART hardware runs at 115200 bps, 8 bit words, no parity, 1 stop bit.</p>
 </div>
 <div class="section" id="extended-ram-xram">
-<h3><a class="toc-backref" href="#id7">2.4. Extended RAM (XRAM)</a><a class="headerlink" href="#extended-ram-xram" title="Permalink to this headline">¶</a></h3>
-<p>RW0 and RW1 are two portals to the same 64K XRAM. Having only one portal
-would make moving XRAM very slow since data would have to buffer in 6502
-RAM. Ideally, you won’t move XRAM and can use the pair for better
-optimizations.</p>
-<p>STEP0 and STEP1 are reset to 1. These are signed so you can go backwards
-and reverse data. These adders allow for very fast sequential access,
-which typically makes up for the slightly slower random access compared
-to 6502 RAM.</p>
-<p>RW0 and RW1 are latching. This is important to remember when other systems
-change XRAM. For example, when using read_xram() to load XRAM from a mass
-storage device, this will not work as expected:</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">RIA_ADDR0</span> <span class="o">=</span> <span class="mh">0x1000</span><span class="p">;</span>
+<h3>Extended RAM (XRAM)<a class="headerlink" href="#extended-ram-xram" title="Permalink to this headline">¶</a></h3>
+<p>RW0 and RW1 are two portals to the same 64K XRAM. Having only one
+portal would make moving XRAM very slow since data would have to
+buffer in 6502 RAM. Ideally, you won’t move XRAM and can use the pair
+for better optimizations.</p>
+<p>STEP0 and STEP1 are reset to 1. These are signed so you can go
+backwards and reverse data. These adders allow for very fast sequential
+access, which typically makes up for the slightly slower random access
+compared to 6502 system RAM.</p>
+<p>RW0 and RW1 are latching. This is important to remember when other
+systems change XRAM. For example, when using read_xram() to load XRAM
+from a mass storage device, this will not work as expected:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">RIA</span><span class="p">.</span><span class="n">addr0</span> <span class="o">=</span> <span class="mh">0x1000</span><span class="p">;</span>
 <span class="n">read_xram</span><span class="p">(</span><span class="mh">0x1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fd</span><span class="p">);</span>
-<span class="kt">uint8_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">RIA_RW0</span><span class="p">;</span> <span class="c1">// wrong</span>
+<span class="kt">uint8_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">RIA</span><span class="p">.</span><span class="n">rw0</span><span class="p">;</span> <span class="c1">// wrong</span>
 </pre></div>
 </div>
-<p>Setting ADDR after the expected XRAM change will latch RW to the latest
-value.</p>
+<p>Setting ADDR after the expected XRAM change will latch RW to the
+latest value.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">read_xram</span><span class="p">(</span><span class="mh">0x1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fd</span><span class="p">);</span>
-<span class="n">RIA_ADDR0</span> <span class="o">=</span> <span class="mh">0x1000</span><span class="p">;</span>
-<span class="kt">uint8_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">RIA_RW0</span><span class="p">;</span> <span class="c1">// correct</span>
+<span class="n">RIA</span><span class="p">.</span><span class="n">addr0</span> <span class="o">=</span> <span class="mh">0x1000</span><span class="p">;</span>
+<span class="kt">uint8_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">RIA</span><span class="p">.</span><span class="n">rw0</span><span class="p">;</span> <span class="c1">// correct</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="extended-stack-xstack">
-<h3><a class="toc-backref" href="#id8">2.5. Extended Stack (XSTACK)</a><a class="headerlink" href="#extended-stack-xstack" title="Permalink to this headline">¶</a></h3>
+<h3>Extended Stack (XSTACK)<a class="headerlink" href="#extended-stack-xstack" title="Permalink to this headline">¶</a></h3>
 <p>This is 512 bytes of last-in, first-out, top-down stack used for the
-fastcall mechanism described in the <a class="reference internal" href="api.html"><span class="doc">RP6502-API</span></a>. Reading past the end is
-guaranteed to return zeros. Simply write to push and read to pull.</p>
+fastcall mechanism described in the <a class="reference internal" href="os.html"><span class="doc">RP6502-OS</span></a>. Reading past the end
+is guaranteed to return zeros. Simply write to push and read to pull.</p>
 </div>
 <div class="section" id="extended-registers-xreg">
-<h3><a class="toc-backref" href="#id9">2.6. Extended Registers (XREG)</a><a class="headerlink" href="#extended-registers-xreg" title="Permalink to this headline">¶</a></h3>
+<h3>Extended Registers (XREG)<a class="headerlink" href="#extended-registers-xreg" title="Permalink to this headline">¶</a></h3>
+<p>The <span class="xref std std-doc">RIA</span> is both the host of the PIX bus (documented below)
+and device 0 on the PIX bus.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -355,80 +409,80 @@ guaranteed to return zeros. Simply write to push and read to pull.</p>
 </div>
 </div>
 <div class="section" id="pico-information-exchange-pix">
-<h2><a class="toc-backref" href="#id10">3. Pico Information Exchange (PIX)</a><a class="headerlink" href="#pico-information-exchange-pix" title="Permalink to this headline">¶</a></h2>
-<p>The limited number of GPIO pins on the Raspberry Pi Pico required creating
-a new bus for high bandwidth devices like video systems. This is an
-addressable broadcast system which any number of devices can listen to.</p>
+<h2>Pico Information Exchange (PIX)<a class="headerlink" href="#pico-information-exchange-pix" title="Permalink to this headline">¶</a></h2>
+<p>The limited number of GPIO pins on the Raspberry Pi Pico required
+creating a new bus for high bandwidth devices like video systems. This
+is an addressable broadcast system which any number of devices can
+listen to.</p>
 <div class="section" id="physical-layer">
-<h3><a class="toc-backref" href="#id11">3.1. Physical layer</a><a class="headerlink" href="#physical-layer" title="Permalink to this headline">¶</a></h3>
-<p>The physical layer is designed to be easily decoded by Pi Pico PIO, which
-is just a fancy shift register. The signals used are PHI2 and PIX0-3.
-This is a double data rate bus with PIX0-3 shifted left on both
-transitions of PHI2. A frame consists of 32 bits transmitted over 4 cycles
-of PHI2.</p>
+<h3>Physical layer<a class="headerlink" href="#physical-layer" title="Permalink to this headline">¶</a></h3>
+<p>The physical layer is designed to be easily decoded by Pi Pico PIO,
+which is just a fancy shift register. The signals used are PHI2 and
+PIX0-3. This is a double data rate bus with PIX0-3 shifted left on
+both transitions of PHI2. A frame consists of 32 bits transmitted over
+4 cycles of PHI2.</p>
 <p>Bit 28 (0x10000000) is the framing bit. This bit will be set in all
-messages. An all-zero payload is repeated on device ID 7 when the bus is
-idle. A receiver will synchronize by ensuring PIX0 is high on a low
+messages. An all-zero payload is repeated on device ID 7 when the bus
+is idle. A receiver will synchronize by ensuring PIX0 is high on a low
 transition of PHI2. If it is not, stall until the next clock cycle.</p>
 <p>Bits 31-29 (0xE0000000) indicate the device ID number for a message.</p>
 <p>Device 0 is allocated to <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a>. Device 0 is also overloaded to
 broadcast XRAM.</p>
 <p>Device 1 is allocated to <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a>.</p>
 <p>Devices 2-6 are available for user expansion.</p>
-<p>Device 7 is used for synchronization. Because 0xF0000000 is hard to miss
-on test equipment.</p>
+<p>Device 7 is used for synchronization. Because 0xF0000000 is hard to
+miss on test equipment.</p>
 <p>Bits 27-24 (0x0F000000) indicate the channel ID number for a message.
 Each device can have 16 channels.</p>
-<p>Bits 23-16 (0x00FF0000) indicate the register address in the channel on
-the device.</p>
+<p>Bits 23-16 (0x00FF0000) indicate the register address in the channel
+on the device.</p>
 <p>Bits 15-0 (0x0000FFFF) is a value to store in the register.</p>
 </div>
 <div class="section" id="pix-extended-ram-xram">
-<h3><a class="toc-backref" href="#id12">3.2. PIX Extended RAM (XRAM)</a><a class="headerlink" href="#pix-extended-ram-xram" title="Permalink to this headline">¶</a></h3>
-<p>All changes to the 64KB of XRAM on the RIA will be broadcast on PIX
-device 0. Bits 15-0 contain the XRAM address. Bits 23-16 contain the XRAM
-data. This goes out on the wire, but is never seen by the SDK. Device 0,
-as seen by the SDK, is the RIA itself and has no need to go out on the
-wire.</p>
-<p>PIX devices will maintain a replica of the XRAM they use. Typically, all
-64K is replicated and an XREG set by the application will point to a
-configuration structure in XRAM.</p>
+<h3>PIX Extended RAM (XRAM)<a class="headerlink" href="#pix-extended-ram-xram" title="Permalink to this headline">¶</a></h3>
+<p>All changes to the 64KB of XRAM on the RIA will be broadcast to PIX
+device 0. Bits 15-0 contain the XRAM address. Bits 23-16 contain the
+XRAM data.</p>
+<p>PIX devices will maintain a replica of the XRAM they use. Typically,
+all 64K is replicated and an XREG set by a 6502 application will
+install virtual hardware at a location in XRAM.</p>
 </div>
 <div class="section" id="pix-extended-registers-xreg">
-<h3><a class="toc-backref" href="#id13">3.3. PIX Extended Registers (XREG)</a><a class="headerlink" href="#pix-extended-registers-xreg" title="Permalink to this headline">¶</a></h3>
-<p>PIX devices may use bits 27-0 however they choose. The suggested division
-of these bits is:</p>
-<p>Bits 27-24 indicate a channel. For example, the RIA device has a channel
-for audio, a channel for keyboard and mouse, a channel for Wifi, and so
-on. Bits 23-16 contain an extended register address. Bits 15-0 contain the
-payload.</p>
+<h3>PIX Extended Registers (XREG)<a class="headerlink" href="#pix-extended-registers-xreg" title="Permalink to this headline">¶</a></h3>
+<p>PIX devices may use bits 27-0 however they choose. The suggested
+division of these bits is:</p>
+<p>Bits 27-24 indicate a channel. For example, the RIA device has a
+channel for audio, a channel for keyboard, a channel for mice, and so
+on. Bits 23-16 contain an extended register address. Bits 15-0 contain
+the value to be stored.</p>
 <p>So we have seven PIX devices, each with 16 internal channels having 256
-16-bit registers. The idea is to use extended registers to point to
-structures in XRAM. Changing XREG is setup; changing XRAM causes the
-device to respond.</p>
+16-bit registers. The idea is to use these extended registers to
+configure virtual hardware and map it into extended memory.</p>
 </div>
 </div>
 <div class="section" id="keyboard">
-<h2><a class="toc-backref" href="#id14">4. Keyboard</a><a class="headerlink" href="#keyboard" title="Permalink to this headline">¶</a></h2>
-<p>The RIA can provide direct access to keyboard data. This is intended for
-applications that need to detect both key up and down events or the
+<h2>Keyboard<a class="headerlink" href="#keyboard" title="Permalink to this headline">¶</a></h2>
+<p>The RIA can provide direct access to keyboard data. This is intended
+for applications that need to detect both key up and down events or the
 modifier keys. You may instead use the UART or stdin if you don’t need
 this kind of direct access.</p>
-<p>Enable and disable direct keyboard access by mapping it to an address in
-extended RAM.</p>
+<p>Enable and disable direct keyboard access by mapping it to an address
+in XRAM.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="n">xaddr</span><span class="p">);</span>  <span class="c1">// enable</span>
 <span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xFFFF</span><span class="p">);</span> <span class="c1">// disable</span>
+<span class="n">xreg_ria_keyboard</span><span class="p">(</span><span class="n">xaddr</span><span class="p">);</span> <span class="c1">// macro shortcut</span>
 </pre></div>
 </div>
-<p>Extended RAM will be continuously updated with a bit array of USB HID
-keyboard codes. Note that these are not the same as PS/2 scancodes. Each
-bit represents one key with the first four bits having special meaning:</p>
-<div class="line-block">
-<div class="line">* 0 - No key pressed</div>
-<div class="line">* 1 - Overflow - too many keys pressed</div>
-<div class="line">* 2 - Num Lock on</div>
-<div class="line">* 3 - Caps Lock on</div>
-</div>
+<p>XRAM will be continuously updated with a bit array of USB HID
+keyboard codes. Note that these are not the same as PS/2 scancodes.
+Each bit represents one key with the first four bits/codes having special
+meaning:</p>
+<ul class="simple">
+<li><p>0 - No key pressed</p></li>
+<li><p>1 - Num Lock on</p></li>
+<li><p>2 - Caps Lock on</p></li>
+<li><p>3 - Scroll Lock on</p></li>
+</ul>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">uint8_t</span> <span class="n">keyboard</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
 <span class="cp">#define key(code) (keyboard[code &gt;&gt; 3] &amp; \</span>
 <span class="cp">                  (1 &lt;&lt; (code &amp; 7)))</span>
@@ -436,14 +490,15 @@ bit represents one key with the first four bits having special meaning:</p>
 </div>
 </div>
 <div class="section" id="mouse">
-<h2><a class="toc-backref" href="#id15">5. Mouse</a><a class="headerlink" href="#mouse" title="Permalink to this headline">¶</a></h2>
-<p>The RIA can provide direct access to mouse information. Enable and disable
-by mapping it to an address in extended RAM.</p>
+<h2>Mouse<a class="headerlink" href="#mouse" title="Permalink to this headline">¶</a></h2>
+<p>The RIA can provide direct access to mouse information. Enable and
+disable by mapping it to an address in XRAM.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mh">0x01</span><span class="p">,</span> <span class="n">xaddr</span><span class="p">);</span>  <span class="c1">// enable</span>
 <span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mh">0x01</span><span class="p">,</span> <span class="mh">0xFFFF</span><span class="p">);</span> <span class="c1">// disable</span>
+<span class="n">xreg_ria_mouse</span><span class="p">(</span><span class="n">xaddr</span><span class="p">);</span>    <span class="c1">// macro shortcut</span>
 </pre></div>
 </div>
-<p>This sets the address in extended RAM for a structure containing direct
+<p>This sets the address in XRAM for a structure containing direct
 mouse input.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
     <span class="kt">uint8_t</span> <span class="n">buttons</span><span class="p">;</span>
@@ -454,60 +509,62 @@ mouse input.</p>
 <span class="p">}</span> <span class="n">mouse</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>The amount of movement is computed by keeping track of the previous values
-and subtracting from the current value. Vsync timing (60Hz) isn’t always
-fast enough. For perfect mouse input, use an ISR at 8ms or faster (125Hz).</p>
+<p>The amount of movement is computed by way of the application subtracting
+the previous value from the current value. Vsync timing (60Hz) is period correct
+but isn’t fast enough by modern standards. For perfect mouse input, use an ISR
+at 8ms or faster (125Hz).</p>
 <p>It is recommended that applications consider the canvas resolution when
-interpreting the movement. For 640x480 and 640x360 resolutions, each unit
-of movement equates to one pixel. For 320x240 and 320x180 resolutions, two
-units of movement for each pixel.</p>
+interpreting the movement. For 640x480 and 640x360 resolutions, each
+unit of movement equates to one pixel. For 320x240 and 320x180
+resolutions, use two units of movement for each pixel.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int8_t</span> <span class="n">delta_x</span> <span class="o">=</span> <span class="n">current_x</span> <span class="o">-</span> <span class="n">prev_x</span><span class="p">;</span>
+<span class="kt">int8_t</span> <span class="n">delta_y</span> <span class="o">=</span> <span class="n">current_y</span> <span class="o">-</span> <span class="n">prev_y</span><span class="p">;</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Mouse buttons are a bitfield:</div>
-<div class="line">* 0 - LEFT</div>
-<div class="line">* 1 - RIGHT</div>
-<div class="line">* 2 - MIDDLE</div>
-<div class="line">* 3 - BACKWARD</div>
-<div class="line">* 4 - FORWARD</div>
-</div>
+<p>Mouse buttons are a bitfield:</p>
+<ul class="simple">
+<li><p>0 - LEFT</p></li>
+<li><p>1 - RIGHT</p></li>
+<li><p>2 - MIDDLE</p></li>
+<li><p>3 - BACKWARD</p></li>
+<li><p>4 - FORWARD</p></li>
+</ul>
 </div>
 <div class="section" id="gamepads">
-<h2><a class="toc-backref" href="#id16">6. Gamepads</a><a class="headerlink" href="#gamepads" title="Permalink to this headline">¶</a></h2>
-<p>The RIA supports up to four gamepads. There are drivers for Generic HID,
-XInput, and Playstation controllers. Unfortunately, the TinyUSB stack that
-the RIA uses is unstable on the Pi Pico and the information needed to fix
-is not part of the Pi Pico documentation. XInput is currently disabled and
-you may find USB instability on other devices.</p>
-<p>Some gamepads let you select between HID/DInput/Android, XInput, and other
-system. Choose HID/DInput/Android for the best chance of working.</p>
-<p>Modern gamepads all have evolved to the same four buttons and two sticks
-design with some minor variations in the face buttons which are either
-XY/AB, YX/BA, or Square/Triangle/Cross/Circle. This is generally of no
-consequence to the application unless those buttons are intended to
-represent a direction. In that case, the Square/Triangle/Cross/Circle and
-XY/AB layouts are “the official” layout of the RP6502. You can, of course,
-do your own thing and request players use a specific gamepad.</p>
-<p>Be aware that some gamepads will attempt to charge over USB. You can use
-a powered USB hub if needed.</p>
-<p>Enable and disable access to the RIA gamepad XRAM registers by setting the
-extended register. The register value is the XRAM start address of the
-gamepad registers. Any invalid address disables the gamepads.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">xaddr</span><span class="p">);</span>  <span class="c1">// enable</span>
-<span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mh">0xFFFF</span><span class="p">);</span> <span class="c1">// disable</span>
+<h2>Gamepads<a class="headerlink" href="#gamepads" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> supports up to four gamepads. There are drivers for Generic HID,
+XInput, and Playstation controllers. Unfortunately, the TinyUSB stack
+that the RIA uses is unstable on the Pi Pico and the information needed
+to fix it is not part of the Pi Pico documentation. XInput is currently
+disabled and you may find USB instability on other devices.</p>
+<p>Some gamepads let you select between HID/DInput/Android, XInput, and
+other systems. Choose HID/DInput/Android for the best chance of working.</p>
+<p>Modern gamepads have all evolved to the same four face buttons, d-pad,
+dual analog sticks, and quad shoulders. The minor variations of the four
+face buttons are XY/AB, YX/BA, or Square/Triangle/Cross/Circle. This is
+generally of no consequence to the application unless those buttons are
+intended to represent a direction. In that case, the
+Square/Triangle/Cross/Circle and XY/AB layouts are “the official” layout
+of the RP6502. You can, of course, do your own thing and request players
+use a specific gamepad or include a “AB or BA” option.</p>
+<p>Enable and disable access to the RIA gamepad XRAM registers by setting
+the extended register. The register value is the XRAM start address of
+the gamepad data. Any invalid address disables the gamepads.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">xaddr</span><span class="p">);</span>    <span class="c1">// enable</span>
+<span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mh">0xFFFF</span><span class="p">);</span>   <span class="c1">// disable</span>
+<span class="n">xreg_ria_gamepad</span><span class="p">(</span><span class="n">xaddr</span><span class="p">);</span> <span class="c1">// macro shortcut</span>
 </pre></div>
 </div>
-<p>Extended memory will be continuously updated with gamepad information. The
-10-byte structure described here repeats for a total of 40 bytes
+<p>Extended memory will be continuously updated with gamepad information.
+The 10-byte structure described here repeats for a total of 40 bytes
 representing four gamepads.</p>
 <p>The upper bits of the DPAD register are used to indicate if a gamepad is
 ready for use and what kind of gamepad it is. The connected bit is high
 when a gamepad for that player slot is connected. The Sony bit indicates
 that the player is using a PlayStation-style gamepad with
 Circle/Cross/Square/Triangle button faces.</p>
-<p>Note that there are both digital and analog values for the left and right
-analog sticks and analog triggers L2/R2. This lets an application
+<p>Note that there are both digital and analog values for the left and
+right analog sticks and analog triggers L2/R2. This lets an application
 completely ignore the analog values if it desires.</p>
 <p>Applications supporting L2 and R2 should be aware that some gamepads
 will only present digital information so the analog values will only
@@ -611,7 +668,7 @@ are encouraged to support both the dpad and left stick (merged).</p>
 </table>
 </div>
 <div class="section" id="programmable-sound-generator">
-<h2><a class="toc-backref" href="#id17">1. Programmable Sound Generator</a><a class="headerlink" href="#programmable-sound-generator" title="Permalink to this headline">¶</a></h2>
+<h2>Programmable Sound Generator<a class="headerlink" href="#programmable-sound-generator" title="Permalink to this headline">¶</a></h2>
 <p>The RIA includes a Programmable Sound Generator (PSG). It is configured
 with extended register device 0 channel 1 address 0x00.</p>
 <ul class="simple">
@@ -622,8 +679,8 @@ with extended register device 0 channel 1 address 0x00.</p>
 <li><p>PWM for all waveforms.</p></li>
 </ul>
 <p>Each of the eight oscillators requires eight bytes of XRAM for
-configuration. The unused byte is padding so multiplication is a fast bit
-shift.</p>
+configuration. The unused byte is padding so multiplication is a fast
+bit shift.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span> <span class="k">struct</span>
 <span class="p">{</span>
     <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">freq</span><span class="p">;</span>
@@ -636,18 +693,20 @@ shift.</p>
 <span class="p">}</span> <span class="n">ria_psg_t</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>Internally, the audio is generated by Pulse Width Modulation. A decoupling
-and low-pass filter circuit converts the digital signal into line-level
-analog.</p>
+<p>Internally, the audio is generated by Pulse Width Modulation. A
+decoupling and low-pass filter circuit converts the digital signal
+into line-level analog.</p>
 <p>Enable and disable the RIA PSG by setting the extended register. The
-register value is the XRAM start address for the 64 bytes of config. This
-start address must be int-aligned. Any invalid address disables the PSG.</p>
+register value is the XRAM start address for the 64 bytes of config.
+This start address must be int-aligned. Any invalid address disables
+the PSG.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="n">xaddr</span><span class="p">);</span> <span class="c1">// enable</span>
 <span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="mh">0xFFFF</span><span class="p">);</span> <span class="c1">// disable</span>
 </pre></div>
 </div>
-<p>All configuration changes take effect immediately. This allows for effects
-like panning, slide instruments, and other CPU-driven shenanigans.</p>
+<p>All configuration changes take effect immediately. This allows for
+effects like panning, slide instruments, and other CPU-driven
+shenanigans.</p>
 <p>The gate is checked at the sample rate of 24kHz. If, for example, you
 unset and set it between one pair of audio output samples, then it will
 not begin a new ADSR cycle.</p>
@@ -671,43 +730,36 @@ resolution of 1/3 Hz.</p></td>
 waveforms.</p></td>
 </tr>
 <tr class="row-even"><td><p>vol_attack</p></td>
-<td><dl class="simple">
-<dt>Attack volume and rate.</dt><dd><ul class="simple">
+<td><p>Attack volume and rate.</p>
+<ul class="simple">
 <li><p>bits 7-4 - 0-15 volume attenuation.</p></li>
 <li><p>bits 3-0 - 0-15 attack rate.</p></li>
 </ul>
-</dd>
-</dl>
 </td>
 </tr>
 <tr class="row-odd"><td><p>vol_decay</p></td>
-<td><dl class="simple">
-<dt>Decay volume and rate.</dt><dd><ul class="simple">
+<td><p>Decay volume and rate.</p>
+<ul class="simple">
 <li><p>bits 7-4 - 0-15 volume attenuation.</p></li>
 <li><p>bits 3-0 - 0-15 decay rate.</p></li>
 </ul>
-</dd>
-</dl>
 </td>
 </tr>
 <tr class="row-even"><td><p>wave_release</p></td>
-<td><dl class="simple">
-<dt>Waveform and release rate.</dt><dd><ul class="simple">
-<li><p>bits 7-4 - 0=sine, 1=square, 2=sawtooth, 3=triangle, 4=noise.</p></li>
+<td><p>Waveform and release rate.</p>
+<ul class="simple">
+<li><p>bits 7-4 - 0=sine, 1=square, 2=sawtooth, 3=triangle,
+4=noise.</p></li>
 <li><p>bits 3-0 - 0-15 release rate.</p></li>
 </ul>
-</dd>
-</dl>
 </td>
 </tr>
 <tr class="row-odd"><td><p>pan_gate</p></td>
-<td><dl class="simple">
-<dt>Stereo pan and gate.</dt><dd><ul class="simple">
+<td><p>Stereo pan and gate.</p>
+<ul class="simple">
 <li><p>bits 7-1 - Pan -63(left) to 63(right).</p></li>
 <li><p>bit 0 - 1=attack/decay/sustain, 0=release.</p></li>
 </ul>
-</dd>
-</dl>
 </td>
 </tr>
 </tbody>
@@ -816,87 +868,28 @@ Volume attenuation is logarithmic.</p>
 
 
           </div>
+              <div class="related bottom">
+                &nbsp;
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="hardware.html" title="Previous document">Hardware</a>
+        </li>
+        <li>
+          <a href="ria_w.html" title="Next document">RP6502-RIA-W</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+              </div>
           
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">RP6502</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="hardware.html">Hardware</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">RIA</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#introduction">1. Introduction</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#features-of-the-rp6502-ria">1.1. Features of the RP6502-RIA</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#functional-description">2. Functional Description</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#reset">2.1. Reset</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#registers">2.2. Registers</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#uart">2.3. UART</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#extended-ram-xram">2.4. Extended RAM (XRAM)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#extended-stack-xstack">2.5. Extended Stack (XSTACK)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#extended-registers-xreg">2.6. Extended Registers (XREG)</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#pico-information-exchange-pix">3. Pico Information Exchange (PIX)</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#physical-layer">3.1. Physical layer</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#pix-extended-ram-xram">3.2. PIX Extended RAM (XRAM)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#pix-extended-registers-xreg">3.3. PIX Extended Registers (XREG)</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#keyboard">4. Keyboard</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#mouse">5. Mouse</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#gamepads">6. Gamepads</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#programmable-sound-generator">1. Programmable Sound Generator</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="ria_w.html">RIA W</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vga.html">VGA</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
-</ul>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="hardware.html" title="previous chapter">Schematic, PCB, and Parts</a></li>
-      <li>Next: <a href="ria_w.html" title="next chapter">RP6502-RIA-W</a></li>
-  </ul></li>
-</ul>
-</div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</div>
-<script>$('#searchbox').show(0);</script>
-
-
-
-
-
-
-
-
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
+    <div class="clearer"></div>
+  </div>
     <div class="footer">
-      &copy;2023 Rumbledethumps.
+      &copy;2025 Rumbledethumps.
       
       |
       Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
@@ -907,6 +900,10 @@ Volume attenuation is logarithmic.</p>
           rel="nofollow">Page source</a>
     </div>
 
+    
+    <a href="https://github.com/picocomputer/" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
     
 
     
