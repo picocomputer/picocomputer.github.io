@@ -8,27 +8,26 @@ RP6502 - Operating System
 Introduction
 ============
 
-The :doc:`ria` runs a 32-bit protected operating system that
-you can call from the 6502. The :doc:`os` does not use any 6502 system RAM
-and will not interfere with developing a native 6502 OS.
+The :doc:`ria` runs a 32-bit protected operating system that you can call
+from the 6502. The :doc:`os` does not use any 6502 system RAM and will not
+interfere with developing a native 6502 OS.
 
 The :doc:`os` is loosely based on POSIX with an Application Binary
 Interface (ABI) similar to `cc65's fastcall
-<https://cc65.github.io/doc/cc65-intern.html>`__.
-It provides stdio.h and unistd.h services to both `cc65
-<https://cc65.github.io>`__ and `llvm-mos <https://llvm-mos.org/>`_
-compilers. There are also calls to access RP6502 features and manage
-FAT32 filesystems. ExFAT is ready to go and will be enabled when the
-patents expire.
+<https://cc65.github.io/doc/cc65-intern.html>`__. It provides stdio.h and
+unistd.h services to both `cc65 <https://cc65.github.io>`__ and `llvm-mos
+<https://llvm-mos.org/>`_ compilers. There are also calls to access RP6502
+features and manage FAT32 filesystems. ExFAT is ready to go and will be
+enabled when the patents expire.
 
 
 Memory Map
 ==========
 
-There is no ROM. Nothing in zero page is used or reserved. The
-Picocomputer starts as a clean slate for every project. VGA, audio,
-storage, keyboards, mice, gamepads, RTC, and networking are all accessed
-using only the 32 registers of the RIA.
+There is no ROM. Nothing in zero page is used or reserved. The Picocomputer
+starts as a clean slate for every project. VGA, audio, storage, keyboards,
+mice, gamepads, RTC, and networking are all accessed using only the 32
+registers of the RIA.
 
 .. list-table::
    :widths: 25 75
@@ -48,20 +47,19 @@ using only the 32 registers of the RIA.
    * - $10000-$1FFFF
      - XRAM, 64K for :doc:`ria` and :doc:`vga`
 
-The unassigned space is available for hardware experimenters. You will
-need to design your own chip select hardware to use this
-address space. It is recommended that additional VIAs be added "down"
-and other hardware added "up". For example: VIA0 at $FFD0, VIA1 at
-$FFC0, SID0 at $FF00, and SID1 at $FF20.
+The unassigned space is available for hardware experimenters. You will need
+to design your own chip select hardware to use this address space. It is
+recommended that additional VIAs be added "down" and other hardware added
+"up". For example: VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and SID1
+at $FF20.
 
 
 Application Binary Interface
 ============================
 
-The ABI for calling the operating system is based on
-fastcall from the `cc65 internals
-<https://cc65.github.io/doc/cc65-intern.html>`__. The :doc:`os`
-does not use or require anything from cc65 and is easy for
+The ABI for calling the operating system is based on fastcall from the
+`cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The
+:doc:`os` does not use or require anything from cc65 and is easy for
 assembly programmers to use. At its core, the OS ABI is four simple rules.
 
 * Stack arguments are pushed left to right.
@@ -69,31 +67,30 @@ assembly programmers to use. At its core, the OS ABI is four simple rules.
 * Return value in register AX or AXSREG.
 * May return data on the stack.
 
-A and X are the 6502 registers. The pseudo register AX combines them for
-16 bits. AXSREG allows 32 bits with the 16 additional SREG bits. Let's
-look at how to make an OS call through the RIA registers. All OS calls
-are specified as a C declaration like so:
+A and X are the 6502 registers. The pseudo register AX combines them for 16
+bits. AXSREG allows 32 bits with the 16 additional SREG bits. Let's look at
+how to make an OS call through the RIA registers. All OS calls are specified
+as a C declaration like so:
 
 .. c:function:: int doit(int arg0, int arg1);
 
-The RIA has registers called RIA_A, RIA_X, and RIA_SREG. An int is 16
-bits, so we set the RIA_A and RIA_X registers with arg1. I'll use "A"
-for the 6502 register and "RIA_A" for the RIA register in this
-explanation.
+The RIA has registers called RIA_A, RIA_X, and RIA_SREG. An int is 16 bits,
+so we set the RIA_A and RIA_X registers with arg1. I'll use "A" for the 6502
+register and "RIA_A" for the RIA register in this explanation.
 
-We use the XSTACK for arg0. Reading or writing data to the
-RIA_XSTACK register removes or adds bytes to the XSTACK. It's a
-top-down stack, so push each argument from left to right and maintain
-little endian-ness in memory.
+We use the XSTACK for arg0. Reading or writing data to the RIA_XSTACK
+register removes or adds bytes to the XSTACK. It's a top-down stack, so
+push each argument from left to right and maintain little endian-ness in
+memory.
 
-To execute the call, store the operation ID in RIA_OP. The operation
-begins immediately. You can keep doing 6502 things, like running a
-loading animation, by polling RIA_BUSY. Or, JSR RIA_SPIN to block.
+To execute the call, store the operation ID in RIA_OP. The operation begins
+immediately. You can keep doing 6502 things, like running a loading
+animation, by polling RIA_BUSY. Or, JSR RIA_SPIN to block.
 
-The JSR RIA_SPIN method can unblock in less than 3 clock cycles and
-does an immediate load of A and X. Sequential operations will run
-fastest with this technique. Under the hood, you're jumping into a
-self-modifying program that runs on the RIA registers.
+The JSR RIA_SPIN method can unblock in less than 3 clock cycles and does an
+immediate load of A and X. Sequential operations will run fastest with this
+technique. Under the hood, you're jumping into a self-modifying program that
+runs on the RIA registers.
 
 .. code-block:: asm
 
@@ -102,11 +99,10 @@ self-modifying program that runs on the RIA registers.
    LDX #$??      ; RIA_X
    RTS
 
-Polling is simply snooping on the above program. The RIA_BUSY register
-is the -2 or 0 in the BRA above. The RIA datasheet specifies bit 7
-indicates busy, which the 6502 can check quickly by using the BIT
-operator to set flag N. Once clear, we read RIA_A and RIA_X with
-absolute instructions.
+Polling is simply snooping on the above program. The RIA_BUSY register is
+the -2 or 0 in the BRA above. The RIA datasheet specifies bit 7 indicates
+busy, which the 6502 can check quickly by using the BIT operator to set
+flag N. Once clear, we read RIA_A and RIA_X with absolute instructions.
 
 .. code-block:: asm
 
@@ -116,87 +112,85 @@ absolute instructions.
    LDA RIA_A
    LDX RIA_X
 
-All operations returning RIA_A will also return RIA_X to assist with
-C integer promotion. RIA_SREG is only updated for
-32-bit returns. RIA_ERRNO is only updated if there is an error.
+All operations returning RIA_A will also return RIA_X to assist with C
+integer promotion. RIA_SREG is only updated for 32-bit returns. RIA_ERRNO
+is only updated if there is an error.
 
-Some operations return strings or structures on the stack. You must
-pull the entire stack before the next call. However, tail call
-optimizations are possible. For example, you can chain read_xstack()
-and write_xstack() to copy a file without using any RAM or XRAM.
+Some operations return strings or structures on the stack. You must pull the
+entire stack before the next call. However, tail call optimizations are
+possible. For example, you can chain read_xstack() and write_xstack() to
+copy a file without using any RAM or XRAM.
 
 Short Stacking
 ---------------
 
-In the never ending pursuit of saving all the cycles, it is possible to
-save a few on the stack push if you don't need all the range. This only
-works on the stack argument that gets pushed first. For example:
+In the never ending pursuit of saving all the cycles, it is possible to save
+a few on the stack push if you don't need all the range. This only works on
+the stack argument that gets pushed first. For example:
 
 .. code-block:: C
 
    long f_lseek(long offset, char whence, int fildes)
 
-Here we need to push a 32 bit value. Not coincidentally, it's in the
-right position for short stacking. If, for example, the offset always
-fits in 16 bits, push only two bytes instead of four.
+Here we need to push a 32 bit value. Not coincidentally, it's in the right
+position for short stacking. If, for example, the offset always fits in 16
+bits, push only two bytes instead of four.
 
 Shorter AX
 ----------
 
 Many operations can save a few cycles by ignoring REG_X. All returned
-integers are always available as at least 16 bits to assist with C
-integer promotion. However, many operations will ignore REG_X in the
-register parameter and limit their return to fit in REG_A. These will be
-documented below as "A regs".
+integers are always available as at least 16 bits to assist with C integer
+promotion. However, many operations will ignore REG_X in the register
+parameter and limit their return to fit in REG_A. These will be documented
+below as "A regs".
 
 Bulk Data
 ---------
 
 Functions that move bulk data may come in two flavors. These are any
-function with a mutable pointer parameter. A RAM pointer is meaningless
-to the RIA because it can not change 6502 RAM. Instead, we use the
-XSTACK or XRAM to move data.
+function with a mutable pointer parameter. A RAM pointer is meaningless to
+the RIA because it can not change 6502 RAM. Instead, we use the XSTACK or
+XRAM to move data.
 
 Bulk XSTACK Operations
 ~~~~~~~~~~~~~~~~~~~~~~
 
-These only work if the size is 512 bytes or less. Bulk data is passed on
-the XSTACK, which is 512 bytes. A pointer appears in the C prototype to
-indicate the type and direction of this data. Let's look at some
-examples.
+These only work if the size is 512 bytes or less. Bulk data is passed on the
+XSTACK, which is 512 bytes. A pointer appears in the C prototype to indicate
+the type and direction of this data. Let's look at some examples.
 
 .. code-block:: C
 
    int open(const char *path, int oflag);
 
-Send `oflag` in RIA_A. RIA_X doesn't need to be set according the to
-docs below. Send the path on XSTACK by pushing the string starting with
-the last character. You may omit pushing the terminating zero, but
-strings are limited to a length of 255. Calling this from the C SDK will
-"just work" because there's an implementation that pushes the string for
-you.
+Send `oflag` in RIA_A. RIA_X doesn't need to be set according the to docs
+below. Send the path on XSTACK by pushing the string starting with the last
+character. You may omit pushing the terminating zero, but strings are
+limited to a length of 255. Calling this from the C SDK will "just work"
+because there's an implementation that pushes the string for you.
 
 .. code-block:: C
 
    int read_xstack(void *buf, unsigned count, int fildes)
 
-Send `count` as a short stack and `fildes` in RIA_A. RIA_X doesn't need
-to be set according the to docs below. The returned value in AX
-indicates how many values must be pulled from the stack. If you call
-this from the C SDK then it will copy XSTACK to buf[] for you.
+Send `count` as a short stack and `fildes` in RIA_A. RIA_X doesn't need to
+be set according the to docs below. The returned value in AX indicates how
+many values must be pulled from the stack. If you call this from the C SDK
+then it will copy XSTACK to buf[] for you.
 
 .. code-block:: C
 
    int write_xstack(const void *buf, unsigned count, int fildes)
 
-Send `fildes` in RIA_A. RIA_X doesn't need to be set according the to
-docs below. Push the buf data to XSTACK. Do not send `count`, the OS
-knows this from its internal stack pointer. If you call this from the C
-SDK then it will copy count bytes of buf[] to XSTACK for you.
+Send `fildes` in RIA_A. RIA_X doesn't need to be set according the to docs
+below. Push the buf data to XSTACK. Do not send `count`, the OS knows this
+from its internal stack pointer. If you call this from the C SDK then it
+will copy count bytes of buf[] to XSTACK for you.
 
-Note that read() and write() are part of the C SDK, not an OS
-operation. C requires these to support a count larger than the XSTACK
-can return so the implementation makes multiple OS calls as necessary.
+Note that read() and write() are part of the C SDK, not an OS operation. C
+requires these to support a count larger than the XSTACK can return so the
+implementation makes multiple OS calls as necessary.
 
 Bulk XRAM Operations
 ~~~~~~~~~~~~~~~~~~~~
@@ -209,43 +203,42 @@ going through 6502 RAM or capture a screenshot with ease.
    int read_xram(xram_addr buf, unsigned count, int fildes)
    int write_xram(xram_addr buf, unsigned count, int fildes)
 
-The OS expects `buf` and `count` on the XSTACK as integers with
-`filedes` in RIA_A. The :doc:`os` has direct access to XRAM so
-internally it will use something like &XRAM[buf]. You will need to use
-RIA_RW0 or RIA_RW1 to access this memory from the 6502.
+The OS expects `buf` and `count` on the XSTACK as integers with `filedes` in
+RIA_A. The :doc:`os` has direct access to XRAM so internally it will use
+something like &XRAM[buf]. You will need to use RIA_RW0 or RIA_RW1 to access
+this memory from the 6502.
 
 These operations are interesting because of their high performance and
-ability to work in the background while the 6502 is doing something
-else. You can expect close to 64KB/sec, which means loading a game
-level's worth of assets will take less than a second.
+ability to work in the background while the 6502 is doing something else.
+You can expect close to 64KB/sec, which means loading a game level's worth
+of assets will take less than a second.
 
-Bulk XRAM operations are why the Picocomputer 6502 was designed
-without paged memory.
+Bulk XRAM operations are why the Picocomputer 6502 was designed without
+paged memory.
 
 
 Application Programmer Interface
 ================================
 
-Much of this API is based on POSIX and FatFs. In particular, filesystem
-and console access should feel extremely familiar. However, some
-operations will have a different argument order or data structures than
-what you're used to. The reason for this becomes apparent when you start
-to work in assembly and fine tune short stacking and integer demotions.
-You might not notice the differences if you only work in C because the
-standard library has wrapper functions and familiar prototypes. For
-example, the f_lseek() described below has reordered arguments that are
-optimized for short stacking the long argument. But you don't have to
-call f_lseek() from C, you can call the usual lseek() which has the
-traditional argument order.
+Much of this API is based on POSIX and FatFs. In particular, filesystem and
+console access should feel extremely familiar. However, some operations will
+have a different argument order or data structures than what you're used to.
+The reason for this becomes apparent when you start to work in assembly and
+fine tune short stacking and integer demotions. You might not notice the
+differences if you only work in C because the standard library has wrapper
+functions and familiar prototypes. For example, the f_lseek() described
+below has reordered arguments that are optimized for short stacking the long
+argument. But you don't have to call f_lseek() from C, you can call the
+usual lseek() which has the traditional argument order.
 
 The :doc:`os` is built around FAT filesystems, which is the defacto
-standard for unsecured USB storage devices. POSIX filesystems are not
-fully compatible with FAT but there is a solid intersection of basic IO
-that is 100% compatible. You will see some familiar POSIX functions like
-open() and others like f_stat() which are similar to the POSIX function
-but tailored to FAT. Should it ever become necessary to have a POSIX
-stat(), it can be implemented in the C standard library or in an
-application by translating f_stat() data.
+standard for unsecured USB storage devices. POSIX filesystems are not fully
+compatible with FAT but there is a solid intersection of basic IO that is
+100% compatible. You will see some familiar POSIX functions like open() and
+others like f_stat() which are similar to the POSIX function but tailored to
+FAT. Should it ever become necessary to have a POSIX stat(), it can be
+implemented in the C standard library or in an application by translating
+f_stat() data.
 
 ZXSTACK
 -------
@@ -254,9 +247,9 @@ ZXSTACK
    |
 
    Abandon the xstack by resetting the xstack pointer. This is the only
-   operation that doesn't require waiting for completion. You do not need
-   to call this for failed operations. It can be useful if you want to
-   quickly ignore part of a returned structure.
+   operation that doesn't require waiting for completion. You do not need to
+   call this for failed operations. It can be useful if you want to quickly
+   ignore part of a returned structure.
 
    :Op code: RIA_OP_ZXSTACK 0x00
    :C proto: rp6502.h
@@ -269,20 +262,20 @@ XREG
 
    |
 
-   Using xreg() from C is preferred to avoid making a counting error.
-   Count doesn't need to be sent in the ABI so both prototypes are correct.
+   Using xreg() from C is preferred to avoid making a counting error. Count
+   doesn't need to be sent in the ABI so both prototypes are correct.
 
-   The variadic argument is a list of ints to be stored in extended registers
-   starting at address on the specified device and channel.
-   See the :doc:`ria` and
-   :doc:`vga` documentation for what each register does. Setting
-   extended registers can fail, which you can use for feature
+   The variadic argument is a list of ints to be stored in extended
+   registers starting at address on the specified device and channel. See
+   the :doc:`ria` and :doc:`vga` documentation for what each register does.
+   Setting extended registers can fail, which you can use for feature
    detection. EINVAL means the device responded with a negative
    acknowledgement. EIO means there was a timeout waiting for ack/nak.
 
-   This is how you add virtual hardware to extended RAM. Both the :doc:`ria` and
-   :doc:`vga` have a selection of virtual devices you can install. You can also
-   make your own hardware for the PIX bus and configure it with this call.
+   This is how you add virtual hardware to extended RAM. Both the :doc:`ria`
+   and :doc:`vga` have a selection of virtual devices you can install. You
+   can also make your own hardware for the PIX bus and configure it with
+   this call.
 
    :Op code: RIA_OP_XREG 0x01
    :C proto: rp6502.h
@@ -301,8 +294,8 @@ PHI2
 
    |
 
-   Retrieves the PHI2 setting from the RIA. Applications can use this
-   for adjusting to or rejecting different clock speeds.
+   Retrieves the PHI2 setting from the RIA. Applications can use this for
+   adjusting to or rejecting different clock speeds.
 
    :Op code: RIA_OP_PHI2 0x02
    :C proto: rp6502.h
@@ -317,12 +310,12 @@ CODE_PAGE
 
    |
 
-   Temporarily overrides the code page if non zero. Returns to system
-   setting when 6502 stops. This is the encoding the filesystem is using
-   and, if VGA is installed, the console and default font. If zero, the
-   system CP setting is selected and returned. If the requested code
-   page is unavailable, a different code page will be selected and
-   returned. For example: ``if (850!=code_page(850)) puts("error");``
+   Temporarily overrides the code page if non zero. Returns to system setting
+   when 6502 stops. This is the encoding the filesystem is using and, if VGA
+   is installed, the console and default font. If zero, the system CP setting
+   is selected and returned. If the requested code page is unavailable, a
+   different code page will be selected and returned. For example:
+   ``if (850!=code_page(850)) puts("error");``
 
    :Op code: RIA_OP_CODE_PAGE 0x03
    :C proto: rp6502.h
@@ -341,9 +334,9 @@ LRAND
    |
 
    Generates a random number starting with entropy on the RIA. This is
-   suitable for seeding a RNG or general use. The 16-bit rand() in the
-   cc65 library can be seeded with this by calling its non-standard
-   _randomize() function.
+   suitable for seeding a RNG or general use. The 16-bit rand() in the cc65
+   library can be seeded with this by calling its non-standard _randomize()
+   function.
 
    :Op code: RIA_OP_LRAND 0x04
    :C proto: rp6502.h
@@ -358,21 +351,21 @@ STDIN_OPT
 
    |
 
-   Additional options for the STDIN line editor. Set the str_length to
-   your buffer size - 1 to make gets() safe. This can also guarantee no
-   split lines when using fgets() on STDIN.
+   Additional options for the STDIN line editor. Set the str_length to your
+   buffer size - 1 to make gets() safe. This can also guarantee no split
+   lines when using fgets() on STDIN.
 
-   *** Experimental *** Likely to be replaced with stty-like something. Drop your
-   thoughts on the forums if you have specific needs.
+   *** Experimental *** Likely to be replaced with stty-like something. Drop
+   your thoughts on the forums if you have specific needs.
 
    :Op code: RIA_OP_STDIN_OPT 0x05
    :C proto: rp6502.h
-   :param ctrl_bits: Bitmap of ASCII 0-31 defines which CTRL characters
-      can abort an input. When CTRL key is pressed, any typed input
-      remains on the screen but the applicaion receives a line containing
-      only the CTRL character. e.g. CTRL-C + newline.
-   :param str_length: 0-255 default 254. The input line editor won't
-      allow user input greater than this length.
+   :param ctrl_bits: Bitmap of ASCII 0-31 defines which CTRL characters can
+      abort an input. When CTRL key is pressed, any typed input remains on
+      the screen but the applicaion receives a line containing only the CTRL
+      character. e.g. CTRL-C + newline.
+   :param str_length: 0-255 default 254. The input line editor won't allow
+      user input greater than this length.
    :a regs: return, str_length
    :returns: 0 on success
    :errno: will not fail
@@ -386,16 +379,17 @@ ERRNO_OPT
    |
 
    :doc:`os` calls will set RIA_ERRNO when an error occurs.  This is used to
-   select which set of values to use because the compiler
-   libraries each use different constants in errno.h. Both cc65
-   and llvm-mos call this automatically in the C runtime. The RIA_ERRNO value will not
-   change until it is set. Note that the C `errno` maps directly to RIA_ERRNO.
+   select which set of values to use because the compiler libraries each use
+   different constants in errno.h. Both cc65 and llvm-mos call this
+   automatically in the C runtime. The RIA_ERRNO behavior is undefined until
+   it is set. Note that the C `errno` maps directly to RIA_ERRNO.
 
-   :doc:`os` will map FatFs errors onto errno. RP6502 emulation and simulation
-   software is expected to map their native errors as well. The table below
-   shows the FatFs mappings. Because FatFs is so integral to the OS,
-   calls are documented here with their native FatFs errors to assist when
-   cross referencing the `FatFs documentation <https://elm-chan.org/fsw/ff/>`__.
+   :doc:`os` will map FatFs errors onto errno. RP6502 emulation and
+   simulation software is expected to map their native errors as well. The
+   table below shows the FatFs mappings. Because FatFs is so integral to the
+   OS, calls are documented here with their native FatFs errors to assist
+   when cross referencing the `FatFs documentation
+   <https://elm-chan.org/fsw/ff/>`__.
 
    :Op code: RIA_OP_ERRNO_OPT 0x06
    :C proto: None
@@ -504,8 +498,8 @@ CLOCK
 
    |
 
-   Obtain the value of a monotonic clock that updates 100 times per
-   second. Wraps approximately every 497 days.
+   Obtain the value of a monotonic clock that updates 100 times per second.
+   Wraps approximately every 497 days.
 
    :Op code: RIA_OP_CLOCK 0x0F
    :C proto: time.h
@@ -587,11 +581,10 @@ CLOCK_GETTIMEZONE
       };
 
    Returns a cc65 _timezone structure for the requested time. Use
-   `help set tz` on the monitor to learn about configuring your time
-   zone.
+   `help set tz` on the monitor to learn about configuring your time zone.
 
-   *** Experimental *** time zones in cc65 are incomplete probably because
-   no other 6502 OS supports them.
+   *** Experimental *** time zones in cc65 are incomplete probably because no
+   other 6502 OS supports them.
 
    :Op code: RIA_OP_CLOCK_GETTIMEZONE 0x13
    :C proto: None, Experimental
@@ -609,8 +602,8 @@ OPEN
 
    |
 
-   Create a connection between a file and a file descriptor. Up to 8
-   files may be open at once.
+   Create a connection between a file and a file descriptor. Up to 8 files
+   may be open at once.
 
    :Op code: RIA_OP_OPEN 0x14
    :C proto: fcntl.h
@@ -667,19 +660,19 @@ READ
 
    |
 
-   Read `count` bytes from a file to a buffer. This is implemented in
-   the compiler library as a series of calls to read_xstack().
+   Read `count` bytes from a file to a buffer. This is implemented in the
+   compiler library as a series of calls to read_xstack().
 
    :Op code: None
    :C proto: unistd.h
    :param buf: Destination for the returned data.
    :param count: Quantity of bytes to read. 0x7FFF max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes read is returned. On error, -1
-      is returned.
+   :returns: On success, number of bytes read is returned. On error, -1 is
+      returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
-      FR_INVALID_OBJECT, FR_TIMEOUT
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
+      FR_TIMEOUT
 
 
 READ_XSTACK
@@ -696,11 +689,11 @@ READ_XSTACK
    :param buf: Destination for the returned data.
    :param count: Quantity of bytes to read. 0x100 max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes read is returned. On error, -1
-      is returned.
+   :returns: On success, number of bytes read is returned. On error, -1 is
+      returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
-      FR_INVALID_OBJECT, FR_TIMEOUT
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
+      FR_TIMEOUT
 
 READ_XRAM
 ---------
@@ -716,11 +709,11 @@ READ_XRAM
    :param buf: Destination for the returned data.
    :param count: Quantity of bytes to read. 0x7FFF max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes read is returned. On error, -1
-      is returned.
+   :returns: On success, number of bytes read is returned. On error, -1 is
+      returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
-      FR_INVALID_OBJECT, FR_TIMEOUT
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
+      FR_TIMEOUT
 
 
 WRITE
@@ -730,19 +723,19 @@ WRITE
 
    |
 
-   Write `count` bytes from buffer to a file. This is implemented in
-   the compiler library as a series of calls to write_xstack().
+   Write `count` bytes from buffer to a file. This is implemented in the
+   compiler library as a series of calls to write_xstack().
 
    :Op code: None
    :C proto: unistd.h
    :param buf: Location of the data.
    :param count: Quantity of bytes to write. 0x7FFF max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes written is returned. On error,
-      -1 is returned.
+   :returns: On success, number of bytes written is returned. On error, -1
+      is returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
-      FR_INVALID_OBJECT, FR_TIMEOUT
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
+      FR_TIMEOUT
 
 
 WRITE_XSTACK
@@ -759,11 +752,11 @@ WRITE_XSTACK
    :param buf: Location of the data.
    :param count: Quantity of bytes to write. 0x100 max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes written is returned. On error,
-      -1 is returned.
+   :returns: On success, number of bytes written is returned. On error, -1
+      is returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
-      FR_INVALID_OBJECT, FR_TIMEOUT
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
+      FR_TIMEOUT
 
 
 WRITE_XRAM
@@ -780,11 +773,11 @@ WRITE_XRAM
    :param buf: Location of the data.
    :param count: Quantity of bytes to write. 0x7FFF max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes written is returned. On error,
-      -1 is returned.
+   :returns: On success, number of bytes written is returned. On error, -1
+      is returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED,
-      FR_INVALID_OBJECT, FR_TIMEOUT
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
+      FR_TIMEOUT
 
 
 LSEEK
@@ -795,11 +788,11 @@ LSEEK
 
    |
 
-   Move the read/write pointer. The OS uses the ABI format of f_seek().
-   An lseek() compatible wrapper is provided with the compiler library.
+   Move the read/write pointer. The OS uses the ABI format of f_seek(). An
+   lseek() compatible wrapper is provided with the compiler library.
 
-   This can also be used to obtain the current read/write position
-   with ``f_lseek(0, SEEK_CUR, fd)``.
+   This can also be used to obtain the current read/write position with
+   ``f_lseek(0, SEEK_CUR, fd)``.
 
    :Op code: See table below.
    :C proto: f_lseek: rp6502.h, lseek: unistd.h
@@ -809,8 +802,7 @@ LSEEK
    :returns: Read/write position. -1 on error. If this value would be too
       large for a long, the returned value will be 0x7FFFFFFF.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
-      FR_TIMEOUT
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
 
    .. list-table::
       :header-rows: 1
@@ -918,7 +910,9 @@ STAT
    :param dirent: Returned f_stat_t data.
    :returns: 0 on success. -1 on error.
    :a regs: return, dirent
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
+      FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED,
+      FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
 
 
 OPENDIR
@@ -928,15 +922,18 @@ OPENDIR
 
    |
 
-   Create a connection between a directory and a directory descriptor. Up to 8
-   directories may be open at once.
+   Create a connection between a directory and a directory descriptor. Up to
+   8 directories may be open at once.
 
    :Op code: RIA_OP_OPENDIR 0x20
    :C proto: rp6502.h
    :param name: Pathname to a directory.
    :returns: Directory descriptor. -1 on error.
    :a regs: return
-   :errno: EINVAL, EMFILE, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_OBJECT, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE, FR_TOO_MANY_OPEN_FILES
+   :errno: EINVAL, EMFILE, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY,
+      FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_OBJECT, FR_INVALID_DRIVE,
+      FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE,
+      FR_TOO_MANY_OPEN_FILES
 
 
 READDIR
@@ -954,7 +951,8 @@ READDIR
    :param dirent: Returned f_stat_t data.
    :returns: 0 on success. -1 on error.
    :a regs: return, dirent
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT,
+      FR_NOT_ENOUGH_CORE
 
 
 CLOSEDIR
@@ -964,8 +962,8 @@ CLOSEDIR
 
    |
 
-   Release the directory descriptor. Directory descriptor
-   will rejoin the pool available for use by f_opendir().
+   Release the directory descriptor. Directory descriptor will rejoin the
+   pool available for use by f_opendir().
 
    :Op code: RIA_OP_CLOSEDIR 0x22
    :C proto: rp6502.h
@@ -999,16 +997,17 @@ SEEKDIR
 
    |
 
-   Set the read position for the directory descriptor. Internally,
-   the FatFs directory read position can only move forward by one,
-   so use this for convienence, not performance.
+   Set the read position for the directory descriptor. Internally, the FatFs
+   directory read position can only move forward by one, so use this for
+   convienence, not performance.
 
    :Op code: RIA_OP_SEEKDIR 0x24
    :C proto: rp6502.h
    :param dirdes: Directory descriptor from f_opendir().
    :returns: Read position. -1 on error.
    :a regs: return, dirdes
-   :errno: EINVAL, EBADF, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EINVAL, EBADF, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
+      FR_TIMEOUT, FR_NOT_ENOUGH_CORE
 
 
 REWINDDIR
@@ -1025,7 +1024,8 @@ REWINDDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
    :a regs: dirdes
-   :errno: EINVAL, EBADF, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EINVAL, EBADF, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
+      FR_TIMEOUT, FR_NOT_ENOUGH_CORE
 
 
 CHMOD
@@ -1044,7 +1044,9 @@ CHMOD
    :param mask: Only attributes with bits set here will be changed.
    :returns: 0 on success. -1 on error.
    :a regs: return, mask
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
+      FR_NO_PATH, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE,
+      FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
 
    .. list-table::
       :header-rows: 1
@@ -1071,7 +1073,8 @@ UTIME
 
    |
 
-   Update the date and time stamps of a file or directory. A date of 0 (invalid) leaves the date and time unchanged.
+   Update the date and time stamps of a file or directory. A date of 0
+   (invalid) leaves the date and time unchanged.
 
    :Op code: RIA_OP_UTIME 0x27
    :C proto: rp6502.h
@@ -1082,7 +1085,9 @@ UTIME
    :param crtime: Creation time.
    :returns: 0 on success. -1 on error.
    :a regs: return, mask
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
+      FR_NO_PATH, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE,
+      FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
 
    .. list-table:: Date
       :header-rows: 0
@@ -1121,7 +1126,10 @@ MKDIR
    :param name: Pathname of the directory to create.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_EXIST, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH,
+      FR_INVALID_NAME, FR_DENIED, FR_EXIST, FR_WRITE_PROTECTED,
+      FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT,
+      FR_NOT_ENOUGH_CORE
 
 
 CHDIR
@@ -1138,7 +1146,9 @@ CHDIR
    :param name: Pathname of the directory to make current.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH,
+      FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM,
+      FR_TIMEOUT, FR_NOT_ENOUGH_CORE
 
 
 CHDRIVE
@@ -1148,8 +1158,8 @@ CHDRIVE
 
    |
 
-   Change durrent drive. Eight USB MSC drives are formally named "USB0:" to "USB7:"
-   with shortcuts "0:" to "7:".
+   Change durrent drive. Eight USB MSC drives are formally named "USB0:" to
+   "USB7:" with shortcuts "0:" to "7:".
 
    :Op code: RIA_OP_CHDRIVE 0x2A
    :C proto: rp6502.h
@@ -1166,14 +1176,15 @@ GETCWD
 
    |
 
-   Get the current working directory. Size is ignored by the OS
-   but the C wrapper will use it.
+   Get the current working directory. Size is ignored by the OS but the C
+   wrapper will use it.
 
    :Op code: RIA_OP_GETCWD 0x2B
    :C proto: rp6502.h
    :param name: The returned directory.
    :returns: Size of returned name. -1 on error.
-   :errno: ENOMEM, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: ENOMEM, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NOT_ENABLED,
+      FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
 
 
 SETLABEL
@@ -1190,7 +1201,9 @@ SETLABEL
    :param name: Label with optional volume name.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_NAME,
+      FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED,
+      FR_NO_FILESYSTEM, FR_TIMEOUT
 
 
 GETLABEL
@@ -1208,7 +1221,8 @@ GETLABEL
    :param label: Storage for returned label.
    :returns: Size of returned label. -1 on error.
    :a regs: return
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_DRIVE,
+      FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
 
 
 GETFREE
@@ -1232,7 +1246,8 @@ GETFREE
    :param total: Storage for returned value.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_DRIVE,
+      FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
 
 
 EXIT
@@ -1242,10 +1257,10 @@ EXIT
 
    |
 
-   Halt the 6502 and return the console to RP6502 monitor control. This
-   is the only operation that does not return. RESB will be pulled down
-   before the next instruction can execute. Status is currently ignored
-   but will be used in the future.
+   Halt the 6502 and return the console to RP6502 monitor control. This is
+   the only operation that does not return. RESB will be pulled down before
+   the next instruction can execute. Status is currently ignored but will be
+   used in the future.
 
    In general, dropping the user back to the monitor is discouraged. But
    calling exit() or falling off main() is preferred to locking up.
