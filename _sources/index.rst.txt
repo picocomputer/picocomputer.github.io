@@ -29,7 +29,7 @@ Key Features
 - **VGA and HD Output**
 - **8-Channel Stereo Sound Generator**
 - **Protected Operating System**
-- **USB** for Keyboard, Mouse, and Gamepads
+- **USB** for Keyboard, Mouse, Gamepads, and Storage
 - **Bluetooth LE** for Keyboard, Mouse, and Gamepads
 - **WiFi** modem emulation
 - **Real Time Clock** with DST and NTP
@@ -46,7 +46,7 @@ For support and community interaction, use the following channels:
 - **Wiki:** https://github.com/picocomputer/community/wiki
 
 The entire development process was documented in a series of YouTube videos.
-The broad strokes are all still in place but remember that these video were
+The broad strokes are all still in place but remember that these videos were
 made during development.
 
 - **YouTube:**
@@ -72,7 +72,7 @@ The only required module is a RP6502-RIA.
 - :doc:`ria`: Interface adapter for the 6502, akin to CIA,
   VIA, and ACIA devices.
 - :doc:`ria_w`: Wireless features available when using the
-  recommended "Pico 2 W".
+  "Pico 2 W".
 - :doc:`vga`: Optional video adapter that connects to the
   RP6502-RIA.
 - :doc:`os`: The operating system and application programming interface.
