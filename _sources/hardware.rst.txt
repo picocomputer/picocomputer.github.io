@@ -27,8 +27,8 @@ Second, for the electronic components. Some PCB factories will do the
 soldering for you, but you'll still need to order the ICs and plug them
 into sockets.
 
-I have circuit boards in a `Tindie store
-<https://www.tindie.com/stores/rumbledethumps/>`_ that ships only to the
+I have circuit boards in a `Ko-fi store
+<https://ko-fi.com/rumbledethumps>`_ that ships only to the
 United States. International shipping is either too slow or too expensive
 when compared to getting boards made locally or in China.
 
