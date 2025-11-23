@@ -407,6 +407,11 @@ Mouse buttons are a bitfield:
 Gamepads
 ========
 
+NOTICE: Sega-style, NES-style, SNES-style, and other retro-style gamepads
+are not supported. You will have problems with button mappings on most
+of those. Rumbledethumps will not respond to support requests about this
+type of gamepad, but pull reqeusts for pad.c are accepted.
+
 The :doc:`ria` supports up to four gamepads. There are drivers for Generic HID,
 XInput, and Playstation controllers. Unfortunately, the TinyUSB stack
 that the RIA uses is unstable on the Pi Pico and the information needed
