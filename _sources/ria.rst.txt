@@ -228,7 +228,7 @@ is guaranteed to return zeros. Simply write to push and read to pull.
 Extended Registers (XREG)
 -------------------------
 
-The :doc:`RIA` is both the host of the PIX bus (documented below)
+The :doc:`ria` is both the host of the PIX bus (documented below)
 and device 0 on the PIX bus.
 
 .. list-table::
@@ -407,28 +407,34 @@ Mouse buttons are a bitfield:
 Gamepads
 ========
 
-NOTICE: Sega-style, NES-style, SNES-style, and other retro-style gamepads
-are not supported. You will have problems with button mappings on most
-of those. Rumbledethumps will not respond to support requests about this
-type of gamepad, but pull reqeusts for pad.c are accepted.
-
 The :doc:`ria` supports up to four gamepads. There are drivers for Generic HID,
-XInput, and Playstation controllers. Unfortunately, the TinyUSB stack
-that the RIA uses is unstable on the Pi Pico and the information needed
-to fix it is not part of the Pi Pico documentation. XInput is currently
+XInput, and Playstation gamepads. Unfortunately, the TinyUSB stack
+that the RIA uses is unstable on the Pi Pico so XInput is currently
 disabled and you may find USB instability on other devices.
 
 Some gamepads let you select between HID/DInput/Android, XInput, and
-other systems. Choose HID/DInput/Android for the best chance of working.
+other systems. Choose HID/DInput/Android (all the same) for the best chance
+of working.
 
 Modern gamepads have all evolved to the same four face buttons, d-pad,
-dual analog sticks, and quad shoulders. The minor variations of the four
-face buttons are XY/AB, YX/BA, or Square/Triangle/Cross/Circle. This is
-generally of no consequence to the application unless those buttons are
-intended to represent a direction. In that case, the
+dual analog sticks, select, start, and quad shoulders. The minor variations
+of the four face buttons are XY/AB, YX/BA, or Square/Triangle/Cross/Circle.
+This is generally of no consequence to the application unless those buttons
+are intended to represent a direction. In that case, the
 Square/Triangle/Cross/Circle and XY/AB layouts are "the official" layout
 of the RP6502. You can, of course, do your own thing and request players
 use a specific gamepad or include a "AB or BA" option.
+
+.. attention::
+   **The RP6502 expects modern gamepads.**
+
+   The RP6502 is not an emulation platform. Sega, NES, SNES, TG16, Atari,
+   and other retro-style gamepads are **not supported**.
+
+   Retro-style gamepads are designed with button mappings for emulators while
+   emulators expect the button layout of a modern gamepad. These do not cancel
+   each other out. Instead, you end up with wonky button mappings that do not
+   follow the defacto standard for modern gamepads.
 
 Enable and disable access to the RIA gamepad XRAM registers by setting
 the extended register. The register value is the XRAM start address of
