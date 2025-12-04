@@ -707,6 +707,14 @@ movement, treat 0 as 1 to be useful without parameters.
     - RCP
     - Restore Saved Cursor Position
     - Moves cursor to position stored by SCP.
+  * - CSI ?25h
+    - DECTCEM
+    - Show Cursor
+    - Makes the cursor visible.
+  * - CSI ?25l
+    - DECTCEM
+    - Hide Cursor
+    - Makes the cursor invisible.
 
 
 SGR Parameters
