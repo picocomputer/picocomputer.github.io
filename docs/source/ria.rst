@@ -678,3 +678,27 @@ Volume attenuation is logarithmic.
      - 8s
      - 24s
      - 0/256 (silent)
+
+
+Yamaha OPL2 FM Sound Generator
+==============================
+
+The RIA includes a YM3812 FM Sound Generator (OPL2). It is configured
+with extended register device 0 channel 1 address 0x01.
+
+Enable and disable the RIA OPL2 by setting the extended register. The
+extended register value is the XRAM start address for the 256 OPL2
+registers. The OPL2 registers must begin on a page boundary.
+
+.. code-block:: C
+
+  xreg(0, 1, 0x01, xaddr); // enable
+  xreg(0, 1, 0x01, 0xFFFF); // disable
+
+If, for example, xaddr is 0x4200 then the 256 registers of an OPL2 chip
+are mapped into XRAM from 0x4200 to 0x42FF. Consult 
+
+Timers, interrupts, and the status register are not supported and were
+not widely used. These were in Yamaha OPL chips to assist with cost
+reducing consumer devices and rarely used in computers which had their
+own timers.
