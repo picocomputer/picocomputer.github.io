@@ -199,25 +199,6 @@ backwards and reverse data. These adders allow for very fast sequential
 access, which typically makes up for the slightly slower random access
 compared to 6502 system RAM.
 
-RW0 and RW1 are latching. This is important to remember when other
-systems change XRAM. For example, when using read_xram() to load XRAM
-from a mass storage device, this will not work as expected:
-
-.. code-block:: C
-
-  RIA.addr0 = 0x1000;
-  read_xram(0x1000, 1, fd);
-  uint8_t result = RIA.rw0; // wrong
-
-Setting ADDR after the expected XRAM change will latch RW to the
-latest value.
-
-.. code-block:: C
-
-  read_xram(0x1000, 1, fd);
-  RIA.addr0 = 0x1000;
-  uint8_t result = RIA.rw0; // correct
-
 Extended Stack (XSTACK)
 -----------------------
 
