@@ -695,6 +695,78 @@ int <code class="sig-name descname">clock_getres</code><span class="sig-paren">(
 </dd></dl>
 
 </div>
+<div class="section" id="tzset">
+<h3>TZSET<a class="headerlink" href="#tzset" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt>
+<code class="sig-name descname">int void tzset(void);</code></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.f_tzset">
+int <code class="sig-name descname">f_tzset</code><span class="sig-paren">(</span>struct _tzset<em> *tz</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_tzset" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">_tzset</span>
+<span class="p">{</span>
+   <span class="kt">int8_t</span> <span class="n">daylight</span><span class="p">;</span>  <span class="cm">/* non 0 if daylight savings time active */</span>
+   <span class="kt">int32_t</span> <span class="n">timezone</span><span class="p">;</span> <span class="cm">/* Number of seconds behind UTC */</span>
+   <span class="kt">char</span> <span class="n">tzname</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>   <span class="cm">/* Name of timezone, e.g. CET */</span>
+   <span class="kt">char</span> <span class="n">dstname</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>  <span class="cm">/* Name when daylight true, e.g. CEST */</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>The virtual f_tzset() is the how tzset() is implemented. Use <cite>help set tz</cite> on the
+monitor to learn about configuring your time zone.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_TZSET 0x0D</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>time.h</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>0 on success. -1 on error.</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>EINVAL</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="tzquery">
+<h3>TZQUERY<a class="headerlink" href="#tzquery" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt>
+<code class="sig-name descname">struct tm *localtime(const time_t *timep);</code></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.f_tzquery">
+int <code class="sig-name descname">f_tzquery</code><span class="sig-paren">(</span>uint32_t<em> time</em>, struct _tzquery<em> *dst</em><span class="sig-paren">)</span><a class="headerlink" href="#c.f_tzquery" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">_tzquery</span>
+<span class="p">{</span>
+   <span class="kt">int8_t</span> <span class="n">daylight</span><span class="p">;</span>  <span class="cm">/* non 0 if daylight savings time active */</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>The virtual f_tzquery() is part of how localtime() is implemented.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Op code</dt>
+<dd class="field-odd"><p>RIA_OP_TZQUERY 0x0E</p>
+</dd>
+<dt class="field-even">C proto</dt>
+<dd class="field-even"><p>time.h</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Seconds to add to UTC for localtime.</p>
+</dd>
+<dt class="field-even">Errno</dt>
+<dd class="field-even"><p>will not fail</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 <div class="section" id="clock-gettime">
 <h3>CLOCK_GETTIME<a class="headerlink" href="#clock-gettime" title="Permalink to this headline">¶</a></h3>
 <dl class="function">
@@ -758,50 +830,6 @@ int <code class="sig-name descname">clock_settime</code><span class="sig-paren">
 </dd>
 <dt class="field-even">Errno</dt>
 <dd class="field-even"><p>EINVAL, EUNKNOWN</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="clock-gettimezone">
-<h3>CLOCK_GETTIMEZONE<a class="headerlink" href="#clock-gettimezone" title="Permalink to this headline">¶</a></h3>
-<dl class="function">
-<dt id="c.clock_gettimezone">
-int <code class="sig-name descname">clock_gettimezone</code><span class="sig-paren">(</span>uint32_t<em> time</em>, clockid_t<em> clock_id</em>, struct _timezone<em> *tz</em><span class="sig-paren">)</span><a class="headerlink" href="#c.clock_gettimezone" title="Permalink to this definition">¶</a></dt>
-<dd><div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">_timezone</span>
-<span class="p">{</span>
-   <span class="kt">int8_t</span> <span class="n">daylight</span><span class="p">;</span>  <span class="cm">/* &gt;0 if daylight savings time active */</span>
-   <span class="kt">int32_t</span> <span class="n">timezone</span><span class="p">;</span> <span class="cm">/* Number of seconds behind UTC */</span>
-   <span class="kt">char</span> <span class="n">tzname</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>   <span class="cm">/* Name of timezone, e.g. CET */</span>
-   <span class="kt">char</span> <span class="n">dstname</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>  <span class="cm">/* Name when daylight true, e.g. CEST */</span>
-<span class="p">};</span>
-</pre></div>
-</div>
-<p>Returns a cc65 _timezone structure for the requested time. Use
-<cite>help set tz</cite> on the monitor to learn about configuring your time zone.</p>
-<p><strong>* Experimental *</strong> time zones in cc65 are incomplete probably because no
-other 6502 OS supports them.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Op code</dt>
-<dd class="field-odd"><p>RIA_OP_CLOCK_GETTIMEZONE 0x13</p>
-</dd>
-<dt class="field-even">C proto</dt>
-<dd class="field-even"><p>None, Experimental</p>
-</dd>
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>time</strong> – time_t compatible integer.</p></li>
-<li><p><strong>clock_id</strong> – 0 for CLOCK_REALTIME.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>0 on success. -1 on error.</p>
-</dd>
-<dt class="field-odd">A regs</dt>
-<dd class="field-odd"><p>return, clock_id</p>
-</dd>
-<dt class="field-even">Errno</dt>
-<dd class="field-even"><p>EINVAL</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2076,9 +2104,10 @@ calling exit() or falling off main() is preferred to locking up.</p>
 <li class="toctree-l3"><a class="reference internal" href="#errno-opt">ERRNO_OPT</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#clock">CLOCK</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#clock-getres">CLOCK_GETRES</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tzset">TZSET</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tzquery">TZQUERY</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#clock-gettime">CLOCK_GETTIME</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#clock-settime">CLOCK_SETTIME</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#clock-gettimezone">CLOCK_GETTIMEZONE</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#open">OPEN</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#close">CLOSE</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#read">READ</a></li>

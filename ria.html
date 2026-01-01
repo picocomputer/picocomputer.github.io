@@ -280,21 +280,6 @@ for better optimizations.</p>
 backwards and reverse data. These adders allow for very fast sequential
 access, which typically makes up for the slightly slower random access
 compared to 6502 system RAM.</p>
-<p>RW0 and RW1 are latching. This is important to remember when other
-systems change XRAM. For example, when using read_xram() to load XRAM
-from a mass storage device, this will not work as expected:</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">RIA</span><span class="p">.</span><span class="n">addr0</span> <span class="o">=</span> <span class="mh">0x1000</span><span class="p">;</span>
-<span class="n">read_xram</span><span class="p">(</span><span class="mh">0x1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fd</span><span class="p">);</span>
-<span class="kt">uint8_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">RIA</span><span class="p">.</span><span class="n">rw0</span><span class="p">;</span> <span class="c1">// wrong</span>
-</pre></div>
-</div>
-<p>Setting ADDR after the expected XRAM change will latch RW to the
-latest value.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">read_xram</span><span class="p">(</span><span class="mh">0x1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fd</span><span class="p">);</span>
-<span class="n">RIA</span><span class="p">.</span><span class="n">addr0</span> <span class="o">=</span> <span class="mh">0x1000</span><span class="p">;</span>
-<span class="kt">uint8_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">RIA</span><span class="p">.</span><span class="n">rw0</span><span class="p">;</span> <span class="c1">// correct</span>
-</pre></div>
-</div>
 </div>
 <div class="section" id="extended-stack-xstack">
 <h3>Extended Stack (XSTACK)<a class="headerlink" href="#extended-stack-xstack" title="Permalink to this headline">¶</a></h3>
@@ -805,6 +790,24 @@ Volume attenuation is logarithmic.</p>
 </tbody>
 </table>
 </div>
+<div class="section" id="yamaha-opl2-fm-sound-generator">
+<h2>Yamaha OPL2 FM Sound Generator<a class="headerlink" href="#yamaha-opl2-fm-sound-generator" title="Permalink to this headline">¶</a></h2>
+<p>The RIA includes a YM3812 FM Sound Generator (OPL2). It is configured
+with extended register device 0 channel 1 address 0x01.</p>
+<p>Enable and disable the RIA OPL2 by setting the extended register. The
+extended register value is the XRAM start address for the 256 OPL2
+registers. The OPL2 registers must begin on a page boundary.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x01</span><span class="p">,</span> <span class="n">xaddr</span><span class="p">);</span> <span class="c1">// enable</span>
+<span class="n">xreg</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mh">0x01</span><span class="p">,</span> <span class="mh">0xFFFF</span><span class="p">);</span> <span class="c1">// disable</span>
+</pre></div>
+</div>
+<p>If, for example, xaddr is 0x4200 then the 256 registers of an OPL2 chip
+are mapped into XRAM from 0x4200 to 0x42FF. Consult</p>
+<p>Timers, interrupts, and the status register are not supported and were
+not widely used. These were in Yamaha OPL chips to assist with cost
+reducing consumer devices and rarely used in computers which had their
+own timers.</p>
+</div>
 </div>
 
 
@@ -861,6 +864,7 @@ Volume attenuation is logarithmic.</p>
 <li class="toctree-l2"><a class="reference internal" href="#mouse">Mouse</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#gamepads">Gamepads</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#programmable-sound-generator">Programmable Sound Generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#yamaha-opl2-fm-sound-generator">Yamaha OPL2 FM Sound Generator</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ria_w.html">RP6502-RIA-W</a></li>

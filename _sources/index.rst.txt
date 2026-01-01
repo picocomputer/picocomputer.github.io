@@ -27,11 +27,11 @@ Key Features
 - **64KB System RAM**
 - **64KB Extended RAM**
 - **VGA and HD Output**
-- **8-Channel Stereo Sound Generator**
+- **Yamaha OPL2 FM Sound Generator**
 - **Protected Operating System**
 - **USB** for Keyboard, Mouse, Gamepads, and Storage
 - **Bluetooth LE** for Keyboard, Mouse, and Gamepads
-- **WiFi** modem emulation
+- **WiFi** Hayes modem emulation
 - **Real Time Clock** with DST and NTP
 
 
