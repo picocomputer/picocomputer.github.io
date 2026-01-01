@@ -531,6 +531,52 @@ CLOCK_GETRES
    :errno: EINVAL
 
 
+TZSET
+-----
+
+.. c:function:: int void tzset(void);
+.. c:function:: int f_tzset (struct _tzset *tz)
+
+   .. code-block:: c
+
+      struct _tzset
+      {
+         int8_t daylight;  /* non 0 if daylight savings time active */
+         int32_t timezone; /* Number of seconds behind UTC */
+         char tzname[5];   /* Name of timezone, e.g. CET */
+         char dstname[5];  /* Name when daylight true, e.g. CEST */
+      };
+
+   The virtual f_tzset() is the how tzset() is implemented. Use `help set tz` on the
+   monitor to learn about configuring your time zone.
+
+   :Op code: RIA_OP_TZSET 0x0D
+   :C proto: time.h
+   :returns: 0 on success. -1 on error.
+   :errno: EINVAL
+
+
+TZQUERY
+-------
+
+.. c:function:: struct tm *localtime(const time_t *timep);
+.. c:function:: int f_tzquery (uint32_t time, struct _tzquery *dst)
+
+   .. code-block:: c
+
+      struct _tzquery
+      {
+         int8_t daylight;  /* non 0 if daylight savings time active */
+      };
+
+   The virtual f_tzquery() is part of how localtime() is implemented.
+
+   :Op code: RIA_OP_TZQUERY 0x0E
+   :C proto: time.h
+   :returns: Seconds to add to UTC for localtime.
+   :errno: will not fail
+
+
 CLOCK_GETTIME
 -------------
 
@@ -563,37 +609,6 @@ CLOCK_SETTIME
    :returns: 0 on success. -1 on error.
    :a regs: return, clock_id
    :errno: EINVAL, EUNKNOWN
-
-
-CLOCK_GETTIMEZONE
------------------
-
-.. c:function:: int clock_gettimezone (uint32_t time, clockid_t clock_id, struct _timezone *tz)
-
-   .. code-block:: c
-
-      struct _timezone
-      {
-         int8_t daylight;  /* >0 if daylight savings time active */
-         int32_t timezone; /* Number of seconds behind UTC */
-         char tzname[5];   /* Name of timezone, e.g. CET */
-         char dstname[5];  /* Name when daylight true, e.g. CEST */
-      };
-
-   Returns a cc65 _timezone structure for the requested time. Use
-   `help set tz` on the monitor to learn about configuring your time zone.
-
-   *** Experimental *** time zones in cc65 are incomplete probably because no
-   other 6502 OS supports them.
-
-   :Op code: RIA_OP_CLOCK_GETTIMEZONE 0x13
-   :C proto: None, Experimental
-   :param time: time_t compatible integer.
-   :param clock_id: 0 for CLOCK_REALTIME.
-   :returns: 0 on success. -1 on error.
-   :a regs: return, clock_id
-   :errno: EINVAL
-
 
 OPEN
 ----

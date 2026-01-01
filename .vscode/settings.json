@@ -1,7 +1,4 @@
 {
-    "esbonio.sphinx.buildDir": "${workspaceFolder}/docs/build",
-    "esbonio.sphinx.confDir": "${workspaceFolder}/docs/source",
-    "esbonio.sphinx.srcDir": "${workspaceFolder}/docs/source",
     "restructuredtext.linter.doc8.extraArgs": [
         "--ignore D001"
     ],
