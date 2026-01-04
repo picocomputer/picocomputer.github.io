@@ -62,6 +62,13 @@ especially for you in China. The whole process is documented and well tested.
 
 - :doc:`hardware`: Schematic and manufacturing information.
 
+Getting Started
+=============
+
+Once you have the hardware built, tested and ready to go here are some
+things to try to get started.
+
+- :doc:`start`: First Steps with the Picocomputer.
 
 Datasheets
 ==========
