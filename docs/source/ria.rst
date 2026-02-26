@@ -389,13 +389,7 @@ Gamepads
 ========
 
 The :doc:`ria` supports up to four gamepads. There are drivers for Generic HID,
-XInput, and Playstation gamepads. Unfortunately, the TinyUSB stack
-that the RIA uses is unstable on the Pi Pico so XInput is currently
-disabled and you may find USB instability on other devices.
-
-Some gamepads let you select between HID/DInput/Android, XInput, and
-other systems. Choose HID/DInput/Android (all the same) for the best chance
-of working.
+XInput, and Playstation gamepads.
 
 Modern gamepads have all evolved to the same four face buttons, d-pad,
 dual analog sticks, select, start, and quad shoulders. The minor variations
@@ -694,3 +688,119 @@ Timers, interrupts, and the status register are not supported and were
 not widely used. These were in Yamaha OPL chips to assist with cost
 reducing consumer devices and rarely used in computers which had their
 own timers.
+
+
+Virtual Communications Port
+===========================
+
+If you need more serial communications beyond the console UART, USB adapters
+are available to TTL, RS-232, RS-422, and RS-485. The RIA includes drivers
+for FTDI, CP210X, CH34X, PL2303, and CDC ACM.
+
+The status command will list any VCP devices connected. These are opened
+exactly like a file using a special name. By default, "VCP0:" will open
+at 115200 baud, 8 data bits, no parity, and 1 stop bit. The baud rate can
+be specified with "VCP0:115200". The bit config can be specified with
+"VCP0:115200,8N1". The file won't open if your hardware doesn't support
+the request configuration. The open flags are ignored.
+
+.. code-block:: C
+
+  open("VCP0:1200,7E2", 0);
+  // then read and write
+
+There are generous FIFO buffers for reading and writing. Reading and writing
+are non-blocking. You must expect reads can return 0 bytes and writing may
+send less than the requested amount. You are responsible for re-submitting
+the remainder of the write later.
+
+
+ROM File Format
+===============
+
+A ROM file begins with a shebang line, followed by any number of assets.
+All text lines end with ``\r`` or ``\r\n``. All numbers may be
+specified in decimal (255), C-style hex (0xFF), or MOS-style hex ($FF).
+
+**Shebang** — first line of every ROM file:
+
+.. code-block:: text
+
+  #!RP6502
+
+**Null-named asset** — a group of memory chunks loaded directly into RAM:
+
+.. code-block:: text
+
+  #>len crc
+
+Followed by one or more memory chunks, each consisting of a header line
+and ``len`` bytes of raw binary data:
+
+.. code-block:: text
+
+  addr len crc
+
+.. list-table::
+   :widths: 1 20
+   :header-rows: 1
+
+   * - Field
+     - Description
+   * - ``addr``
+     - Destination address in 6502 RAM or XRAM.
+   * - ``len``
+     - Number of raw binary bytes that immediately follow this line.
+   * - ``crc``
+     - CRC of the binary payload (checked).
+
+**Named asset** — a raw binary blob identified by name:
+
+.. code-block:: text
+
+  #>len crc name
+
+Followed immediately by ``len`` bytes of raw binary data. Assets repeat
+until end of file.
+
+.. list-table::
+   :widths: 1 20
+   :header-rows: 1
+
+   * - Field
+     - Description
+   * - ``len``
+     - Number of raw binary bytes that immediately follow this line.
+   * - ``crc``
+     - CRC of the binary payload (ignored by RIA).
+   * - ``name``
+     - Asset identifier string.
+
+The minutia is managed by the rp6502.py tool which is part of the templates
+for new projects. The rp6502.py tool is managed by the CMake system.
+It's very easy to add assets with these tools. In this example the image
+data will be stored in the ROM as chunks of memory which will be loaded into
+RAM/XRAM when the ROM is loaded.
+
+.. code-block:: cmake
+
+  rp6502_asset(your_project 0x10000 img/intro.bin)
+
+The ROM can also hold named assets of raw data. Some names have special
+meanings. The help asset is shown with the HELP and INFO console commands.
+
+.. code-block:: cmake
+
+  rp6502_asset(your_project help src/help.txt)
+
+All ROM assets become part of the filesystem when the ROM is running.
+Just preceed the asset name with "ROM:" and open it like any other file.
+Writing is not allowed, but you can open multiple files at the same time.
+
+.. code-block:: C
+
+  open("ROM:help", O_RDONLY)
+
+There's no enforced limit to the number or size of named assets. Opening
+files is a linear search. The search will skip over the data, but how many
+seeks and string compares your application can tolerate is up to you.
