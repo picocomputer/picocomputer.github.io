@@ -16,8 +16,8 @@ of the :doc:`ria` plus wireless services, as described below.
 WiFi Setup
 ==========
 
-The RP6502-RIA-W supports Wi-Fi 4 (802.11n). Configuration is performed
-via the console interface.
+The RP6502-RIA-W supports Wi-Fi 4 (802.11n). Configure it through the
+console interface.
 
 - **Enable/Disable Radio:**
   Use ``SET RF (0|1)`` to enable (1, default) or disable (0) all radios
@@ -57,8 +57,8 @@ Once WiFi and time zone are configured, timekeeping is automatic.
 Modem Emulation
 ===============
 
-The :doc:`ria_w` can emulate a Hayes modem for BBS access. Beware that
-raw TCP and telnet protocols are plain text in transit.
+The :doc:`ria_w` can emulate a Hayes modem for BBS access. Raw TCP and
+telnet connections are unencrypted in transit.
 
 - **AT Commands:**
   The modem interface supports standard AT commands for dialing,
@@ -84,9 +84,9 @@ Example AT commands:
 - ``AT+RF=your_ssid`` and ``AT+RF?`` — Access RIA setting RF
 - ``AT+RFCC=your_ssid`` and ``AT+RFCC?`` — Access RIA setting RFCC
 - ``AT+SSID=your_ssid`` and ``AT+SSID?`` — Access RIA setting SSID
-- ``AT+PASSS=your_ssid`` and ``AT+PASS?`` — Access RIA setting PASS
+- ``AT+PASS=your_pass`` and ``AT+PASS?`` — Access RIA setting PASS
 
-A full telnet stack has yet to be written so all connections are raw
+A full telnet stack is not yet implemented, so all connections are raw
 TCP.
 
 "Telephone Numbers" are saved immediately and are not linked to
@@ -97,12 +97,10 @@ Bluetooth
 =========
 
 The :doc:`ria_w` supports Bluetooth LE (BLE) keyboards, mice, and
-gamepads. It does not support the older Bluetooth Classic aka BR/EDR.
-The RP6502-RIA-W uses BTStack which can only support one Bluetooth
-Classic device at a time so it's not worth the memory. BLE was introduced
-in June 2010 with Bluetooth 4.0 so it's not difficult to find devices but
-you will find an occasional oddball. Of particular note are Sony DualShock
-and DualSense controllers - which you can use on USB instead.
+gamepads. Bluetooth Classic (BR/EDR) is not supported.
+BLE has been widely available since Bluetooth 4.0 (June 2010),
+so compatible devices are easy to find, though the occasional oddball
+exists.
 
 To add a new device, use monitor command ``set ble 2`` to enable pairing
 mode. The LED on the RP6502-RIA-W will blink when in pairing mode. See

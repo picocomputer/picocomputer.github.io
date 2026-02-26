@@ -9,51 +9,45 @@ Introduction
 ============
 
 The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico 2 with
-:doc:`ria` firmware. The :doc:`ria` provides all essential services to
+RP6502-RIA firmware. The RIA provides all essential services to
 support a WDC W65C02S microprocessor.
 
-The :doc:`ria` must be installed at $FFE0-$FFFF and must be in control of
+The RIA must be installed at $FFE0-$FFFF and must be in control of
 RESB and PHI2. These are the only requirements. Everything else about
 your Picocomputer can be customized. Even the :doc:`vga` is optional.
 
-A new :doc:`ria` will boot to the RP6502 monitor which you can access from the
-console. The console can be accessed in one of three ways: from a VGA
-monitor and USB or Bluetooth keyboard if you are using an :doc:`vga`;
-from the USB CDC device which the :doc:`vga` presents when plugged
-into a host PC like a development system; or from UART RX/TX
-(115200 8N1) pins on the RIA if you aren't using an :doc:`vga`. The
-monitor is not documented here beyond highlighting some common
-commands. The built-in help is extensive and always up-to-date. Type
-``help`` to get started and don't forget there is deep help like
-``help set phi2``.
+A new RIA boots to the RP6502 monitor, accessible from the console in
+one of three ways: from a VGA monitor with a USB or Bluetooth keyboard
+when using a :doc:`vga`; from the USB CDC device the :doc:`vga`
+presents when plugged into a host PC; or from the UART RX/TX
+(115200 8N1) pins on the RIA when not using a :doc:`vga`. The monitor
+is not documented here beyond a few common commands. The built-in help
+is extensive and always up-to-date. Type ``help`` to get started, and
+explore deep help such as ``help set phi2``.
 
-The RP6502 monitor is not an operating system shell. It is analogous to a
-UEFI shell. The RP6502 monitor is primarily designed to load ROMs.
-It also has a small amount of hardware and locale
-configuration, which is intentionally kept minimal.
+The RP6502 monitor is not an operating system shell - it is analogous to a
+UEFI shell. Its primary purpose is loading ROMs, with a small amount of
+hardware and locale configuration kept intentionally minimal.
 
-Loading ROMs in .rp6502 format is done with the ``load``
-command. Type ``help load`` to learn about the file format for ROMs.
+Use the ``load`` command to load ROMs in .rp6502 format.
 These aren't ROMs in the traditional (obsolete) sense. A ROM is a file
 that contains a memory image to be loaded in RAM before starting the
-6502. The :doc:`ria` includes 1MB of EEPROM which you can ``install`` ROMs to.
+6502. The RIA includes 1MB of flash which you can ``install`` ROMs to.
 Once a ROM is installed, you can run it directly or ``set boot`` so it
-loads when the :doc:`ria` boots.
+loads when the RIA boots.
 
-Some of the monitor commands, like ``upload`` and ``binary`` are
-designed for use by developer tools. The rp6502.py script, included
-with the examples and templates, can be used to automate packaging of a
-ROM and executing it.
+Some monitor commands, such as ``upload`` and ``binary``, target
+developer tools. The rp6502.py script, included with the examples and
+templates, automates ROM packaging and execution.
 
 
 Reset
 =====
 
-It helps to think about reset as two states instead of a pulse on
-RESB. When reset is low, the 6502 is stopped and the console is
-connected to the RP6502 monitor. When reset is high, the 6502 is running
-and the console is connected both stdio in the :doc:`os` and the UART TX/RX
-registers described below.
+Think of reset as two states, not a pulse on RESB. When reset is low,
+the 6502 is stopped and the console connects to the RP6502 monitor.
+When reset is high, the 6502 runs and the console connects to both
+stdio in the :doc:`os` and the UART TX/RX registers described below.
 
 If you want to move reset from low to high, either ``load`` a ROM with
 a reset vector, or use the ``reset`` command if you have prepared RAM
@@ -65,13 +59,15 @@ crashed or halted 6502, you have two options:
 1. Using a Bluetooth or USB keyboard, press CTRL-ALT-DEL.
 2. Send a break to the RIA UART.
 
-WARNING! Do not hook up a physical button to RESB. The :doc:`ria` must remain
-in control of RESB. What you probably want is the reset that happens
-from the RIA RUN pin. We call this a ``reboot``. The reference hardware
-reboot button is hooked up to the RIA RUN pin. Rebooting the :doc:`ria`
-like this will cause any configured boot ROM to load, like at power
-on. Resetting the 6502 from keyboard or UART will only return you to
-the RP6502 console.
+.. warning::
+
+   Do not hook up a physical button to RESB. The RIA must remain
+   in control of RESB. What you probably want is the reset that happens
+   from the RIA RUN pin. We call this a ``reboot``. The reference hardware
+   reboot button is hooked up to the RIA RUN pin. Rebooting the RIA
+   like this will cause any configured boot ROM to load, like at power
+   on. Resetting the 6502 from keyboard or UART will only return you to
+   the RP6502 console.
 
 
 Registers
@@ -179,7 +175,7 @@ Registers
 UART
 ----
 
-Easy and direct access to the UART RX/TX pins of the :doc:`ria` is
+Easy and direct access to the UART RX/TX pins of the RIA is
 available from $FFE0-$FFE2. The ready flags on bits 6-7 enable testing
 with the BIT operator. You may choose to use these or stdio
 from the :doc:`os`. Using the UART directly while a stdio
@@ -209,7 +205,7 @@ is guaranteed to return zeros. Simply write to push and read to pull.
 Extended Registers (XREG)
 -------------------------
 
-The :doc:`ria` is both the host of the PIX bus (documented below)
+The RIA is both the host of the PIX bus (documented below)
 and device 0 on the PIX bus.
 
 .. list-table::
@@ -244,20 +240,19 @@ listen to.
 Physical layer
 --------------
 
-The physical layer is designed to be easily decoded by Pi Pico PIO,
-which is just a fancy shift register. The signals used are PHI2 and
-PIX0-3. This is a double data rate bus with PIX0-3 shifted left on
-both transitions of PHI2. A frame consists of 32 bits transmitted over
-4 cycles of PHI2.
+Pi Pico PIO decodes the physical layer easily - PIO is essentially a
+shift register. The signals are PHI2 and PIX0-3. This double data rate
+bus shifts PIX0-3 left on both transitions of PHI2. A frame is 32 bits
+transmitted over 4 PHI2 cycles.
 
-Bit 28 (0x10000000) is the framing bit. This bit will be set in all
-messages. An all-zero payload is repeated on device ID 7 when the bus
-is idle. A receiver will synchronize by ensuring PIX0 is high on a low
-transition of PHI2. If it is not, stall until the next clock cycle.
+Bit 28 (0x10000000) is the framing bit, set in every message. An
+all-zero payload repeats on device ID 7 when the bus is idle. A
+receiver synchronizes by ensuring PIX0 is high on a low transition of
+PHI2; if not, stall until the next clock cycle.
 
 Bits 31-29 (0xE0000000) indicate the device ID number for a message.
 
-Device 0 is allocated to :doc:`ria`. Device 0 is also overloaded to
+Device 0 is allocated to the RIA. Device 0 is also overloaded to
 broadcast XRAM.
 
 Device 1 is allocated to :doc:`vga`.
@@ -278,11 +273,10 @@ Bits 15-0 (0x0000FFFF) is a value to store in the register.
 PIX Extended RAM (XRAM)
 -----------------------
 
-All changes to the 64KB of XRAM on the RIA will be broadcast to PIX
-device 0. Bits 15-0 contain the XRAM address. Bits 23-16 contain the
-XRAM data.
+The RIA broadcasts all changes to its 64KB of XRAM to PIX device 0.
+Bits 15-0 carry the XRAM address. Bits 23-16 carry the XRAM data.
 
-PIX devices will maintain a replica of the XRAM they use. Typically,
+PIX devices maintain a local replica of the XRAM they use. Typically,
 all 64K is replicated and an XREG set by a 6502 application will
 install virtual hardware at a location in XRAM.
 
@@ -319,8 +313,8 @@ in XRAM.
   xreg(0, 0, 0x00, 0xFFFF); // disable
   xreg_ria_keyboard(xaddr); // macro shortcut
 
-XRAM will be continuously updated with a bit array of USB HID
-keyboard codes. Note that these are not the same as PS/2 scancodes.
+The RIA continuously updates XRAM with a bit array of USB HID
+keyboard codes. Note that these are not PS/2 scancodes.
 Each bit represents one key with the first four bits/codes having special
 meaning:
 
@@ -361,15 +355,14 @@ mouse input.
       uint8_t pan;
   } mouse;
 
-The amount of movement is computed by way of the application subtracting
-the previous value from the current value. Vsync timing (60Hz) is period correct
-but isn't fast enough by modern standards. For perfect mouse input, use an ISR
-at 8ms or faster (125Hz).
+Compute movement by subtracting the previous value from the current
+value. Vsync timing (60 Hz) is period-correct but too slow by modern
+standards. For precise mouse input, use an ISR at 8 ms or faster
+(125 Hz).
 
-It is recommended that applications consider the canvas resolution when
-interpreting the movement. For 640x480 and 640x360 resolutions, each
-unit of movement equates to one pixel. For 320x240 and 320x180
-resolutions, use two units of movement for each pixel.
+Applications should account for canvas resolution when interpreting
+movement. At 640x480 and 640x360, one unit equals one pixel. At
+320x240 and 320x180, two units equal one pixel.
 
 .. code-block:: C
 
@@ -388,7 +381,7 @@ Mouse buttons are a bitfield:
 Gamepads
 ========
 
-The :doc:`ria` supports up to four gamepads. There are drivers for Generic HID,
+The RIA supports up to four gamepads. There are drivers for Generic HID,
 XInput, and Playstation gamepads.
 
 Modern gamepads have all evolved to the same four face buttons, d-pad,
@@ -421,26 +414,25 @@ the gamepad data. Any invalid address disables the gamepads.
   xreg(0, 0, 2, 0xFFFF);   // disable
   xreg_ria_gamepad(xaddr); // macro shortcut
 
-Extended memory will be continuously updated with gamepad information.
-The 10-byte structure described here repeats for a total of 40 bytes
-representing four gamepads.
+The RIA continuously updates extended memory with gamepad information.
+The 10-byte structure described here repeats four times for a total of
+40 bytes representing four gamepads.
 
-The upper bits of the DPAD register are used to indicate if a gamepad is
-ready for use and what kind of gamepad it is. The connected bit is high
-when a gamepad for that player slot is connected. The Sony bit indicates
-that the player is using a PlayStation-style gamepad with
-Circle/Cross/Square/Triangle button faces.
+The upper bits of the DPAD register indicate gamepad readiness and
+type. The connected bit is high when a gamepad is present in that
+player slot. The Sony bit indicates the player is using a
+PlayStation-style gamepad with Circle/Cross/Square/Triangle button
+faces.
 
-Note that there are both digital and analog values for the left and
-right analog sticks and analog triggers L2/R2. This lets an application
-completely ignore the analog values if it desires.
+Both digital and analog values are available for the left and right
+sticks and triggers L2/R2, so applications can ignore the analog
+values entirely if desired.
 
-Applications supporting L2 and R2 should be aware that some gamepads
-will only present digital information so the analog values will only
-ever be 0 or 255.
+Some gamepads only report digital data; applications supporting L2 and
+R2 should expect analog values of only 0 or 255 in that case.
 
-Applications that want to use a simple "one stick and buttons" approach
-are encouraged to support both the dpad and left stick (merged).
+Applications using a simple "one stick and buttons" approach should
+support both the d-pad and left stick as merged input.
 
 .. list-table::
    :widths: 1 1 20
@@ -697,22 +689,22 @@ If you need more serial communications beyond the console UART, USB adapters
 are available to TTL, RS-232, RS-422, and RS-485. The RIA includes drivers
 for FTDI, CP210X, CH34X, PL2303, and CDC ACM.
 
-The status command will list any VCP devices connected. These are opened
-exactly like a file using a special name. By default, "VCP0:" will open
-at 115200 baud, 8 data bits, no parity, and 1 stop bit. The baud rate can
-be specified with "VCP0:115200". The bit config can be specified with
-"VCP0:115200,8N1". The file won't open if your hardware doesn't support
-the request configuration. The open flags are ignored.
+The ``status`` command lists any connected VCP devices. Open them like
+any file using a special name. By default, "VCP0:" opens at 115200
+baud, 8 data bits, no parity, and 1 stop bit. Specify the baud rate
+with "VCP0:115200" or the full bit configuration with
+"VCP0:115200,8N1". The file will not open if your hardware does not
+support the requested configuration. The open flags are ignored.
 
 .. code-block:: C
 
   open("VCP0:1200,7E2", 0);
   // then read and write
 
-There are generous FIFO buffers for reading and writing. Reading and writing
-are non-blocking. You must expect reads can return 0 bytes and writing may
-send less than the requested amount. You are responsible for re-submitting
-the remainder of the write later.
+Generous FIFO buffers service both reading and writing. Both operations
+are non-blocking. Reads can return 0 bytes, and writes may send less
+than the requested amount. Resubmit any remaining bytes in a subsequent
+call.
 
 
 ROM File Format
@@ -776,11 +768,10 @@ until end of file.
    * - ``name``
      - Asset identifier string.
 
-The minutia is managed by the rp6502.py tool which is part of the templates
-for new projects. The rp6502.py tool is managed by the CMake system.
-It's very easy to add assets with these tools. In this example the image
-data will be stored in the ROM as chunks of memory which will be loaded into
-RAM/XRAM when the ROM is loaded.
+The rp6502.py tool, part of the templates for new projects, handles
+these details and integrates with the CMake system. Adding assets is
+straightforward. In this example the image data is packed into the ROM
+as memory chunks, which load into RAM/XRAM when the ROM loads.
 
 .. code-block:: cmake
 
@@ -793,9 +784,9 @@ meanings. The help asset is shown with the HELP and INFO console commands.
 
   rp6502_asset(your_project help src/help.txt)
 
-All ROM assets become part of the filesystem when the ROM is running.
-Just preceed the asset name with "ROM:" and open it like any other file.
-Writing is not allowed, but you can open multiple files at the same time.
+All ROM assets become part of the filesystem while the ROM runs.
+Precede the asset name with "ROM:" and open it like any other file.
+ROM assets are read-only, but you can have multiple open simultaneously.
 
 .. code-block:: C
 

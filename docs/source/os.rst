@@ -12,7 +12,7 @@ The :doc:`ria` runs a 32-bit protected operating system that you can call
 from the 6502. The :doc:`os` does not use any 6502 system RAM and will not
 interfere with developing a native 6502 OS.
 
-The :doc:`os` is loosely based on POSIX with an Application Binary
+The :doc:`os` loosely follows POSIX with an Application Binary
 Interface (ABI) similar to `cc65's fastcall
 <https://cc65.github.io/doc/cc65-intern.html>`__. It provides stdio.h and
 unistd.h services to both `cc65 <https://cc65.github.io>`__ and `llvm-mos
@@ -47,11 +47,10 @@ registers of the RIA.
    * - $10000-$1FFFF
      - XRAM, 64K for :doc:`ria` and :doc:`vga`
 
-The unassigned space is available for hardware experimenters. You will need
-to design your own chip select hardware to use this address space. It is
-recommended that additional VIAs be added "down" and other hardware added
-"up". For example: VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and SID1
-at $FF20.
+The unassigned space is available for hardware experimenters. Design
+your own chip select hardware to use this address space. Add additional
+VIAs downward and other hardware upward. For example: VIA0 at $FFD0,
+VIA1 at $FFC0, SID0 at $FF00, and SID1 at $FF20.
 
 
 Application Binary Interface
@@ -78,18 +77,16 @@ The RIA has registers called RIA_A, RIA_X, and RIA_SREG. An int is 16 bits,
 so we set the RIA_A and RIA_X registers with arg1. I'll use "A" for the 6502
 register and "RIA_A" for the RIA register in this explanation.
 
-We use the XSTACK for arg0. Reading or writing data to the RIA_XSTACK
-register removes or adds bytes to the XSTACK. It's a top-down stack, so
-push each argument from left to right and maintain little endian-ness in
-memory.
+We use the XSTACK for arg0. Reading RIA_XSTACK pops bytes; writing
+pushes bytes. It's a top-down stack, so push each argument left to
+right and maintain little-endian byte order.
 
 To execute the call, store the operation ID in RIA_OP. The operation begins
-immediately. You can keep doing 6502 things, like running a loading
-animation, by polling RIA_BUSY. Or, JSR RIA_SPIN to block.
+immediately. You can keep doing 6502 things, like running a loading animation, by
+polling RIA_BUSY. Alternatively, JSR to RIA_SPIN to block.
 
-The JSR RIA_SPIN method can unblock in less than 3 clock cycles and does an
-immediate load of A and X. Sequential operations will run fastest with this
-technique. Under the hood, you're jumping into a self-modifying program that
+JSR RIA_SPIN can unblock within 3 clock cycles and immediately loads A
+and X. Sequential operations run fastest with this technique. Under the hood, you're jumping into a self-modifying program that
 runs on the RIA registers.
 
 .. code-block:: asm
@@ -124,9 +121,9 @@ copy a file without using any RAM or XRAM.
 Short Stacking
 ---------------
 
-In the never ending pursuit of saving all the cycles, it is possible to save
-a few on the stack push if you don't need all the range. This only works on
-the stack argument that gets pushed first. For example:
+In the pursuit of saving every cycle, you can save a few on the stack
+push when you don't need the full range. This only applies to the first
+stack argument pushed. For example:
 
 .. code-block:: C
 
@@ -149,9 +146,8 @@ Bulk Data
 ---------
 
 Functions that move bulk data may come in two flavors. These are any
-function with a mutable pointer parameter. A RAM pointer is meaningless to
-the RIA because it can not change 6502 RAM. Instead, we use the XSTACK or
-XRAM to move data.
+function with a mutable pointer parameter. A RAM pointer is meaningless to the RIA because it cannot change 6502
+RAM. Instead, use the XSTACK or XRAM to move data.
 
 Bulk XSTACK Operations
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -164,8 +160,8 @@ the type and direction of this data. Let's look at some examples.
 
    int open(const char *path, int oflag);
 
-Send `oflag` in RIA_A. RIA_X doesn't need to be set according the to docs
-below. Send the path on XSTACK by pushing the string starting with the last
+Send `oflag` in RIA_A. RIA_X doesn't need to be set according to the
+docs below. Send the path on XSTACK by pushing the string starting with the last
 character. You may omit pushing the terminating zero, but strings are
 limited to a length of 255. Calling this from the C SDK will "just work"
 because there's an implementation that pushes the string for you.
@@ -174,8 +170,8 @@ because there's an implementation that pushes the string for you.
 
    int read_xstack(void *buf, unsigned count, int fildes)
 
-Send `count` as a short stack and `fildes` in RIA_A. RIA_X doesn't need to
-be set according the to docs below. The returned value in AX indicates how
+Send `count` as a short stack and `fildes` in RIA_A. RIA_X doesn't
+need to be set according to the docs below. The returned value in AX indicates how
 many values must be pulled from the stack. If you call this from the C SDK
 then it will copy XSTACK to buf[] for you.
 
@@ -183,8 +179,8 @@ then it will copy XSTACK to buf[] for you.
 
    int write_xstack(const void *buf, unsigned count, int fildes)
 
-Send `fildes` in RIA_A. RIA_X doesn't need to be set according the to docs
-below. Push the buf data to XSTACK. Do not send `count`, the OS knows this
+Send `fildes` in RIA_A. RIA_X doesn't need to be set according to the
+docs below. Push the buf data to XSTACK. Do not send `count`, the OS knows this
 from its internal stack pointer. If you call this from the C SDK then it
 will copy count bytes of buf[] to XSTACK for you.
 
@@ -208,10 +204,10 @@ RIA_A. The :doc:`os` has direct access to XRAM so internally it will use
 something like &XRAM[buf]. You will need to use RIA_RW0 or RIA_RW1 to access
 this memory from the 6502.
 
-These operations are interesting because of their high performance and
-ability to work in the background while the 6502 is doing something else.
-You can expect close to 64KB/sec, which means loading a game level's worth
-of assets will take less than a second.
+These operations stand out for their high performance and ability to
+run in the background while the 6502 does other work. Expect close to
+64 KB/sec, meaning a game level's worth of assets loads in under a
+second.
 
 Bulk XRAM operations are why the Picocomputer 6502 was designed without
 paged memory.
@@ -362,7 +358,7 @@ STDIN_OPT
    :C proto: rp6502.h
    :param ctrl_bits: Bitmap of ASCII 0-31 defines which CTRL characters can
       abort an input. When CTRL key is pressed, any typed input remains on
-      the screen but the applicaion receives a line containing only the CTRL
+      the screen but the application receives a line containing only the CTRL
       character. e.g. CTRL-C + newline.
    :param str_length: 0-255 default 254. The input line editor won't allow
       user input greater than this length.
@@ -1014,7 +1010,7 @@ SEEKDIR
 
    Set the read position for the directory descriptor. Internally, the FatFs
    directory read position can only move forward by one, so use this for
-   convienence, not performance.
+   convenience, not performance.
 
    :Op code: RIA_OP_SEEKDIR 0x24
    :C proto: rp6502.h
@@ -1173,7 +1169,7 @@ CHDRIVE
 
    |
 
-   Change durrent drive. Eight USB MSC drives are formally named "USB0:" to
+   Change current drive.
    "USB7:" with shortcuts "0:" to "7:".
 
    :Op code: RIA_OP_CHDRIVE 0x2A
@@ -1273,9 +1269,9 @@ EXIT
    |
 
    Halt the 6502 and return the console to RP6502 monitor control. This is
-   the only operation that does not return. RESB will be pulled down before
-   the next instruction can execute. Status is currently ignored but will be
-   used in the future.
+   the only operation that does not return. The OS pulls RESB low before
+   the next instruction can execute. The status argument is currently
+   unused but reserved for future use.
 
    In general, dropping the user back to the monitor is discouraged. But
    calling exit() or falling off main() is preferred to locking up.

@@ -10,8 +10,8 @@ All parts are currently in production. The Raspberry Pi Pico 2 will
 remain in production until at least `January 2040
 <https://www.raspberrypi.com/products/raspberry-pi-pico-2/>`_.
 The hardware design has already survived the Pico 1 to Pico 2 transition.
-The manufacturing lifetime of this project is expected to extend into a time
-where hobbyist ASICs are democratized.
+The manufacturing lifetime of this project should extend into an era
+of democratized hobbyist ASICs.
 
 Schematic
 =========
@@ -93,10 +93,10 @@ Step 3. Order Assembly
 
 Skip this step if you want to solder it yourself.
 
-PCBWay has a minimum quantity of one for assembly. They will use the boards
-you ordered in step 2. What you'll have them make is a "board of sockets" - the
-ICs will be installed by you later. It should never be constrained on parts
-availability since there are multiple vendors for every part.
+PCBWay has a minimum quantity of one for assembly. They will use the
+boards from step 2. The result is a "board of sockets" - you install
+the ICs yourself later. Parts availability should never be a
+constraint; every component has multiple vendors.
 
 Download `the BOM, notes, and photos <_static/rp6502-reva-assembly.zip>`_.
 
@@ -105,9 +105,8 @@ Request assembly with your PCB order and send the `BOM, notes, and photos
 are no surface mount parts. The default options will work. Let them source the
 parts. Let them make substitutions.
 
-There will be a short delay as they get you a price for the
-bill-of-materials. Then you can pay and wait. I was estimated four weeks and
-got it in three.
+Expect a short delay while they quote the bill of materials. Then pay
+and wait. They estimated four weeks; mine arrived in three.
 
 If they have a question, make sure both you and your sales rep read the notes
 you sent them. If you have a question about options on their web site, ask your
@@ -120,7 +119,7 @@ all day long, and will probably enjoy the easy win.
 Step 4. More Parts
 ==================
 
-Factory assembled boards will need the eight ICs added to them. Upload the
+Factory-assembled boards still require you to install the eight ICs. Upload the
 `active parts list <_static/rp6502-reva-active.csv>`_ to a `Mouser
 <https://mouser.com>`_ shopping cart.
 
@@ -129,7 +128,7 @@ If you are soldering it yourself, upload the `full parts list
 
 Mouser will print the Customer# on each of the parts bags. Assign this
 column to the CSV reference column to get your bags labelled like "C1-C9, C11"
-etc. If you forget, no problem becuase the PCB silkscreen has location info.
+etc. If you forget, no problem because the PCB silkscreen has location info.
 
 If something is out of stock, consult the substitution notes below.
 
@@ -151,8 +150,8 @@ Acrylic Sandwich Case
 
 The circuit board is 150 x 100mm (4x6 inches). I regularly see vendors on
 Amazon and eBay selling 150 x 100 x 3mm acrylic sheets. You'll need to drill
-3mm holes for M3 standoffs. The recommended standoff height is >=16mm for the
-top and >=3.5mm for the bottom.
+3mm holes for M3 standoffs. Use standoffs of at least 16 mm for the
+top and 3.5 mm for the bottom.
 
 
 Full Parts List (All Components)
@@ -201,8 +200,8 @@ Yes, 47 μF ceramic capacitors are expensive, but you only need two and they
 never leak. Leads must fit 0.8mm plated holes spaced 5mm apart. Only a voltage
 of >=10V is required. Tolerance and temperature coefficient do not matter.
 
-The CUI audio jack is available in many colors and with optional switches. The
-switches are not used, but the circuit board can accept the extra leads.
+The CUI audio jack is available in many colors and with optional switches.
+The switches are unused, but the board accepts the extra leads.
 
 The REBOOT switch is available from multiple manufacturers in various lengths,
 colors, and activation forces. Nothing matters except that it's "momentary on".
