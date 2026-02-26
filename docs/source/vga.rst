@@ -262,9 +262,7 @@ Mode 2: Tile
 ------------
 
 Tile modes have color information encoded in the tile bitmap. This is
-the mode you want for showing a video game playfield. Hi-res canvases
-(640x480 and 640x360) support one plane of 1-bit color. Standard
-canvases (320x240 and 328x180) support two planes of any option.
+the mode you want for showing a video game playfield.
 
 .. list-table::
   :widths: 5 5 90

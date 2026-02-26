@@ -692,7 +692,7 @@ Virtual Communications Port
 ===========================
 
 If you need more serial communications beyond the console UART, USB adapters
-are available to TTL, RS-232, RS-422, and RS-485. The RIA includes drivers
+are available to CMOS/TTL, RS-232, RS-422, and RS-485. The RIA includes drivers
 for FTDI, CP210X, CH34X, PL2303, and CDC ACM.
 
 The ``status`` command lists any connected VCP devices. Open them like
@@ -717,7 +717,7 @@ ROM File Format
 ===============
 
 A ROM file begins with a shebang line, followed by any number of assets.
-All text lines end with ``\r`` or ``\r\n``. All numbers may be
+All text lines end with ``\r`` or ``\n`` or both. All numbers may be
 specified in decimal (255), C-style hex (0xFF), or MOS-style hex ($FF).
 
 **Shebang** — first line of every ROM file:
