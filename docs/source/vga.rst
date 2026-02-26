@@ -8,7 +8,7 @@ Introduction
 =============
 
 The RP6502 Video Graphics Array is a Raspberry Pi Pico 2 with
-:doc:`vga` firmware. Its primary data connection is to a :doc:`ria`
+RP6502-VGA firmware. Its primary data connection is to a :doc:`ria`
 over a 5-wire PIX bus. More than one VGA module can be put on a PIX
 bus. Note that all VGA modules share the same 64K of XRAM and only
 the first one will generate frame numbers and vsync interrupts.
@@ -46,8 +46,10 @@ ANSI palette of 16 colors, followed by 216 colors (6x6x6), followed
 by 24 greys.
 
 16-bit colors are built with the following bit logic. Setting the
-alpha bit will make the color opaque. The built-in ANSI color
-palette has the alpha bit set on all colors except color 0 black.
+alpha bit makes the color opaque; clearing it makes the color
+transparent. Despite the name, this is a binary flag, not a
+blending factor. The built-in ANSI color palette has the alpha bit
+set on all colors except color 0 (black), which is transparent.
 
 .. code-block:: C
 

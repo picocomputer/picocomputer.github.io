@@ -9,10 +9,10 @@ Introduction
 ============
 
 The :doc:`ria` runs a 32-bit protected operating system that you can call
-from the 6502. The :doc:`os` does not use any 6502 system RAM and will not
+from the 6502. The OS does not use any 6502 system RAM and will not
 interfere with developing a native 6502 OS.
 
-The :doc:`os` loosely follows POSIX with an Application Binary
+The OS loosely follows POSIX with an Application Binary
 Interface (ABI) similar to `cc65's fastcall
 <https://cc65.github.io/doc/cc65-intern.html>`__. It provides stdio.h and
 unistd.h services to both `cc65 <https://cc65.github.io>`__ and `llvm-mos
@@ -58,7 +58,7 @@ Application Binary Interface
 
 The ABI for calling the operating system is based on fastcall from the
 `cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The
-:doc:`os` does not use or require anything from cc65 and is easy for
+OS does not use or require anything from cc65 and is easy for
 assembly programmers to use. At its core, the OS ABI is four simple rules.
 
 * Stack arguments are pushed left to right.
@@ -145,8 +145,8 @@ below as "A regs".
 Bulk Data
 ---------
 
-Functions that move bulk data may come in two flavors. These are any
-function with a mutable pointer parameter. A RAM pointer is meaningless to the RIA because it cannot change 6502
+Functions that move bulk data come in two flavors, depending on
+where the data lives. A RAM pointer is meaningless to the RIA because it cannot change 6502
 RAM. Instead, use the XSTACK or XRAM to move data.
 
 Bulk XSTACK Operations
@@ -154,7 +154,7 @@ Bulk XSTACK Operations
 
 These only work if the size is 512 bytes or less. Bulk data is passed on the
 XSTACK, which is 512 bytes. A pointer appears in the C prototype to indicate
-the type and direction of this data. Let's look at some examples.
+the type and direction (to or from the OS) of this data. Let's look at some examples.
 
 .. code-block:: C
 
@@ -200,7 +200,7 @@ going through 6502 RAM or capture a screenshot with ease.
    int write_xram(xram_addr buf, unsigned count, int fildes)
 
 The OS expects `buf` and `count` on the XSTACK as integers with `filedes` in
-RIA_A. The :doc:`os` has direct access to XRAM so internally it will use
+RIA_A. The OS has direct access to XRAM so internally it will use
 something like &XRAM[buf]. You will need to use RIA_RW0 or RIA_RW1 to access
 this memory from the 6502.
 
@@ -227,8 +227,8 @@ below has reordered arguments that are optimized for short stacking the long
 argument. But you don't have to call f_lseek() from C, you can call the
 usual lseek() which has the traditional argument order.
 
-The :doc:`os` is built around FAT filesystems, which is the defacto
-standard for unsecured USB storage devices. POSIX filesystems are not fully
+The OS is built around FAT filesystems, the de facto standard for
+unsecured USB storage devices. POSIX filesystems are not fully
 compatible with FAT but there is a solid intersection of basic IO that is
 100% compatible. You will see some familiar POSIX functions like open() and
 others like f_stat() which are similar to the POSIX function but tailored to
@@ -329,8 +329,8 @@ LRAND
 
    |
 
-   Generates a random number starting with entropy on the RIA. This is
-   suitable for seeding a RNG or general use. The 16-bit rand() in the cc65
+   Generates a 32-bit random number seeded with hardware entropy
+   from the RIA. Suitable for seeding a PRNG or direct use. The 16-bit rand() in the cc65
    library can be seeded with this by calling its non-standard _randomize()
    function.
 
@@ -351,8 +351,10 @@ STDIN_OPT
    buffer size - 1 to make gets() safe. This can also guarantee no split
    lines when using fgets() on STDIN.
 
-   *** Experimental *** Likely to be replaced with stty-like something. Drop
-   your thoughts on the forums if you have specific needs.
+   .. note::
+
+      **Experimental.** Likely to be replaced with a stty-like interface.
+      Share your thoughts on the forums if you have specific needs.
 
    :Op code: RIA_OP_STDIN_OPT 0x05
    :C proto: rp6502.h
@@ -374,13 +376,13 @@ ERRNO_OPT
 
    |
 
-   :doc:`os` calls will set RIA_ERRNO when an error occurs.  This is used to
+   OS calls will set RIA_ERRNO when an error occurs.  This is used to
    select which set of values to use because the compiler libraries each use
    different constants in errno.h. Both cc65 and llvm-mos call this
    automatically in the C runtime. The RIA_ERRNO behavior is undefined until
    it is set. Note that the C `errno` maps directly to RIA_ERRNO.
 
-   :doc:`os` will map FatFs errors onto errno. RP6502 emulation and
+   The OS will map FatFs errors onto errno. RP6502 emulation and
    simulation software is expected to map their native errors as well. The
    table below shows the FatFs mappings. Because FatFs is so integral to the
    OS, calls are documented here with their native FatFs errors to assist

@@ -9,7 +9,7 @@ Introduction
 ============
 
 The **RP6502 Interface Adapter W** is a Raspberry Pi Pico 2 W running
-the RP6502-RIA-W firmware. The :doc:`ria_w` provides all the features
+the RP6502-RIA-W firmware. It provides all the features
 of the :doc:`ria` plus wireless services, as described below.
 
 
@@ -44,7 +44,7 @@ Network Time Protocol (NTP)
 ===========================
 
 The real-time clock (RTC) automatically synchronizes with internet time
-servers when connected. Check NTP status with the ``status`` command.
+servers when connected to WiFi. Check NTP status with the ``status`` command.
 
 - **Set Time Zone:**
   To use local time instead of UTC, set your time zone with ``SET TZ``.
@@ -57,7 +57,7 @@ Once WiFi and time zone are configured, timekeeping is automatic.
 Modem Emulation
 ===============
 
-The :doc:`ria_w` can emulate a Hayes modem for BBS access. Raw TCP and
+The RP6502-RIA-W can emulate a Hayes modem for BBS access. Raw TCP and
 telnet connections are unencrypted in transit.
 
 - **AT Commands:**
@@ -81,7 +81,7 @@ Example AT commands:
 - ``AT&V`` — View profile
 - ``AT&W`` — Write profile to NVRAM
 - ``AT&Z0=example.com:23`` — Save "telephone number" to NVRAM
-- ``AT+RF=your_ssid`` and ``AT+RF?`` — Access RIA setting RF
+- ``AT+RF=0`` or ``AT+RF=1`` and ``AT+RF?`` — Access RIA setting RF
 - ``AT+RFCC=your_ssid`` and ``AT+RFCC?`` — Access RIA setting RFCC
 - ``AT+SSID=your_ssid`` and ``AT+SSID?`` — Access RIA setting SSID
 - ``AT+PASS=your_pass`` and ``AT+PASS?`` — Access RIA setting PASS
@@ -96,7 +96,7 @@ profiles.
 Bluetooth
 =========
 
-The :doc:`ria_w` supports Bluetooth LE (BLE) keyboards, mice, and
+The RP6502-RIA-W supports Bluetooth LE (BLE) keyboards, mice, and
 gamepads. Bluetooth Classic (BR/EDR) is not supported.
 BLE has been widely available since Bluetooth 4.0 (June 2010),
 so compatible devices are easy to find, though the occasional oddball

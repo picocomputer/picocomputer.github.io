@@ -131,30 +131,35 @@ Registers
      - Write the OS operation id here to begin an OS call.
    * - $FFF0
      - IRQ
-     - Set bit 0 high to enable VSYNC interrupts. Verify source
-       with VSYNC increment then read or write this register to clear
-       interrupt.
+     - Set bit 0 high to enable VSYNC interrupts. To clear the
+       interrupt, first verify the source by checking the VSYNC
+       counter, then read or write this register.
    * - $FFF1
      - RETURN
-     - Always $80, BRA. Entry to blocking OS call.
+     - Always $80 (the BRA opcode). JSR here to spin-wait for an
+       OS call: the CPU loops on this BRA until BUSY clears, then
+       falls through to LDA and LDX below.
    * - $FFF2
      - BUSY
      - Bit 7 high while OS operation is running.
    * - $FFF3
      - LDA
-     - Always $A9.
+     - Always $A9 (the LDA immediate opcode). Part of the
+       spin-loop return sequence.
    * - $FFF4
      - A
      - OS call register A.
    * - $FFF5
      - LDX
-     - Always $A2.
+     - Always $A2 (the LDX immediate opcode). Part of the
+       spin-loop return sequence.
    * - $FFF6
      - X
      - OS call register X.
    * - $FFF7
      - RTS
-     - Always $60.
+     - Always $60 (the RTS opcode). Ends the spin-loop return
+       sequence, returning to the caller with A and X loaded.
    * - | $FFF8 -
        | $FFF9
      - SREG
@@ -190,10 +195,10 @@ portal would make moving XRAM very slow since data would have to
 buffer in 6502 RAM. Ideally, you won't move XRAM and can use the pair
 for better optimizations.
 
-STEP0 and STEP1 are reset to 1. These are signed so you can go
-backwards and reverse data. These adders allow for very fast sequential
-access, which typically makes up for the slightly slower random access
-compared to 6502 system RAM.
+STEP0 and STEP1 default to 1 after reset. Both are signed, so
+negative values traverse XRAM in reverse. These auto-increment
+adders enable very fast sequential access, which more than offsets
+the slightly slower random access compared to 6502 system RAM.
 
 Extended Stack (XSTACK)
 -----------------------
@@ -314,9 +319,10 @@ in XRAM.
   xreg_ria_keyboard(xaddr); // macro shortcut
 
 The RIA continuously updates XRAM with a bit array of USB HID
-keyboard codes. Note that these are not PS/2 scancodes.
-Each bit represents one key with the first four bits/codes having special
-meaning:
+keyboard keycodes. Note that these are not PS/2 scancodes.
+Each keycode is one bit in the array — bit N is 1 when the key
+with HID keycode N is currently pressed. The first four keycodes
+have special meaning:
 
 - 0 - No key pressed
 - 1 - Num Lock on
@@ -402,7 +408,7 @@ use a specific gamepad or include a "AB or BA" option.
    Retro-style gamepads are designed with button mappings for emulators while
    emulators expect the button layout of a modern gamepad. These do not cancel
    each other out. Instead, you end up with wonky button mappings that do not
-   follow the defacto standard for modern gamepads.
+   follow the de facto standard for modern gamepads.
 
 Enable and disable access to the RIA gamepad XRAM registers by setting
 the extended register. The register value is the XRAM start address of
@@ -513,9 +519,9 @@ with extended register device 0 channel 1 address 0x00.
 * Stereo panning.
 * PWM for all waveforms.
 
-Each of the eight oscillators requires eight bytes of XRAM for
-configuration. The unused byte is padding so multiplication is a fast
-bit shift.
+Each of the eight oscillators uses eight bytes of XRAM for
+configuration. The structure size is a power of two so indexing
+into the oscillator array is a bit shift rather than a multiply.
 
 .. code-block:: C
 
@@ -557,13 +563,13 @@ shenanigans.
      - 0-255 (0-100%) Duty cycle of oscillator. This affects all
        waveforms.
    * - vol_attack
-     - Attack volume and rate.
+     - Attack phase volume and rate.
 
        * bits 7-4 - 0-15 volume attenuation.
        * bits 3-0 - 0-15 attack rate.
 
    * - vol_decay
-     - Decay volume and rate.
+     - Decay phase volume and rate.
 
        * bits 7-4 - 0-15 volume attenuation.
        * bits 3-0 - 0-15 decay rate.
@@ -676,10 +682,10 @@ registers. The OPL2 registers must begin on a page boundary.
 If, for example, xaddr is 0x4200 then the 256 registers of an OPL2 chip
 are mapped into XRAM from 0x4200 to 0x42FF.
 
-Timers, interrupts, and the status register are not supported and were
-not widely used. These were in Yamaha OPL chips to assist with cost
-reducing consumer devices and rarely used in computers which had their
-own timers.
+Timers, interrupts, and the status register are not supported.
+These features existed in Yamaha OPL chips primarily to help
+cost-reduce consumer devices; computers of the era had their own
+timers and rarely used them.
 
 
 Virtual Communications Port
@@ -740,7 +746,8 @@ and ``len`` bytes of raw binary data:
    * - Field
      - Description
    * - ``addr``
-     - Destination address in 6502 RAM or XRAM.
+     - Destination address in 6502 RAM (0x0000-0xFEFF) or XRAM
+       (0x10000-0x1FFFF).
    * - ``len``
      - Number of raw binary bytes that immediately follow this line.
    * - ``crc``
