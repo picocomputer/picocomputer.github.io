@@ -8,7 +8,7 @@ Introduction
 =============
 
 The RP6502 Video Graphics Array is a Raspberry Pi Pico 2 with
-:doc:`vga` firmware. Its primary data connection is to a :doc:`ria`
+RP6502-VGA firmware. Its primary data connection is to a :doc:`ria`
 over a 5-wire PIX bus. More than one VGA module can be put on a PIX
 bus. Note that all VGA modules share the same 64K of XRAM and only
 the first one will generate frame numbers and vsync interrupts.
@@ -16,11 +16,10 @@ the first one will generate frame numbers and vsync interrupts.
 Video Programming
 ==================
 
-The VGA system provides virtual video hardware that is similar
-to home computer and arcade hardware from the 8-bit and early
-16-bit era. It is very easy to add new video modes and sprite
-systems. The 6502 application programmer can mix and match these
-modes.
+The VGA system provides virtual video hardware modeled on home
+computers and arcades of the 8-bit and early 16-bit era. Adding new
+video modes and sprite systems is straightforward. Application
+programmers can mix and match these modes freely.
 
 The VGA system is built around the scanvideo library from Pi
 Pico Extras. All three planes are enabled with RGB555 color plus
@@ -37,18 +36,20 @@ fill rate to exceed the capabilities of any classic 8-bit system,
 but if you like to push the limits then you may see a half-blue
 screen indicating you went too far.
 
-The built-in 8x8 and 8x16 fonts are available by using the special
-XRAM pointer $FFFF. Glyphs 0-127 are ASCII, glyphs 128-255 vary
-depending on the code page selected.
+The built-in 8x8 and 8x16 fonts are available via the special
+XRAM pointer $FFFF. Glyphs 0-127 are ASCII; glyphs 128-255 vary
+by code page.
 
-The built-in color palettes are accessed by using the special XRAM
-pointer $FFFF. 1-bit is black and white. 4 and 8-bits point to an
-ANSI color palette of 16 colors, followed by 216 colors (6x6x6),
-followed by 24 greys.
+Access the built-in color palettes via the special XRAM pointer
+$FFFF. 1-bit is black and white. 4-bit and 8-bit modes point to an
+ANSI palette of 16 colors, followed by 216 colors (6x6x6), followed
+by 24 greys.
 
 16-bit colors are built with the following bit logic. Setting the
-alpha bit will make the color opaque. The built-in ANSI color
-palette has the alpha bit set on all colors except color 0 black.
+alpha bit makes the color opaque; clearing it makes the color
+transparent. Despite the name, this is a binary flag, not a
+blending factor. The built-in ANSI color palette has the alpha bit
+set on all colors except color 0 (black), which is transparent.
 
 .. code-block:: C
 
@@ -261,9 +262,7 @@ Mode 2: Tile
 ------------
 
 Tile modes have color information encoded in the tile bitmap. This is
-the mode you want for showing a video game playfield. Hi-res canvases
-(640x480 and 640x360) support one plane of 1-bit color. Standard
-canvases (320x240 and 328x180) support two planes of any option.
+the mode you want for showing a video game playfield.
 
 .. list-table::
   :widths: 5 5 90
@@ -487,8 +486,8 @@ Sprite image data is an array of 16 bit colors.
 Control Channel $F
 ------------------
 
-These registers are managed by the RIA. Do not distribute applications
-that set these.
+The RIA manages these registers. Do not distribute applications
+that set them.
 
 .. list-table::
   :widths: 5 5 90
@@ -527,16 +526,16 @@ that set these.
 Backchannel
 ===========
 
-Because the PIX bus is unidirectional, it can't be used for sending
-data from the VGA system back to the RIA. Using the UART Rx path is
-undesirable since there would be framing overhead or unusable control
-characters. Since there is a lot of unused bandwidth on the PIX bus,
-which is only used when the 6502 is writing to XRAM, it can be used
-for the UART Tx path allowing the UART Tx pin to switch directions.
+Because the PIX bus is unidirectional, the VGA system cannot send
+data back to the RIA directly. The UART Rx path is unsuitable because
+it would introduce framing overhead or unusable control characters.
+The PIX bus has significant idle bandwidth - it only carries data
+when the 6502 writes to XRAM - so all Tx data is routed over PIX
+leaving the UART Tx pin available as a backchannel.
 
-This is not interesting to the 6502 programmer as it happens
-automatically. It is documented mainly for the hardware explorers
-who might be probing UART Tx.
+The 6502 programmer need not worry about this; it happens
+automatically. This note is primarily for hardware explorers probing
+the UART Tx pin.
 
 Values 0x00 to 0x7F are used to send a version string as ASCII
 terminated with a 0x0D or 0x0A. This must be sent immediately after
@@ -640,8 +639,8 @@ Fe Escape Sequences
 CSI Sequences
 -------------
 
-Missing numbers are treated as 0. Some functions, like cursor
-movement, treat 0 as 1 to be useful without parameters.
+Missing numbers default to 0. Some functions, like cursor movement,
+treat 0 as 1 to remain useful without parameters.
 
 .. list-table::
   :widths: 15 5 5 75
@@ -719,8 +718,8 @@ movement, treat 0 as 1 to be useful without parameters.
 
 SGR Parameters
 --------------
-Multiple parameters may be sent separated by semicolons. Reset is
-performed if no codes (CSI m).
+Send multiple parameters separated by semicolons. Sending CSI m
+without any codes resets all attributes.
 
 .. list-table::
   :widths: 10 20 70
