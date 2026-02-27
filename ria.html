@@ -53,44 +53,38 @@
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p>The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico 2 with
-<a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> firmware. The <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> provides all essential services to
+RP6502-RIA firmware. The RIA provides all essential services to
 support a WDC W65C02S microprocessor.</p>
-<p>The <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> must be installed at $FFE0-$FFFF and must be in control of
+<p>The RIA must be installed at $FFE0-$FFFF and must be in control of
 RESB and PHI2. These are the only requirements. Everything else about
 your Picocomputer can be customized. Even the <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> is optional.</p>
-<p>A new <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> will boot to the RP6502 monitor which you can access from the
-console. The console can be accessed in one of three ways: from a VGA
-monitor and USB or Bluetooth keyboard if you are using an <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a>;
-from the USB CDC device which the <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a> presents when plugged
-into a host PC like a development system; or from UART RX/TX
-(115200 8N1) pins on the RIA if you aren’t using an <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a>. The
-monitor is not documented here beyond highlighting some common
-commands. The built-in help is extensive and always up-to-date. Type
-<code class="docutils literal notranslate"><span class="pre">help</span></code> to get started and don’t forget there is deep help like
-<code class="docutils literal notranslate"><span class="pre">help</span> <span class="pre">set</span> <span class="pre">phi2</span></code>.</p>
-<p>The RP6502 monitor is not an operating system shell. It is analogous to a
-UEFI shell. The RP6502 monitor is primarily designed to load ROMs.
-It also has a small amount of hardware and locale
-configuration, which is intentionally kept minimal.</p>
-<p>Loading ROMs in .rp6502 format is done with the <code class="docutils literal notranslate"><span class="pre">load</span></code>
-command. Type <code class="docutils literal notranslate"><span class="pre">help</span> <span class="pre">load</span></code> to learn about the file format for ROMs.
+<p>A new RIA boots to the RP6502 monitor, accessible from the console in
+one of three ways: from a VGA monitor with a USB or Bluetooth keyboard
+when using a <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a>; from the USB CDC device the <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a>
+presents when plugged into a host PC; or from the UART RX/TX
+(115200 8N1) pins on the RIA when not using a <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a>. The monitor
+is not documented here beyond a few common commands. The built-in help
+is extensive and always up-to-date. Type <code class="docutils literal notranslate"><span class="pre">help</span></code> to get started, and
+explore deep help such as <code class="docutils literal notranslate"><span class="pre">help</span> <span class="pre">set</span> <span class="pre">phi2</span></code>.</p>
+<p>The RP6502 monitor is not an operating system shell - it is analogous to a
+UEFI shell. Its primary purpose is loading ROMs, with a small amount of
+hardware and locale configuration kept intentionally minimal.</p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">load</span></code> command to load ROMs in .rp6502 format.
 These aren’t ROMs in the traditional (obsolete) sense. A ROM is a file
 that contains a memory image to be loaded in RAM before starting the
-6502. The <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> includes 1MB of EEPROM which you can <code class="docutils literal notranslate"><span class="pre">install</span></code> ROMs to.
+6502. The RIA includes 1MB of flash which you can <code class="docutils literal notranslate"><span class="pre">install</span></code> ROMs to.
 Once a ROM is installed, you can run it directly or <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">boot</span></code> so it
-loads when the <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> boots.</p>
-<p>Some of the monitor commands, like <code class="docutils literal notranslate"><span class="pre">upload</span></code> and <code class="docutils literal notranslate"><span class="pre">binary</span></code> are
-designed for use by developer tools. The rp6502.py script, included
-with the examples and templates, can be used to automate packaging of a
-ROM and executing it.</p>
+loads when the RIA boots.</p>
+<p>Some monitor commands, such as <code class="docutils literal notranslate"><span class="pre">upload</span></code> and <code class="docutils literal notranslate"><span class="pre">binary</span></code>, target
+developer tools. The rp6502.py script, included with the examples and
+templates, automates ROM packaging and execution.</p>
 </div>
 <div class="section" id="reset">
 <h2>Reset<a class="headerlink" href="#reset" title="Permalink to this headline">¶</a></h2>
-<p>It helps to think about reset as two states instead of a pulse on
-RESB. When reset is low, the 6502 is stopped and the console is
-connected to the RP6502 monitor. When reset is high, the 6502 is running
-and the console is connected both stdio in the <a class="reference internal" href="os.html"><span class="doc">RP6502-OS</span></a> and the UART TX/RX
-registers described below.</p>
+<p>Think of reset as two states, not a pulse on RESB. When reset is low,
+the 6502 is stopped and the console connects to the RP6502 monitor.
+When reset is high, the 6502 runs and the console connects to both
+stdio in the <a class="reference internal" href="os.html"><span class="doc">RP6502-OS</span></a> and the UART TX/RX registers described below.</p>
 <p>If you want to move reset from low to high, either <code class="docutils literal notranslate"><span class="pre">load</span></code> a ROM with
 a reset vector, or use the <code class="docutils literal notranslate"><span class="pre">reset</span></code> command if you have prepared RAM
 some other way.</p>
@@ -100,13 +94,16 @@ crashed or halted 6502, you have two options:</p>
 <li><p>Using a Bluetooth or USB keyboard, press CTRL-ALT-DEL.</p></li>
 <li><p>Send a break to the RIA UART.</p></li>
 </ol>
-<p>WARNING! Do not hook up a physical button to RESB. The <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> must remain
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Do not hook up a physical button to RESB. The RIA must remain
 in control of RESB. What you probably want is the reset that happens
 from the RIA RUN pin. We call this a <code class="docutils literal notranslate"><span class="pre">reboot</span></code>. The reference hardware
-reboot button is hooked up to the RIA RUN pin. Rebooting the <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a>
+reboot button is hooked up to the RIA RUN pin. Rebooting the RIA
 like this will cause any configured boot ROM to load, like at power
 on. Resetting the 6502 from keyboard or UART will only return you to
 the RP6502 console.</p>
+</div>
 </div>
 <div class="section" id="registers">
 <h2>Registers<a class="headerlink" href="#registers" title="Permalink to this headline">¶</a></h2>
@@ -195,13 +192,15 @@ connected.</p></td>
 </tr>
 <tr class="row-even"><td><p>$FFF0</p></td>
 <td><p>IRQ</p></td>
-<td><p>Set bit 0 high to enable VSYNC interrupts. Verify source
-with VSYNC increment then read or write this register to clear
-interrupt.</p></td>
+<td><p>Set bit 0 high to enable VSYNC interrupts. To clear the
+interrupt, first verify the source by checking the VSYNC
+counter, then read or write this register.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$FFF1</p></td>
 <td><p>RETURN</p></td>
-<td><p>Always $80, BRA. Entry to blocking OS call.</p></td>
+<td><p>Always $80 (the BRA opcode). JSR here to spin-wait for an
+OS call: the CPU loops on this BRA until BUSY clears, then
+falls through to LDA and LDX below.</p></td>
 </tr>
 <tr class="row-even"><td><p>$FFF2</p></td>
 <td><p>BUSY</p></td>
@@ -209,7 +208,8 @@ interrupt.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$FFF3</p></td>
 <td><p>LDA</p></td>
-<td><p>Always $A9.</p></td>
+<td><p>Always $A9 (the LDA immediate opcode). Part of the
+spin-loop return sequence.</p></td>
 </tr>
 <tr class="row-even"><td><p>$FFF4</p></td>
 <td><p>A</p></td>
@@ -217,7 +217,8 @@ interrupt.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$FFF5</p></td>
 <td><p>LDX</p></td>
-<td><p>Always $A2.</p></td>
+<td><p>Always $A2 (the LDX immediate opcode). Part of the
+spin-loop return sequence.</p></td>
 </tr>
 <tr class="row-even"><td><p>$FFF6</p></td>
 <td><p>X</p></td>
@@ -225,7 +226,8 @@ interrupt.</p></td>
 </tr>
 <tr class="row-odd"><td><p>$FFF7</p></td>
 <td><p>RTS</p></td>
-<td><p>Always $60.</p></td>
+<td><p>Always $60 (the RTS opcode). Ends the spin-loop return
+sequence, returning to the caller with A and X loaded.</p></td>
 </tr>
 <tr class="row-even"><td><div class="line-block">
 <div class="line">$FFF8 -</div>
@@ -263,7 +265,7 @@ interrupt.</p></td>
 </table>
 <div class="section" id="uart">
 <h3>UART<a class="headerlink" href="#uart" title="Permalink to this headline">¶</a></h3>
-<p>Easy and direct access to the UART RX/TX pins of the <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> is
+<p>Easy and direct access to the UART RX/TX pins of the RIA is
 available from $FFE0-$FFE2. The ready flags on bits 6-7 enable testing
 with the BIT operator. You may choose to use these or stdio
 from the <a class="reference internal" href="os.html"><span class="doc">RP6502-OS</span></a>. Using the UART directly while a stdio
@@ -276,10 +278,10 @@ The UART hardware runs at 115200 bps, 8 bit words, no parity, 1 stop bit.</p>
 portal would make moving XRAM very slow since data would have to
 buffer in 6502 RAM. Ideally, you won’t move XRAM and can use the pair
 for better optimizations.</p>
-<p>STEP0 and STEP1 are reset to 1. These are signed so you can go
-backwards and reverse data. These adders allow for very fast sequential
-access, which typically makes up for the slightly slower random access
-compared to 6502 system RAM.</p>
+<p>STEP0 and STEP1 default to 1 after reset. Both are signed, so
+negative values traverse XRAM in reverse. These auto-increment
+adders enable very fast sequential access, which more than offsets
+the slightly slower random access compared to 6502 system RAM.</p>
 </div>
 <div class="section" id="extended-stack-xstack">
 <h3>Extended Stack (XSTACK)<a class="headerlink" href="#extended-stack-xstack" title="Permalink to this headline">¶</a></h3>
@@ -289,7 +291,7 @@ is guaranteed to return zeros. Simply write to push and read to pull.</p>
 </div>
 <div class="section" id="extended-registers-xreg">
 <h3>Extended Registers (XREG)<a class="headerlink" href="#extended-registers-xreg" title="Permalink to this headline">¶</a></h3>
-<p>The <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> is both the host of the PIX bus (documented below)
+<p>The RIA is both the host of the PIX bus (documented below)
 and device 0 on the PIX bus.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
@@ -332,17 +334,16 @@ is an addressable broadcast system which any number of devices can
 listen to.</p>
 <div class="section" id="physical-layer">
 <h3>Physical layer<a class="headerlink" href="#physical-layer" title="Permalink to this headline">¶</a></h3>
-<p>The physical layer is designed to be easily decoded by Pi Pico PIO,
-which is just a fancy shift register. The signals used are PHI2 and
-PIX0-3. This is a double data rate bus with PIX0-3 shifted left on
-both transitions of PHI2. A frame consists of 32 bits transmitted over
-4 cycles of PHI2.</p>
-<p>Bit 28 (0x10000000) is the framing bit. This bit will be set in all
-messages. An all-zero payload is repeated on device ID 7 when the bus
-is idle. A receiver will synchronize by ensuring PIX0 is high on a low
-transition of PHI2. If it is not, stall until the next clock cycle.</p>
+<p>Pi Pico PIO decodes the physical layer easily - PIO is essentially a
+shift register. The signals are PHI2 and PIX0-3. This double data rate
+bus shifts PIX0-3 left on both transitions of PHI2. A frame is 32 bits
+transmitted over 4 PHI2 cycles.</p>
+<p>Bit 28 (0x10000000) is the framing bit, set in every message. An
+all-zero payload repeats on device ID 7 when the bus is idle. A
+receiver synchronizes by ensuring PIX0 is high on a low transition of
+PHI2; if not, stall until the next clock cycle.</p>
 <p>Bits 31-29 (0xE0000000) indicate the device ID number for a message.</p>
-<p>Device 0 is allocated to <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a>. Device 0 is also overloaded to
+<p>Device 0 is allocated to the RIA. Device 0 is also overloaded to
 broadcast XRAM.</p>
 <p>Device 1 is allocated to <a class="reference internal" href="vga.html"><span class="doc">RP6502-VGA</span></a>.</p>
 <p>Devices 2-6 are available for user expansion.</p>
@@ -356,10 +357,9 @@ on the device.</p>
 </div>
 <div class="section" id="pix-extended-ram-xram">
 <h3>PIX Extended RAM (XRAM)<a class="headerlink" href="#pix-extended-ram-xram" title="Permalink to this headline">¶</a></h3>
-<p>All changes to the 64KB of XRAM on the RIA will be broadcast to PIX
-device 0. Bits 15-0 contain the XRAM address. Bits 23-16 contain the
-XRAM data.</p>
-<p>PIX devices will maintain a replica of the XRAM they use. Typically,
+<p>The RIA broadcasts all changes to its 64KB of XRAM to PIX device 0.
+Bits 15-0 carry the XRAM address. Bits 23-16 carry the XRAM data.</p>
+<p>PIX devices maintain a local replica of the XRAM they use. Typically,
 all 64K is replicated and an XREG set by a 6502 application will
 install virtual hardware at a location in XRAM.</p>
 </div>
@@ -389,10 +389,11 @@ in XRAM.</p>
 <span class="n">xreg_ria_keyboard</span><span class="p">(</span><span class="n">xaddr</span><span class="p">);</span> <span class="c1">// macro shortcut</span>
 </pre></div>
 </div>
-<p>XRAM will be continuously updated with a bit array of USB HID
-keyboard codes. Note that these are not the same as PS/2 scancodes.
-Each bit represents one key with the first four bits/codes having special
-meaning:</p>
+<p>The RIA continuously updates XRAM with a bit array of USB HID
+keyboard keycodes. Note that these are not PS/2 scancodes.
+Each keycode is one bit in the array — bit N is 1 when the key
+with HID keycode N is currently pressed. The first four keycodes
+have special meaning:</p>
 <ul class="simple">
 <li><p>0 - No key pressed</p></li>
 <li><p>1 - Num Lock on</p></li>
@@ -425,14 +426,13 @@ mouse input.</p>
 <span class="p">}</span> <span class="n">mouse</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>The amount of movement is computed by way of the application subtracting
-the previous value from the current value. Vsync timing (60Hz) is period correct
-but isn’t fast enough by modern standards. For perfect mouse input, use an ISR
-at 8ms or faster (125Hz).</p>
-<p>It is recommended that applications consider the canvas resolution when
-interpreting the movement. For 640x480 and 640x360 resolutions, each
-unit of movement equates to one pixel. For 320x240 and 320x180
-resolutions, use two units of movement for each pixel.</p>
+<p>Compute movement by subtracting the previous value from the current
+value. Vsync timing (60 Hz) is period-correct but too slow by modern
+standards. For precise mouse input, use an ISR at 8 ms or faster
+(125 Hz).</p>
+<p>Applications should account for canvas resolution when interpreting
+movement. At 640x480 and 640x360, one unit equals one pixel. At
+320x240 and 320x180, two units equal one pixel.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int8_t</span> <span class="n">delta_x</span> <span class="o">=</span> <span class="n">current_x</span> <span class="o">-</span> <span class="n">prev_x</span><span class="p">;</span>
 <span class="kt">int8_t</span> <span class="n">delta_y</span> <span class="o">=</span> <span class="n">current_y</span> <span class="o">-</span> <span class="n">prev_y</span><span class="p">;</span>
 </pre></div>
@@ -448,13 +448,8 @@ resolutions, use two units of movement for each pixel.</p>
 </div>
 <div class="section" id="gamepads">
 <h2>Gamepads<a class="headerlink" href="#gamepads" title="Permalink to this headline">¶</a></h2>
-<p>The <a class="reference internal" href="#"><span class="doc">RP6502-RIA</span></a> supports up to four gamepads. There are drivers for Generic HID,
-XInput, and Playstation gamepads. Unfortunately, the TinyUSB stack
-that the RIA uses is unstable on the Pi Pico so XInput is currently
-disabled and you may find USB instability on other devices.</p>
-<p>Some gamepads let you select between HID/DInput/Android, XInput, and
-other systems. Choose HID/DInput/Android (all the same) for the best chance
-of working.</p>
+<p>The RIA supports up to four gamepads. There are drivers for Generic HID,
+XInput, and Playstation gamepads.</p>
 <p>Modern gamepads have all evolved to the same four face buttons, d-pad,
 dual analog sticks, select, start, and quad shoulders. The minor variations
 of the four face buttons are XY/AB, YX/BA, or Square/Triangle/Cross/Circle.
@@ -471,7 +466,7 @@ and other retro-style gamepads are <strong>not supported</strong>.</p>
 <p>Retro-style gamepads are designed with button mappings for emulators while
 emulators expect the button layout of a modern gamepad. These do not cancel
 each other out. Instead, you end up with wonky button mappings that do not
-follow the defacto standard for modern gamepads.</p>
+follow the de facto standard for modern gamepads.</p>
 </div>
 <p>Enable and disable access to the RIA gamepad XRAM registers by setting
 the extended register. The register value is the XRAM start address of
@@ -481,22 +476,21 @@ the gamepad data. Any invalid address disables the gamepads.</p>
 <span class="n">xreg_ria_gamepad</span><span class="p">(</span><span class="n">xaddr</span><span class="p">);</span> <span class="c1">// macro shortcut</span>
 </pre></div>
 </div>
-<p>Extended memory will be continuously updated with gamepad information.
-The 10-byte structure described here repeats for a total of 40 bytes
-representing four gamepads.</p>
-<p>The upper bits of the DPAD register are used to indicate if a gamepad is
-ready for use and what kind of gamepad it is. The connected bit is high
-when a gamepad for that player slot is connected. The Sony bit indicates
-that the player is using a PlayStation-style gamepad with
-Circle/Cross/Square/Triangle button faces.</p>
-<p>Note that there are both digital and analog values for the left and
-right analog sticks and analog triggers L2/R2. This lets an application
-completely ignore the analog values if it desires.</p>
-<p>Applications supporting L2 and R2 should be aware that some gamepads
-will only present digital information so the analog values will only
-ever be 0 or 255.</p>
-<p>Applications that want to use a simple “one stick and buttons” approach
-are encouraged to support both the dpad and left stick (merged).</p>
+<p>The RIA continuously updates extended memory with gamepad information.
+The 10-byte structure described here repeats four times for a total of
+40 bytes representing four gamepads.</p>
+<p>The upper bits of the DPAD register indicate gamepad readiness and
+type. The connected bit is high when a gamepad is present in that
+player slot. The Sony bit indicates the player is using a
+PlayStation-style gamepad with Circle/Cross/Square/Triangle button
+faces.</p>
+<p>Both digital and analog values are available for the left and right
+sticks and triggers L2/R2, so applications can ignore the analog
+values entirely if desired.</p>
+<p>Some gamepads only report digital data; applications supporting L2 and
+R2 should expect analog values of only 0 or 255 in that case.</p>
+<p>Applications using a simple “one stick and buttons” approach should
+support both the d-pad and left stick as merged input.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 5%" />
@@ -604,9 +598,9 @@ with extended register device 0 channel 1 address 0x00.</p>
 <li><p>Stereo panning.</p></li>
 <li><p>PWM for all waveforms.</p></li>
 </ul>
-<p>Each of the eight oscillators requires eight bytes of XRAM for
-configuration. The unused byte is padding so multiplication is a fast
-bit shift.</p>
+<p>Each of the eight oscillators uses eight bytes of XRAM for
+configuration. The structure size is a power of two so indexing
+into the oscillator array is a bit shift rather than a multiply.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span> <span class="k">struct</span>
 <span class="p">{</span>
     <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">freq</span><span class="p">;</span>
@@ -650,7 +644,7 @@ resolution of 1/3 Hz.</p></td>
 waveforms.</p></td>
 </tr>
 <tr class="row-even"><td><p>vol_attack</p></td>
-<td><p>Attack volume and rate.</p>
+<td><p>Attack phase volume and rate.</p>
 <ul class="simple">
 <li><p>bits 7-4 - 0-15 volume attenuation.</p></li>
 <li><p>bits 3-0 - 0-15 attack rate.</p></li>
@@ -658,7 +652,7 @@ waveforms.</p></td>
 </td>
 </tr>
 <tr class="row-odd"><td><p>vol_decay</p></td>
-<td><p>Decay volume and rate.</p>
+<td><p>Decay phase volume and rate.</p>
 <ul class="simple">
 <li><p>bits 7-4 - 0-15 volume attenuation.</p></li>
 <li><p>bits 3-0 - 0-15 decay rate.</p></li>
@@ -797,10 +791,121 @@ registers. The OPL2 registers must begin on a page boundary.</p>
 </div>
 <p>If, for example, xaddr is 0x4200 then the 256 registers of an OPL2 chip
 are mapped into XRAM from 0x4200 to 0x42FF.</p>
-<p>Timers, interrupts, and the status register are not supported and were
-not widely used. These were in Yamaha OPL chips to assist with cost
-reducing consumer devices and rarely used in computers which had their
-own timers.</p>
+<p>Timers, interrupts, and the status register are not supported.
+These features existed in Yamaha OPL chips primarily to help
+cost-reduce consumer devices; computers of the era had their own
+timers and rarely used them.</p>
+</div>
+<div class="section" id="virtual-communications-port">
+<h2>Virtual Communications Port<a class="headerlink" href="#virtual-communications-port" title="Permalink to this headline">¶</a></h2>
+<p>If you need more serial communications beyond the console UART, USB adapters
+are available to CMOS/TTL, RS-232, RS-422, and RS-485. The RIA includes drivers
+for FTDI, CP210X, CH34X, PL2303, and CDC ACM.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">status</span></code> command lists any connected VCP devices. Open them like
+any file using a special name. By default, “VCP0:” opens at 115200
+baud, 8 data bits, no parity, and 1 stop bit. Specify the baud rate
+with “VCP0:115200” or the full bit configuration with
+“VCP0:115200,8N1”. The file will not open if your hardware does not
+support the requested configuration. The open flags are ignored.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">open</span><span class="p">(</span><span class="s">&quot;VCP0:1200,7E2&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="c1">// then read and write</span>
+</pre></div>
+</div>
+<p>Generous FIFO buffers service both reading and writing. Both operations
+are non-blocking. Reads can return 0 bytes, and writes may send less
+than the requested amount. Resubmit any remaining bytes in a subsequent
+call.</p>
+</div>
+<div class="section" id="rom-file-format">
+<h2>ROM File Format<a class="headerlink" href="#rom-file-format" title="Permalink to this headline">¶</a></h2>
+<p>A ROM file begins with a shebang line, followed by any number of assets.
+All text lines end with <code class="docutils literal notranslate"><span class="pre">\r</span></code> or <code class="docutils literal notranslate"><span class="pre">\n</span></code> or both. All numbers may be
+specified in decimal (255), C-style hex (0xFF), or MOS-style hex ($FF).</p>
+<p><strong>Shebang</strong> — first line of every ROM file:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>#!RP6502
+</pre></div>
+</div>
+<p><strong>Null-named asset</strong> — a group of memory chunks loaded directly into RAM:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>#&gt;len crc
+</pre></div>
+</div>
+<p>Followed by one or more memory chunks, each consisting of a header line
+and <code class="docutils literal notranslate"><span class="pre">len</span></code> bytes of raw binary data:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>addr len crc
+</pre></div>
+</div>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 95%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">addr</span></code></p></td>
+<td><p>Destination address in 6502 RAM (0x0000-0xFEFF) or XRAM
+(0x10000-0x1FFFF).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">len</span></code></p></td>
+<td><p>Number of raw binary bytes that immediately follow this line.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">crc</span></code></p></td>
+<td><p>CRC of the binary payload (checked).</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Named asset</strong> — a raw binary blob identified by name:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>#&gt;len crc name
+</pre></div>
+</div>
+<p>Followed immediately by <code class="docutils literal notranslate"><span class="pre">len</span></code> bytes of raw binary data. Assets repeat
+until end of file.</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 95%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">len</span></code></p></td>
+<td><p>Number of raw binary bytes that immediately follow this line.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">crc</span></code></p></td>
+<td><p>CRC of the binary payload (ignored by RIA).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<td><p>Asset identifier string.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The rp6502.py tool, part of the templates for new projects, handles
+these details and integrates with the CMake system. Adding assets is
+straightforward. In this example the image data is packed into the ROM
+as memory chunks, which load into RAM/XRAM when the ROM loads.</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">rp6502_asset</span><span class="p">(</span><span class="s">your_project</span> <span class="s">0x10000</span> <span class="s">img/intro.bin</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The ROM can also hold named assets of raw data. Some names have special
+meanings. The help asset is shown with the HELP and INFO console commands.</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">rp6502_asset</span><span class="p">(</span><span class="s">your_project</span> <span class="s">help</span> <span class="s">src/help.txt</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>All ROM assets become part of the filesystem while the ROM runs.
+Precede the asset name with “ROM:” and open it like any other file.
+ROM assets are read-only, but you can have multiple open simultaneously.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">open</span><span class="p">(</span><span class="s">&quot;ROM:help&quot;</span><span class="p">,</span> <span class="n">O_RDONLY</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>There’s no enforced limit to the number or size of named assets. Opening
+files is a linear search. The search will skip over the data, but how many
+seeks and string compares your application can tolerate is up to you.</p>
 </div>
 </div>
 
@@ -859,6 +964,8 @@ own timers.</p>
 <li class="toctree-l2"><a class="reference internal" href="#gamepads">Gamepads</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#programmable-sound-generator">Programmable Sound Generator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#yamaha-opl2-fm-sound-generator">Yamaha OPL2 FM Sound Generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#virtual-communications-port">Virtual Communications Port</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rom-file-format">ROM File Format</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ria_w.html">RP6502-RIA-W</a></li>

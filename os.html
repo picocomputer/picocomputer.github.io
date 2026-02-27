@@ -48,9 +48,9 @@
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p>The <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> runs a 32-bit protected operating system that you can call
-from the 6502. The <a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> does not use any 6502 system RAM and will not
+from the 6502. The OS does not use any 6502 system RAM and will not
 interfere with developing a native 6502 OS.</p>
-<p>The <a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> is loosely based on POSIX with an Application Binary
+<p>The OS loosely follows POSIX with an Application Binary
 Interface (ABI) similar to <a class="reference external" href="https://cc65.github.io/doc/cc65-intern.html">cc65’s fastcall</a>. It provides stdio.h and
 unistd.h services to both <a class="reference external" href="https://cc65.github.io">cc65</a> and <a class="reference external" href="https://llvm-mos.org/">llvm-mos</a> compilers. There are also calls to access RP6502
 features and manage FAT32 filesystems. ExFAT is ready to go and will be
@@ -90,17 +90,16 @@ registers of the RIA.</p>
 </tr>
 </tbody>
 </table>
-<p>The unassigned space is available for hardware experimenters. You will need
-to design your own chip select hardware to use this address space. It is
-recommended that additional VIAs be added “down” and other hardware added
-“up”. For example: VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and SID1
-at $FF20.</p>
+<p>The unassigned space is available for hardware experimenters. Design
+your own chip select hardware to use this address space. Add additional
+VIAs downward and other hardware upward. For example: VIA0 at $FFD0,
+VIA1 at $FFC0, SID0 at $FF00, and SID1 at $FF20.</p>
 </div>
 <div class="section" id="application-binary-interface">
 <h2>Application Binary Interface<a class="headerlink" href="#application-binary-interface" title="Permalink to this headline">¶</a></h2>
 <p>The ABI for calling the operating system is based on fastcall from the
 <a class="reference external" href="https://cc65.github.io/doc/cc65-intern.html">cc65 internals</a>. The
-<a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> does not use or require anything from cc65 and is easy for
+OS does not use or require anything from cc65 and is easy for
 assembly programmers to use. At its core, the OS ABI is four simple rules.</p>
 <ul class="simple">
 <li><p>Stack arguments are pushed left to right.</p></li>
@@ -120,16 +119,14 @@ as a C declaration like so:</p>
 <p>The RIA has registers called RIA_A, RIA_X, and RIA_SREG. An int is 16 bits,
 so we set the RIA_A and RIA_X registers with arg1. I’ll use “A” for the 6502
 register and “RIA_A” for the RIA register in this explanation.</p>
-<p>We use the XSTACK for arg0. Reading or writing data to the RIA_XSTACK
-register removes or adds bytes to the XSTACK. It’s a top-down stack, so
-push each argument from left to right and maintain little endian-ness in
-memory.</p>
+<p>We use the XSTACK for arg0. Reading RIA_XSTACK pops bytes; writing
+pushes bytes. It’s a top-down stack, so push each argument left to
+right and maintain little-endian byte order.</p>
 <p>To execute the call, store the operation ID in RIA_OP. The operation begins
-immediately. You can keep doing 6502 things, like running a loading
-animation, by polling RIA_BUSY. Or, JSR RIA_SPIN to block.</p>
-<p>The JSR RIA_SPIN method can unblock in less than 3 clock cycles and does an
-immediate load of A and X. Sequential operations will run fastest with this
-technique. Under the hood, you’re jumping into a self-modifying program that
+immediately. You can keep doing 6502 things, like running a loading animation, by
+polling RIA_BUSY. Alternatively, JSR to RIA_SPIN to block.</p>
+<p>JSR RIA_SPIN can unblock within 3 clock cycles and immediately loads A
+and X. Sequential operations run fastest with this technique. Under the hood, you’re jumping into a self-modifying program that
 runs on the RIA registers.</p>
 <div class="highlight-asm notranslate"><div class="highlight"><pre><span></span><span class="nf">BRA</span> <span class="c">#$??      ; RIA_BUSY {-2 or 0}</span>
 <span class="nf">LDA</span> <span class="c">#$??      ; RIA_A</span>
@@ -157,9 +154,9 @@ possible. For example, you can chain read_xstack() and write_xstack() to
 copy a file without using any RAM or XRAM.</p>
 <div class="section" id="short-stacking">
 <h3>Short Stacking<a class="headerlink" href="#short-stacking" title="Permalink to this headline">¶</a></h3>
-<p>In the never ending pursuit of saving all the cycles, it is possible to save
-a few on the stack push if you don’t need all the range. This only works on
-the stack argument that gets pushed first. For example:</p>
+<p>In the pursuit of saving every cycle, you can save a few on the stack
+push when you don’t need the full range. This only applies to the first
+stack argument pushed. For example:</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">long</span> <span class="n">f_lseek</span><span class="p">(</span><span class="kt">long</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">char</span> <span class="n">whence</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -177,35 +174,34 @@ below as “A regs”.</p>
 </div>
 <div class="section" id="bulk-data">
 <h3>Bulk Data<a class="headerlink" href="#bulk-data" title="Permalink to this headline">¶</a></h3>
-<p>Functions that move bulk data may come in two flavors. These are any
-function with a mutable pointer parameter. A RAM pointer is meaningless to
-the RIA because it can not change 6502 RAM. Instead, we use the XSTACK or
-XRAM to move data.</p>
+<p>Functions that move bulk data come in two flavors, depending on
+where the data lives. A RAM pointer is meaningless to the RIA because it cannot change 6502
+RAM. Instead, use the XSTACK or XRAM to move data.</p>
 <div class="section" id="bulk-xstack-operations">
 <h4>Bulk XSTACK Operations<a class="headerlink" href="#bulk-xstack-operations" title="Permalink to this headline">¶</a></h4>
 <p>These only work if the size is 512 bytes or less. Bulk data is passed on the
 XSTACK, which is 512 bytes. A pointer appears in the C prototype to indicate
-the type and direction of this data. Let’s look at some examples.</p>
+the type and direction (to or from the OS) of this data. Let’s look at some examples.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">open</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">path</span><span class="p">,</span> <span class="kt">int</span> <span class="n">oflag</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>Send <cite>oflag</cite> in RIA_A. RIA_X doesn’t need to be set according the to docs
-below. Send the path on XSTACK by pushing the string starting with the last
+<p>Send <cite>oflag</cite> in RIA_A. RIA_X doesn’t need to be set according to the
+docs below. Send the path on XSTACK by pushing the string starting with the last
 character. You may omit pushing the terminating zero, but strings are
 limited to a length of 255. Calling this from the C SDK will “just work”
 because there’s an implementation that pushes the string for you.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">read_xstack</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Send <cite>count</cite> as a short stack and <cite>fildes</cite> in RIA_A. RIA_X doesn’t need to
-be set according the to docs below. The returned value in AX indicates how
+<p>Send <cite>count</cite> as a short stack and <cite>fildes</cite> in RIA_A. RIA_X doesn’t
+need to be set according to the docs below. The returned value in AX indicates how
 many values must be pulled from the stack. If you call this from the C SDK
 then it will copy XSTACK to buf[] for you.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="n">write_xstack</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="n">count</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fildes</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Send <cite>fildes</cite> in RIA_A. RIA_X doesn’t need to be set according the to docs
-below. Push the buf data to XSTACK. Do not send <cite>count</cite>, the OS knows this
+<p>Send <cite>fildes</cite> in RIA_A. RIA_X doesn’t need to be set according to the
+docs below. Push the buf data to XSTACK. Do not send <cite>count</cite>, the OS knows this
 from its internal stack pointer. If you call this from the C SDK then it
 will copy count bytes of buf[] to XSTACK for you.</p>
 <p>Note that read() and write() are part of the C SDK, not an OS operation. C
@@ -221,13 +217,13 @@ going through 6502 RAM or capture a screenshot with ease.</p>
 </pre></div>
 </div>
 <p>The OS expects <cite>buf</cite> and <cite>count</cite> on the XSTACK as integers with <cite>filedes</cite> in
-RIA_A. The <a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> has direct access to XRAM so internally it will use
+RIA_A. The OS has direct access to XRAM so internally it will use
 something like &amp;XRAM[buf]. You will need to use RIA_RW0 or RIA_RW1 to access
 this memory from the 6502.</p>
-<p>These operations are interesting because of their high performance and
-ability to work in the background while the 6502 is doing something else.
-You can expect close to 64KB/sec, which means loading a game level’s worth
-of assets will take less than a second.</p>
+<p>These operations stand out for their high performance and ability to
+run in the background while the 6502 does other work. Expect close to
+64 KB/sec, meaning a game level’s worth of assets loads in under a
+second.</p>
 <p>Bulk XRAM operations are why the Picocomputer 6502 was designed without
 paged memory.</p>
 </div>
@@ -245,8 +241,8 @@ functions and familiar prototypes. For example, the f_lseek() described
 below has reordered arguments that are optimized for short stacking the long
 argument. But you don’t have to call f_lseek() from C, you can call the
 usual lseek() which has the traditional argument order.</p>
-<p>The <a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> is built around FAT filesystems, which is the defacto
-standard for unsecured USB storage devices. POSIX filesystems are not fully
+<p>The OS is built around FAT filesystems, the de facto standard for
+unsecured USB storage devices. POSIX filesystems are not fully
 compatible with FAT but there is a solid intersection of basic IO that is
 100% compatible. You will see some familiar POSIX functions like open() and
 others like f_stat() which are similar to the POSIX function but tailored to
@@ -399,8 +395,8 @@ long <code class="sig-name descname">lrand</code><span class="sig-paren">(</span
 <dd><div class="line-block">
 <div class="line"><br /></div>
 </div>
-<p>Generates a random number starting with entropy on the RIA. This is
-suitable for seeding a RNG or general use. The 16-bit rand() in the cc65
+<p>Generates a 32-bit random number seeded with hardware entropy
+from the RIA. Suitable for seeding a PRNG or direct use. The 16-bit rand() in the cc65
 library can be seeded with this by calling its non-standard _randomize()
 function.</p>
 <dl class="field-list simple">
@@ -431,8 +427,11 @@ int <code class="sig-name descname">stdin_opt</code><span class="sig-paren">(</s
 <p>Additional options for the STDIN line editor. Set the str_length to your
 buffer size - 1 to make gets() safe. This can also guarantee no split
 lines when using fgets() on STDIN.</p>
-<p><strong>* Experimental *</strong> Likely to be replaced with stty-like something. Drop
-your thoughts on the forums if you have specific needs.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Experimental.</strong> Likely to be replaced with a stty-like interface.
+Share your thoughts on the forums if you have specific needs.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Op code</dt>
 <dd class="field-odd"><p>RIA_OP_STDIN_OPT 0x05</p>
@@ -444,7 +443,7 @@ your thoughts on the forums if you have specific needs.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ctrl_bits</strong> – Bitmap of ASCII 0-31 defines which CTRL characters can
 abort an input. When CTRL key is pressed, any typed input remains on
-the screen but the applicaion receives a line containing only the CTRL
+the screen but the application receives a line containing only the CTRL
 character. e.g. CTRL-C + newline.</p></li>
 <li><p><strong>str_length</strong> – 0-255 default 254. The input line editor won’t allow
 user input greater than this length.</p></li>
@@ -471,12 +470,12 @@ int <code class="sig-name descname">errno_opt</code><span class="sig-paren">(</s
 <dd><div class="line-block">
 <div class="line"><br /></div>
 </div>
-<p><a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> calls will set RIA_ERRNO when an error occurs.  This is used to
+<p>OS calls will set RIA_ERRNO when an error occurs.  This is used to
 select which set of values to use because the compiler libraries each use
 different constants in errno.h. Both cc65 and llvm-mos call this
 automatically in the C runtime. The RIA_ERRNO behavior is undefined until
 it is set. Note that the C <cite>errno</cite> maps directly to RIA_ERRNO.</p>
-<p><a class="reference internal" href="#"><span class="doc">RP6502-OS</span></a> will map FatFs errors onto errno. RP6502 emulation and
+<p>The OS will map FatFs errors onto errno. RP6502 emulation and
 simulation software is expected to map their native errors as well. The
 table below shows the FatFs mappings. Because FatFs is so integral to the
 OS, calls are documented here with their native FatFs errors to assist
@@ -1554,7 +1553,7 @@ int <code class="sig-name descname">f_seekdir</code><span class="sig-paren">(</s
 </div>
 <p>Set the read position for the directory descriptor. Internally, the FatFs
 directory read position can only move forward by one, so use this for
-convienence, not performance.</p>
+convenience, not performance.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Op code</dt>
 <dd class="field-odd"><p>RIA_OP_SEEKDIR 0x24</p>
@@ -1840,7 +1839,7 @@ int <code class="sig-name descname">f_chdrive</code><span class="sig-paren">(</s
 <dd><div class="line-block">
 <div class="line"><br /></div>
 </div>
-<p>Change durrent drive. Eight USB MSC drives are formally named “USB0:” to
+<p>Change current drive.
 “USB7:” with shortcuts “0:” to “7:”.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Op code</dt>
@@ -2021,9 +2020,9 @@ void <code class="sig-name descname">exit</code><span class="sig-paren">(</span>
 <div class="line"><br /></div>
 </div>
 <p>Halt the 6502 and return the console to RP6502 monitor control. This is
-the only operation that does not return. RESB will be pulled down before
-the next instruction can execute. Status is currently ignored but will be
-used in the future.</p>
+the only operation that does not return. The OS pulls RESB low before
+the next instruction can execute. The status argument is currently
+unused but reserved for future use.</p>
 <p>In general, dropping the user back to the monitor is discouraged. But
 calling exit() or falling off main() is preferred to locking up.</p>
 <dl class="field-list simple">

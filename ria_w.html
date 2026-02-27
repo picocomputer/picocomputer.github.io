@@ -53,13 +53,13 @@
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p>The <strong>RP6502 Interface Adapter W</strong> is a Raspberry Pi Pico 2 W running
-the RP6502-RIA-W firmware. The <a class="reference internal" href="#"><span class="doc">RP6502-RIA-W</span></a> provides all the features
+the RP6502-RIA-W firmware. It provides all the features
 of the <a class="reference internal" href="ria.html"><span class="doc">RP6502-RIA</span></a> plus wireless services, as described below.</p>
 </div>
 <div class="section" id="wifi-setup">
 <h2>WiFi Setup<a class="headerlink" href="#wifi-setup" title="Permalink to this headline">¶</a></h2>
-<p>The RP6502-RIA-W supports Wi-Fi 4 (802.11n). Configuration is performed
-via the console interface.</p>
+<p>The RP6502-RIA-W supports Wi-Fi 4 (802.11n). Configure it through the
+console interface.</p>
 <ul class="simple">
 <li><p><strong>Enable/Disable Radio:</strong>
 Use <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">RF</span> <span class="pre">(0|1)</span></code> to enable (1, default) or disable (0) all radios
@@ -81,7 +81,7 @@ settings.</p></li>
 <div class="section" id="network-time-protocol-ntp">
 <h2>Network Time Protocol (NTP)<a class="headerlink" href="#network-time-protocol-ntp" title="Permalink to this headline">¶</a></h2>
 <p>The real-time clock (RTC) automatically synchronizes with internet time
-servers when connected. Check NTP status with the <code class="docutils literal notranslate"><span class="pre">status</span></code> command.</p>
+servers when connected to WiFi. Check NTP status with the <code class="docutils literal notranslate"><span class="pre">status</span></code> command.</p>
 <ul class="simple">
 <li><p><strong>Set Time Zone:</strong>
 To use local time instead of UTC, set your time zone with <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">TZ</span></code>.
@@ -92,8 +92,8 @@ automatic if your locale observes them.</p></li>
 </div>
 <div class="section" id="modem-emulation">
 <h2>Modem Emulation<a class="headerlink" href="#modem-emulation" title="Permalink to this headline">¶</a></h2>
-<p>The <a class="reference internal" href="#"><span class="doc">RP6502-RIA-W</span></a> can emulate a Hayes modem for BBS access. Beware that
-raw TCP and telnet protocols are plain text in transit.</p>
+<p>The RP6502-RIA-W can emulate a Hayes modem for BBS access. Raw TCP and
+telnet connections are unencrypted in transit.</p>
 <ul class="simple">
 <li><p><strong>AT Commands:</strong>
 The modem interface supports standard AT commands for dialing,
@@ -116,25 +116,23 @@ answering, and configuration.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">AT&amp;V</span></code> — View profile</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">AT&amp;W</span></code> — Write profile to NVRAM</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">AT&amp;Z0=example.com:23</span></code> — Save “telephone number” to NVRAM</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">AT+RF=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+RF?</span></code> — Access RIA setting RF</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AT+RF=0</span></code> or <code class="docutils literal notranslate"><span class="pre">AT+RF=1</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+RF?</span></code> — Access RIA setting RF</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">AT+RFCC=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+RFCC?</span></code> — Access RIA setting RFCC</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">AT+SSID=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+SSID?</span></code> — Access RIA setting SSID</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">AT+PASSS=your_ssid</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+PASS?</span></code> — Access RIA setting PASS</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AT+PASS=your_pass</span></code> and <code class="docutils literal notranslate"><span class="pre">AT+PASS?</span></code> — Access RIA setting PASS</p></li>
 </ul>
-<p>A full telnet stack has yet to be written so all connections are raw
+<p>A full telnet stack is not yet implemented, so all connections are raw
 TCP.</p>
 <p>“Telephone Numbers” are saved immediately and are not linked to
 profiles.</p>
 </div>
 <div class="section" id="bluetooth">
 <h2>Bluetooth<a class="headerlink" href="#bluetooth" title="Permalink to this headline">¶</a></h2>
-<p>The <a class="reference internal" href="#"><span class="doc">RP6502-RIA-W</span></a> supports Bluetooth LE (BLE) keyboards, mice, and
-gamepads. It does not support the older Bluetooth Classic aka BR/EDR.
-The RP6502-RIA-W uses BTStack which can only support one Bluetooth
-Classic device at a time so it’s not worth the memory. BLE was introduced
-in June 2010 with Bluetooth 4.0 so it’s not difficult to find devices but
-you will find an occasional oddball. Of particular note are Sony DualShock
-and DualSense controllers - which you can use on USB instead.</p>
+<p>The RP6502-RIA-W supports Bluetooth LE (BLE) keyboards, mice, and
+gamepads. Bluetooth Classic (BR/EDR) is not supported.
+BLE has been widely available since Bluetooth 4.0 (June 2010),
+so compatible devices are easy to find, though the occasional oddball
+exists.</p>
 <p>To add a new device, use monitor command <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">ble</span> <span class="pre">2</span></code> to enable pairing
 mode. The LED on the RP6502-RIA-W will blink when in pairing mode. See
 your device’s manual to enable its pairing mode - probably a button and
