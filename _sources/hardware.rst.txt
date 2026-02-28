@@ -39,19 +39,16 @@ courier.
 Step 0. Read This
 =================
 
-The debug header on the Pi Pico 2 W with headers doesn't fit any of the
-existing cases. It's only useful for attaching a debugger,
-so just pull it off and get on with things. The Pi Picos where you solder your
-own headers to do not have this clearance issue.
+Rev. A and Rev. B circuit boards are identical except for the debug
+connectors under the RIA. These do nothing even when connected. They were
+removed so folks stop asking about them.
+
+Most VGA-to-HDMI cables can get power from the Picocomputer. Some will need
+external power applied. All are zero lag. All VGA video output uses only
+HDMI-compatible timings so these cables are an ideal solution.
 
 The boot message does not say COLOR anymore. Do not assume your device will
 behave exactly the same as an old YouTube video.
-
-The three-pin debug connections under the RIA aren't used anymore. This is
-an artifact of early development.
-
-Most VGA-to-HDMI cables can get power from the Picocomputer. Some will need
-external power applied. All are zero lag.
 
 
 Step 1. Watch the Videos
