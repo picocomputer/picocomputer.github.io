@@ -16,7 +16,7 @@ of democratized hobbyist ASICs.
 Schematic
 =========
 
-`Picocomputer 6502 <_static/2023-06-07-rp6502.pdf>`_ (pdf)
+`Picocomputer 6502 <_static/2026-01-26-rp6502.pdf>`_ (pdf)
 
 
 Buying a Picocomputer
@@ -71,8 +71,8 @@ Step 2. Order Printed Circuit Boards
 ====================================
 
 Order from the project page at `PCBWay
-<https://www.pcbway.com/project/shareproject/Picocomputer_6502_RP6502_03a79f88.html>`_
-or download `the gerbers <_static/rp6502-reva-gerbers.zip>`_ to have the boards
+<https://www.pcbway.com/project/shareproject/Picocomputer_6502_RP6502_Rev_B_1f41cb0b.html>`_
+or download `the gerbers <_static/rp6502-revb-gerbers.zip>`_ to have the boards
 made anywhere you prefer.
 
 Gerbers are like PDFs for circuit boards. You'll be asked to upload these;
@@ -98,10 +98,10 @@ boards from step 2. The result is a "board of sockets" - you install
 the ICs yourself later. Parts availability should never be a
 constraint; every component has multiple vendors.
 
-Download `the BOM, notes, and photos <_static/rp6502-reva-assembly.zip>`_.
+Download `the BOM, notes, and photos <_static/rp6502-revb-assembly.zip>`_.
 
 Request assembly with your PCB order and send the `BOM, notes, and photos
-<_static/rp6502-reva-assembly.zip>`_. There is no centroid file because there
+<_static/rp6502-revb-assembly.zip>`_. There is no centroid file because there
 are no surface mount parts. The default options will work. Let them source the
 parts. Let them make substitutions.
 
@@ -120,11 +120,11 @@ Step 4. More Parts
 ==================
 
 Factory-assembled boards still require you to install the eight ICs. Upload the
-`active parts list <_static/rp6502-reva-active.csv>`_ to a `Mouser
+`active parts list <_static/rp6502-revb-active.csv>`_ to a `Mouser
 <https://mouser.com>`_ shopping cart.
 
 If you are soldering it yourself, upload the `full parts list
-<_static/rp6502-reva-full.csv>`_ to a Mouser_ shopping cart.
+<_static/rp6502-revb-full.csv>`_ to a Mouser_ shopping cart.
 
 Mouser will print the Customer# on each of the parts bags. Assign this
 column to the CSV reference column to get your bags labelled like "C1-C9, C11"
@@ -157,20 +157,20 @@ top and 3.5 mm for the bottom.
 Full Parts List (All Components)
 =================================
 
-`All Parts CSV <_static/rp6502-reva-full.csv>`_
+`All Parts CSV <_static/rp6502-revb-full.csv>`_
 
 .. csv-table::
-   :file: _static/rp6502-reva-full.csv
+   :file: _static/rp6502-revb-full.csv
    :header-rows: 1
 
 
 Active Parts List (ICs Only)
 =============================
 
-`Active Parts CSV <_static/rp6502-reva-active.csv>`_
+`Active Parts CSV <_static/rp6502-revb-active.csv>`_
 
 .. csv-table::
-   :file: _static/rp6502-reva-active.csv
+   :file: _static/rp6502-revb-active.csv
    :header-rows: 1
 
 
@@ -180,7 +180,7 @@ Pi Picos Parts List
 Alternative part numbers for the Pi Picos.
 
 .. csv-table::
-   :file: _static/rp6502-reva-picos.csv
+   :file: _static/rp6502-revb-picos.csv
    :header-rows: 1
 
 
