@@ -1226,7 +1226,7 @@ GETLABEL
 
    |
 
-   Get the volume label. Label must have room for (11+1) characters.
+   Get the volume label. Label must have room for (22+1) bytes.
 
    :Op code: RIA_OP_GETLABEL 0x2D
    :C proto: rp6502.h
