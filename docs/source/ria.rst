@@ -687,6 +687,34 @@ These features existed in Yamaha OPL chips primarily to help
 cost-reduce consumer devices; computers of the era had their own
 timers and rarely used them.
 
+Console Port
+============
+
+The main serial port of the RIA is the console for system. Modern operating
+systems provide canonical input and translated output via a configurable
+layer such as termios. A full termios is a too heavy for an 8-bit system,
+but raw and non-blocking IO options are also provided.
+
+The well known stdin blocks for canonical input. The console user will be
+prompted to edit a line. Once the line is submitted with the enter key,
+the stdin read unblocks and returns the line up to a linefeed character.
+
+The well known stdout and stderr blocks and inserts carriage returns
+before newlines is one is not present. The full amount of data is always
+sent and writes will block until sent data is fully unloaded into hardware
+FIFOs.
+
+This is what a C programmer expects, but is not a good interface for a
+multitasking 6502 OS to use. To that end, a non-blocking interface to the
+console is provided. Simply open the special filename "CON:". Reads can
+return 0 bytes, and writes may send less than the requested amount.
+
+Going one step further, a non-blocking and raw connection to the console
+port is available on special filename "TTY:". There is no canonical input
+and no newline translation. This is exactly the same functionality that
+the RIA_TX and RIA_RX registers provide, but available as stdio for
+convienence.
+
 
 Virtual Communications Port
 ===========================
