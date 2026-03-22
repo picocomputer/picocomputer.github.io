@@ -741,6 +741,47 @@ than the requested amount. Resubmit any remaining bytes in a subsequent
 call.
 
 
+Near Field Communications (NFC)
+===============================
+
+The use of NFC cards has become a common media replacement in the retro
+community. This maps well to the RP6502 use of "ROM files" as a replacement
+for "ROM cartridges". In 1983 you might have grabbed a game cartridge with
+colorful stickers that make it easy to home in on the exact dopamine hit
+you're looking for. NFC cards are cheap and easy to decorate with stickers
+or even direct printing. So grab a card, tap it on the NFC reader, then the
+ROM file you want is instantly loaded. Here's how it works.
+
+You will need a PN532 card reader with a USB interface. This is the only
+card reader supported and is very inexpensive, around $10 USD. You will
+also need cards (or fobs or stickers) for each of the ROMs you want to
+support. If you are new to NFC technology, buy a pack of NTAG215 cards and
+a sharpie.
+
+Once the NFC reader is plugged in, issue the monitor command `SET NFC 2` to
+initiate a scan. Any other VCP devices may get probed with PN532 data, this
+is normal. You will hear an error buzz or two beeps for success. You may also
+check `status` to see if a (NFC) is listed after any of your VCP devioces.
+
+Scanning cards will now produce one of three audible signals. An error buzz
+if anything went wrong, two beeps for success, one beep for a partial success.
+
+Cards are to be programmed with the filename and arguments of the ROM to be
+launched. If you use `LOAD "/My Games/Jigsaw.rp6502" cat.bmp` to manually
+load the ROM, put a NDEF TEXT record on the card without the load command
+`"/My Games/Jigsaw.rp6502" cat.bmp`.
+
+When the card is read, all mounted drives are scanned for that file. If
+found, two beeps of successs are played, the 6502 is stopped, the current
+drive and directory is changed to the ROM location, and the new ROM begins
+loading. If the ROM was already running, a single beep is emitted and nothing
+else happens.
+
+You can force only a single drive to be serched by including it in the text
+record. `MSC0:/encabulator.rp6502`
+
+
+
 ROM File Format
 ===============
 
