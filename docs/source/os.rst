@@ -489,6 +489,48 @@ ERRNO_OPT
         - 85
         -
 
+ARGV
+----
+
+.. c:function:: int _argv (char *argv, int size)
+
+   |
+
+   The virtual _argv is called by C initialization to provide argc and argv for main().
+   It returns an array of zero terminated string indexes followed by the strings.
+   e.g. ["ABC", "DEF"] is 06 00 0A 00 00 00 41 42 43 00 44 45 46 00
+   The returned data is guaranteed to be valid.
+
+   :Op code: RIA_OP_ARGV 0x08
+   :C proto: (none)
+   :returns: Size of argv data
+   :errno: will not fail
+
+EXEC
+----
+
+.. c:function:: int ria_execl (const char *path, ...)
+.. c:function:: int ria_execv (const char *path, char * const argv[])
+.. c:function:: int _exec (const char *argv, int size)
+
+   |
+
+   The virtual _exec is called by ria_execl() and ria_execv(). Be aware of the
+   one difference from the execl() and execv() you may be used to. Because RAM
+   is precious, the path is only supplied once, not again in argv[0]. The
+   launched ROM will see argv[0] as the filename.
+
+   The data sent by _exec() will be checked for pointer safety and sanity, but
+   will assume the path points to a loadable ROM file. If API_EINVAL is returned,
+   the argv buffer is cleared so further attempts to _argv() will return an empty set.
+   Is the ROM is invalid, the user will be left on the console with an error message.
+
+   :Op code: RIA_OP_ARGV 0x09
+   :C proto: rp6502.h
+   :returns: Size of argv data
+   :errno: API_EINVAL
+
+
 CLOCK
 -----
 
@@ -533,7 +575,7 @@ TZSET
 -----
 
 .. c:function:: int void tzset(void);
-.. c:function:: int f_tzset (struct _tzset *tz)
+.. c:function:: int _tzset (struct _tzset *tz)
 
    .. code-block:: c
 
@@ -545,8 +587,8 @@ TZSET
          char dstname[5];  /* Name when daylight true, e.g. CEST */
       };
 
-   The virtual f_tzset() is the how tzset() is implemented. Use `help set tz` on the
-   monitor to learn about configuring your time zone.
+   The virtual _tzset() is called internally by tzset(). Use `help set tz` on the
+   console monitor to learn about configuring your time zone.
 
    :Op code: RIA_OP_TZSET 0x0D
    :C proto: time.h
@@ -558,7 +600,7 @@ TZQUERY
 -------
 
 .. c:function:: struct tm *localtime(const time_t *timep);
-.. c:function:: int f_tzquery (uint32_t time, struct _tzquery *dst)
+.. c:function:: int _tzquery (uint32_t time, struct _tzquery *dst)
 
    .. code-block:: c
 
@@ -567,7 +609,7 @@ TZQUERY
          int8_t daylight;  /* non 0 if daylight savings time active */
       };
 
-   The virtual f_tzquery() is part of how localtime() is implemented.
+   The virtual _tzquery() is called internally by localtime().
 
    :Op code: RIA_OP_TZQUERY 0x0E
    :C proto: time.h
