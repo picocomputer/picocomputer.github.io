@@ -283,212 +283,6 @@ XREG
    :errno: EINVAL, EIO
 
 
-PHI2
-----
-
-.. c:function:: int phi2 (void)
-
-   |
-
-   Retrieves the PHI2 setting from the RIA. Applications can use this for
-   adjusting to or rejecting different clock speeds.
-
-   :Op code: RIA_OP_PHI2 0x02
-   :C proto: rp6502.h
-   :returns: The 6502 clock speed in kHz. Typically 800 <= x <= 8000.
-   :errno: will not fail
-
-
-CODE_PAGE
----------
-
-.. c:function:: int code_page (int cp)
-
-   |
-
-   Temporarily overrides the code page if non zero. Returns to system setting
-   when 6502 stops. This is the encoding the filesystem is using and, if VGA
-   is installed, the console and default font. If zero, the system CP setting
-   is selected and returned. If the requested code page is unavailable, a
-   different code page will be selected and returned. For example:
-   ``if (850!=code_page(850)) puts("error");``
-
-   :Op code: RIA_OP_CODE_PAGE 0x03
-   :C proto: rp6502.h
-   :param cp: code page or 0 for system setting.
-   :returns: The code page. One of: 437, 720, 737, 771, 775, 850, 852,
-      855, 857, 860, 861, 862, 863, 864, 865, 866, 869, 932, 936, 949,
-      950.
-   :errno: will not fail
-
-
-LRAND
------
-
-.. c:function:: long lrand (void)
-
-   |
-
-   Generates a 32-bit random number seeded with hardware entropy
-   from the RIA. Suitable for seeding a PRNG or direct use. The 16-bit rand() in the cc65
-   library can be seeded with this by calling its non-standard _randomize()
-   function.
-
-   :Op code: RIA_OP_LRAND 0x04
-   :C proto: rp6502.h
-   :returns: Chaos. 0x0 <= x <= 0x7FFFFFFF
-   :errno: will not fail
-
-
-STDIN_OPT
----------
-
-.. c:function:: int stdin_opt (unsigned long ctrl_bits, unsigned char str_length)
-
-   |
-
-   Additional options for the STDIN line editor. Set the str_length to your
-   buffer size - 1 to make gets() safe. This can also guarantee no split
-   lines when using fgets() on STDIN.
-
-   .. note::
-
-      **Experimental.** Likely to be replaced with a stty-like interface.
-      Share your thoughts on the forums if you have specific needs.
-
-   :Op code: RIA_OP_STDIN_OPT 0x05
-   :C proto: rp6502.h
-   :param ctrl_bits: Bitmap of ASCII 0-31 defines which CTRL characters can
-      abort an input. When CTRL key is pressed, any typed input remains on
-      the screen but the application receives a line containing only the CTRL
-      character. e.g. CTRL-C + newline.
-   :param str_length: 0-255 default 254. The input line editor won't allow
-      user input greater than this length.
-   :a regs: return, str_length
-   :returns: 0 on success
-   :errno: will not fail
-
-
-ERRNO_OPT
----------
-
-.. c:function:: int errno_opt (char option)
-
-   |
-
-   OS calls will set RIA_ERRNO when an error occurs.  This is used to
-   select which set of values to use because the compiler libraries each use
-   different constants in errno.h. Both cc65 and llvm-mos call this
-   automatically in the C runtime. The RIA_ERRNO behavior is undefined until
-   it is set. Note that the C `errno` maps directly to RIA_ERRNO.
-
-   The OS will map FatFs errors onto errno. RP6502 emulation and
-   simulation software is expected to map their native errors as well. The
-   table below shows the FatFs mappings. Because FatFs is so integral to the
-   OS, calls are documented here with their native FatFs errors to assist
-   when cross referencing the `FatFs documentation
-   <https://elm-chan.org/fsw/ff/>`__.
-
-   :Op code: RIA_OP_ERRNO_OPT 0x06
-   :C proto: None
-   :param option: One of the values from the table below.
-   :a regs: return, option
-   :returns: 0 on success
-   :errno: EINVAL
-
-   .. list-table::
-      :header-rows: 1
-      :widths: 25 25 25 25
-
-      * -
-        - cc65
-        - llvm_mos
-        - FatFs
-      * - option
-        - 1
-        - 2
-        -
-      * - ENOENT
-        - 1
-        - 2
-        - FR_NO_FILE, FR_NO_PATH
-      * - ENOMEM
-        - 2
-        - 12
-        - FR_NOT_ENOUGH_CORE
-      * - EACCES
-        - 3
-        - 23
-        - FR_DENIED, FR_WRITE_PROTECTED
-      * - ENODEV
-        - 4
-        - 19
-        - FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM
-      * - EMFILE
-        - 5
-        - 24
-        - FR_TOO_MANY_OPEN_FILES
-      * - EBUSY
-        - 6
-        - 16
-        - FR_LOCKED
-      * - EINVAL
-        - 7
-        - 22
-        - FR_INVALID_NAME, FR_INVALID_PARAMETER
-      * - ENOSPC
-        - 8
-        - 28
-        -
-      * - EEXIST
-        - 9
-        - 17
-        - FR_EXIST
-      * - EAGAIN
-        - 10
-        - 11
-        - FR_TIMEOUT
-      * - EIO
-        - 11
-        - 5
-        - FR_DISK_ERR, FR_INT_ERR, FR_MKFS_ABORTED
-      * - EINTR
-        - 12
-        - 4
-        -
-      * - ENOSYS
-        - 13
-        - 38
-        -
-      * - ESPIPE
-        - 14
-        - 29
-        -
-      * - ERANGE
-        - 15
-        - 34
-        -
-      * - EBADF
-        - 16
-        - 9
-        - FR_INVALID_OBJECT
-      * - ENOEXEC
-        - 17
-        - 8
-        -
-      * - EDOM
-        - 18
-        - 33
-        -
-      * - EILSEQ
-        - 18
-        - 84
-        -
-      * - EUNKNOWN
-        - 18
-        - 85
-        -
-
 ARGV
 ----
 
@@ -534,6 +328,43 @@ EXEC
    :C proto: rp6502.h
    :returns: Size of argv data
    :errno: API_EINVAL
+
+
+ATTR_GET
+--------
+
+.. c:function:: long ria_attr_get (unsigned char id)
+
+   |
+
+   Returns the current value of a RIA attribute. See `RIA Attributes`_
+   for attribute IDs and descriptions.
+
+   :Op code: RIA_OP_ATTR_GET 0x0A
+   :C proto: rp6502.h
+   :param id: Attribute ID. One of the ``RIA_ATTR_*`` constants.
+   :a regs: id
+   :returns: The attribute value as a 31-bit integer. -1 on error.
+   :errno: EINVAL
+
+
+ATTR_SET
+--------
+
+.. c:function:: int ria_attr_set (long val, unsigned char id)
+
+   |
+
+   Sets the value of a RIA attribute. See `RIA Attributes`_ for
+   attribute IDs and descriptions.
+
+   :Op code: RIA_OP_ATTR_SET 0x0B
+   :C proto: rp6502.h
+   :param id: Attribute ID. One of the ``RIA_ATTR_*`` constants.
+   :param val: New value.
+   :a regs: id
+   :returns: 0 on success
+   :errno: EINVAL
 
 
 CLOCK
@@ -1329,3 +1160,178 @@ EXIT
    :C proto: stdlib.h
    :a regs: status
    :param status: 0 is success, 1-255 for error.
+
+
+RIA Attributes
+==============
+
+RIA attributes are 31-bit values identified by an 8-bit ID. They are
+accessed with :c:func:`ria_attr_get` and :c:func:`ria_attr_set`. Both
+functions succeed for any valid attribute ID. Attempting to get or set an
+unknown ID returns -1 with ``errno`` set to ``EINVAL``. Attempting to set a
+get-only attribute also returns -1 with ``EINVAL``.
+
+.. list-table::
+   :widths: 7 28 9 56
+   :header-rows: 1
+
+   * - ID
+     - Name
+     - Available
+     - Description
+   * - 0x00
+     - ``RIA_ATTR_ERRNO_OPT``
+     - get/set
+     - Errno mapping option. Selects which set of errno constants the OS
+       uses. Both cc65 and llvm-mos set this automatically at C runtime
+       startup; assembly programs must set it before making OS calls that
+       can fail. See `ERRNO_OPT Compiler Constants`_ for option values.
+   * - 0x01
+     - ``RIA_ATTR_PHI2_KHZ``
+     - get/set
+     - CPU clock speed in kHz. Range 100–8000. Changes take effect
+       immediately and revert to the system setting when the 6502 stops.
+   * - 0x02
+     - ``RIA_ATTR_CODE_PAGE``
+     - get/set
+     - Active OEM code page used by the filesystem, console, and default
+       VGA font. Reverts to the system setting when the 6502 stops. If the
+       requested page is unavailable, the console setting is selected;
+       follow a set with a get to confirm the result.
+       One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862,
+       863, 864, 865, 866, 869, 932, 936, 949, 950.
+   * - 0x03
+     - ``RIA_ATTR_RLN_LENGTH``
+     - get/set
+     - Maximum input line length for the stdin line editor. 1–255,
+       default 254.
+   * - 0x04
+     - ``RIA_ATTR_LRAND``
+     - get only
+     - 31-bit hardware random number seeded with entropy from the RIA.
+       Returns a value in the range 0x0 to 0x7FFFFFFF. Suitable for
+       seeding a PRNG or direct use. The 16-bit ``rand()`` in the cc65
+       library can be seeded with this by calling ``_randomize()``.
+   * - 0x05
+     - ``RIA_ATTR_BEL``
+     - get/set
+     - BEL (``\a``) output enable on the console UART.
+       0 silences the alert; 1 (default) enables it.
+   * - 0x06
+     - ``RIA_ATTR_LAUNCHER``
+     - get/set
+     - Launcher flag. When set to 1, the process manager records the
+       currently running ROM as the launcher. Whenever any other ROM
+       finishes, the launcher ROM is automatically re-executed. When the
+       launcher ROM itself finishes, the chain ends and the flag is cleared.
+       Setting to 0 clears the launcher registration. A console break
+       (Ctrl-Alt-Del) also clears it unconditionally.
+
+
+ERRNO_OPT Compiler Constants
+-----------------------------
+
+OS calls will set ``RIA_ERRNO`` when an error occurs. The errno option
+selects which numeric values to use because cc65 and llvm-mos each define
+their own errno constants. Both compilers set this automatically in their C
+runtime. Assembly programs must set ``RIA_ATTR_ERRNO_OPT`` before any OS
+call that can fail. ``errno`` in C maps directly to ``RIA_ERRNO``.
+
+The OS maps FatFs errors onto errno. RP6502 emulation and simulation
+software is expected to map their native errors as well. The table below
+shows the FatFs mappings. Because FatFs is so integral to the OS, calls are
+documented here with their native FatFs errors to assist when cross
+referencing the `FatFs documentation <https://elm-chan.org/fsw/ff/>`__.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 25 25 25
+
+   * -
+     - cc65
+     - llvm_mos
+     - FatFs
+   * - option
+     - 1
+     - 2
+     -
+   * - ENOENT
+     - 1
+     - 2
+     - FR_NO_FILE, FR_NO_PATH
+   * - ENOMEM
+     - 2
+     - 12
+     - FR_NOT_ENOUGH_CORE
+   * - EACCES
+     - 3
+     - 23
+     - FR_DENIED, FR_WRITE_PROTECTED
+   * - ENODEV
+     - 4
+     - 19
+     - FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM
+   * - EMFILE
+     - 5
+     - 24
+     - FR_TOO_MANY_OPEN_FILES
+   * - EBUSY
+     - 6
+     - 16
+     - FR_LOCKED
+   * - EINVAL
+     - 7
+     - 22
+     - FR_INVALID_NAME, FR_INVALID_PARAMETER
+   * - ENOSPC
+     - 8
+     - 28
+     -
+   * - EEXIST
+     - 9
+     - 17
+     - FR_EXIST
+   * - EAGAIN
+     - 10
+     - 11
+     - FR_TIMEOUT
+   * - EIO
+     - 11
+     - 5
+     - FR_DISK_ERR, FR_INT_ERR, FR_MKFS_ABORTED
+   * - EINTR
+     - 12
+     - 4
+     -
+   * - ENOSYS
+     - 13
+     - 38
+     -
+   * - ESPIPE
+     - 14
+     - 29
+     -
+   * - ERANGE
+     - 15
+     - 34
+     -
+   * - EBADF
+     - 16
+     - 9
+     - FR_INVALID_OBJECT
+   * - ENOEXEC
+     - 17
+     - 8
+     -
+   * - EDOM
+     - 18
+     - 33
+     -
+   * - EILSEQ
+     - 18
+     - 84
+     -
+   * - EUNKNOWN
+     - 18
+     - 85
+     -
