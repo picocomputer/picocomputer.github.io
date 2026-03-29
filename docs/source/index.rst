@@ -7,75 +7,80 @@
    RP6502-VGA <vga>
    RP6502-OS <os>
 
-============
-Picocomputer
-============
+==================
+Picocomputer 6502
+==================
 
-The **Picocomputer 6502** is a tribute to the processor that launched a
-computing revolution. The lack of apparent complexity is a byproduct of
-the design philosophy: Keep the essence of programming a 6502 and 6522
-then rethink everything else.
+All the soul of the 6502. None of the compromises. You're welcome.
+
+The **Picocomputer 6502** is an open source, modern-retro gaming computer
+built around a real WDC 65C02. The design philosophy: keep the essence of
+programming a 6502 and 6522, then rethink everything else.
 
 .. image:: _static/ria-w-sandwich.jpg
    :width: 600
    :alt: Picocomputer Photo
 
 
-Key Features
-============
-
-- **64KB System RAM**
-- **64KB Extended RAM**
-- **VGA and HD Output**
-- **Yamaha OPL2 FM Sound Generator**
-- **Protected Operating System**
-- **USB** for Keyboard, Mouse, Gamepads, and Storage
-- **Bluetooth LE** for Keyboard, Mouse, and Gamepads
-- **WiFi** Hayes modem emulation
-- **Real Time Clock** with DST and NTP
-
-
-Resources
+Community
 =========
 
-For support and community interaction, use the following channels:
-
-- **GitHub:** https://github.com/picocomputer
-- **Forums:** https://github.com/picocomputer/community/discussions
 - **Discord:** https://discord.gg/TC6X8kTr6d
+- **Forums:** https://github.com/picocomputer/community/discussions
 - **Wiki:** https://github.com/picocomputer/community/wiki
-
-The entire development process was documented in a series of YouTube videos.
-The broad strokes are all still in place but remember that these videos were
-made during development.
-
-- **YouTube:**
-  https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r
+- **GitHub:** https://github.com/picocomputer
+- **YouTube:** https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r
 
 
-How To Obtain
-=============
+Specs
+=====
 
-The **Picocomputer 6502** is a single board computer you build yourself. It has
-been built by hundreds of people. You can also have a single unit manufactured
-especially for you in China. The whole process is documented and well tested.
+- **CPU** — WDC 65C02 CPU and WDC 65C22 VIA
+- **RAM** — 64 KB system + 64 KB extended
+- **Video** — VGA and HD output; 3 planes, scanline programmable
+- **Sound** — PSG and OPL2 FM
+- **Clock** — Real-Time Clock
+
+
+Connectivity
+============
+
+- **USB** — keyboard, mouse, gamepads, UART serial, NFC, floppy drives, and flash drives
+- **Bluetooth LE** — keyboard, mouse, and gamepads
+- **WiFi** — NTP time sync, Hayes modem emulation for dialing into BBSs
+
+
+Programming
+===========
+
+- **Protected OS** — 32-bit operating system; uses no 6502 RAM
+- **POSIX-compatible API** — stdio.h and unistd.h for cc65 and llvm-mos
+- **FAT filesystem** — read and write files on any USB flash or floppy drive
+- **ROM flash** — 1 MB of onboard flash for installing and auto-booting ROMs
+
+
+Build It
+========
+
+100% through-hole construction. Hundreds of people have built one,
+typically for under $100 USD. You can also have a unit manufactured
+in China — no soldering required. All parts are currently in production;
+the Raspberry Pi Pico 2 is guaranteed until at least January 2040.
 
 - :doc:`hardware`: Schematic and manufacturing information.
 
 
-Datasheets
-==========
+Documentation
+=============
 
-The **Picocomputer 6502** is a reference design for RP6502 modular hardware.
-The only required module is a RP6502-RIA.
+The Picocomputer 6502 is a reference design for RP6502 modular hardware.
+The only required module is the RP6502-RIA.
 
-- :doc:`ria`: Interface adapter for the 6502, akin to CIA,
-  VIA, and ACIA devices.
-- :doc:`ria_w`: Wireless features available when using the
-  "Pico 2 W".
-- :doc:`vga`: Optional video adapter that connects to the
-  RP6502-RIA.
+- :doc:`ria`: Interface adapter for the 6502, akin to CIA, VIA, and ACIA devices.
+- :doc:`ria_w`: Wireless features available when using the "Pico 2 W".
+- :doc:`vga`: Optional video adapter.
 - :doc:`os`: The operating system and application programming interface.
+
 
 `Please contribute to this documentation.
 <https://github.com/picocomputer/picocomputer.github.io>`_
