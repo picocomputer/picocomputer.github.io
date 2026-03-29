@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Picocomputer'
-copyright = '2025 Rumbledethumps'
+copyright = '2026 Rumbledethumps'
 author = 'Rumbledethumps'
 release = ''
 
@@ -24,12 +24,14 @@ exclude_patterns = []
 html_theme = 'alabaster'
 html_static_path = ['_static']
 html_css_files = ['custom.css']
+html_sidebars = {'**': ['about.html', 'navigation.html', 'relations.html', 'donate.html']}
 html_theme_options = {
+    'donate_url': 'https://ko-fi.com/rumbledethumps',
     'font_family': 'Arial, sans-serif',
     'github_banner': True,
     'github_user': 'picocomputer',
     'github_repo': '',
-    'fixed_sidebar': False,
+    'fixed_sidebar': True,
     'show_relbars': True,
     'sidebar_width': '230px', # undo alabaster's override
 }
