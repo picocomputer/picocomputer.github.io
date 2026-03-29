@@ -39,7 +39,7 @@ Specs
 - **RAM** — 64 KB system + 64 KB extended
 - **Video** — VGA and HD output; 3 planes, scanline programmable
 - **Sound** — PSG and OPL2 FM
-- **Clock** — Real-Time Clock
+- **Clock** — Real-Time Clock with DST
 
 
 Connectivity
