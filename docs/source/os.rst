@@ -14,11 +14,14 @@ interfere with developing a native 6502 OS.
 
 The OS loosely follows POSIX with an Application Binary
 Interface (ABI) similar to `cc65's fastcall
-<https://cc65.github.io/doc/cc65-intern.html>`__. It provides stdio.h and
-unistd.h services to both `cc65 <https://cc65.github.io>`__ and `llvm-mos
+<https://cc65.github.io/doc/cc65-intern.html>`__. It provides ``stdio.h`` and
+``unistd.h`` services to both `cc65 <https://cc65.github.io>`__ and `llvm-mos
 <https://llvm-mos.org/>`_ compilers. There are also calls to access RP6502
-features and manage FAT32 filesystems. ExFAT is ready to go and will be
-enabled when the patents expire.
+features and manage FAT32 filesystems.
+
+.. note::
+
+   ExFAT is ready to go and will be enabled when the patents expire.
 
 
 Memory Map
@@ -56,6 +59,10 @@ VIA1 at $FFC0, SID0 at $FF00, and SID1 at $FF20.
 Application Binary Interface
 ============================
 
+.. seealso::
+
+   :doc:`ria` — the hardware register map referenced throughout this section.
+
 The ABI for calling the operating system is based on fastcall from the
 `cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The
 OS does not use or require anything from cc65 and is easy for
@@ -73,21 +80,21 @@ as a C declaration like so:
 
 .. c:function:: int doit(int arg0, int arg1);
 
-The RIA has registers called RIA_A, RIA_X, and RIA_SREG. An int is 16 bits,
-so we set the RIA_A and RIA_X registers with arg1. I'll use "A" for the 6502
+The RIA has registers called ``RIA_A``, ``RIA_X``, and ``RIA_SREG``. An int is 16 bits,
+so we set the ``RIA_A`` and ``RIA_X`` registers with arg1. I'll use "A" for the 6502
 register and "RIA_A" for the RIA register in this explanation.
 
-We use the XSTACK for arg0. Reading RIA_XSTACK pops bytes; writing
+We use the XSTACK for arg0. Reading ``RIA_XSTACK`` pops bytes; writing
 pushes bytes. It's a top-down stack, so push each argument left to
 right and maintain little-endian byte order.
 
-To execute the call, store the operation ID in RIA_OP. The operation begins
+To execute the call, store the operation ID in ``RIA_OP``. The operation begins
 immediately. You can keep doing 6502 things, like running a loading animation, by
-polling RIA_BUSY. Alternatively, JSR to RIA_SPIN to block.
+polling ``RIA_BUSY``. Alternatively, JSR to ``RIA_SPIN`` to block.
 
-JSR RIA_SPIN can unblock within 3 clock cycles and immediately loads A
-and X. Sequential operations run fastest with this technique. Under the hood, you're jumping into a self-modifying program that
-runs on the RIA registers.
+``JSR RIA_SPIN`` can unblock within 3 clock cycles and immediately loads A
+and X. Sequential operations run fastest with this technique. Under the hood,
+you're jumping into a self-modifying program that runs on the RIA registers.
 
 .. code-block:: asm
 
@@ -96,10 +103,10 @@ runs on the RIA registers.
    LDX #$??      ; RIA_X
    RTS
 
-Polling is simply snooping on the above program. The RIA_BUSY register is
+Polling is simply snooping on the above program. The ``RIA_BUSY`` register is
 the -2 or 0 in the BRA above. The RIA datasheet specifies bit 7 indicates
 busy, which the 6502 can check quickly by using the BIT operator to set
-flag N. Once clear, we read RIA_A and RIA_X with absolute instructions.
+flag N. Once clear, we read ``RIA_A`` and ``RIA_X`` with absolute instructions.
 
 .. code-block:: asm
 
@@ -109,13 +116,13 @@ flag N. Once clear, we read RIA_A and RIA_X with absolute instructions.
    LDA RIA_A
    LDX RIA_X
 
-All operations returning RIA_A will also return RIA_X to assist with C
-integer promotion. RIA_SREG is only updated for 32-bit returns. RIA_ERRNO
+All operations returning ``RIA_A`` will also return ``RIA_X`` to assist with C
+integer promotion. ``RIA_SREG`` is only updated for 32-bit returns. ``RIA_ERRNO``
 is only updated if there is an error.
 
 Some operations return strings or structures on the stack. You must pull the
 entire stack before the next call. However, tail call optimizations are
-possible. For example, you can chain read_xstack() and write_xstack() to
+possible. For example, you can chain ``read_xstack()`` and ``write_xstack()`` to
 copy a file without using any RAM or XRAM.
 
 Short Stacking
@@ -160,7 +167,7 @@ the type and direction (to or from the OS) of this data. Let's look at some exam
 
    int open(const char *path, int oflag);
 
-Send `oflag` in RIA_A. RIA_X doesn't need to be set according to the
+Send ``oflag`` in ``RIA_A``. ``RIA_X`` doesn't need to be set according to the
 docs below. Send the path on XSTACK by pushing the string starting with the last
 character. You may omit pushing the terminating zero, but strings are
 limited to a length of 255. Calling this from the C SDK will "just work"
@@ -170,7 +177,7 @@ because there's an implementation that pushes the string for you.
 
    int read_xstack(void *buf, unsigned count, int fildes)
 
-Send `count` as a short stack and `fildes` in RIA_A. RIA_X doesn't
+Send ``count`` as a short stack and ``fildes`` in ``RIA_A``. ``RIA_X`` doesn't
 need to be set according to the docs below. The returned value in AX indicates how
 many values must be pulled from the stack. If you call this from the C SDK
 then it will copy XSTACK to buf[] for you.
@@ -179,8 +186,8 @@ then it will copy XSTACK to buf[] for you.
 
    int write_xstack(const void *buf, unsigned count, int fildes)
 
-Send `fildes` in RIA_A. RIA_X doesn't need to be set according to the
-docs below. Push the buf data to XSTACK. Do not send `count`, the OS knows this
+Send ``fildes`` in ``RIA_A``. ``RIA_X`` doesn't need to be set according to the
+docs below. Push the buf data to XSTACK. Do not send ``count``, the OS knows this
 from its internal stack pointer. If you call this from the C SDK then it
 will copy count bytes of buf[] to XSTACK for you.
 
@@ -199,9 +206,9 @@ going through 6502 RAM or capture a screenshot with ease.
    int read_xram(xram_addr buf, unsigned count, int fildes)
    int write_xram(xram_addr buf, unsigned count, int fildes)
 
-The OS expects `buf` and `count` on the XSTACK as integers with `filedes` in
-RIA_A. The OS has direct access to XRAM so internally it will use
-something like &XRAM[buf]. You will need to use RIA_RW0 or RIA_RW1 to access
+The OS expects ``buf`` and ``count`` on the XSTACK as integers with ``fildes`` in
+``RIA_A``. The OS has direct access to XRAM so internally it will use
+something like ``&XRAM[buf]``. You will need to use ``RIA_RW0`` or ``RIA_RW1`` to access
 this memory from the 6502.
 
 These operations stand out for their high performance and ability to
@@ -216,25 +223,30 @@ paged memory.
 Application Programmer Interface
 ================================
 
+.. seealso::
+
+   `FatFs documentation <https://elm-chan.org/fsw/ff/>`__ —
+   many of the filesystem functions below are thin wrappers around FatFs.
+
 Much of this API is based on POSIX and FatFs. In particular, filesystem and
 console access should feel extremely familiar. However, some operations will
 have a different argument order or data structures than what you're used to.
 The reason for this becomes apparent when you start to work in assembly and
 fine tune short stacking and integer demotions. You might not notice the
 differences if you only work in C because the standard library has wrapper
-functions and familiar prototypes. For example, the f_lseek() described
+functions and familiar prototypes. For example, the ``f_lseek()`` described
 below has reordered arguments that are optimized for short stacking the long
-argument. But you don't have to call f_lseek() from C, you can call the
-usual lseek() which has the traditional argument order.
+argument. But you don't have to call ``f_lseek()`` from C, you can call the
+usual ``lseek()`` which has the traditional argument order.
 
 The OS is built around FAT filesystems, the de facto standard for
 unsecured USB storage devices. POSIX filesystems are not fully
 compatible with FAT but there is a solid intersection of basic IO that is
-100% compatible. You will see some familiar POSIX functions like open() and
-others like f_stat() which are similar to the POSIX function but tailored to
-FAT. Should it ever become necessary to have a POSIX stat(), it can be
+100% compatible. You will see some familiar POSIX functions like ``open()`` and
+others like ``f_stat()`` which are similar to the POSIX function but tailored to
+FAT. Should it ever become necessary to have a POSIX ``stat()``, it can be
 implemented in the C standard library or in an application by translating
-f_stat() data.
+``f_stat()`` data.
 
 ZXSTACK
 -------
@@ -298,7 +310,10 @@ ARGV
    Because this can use up to 512 bytes of RAM you must opt-in by providing storage
    for the argv data. You may use static memory, or dynamically allocated memory which
    can be freed after use. You may also reject an oversized argv by returning NULL.
-   `void *argv_mem(size_t size) { return malloc(size); }`
+
+   .. code-block:: c
+
+      void *argv_mem(size_t size) { return malloc(size); }
 
    :Op code: RIA_OP_ARGV 0x08
    :C proto: (none)
@@ -320,14 +335,14 @@ EXEC
    launched ROM will see argv[0] as the filename.
 
    The data sent by _exec() will be checked for pointer safety and sanity, but
-   will assume the path points to a loadable ROM file. If API_EINVAL is returned,
+   will assume the path points to a loadable ROM file. If EINVAL is returned,
    the argv buffer is cleared so further attempts to _argv() will return an empty set.
-   Is the ROM is invalid, the user will be left on the console with an error message.
+   If the ROM is invalid, the user will be left on the console with an error message.
 
-   :Op code: RIA_OP_ARGV 0x09
+   :Op code: RIA_OP_EXEC 0x09
    :C proto: rp6502.h
-   :returns: Size of argv data
-   :errno: API_EINVAL
+   :returns: Does not return on success — the new ROM begins executing. -1 on error.
+   :errno: EINVAL
 
 
 ATTR_GET
@@ -410,7 +425,7 @@ CLOCK_GETRES
 TZSET
 -----
 
-.. c:function:: int void tzset(void);
+.. c:function:: void tzset(void);
 .. c:function:: int _tzset (struct _tzset *tz)
 
    .. code-block:: c
@@ -834,11 +849,12 @@ READDIR
 
    |
 
-   Returns file or directory info for directory descriptor.
+   Returns directory entry info for the current read position of a directory descriptor,
+   then advances the read position.
 
    :Op code: RIA_OP_READDIR 0x21
    :C proto: rp6502.h
-   :param path: Pathname to a directory entry.
+   :param dirdes: Directory descriptor from f_opendir().
    :param dirent: Returned f_stat_t data.
    :returns: 0 on success. -1 on error.
    :a regs: return, dirent
@@ -1049,12 +1065,12 @@ CHDRIVE
 
    |
 
-   Change current drive.
-   "USB7:" with shortcuts "0:" to "7:".
+   Change the current drive.
+   Valid names are ``USB0:``–``USB9:`` with shortcuts ``0:``–``9:``.
 
    :Op code: RIA_OP_CHDRIVE 0x2A
    :C proto: rp6502.h
-   :param name: Pathname of the directory to make.
+   :param name: Drive name to change to.
    :returns: 0 on success. -1 on error.
    :a regs: return
    :errno: FR_INVALID_DRIVE

@@ -29,7 +29,7 @@ The RP6502 monitor is not an operating system shell - it is analogous to a
 UEFI shell. Its primary purpose is loading ROMs, with a small amount of
 hardware and locale configuration kept intentionally minimal.
 
-Use the ``load`` command to load ROMs in .rp6502 format.
+Use the ``load`` command to load ROMs in ``.rp6502`` format.
 These aren't ROMs in the traditional (obsolete) sense. A ROM is a file
 that contains a memory image to be loaded in RAM before starting the
 6502. The RIA includes 1MB of flash which you can ``install`` ROMs to.
@@ -37,7 +37,7 @@ Once a ROM is installed, you can run it directly or ``set boot`` so it
 loads when the RIA boots.
 
 Some monitor commands, such as ``upload`` and ``binary``, target
-developer tools. The rp6502.py script, included with the examples and
+developer tools. The ``rp6502.py`` script, included with the examples and
 templates, automates ROM packaging and execution.
 
 
@@ -690,31 +690,31 @@ timers and rarely used them.
 Console Port
 ============
 
-The main serial port of the RIA is the console for system. Modern operating
+The main serial port of the RIA is the console for the system. Modern operating
 systems provide canonical input and translated output via a configurable
-layer such as termios. A full termios is a too heavy for an 8-bit system,
+layer such as termios. A full termios is too heavy for an 8-bit system,
 but raw and non-blocking IO options need to be provided.
 
-The well known stdin blocks for canonical input. The console user will be
+The well-known stdin blocks for canonical input. The console user will be
 prompted to edit a line. Once the line is submitted with the enter key,
 the stdin read unblocks and returns the line up to a linefeed character.
 
-The well known stdout and stderr blocks and inserts carriage returns
+The well-known stdout and stderr block and insert carriage returns
 before newlines if one is not present. The full amount of data is always
 sent and writes will block until sent data is fully unloaded into hardware
 FIFOs.
 
-These well know console interfaces are what a C programmer expects, but it is
+These well-known console interfaces are what a C programmer expects, but they are
 not a good interface for a multitasking 6502 OS to use. To that end, a
 non-blocking interface to the console is provided. Simply open the special
-filename "CON:". Reads can return 0 bytes, and writes may send less than the
+filename ``"CON:"``. Reads can return 0 bytes, and writes may send less than the
 requested amount.
 
 Going one step further, a non-blocking and raw connection to the console
-port is available on special filename "TTY:". There is no canonical input
+port is available on special filename ``"TTY:"``. There is no canonical input
 and no newline translation. This is exactly the same functionality that
-the RIA_TX and RIA_RX registers provide, but available as stdio for
-convienence.
+the ``RIA_TX`` and ``RIA_RX`` registers provide, but available as stdio for
+convenience.
 
 
 Virtual Communications Port
@@ -725,10 +725,10 @@ are available to CMOS/TTL, RS-232, RS-422, and RS-485. The RIA includes drivers
 for FTDI, CP210X, CH34X, PL2303, and CDC ACM.
 
 The ``status`` command lists any connected VCP devices. Open them like
-any file using a special name. By default, "VCP0:" opens at 115200
+any file using a special name. By default, ``"VCP0:"`` opens at 115200
 baud, 8 data bits, no parity, and 1 stop bit. Specify the baud rate
-with "VCP0:115200" or the full bit configuration with
-"VCP0:115200,8N1". The file will not open if your hardware does not
+with ``"VCP0:115200"`` or the full bit configuration with
+``"VCP0:115200,8N1"``. The file will not open if your hardware does not
 support the requested configuration. The open flags are ignored.
 
 .. code-block:: C
@@ -759,27 +759,27 @@ also need cards (or fobs or stickers) for each of the ROMs you want to
 support. If you are new to NFC technology, buy a pack of NTAG215 cards and
 a sharpie.
 
-Once the NFC reader is plugged in, issue the monitor command `SET NFC 2` to
+Once the NFC reader is plugged in, issue the monitor command ``SET NFC 2`` to
 initiate a scan. Any other VCP devices may get probed with PN532 data, this
 is normal. You will hear an error buzz or two beeps for success. You may also
-check `status` to see if a (NFC) is listed after any of your VCP devioces.
+check ``status`` to see if a ``(NFC)`` is listed after any of your VCP devices.
 
 Scanning cards will now produce one of three audible signals. An error buzz
 if anything went wrong, two beeps for success, one beep for a partial success.
 
 Cards are to be programmed with the filename and arguments of the ROM to be
-launched. If you use `LOAD "/My Games/Jigsaw.rp6502" cat.bmp` to manually
-load the ROM, put a NDEF TEXT record on the card without the load command
-`"/My Games/Jigsaw.rp6502" cat.bmp`.
+launched. If you use ``LOAD "/My Games/Jigsaw.rp6502" cat.bmp`` to manually
+load the ROM, put a NDEF TEXT record on the card without the load command:
+``"/My Games/Jigsaw.rp6502" cat.bmp``.
 
 When the card is read, all mounted drives are scanned for that file. If
-found, two beeps of successs are played, the 6502 is stopped, the current
+found, two beeps of success are played, the 6502 is stopped, the current
 drive and directory is changed to the ROM location, and the new ROM begins
 loading. If the ROM was already running, a single beep is emitted and nothing
 else happens.
 
-You can force only a single drive to be serched by including it in the text
-record. `MSC0:/encabulator.rp6502`
+You can force only a single drive to be searched by including it in the text
+record. ``MSC0:/encabulator.rp6502``
 
 
 

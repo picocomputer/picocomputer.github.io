@@ -430,7 +430,7 @@ a different mode.
     - | Address of config array in XRAM.
   * - $1:0:04
     - LENGTH
-    - Length of config array array in XRAM.
+    - Length of config array in XRAM.
   * - $1:0:05
     - PLANE
     - 0-2 to select which sprite plane of scanlines to program.
@@ -456,8 +456,8 @@ config structure.
   } config[LENGTH];
 
 Affine sprites apply a 3x3 matrix transform. These are slower than
-plain sprites. Only the first two rows of the matrix is useful, which
-is why there's only six transform values. These are in signed 8.8
+plain sprites. Only the first two rows of the matrix are useful, which
+is why there are only six transform values. These are in signed 8.8
 fixed point format.
 
 .. code-block:: C
