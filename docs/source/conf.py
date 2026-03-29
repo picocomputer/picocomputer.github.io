@@ -14,8 +14,7 @@ release = ''
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.githubpages']
-
+extensions = []
 templates_path = ['_templates']
 exclude_patterns = []
 
@@ -27,7 +26,7 @@ html_static_path = ['_static']
 html_css_files = ['custom.css']
 html_theme_options = {
     'font_family': 'Arial, sans-serif',
-    # 'github_banner': True,
+    'github_banner': True,
     'github_user': 'picocomputer',
     'github_repo': '',
     'fixed_sidebar': False,
