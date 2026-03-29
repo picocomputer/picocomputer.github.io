@@ -1,1 +1,4 @@
-/* This file intentionally left blank. */
+/* Add spacing between the function signature(s) and the description body. */
+dl.c.function > dd {
+    margin-top: 1em;
+}
