@@ -1151,54 +1151,45 @@ unknown ID returns -1 with ``errno`` set to ``EINVAL``. Attempting to set a
 get-only attribute also returns -1 with ``EINVAL``.
 
 .. list-table::
-   :widths: 7 28 9 56
+   :widths: 35 65
    :header-rows: 1
 
-   * - ID
-     - Name
-     - Available
+   * - ID / Name
      - Description
-   * - 0x00
-     - ``RIA_ATTR_ERRNO_OPT``
-     - get/set
+   * - | 0x00
+       | ``RIA_ATTR_ERRNO_OPT``
      - Errno mapping option. Selects which set of errno constants the OS
        uses. Both cc65 and llvm-mos set this automatically at C runtime
        startup; assembly programs must set it before making OS calls that
        can fail. See `ERRNO_OPT Compiler Constants`_ for option values.
-   * - 0x01
-     - ``RIA_ATTR_PHI2_KHZ``
-     - get/set
+   * - | 0x01
+       | ``RIA_ATTR_PHI2_KHZ``
      - CPU clock speed in kHz. Range 100–8000. Changes take effect
        immediately and revert to the system setting when the 6502 stops.
-   * - 0x02
-     - ``RIA_ATTR_CODE_PAGE``
-     - get/set
+   * - | 0x02
+       | ``RIA_ATTR_CODE_PAGE``
      - Active OEM code page used by the filesystem, console, and default
        VGA font. Reverts to the system setting when the 6502 stops. If the
        requested page is unavailable, the console setting is selected;
        follow a set with a get to confirm the result.
        One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862,
        863, 864, 865, 866, 869, 932, 936, 949, 950.
-   * - 0x03
-     - ``RIA_ATTR_RLN_LENGTH``
-     - get/set
+   * - | 0x03
+       | ``RIA_ATTR_RLN_LENGTH``
      - Maximum input line length for the stdin line editor. 1–255,
        default 254.
-   * - 0x04
-     - ``RIA_ATTR_LRAND``
-     - get only
+   * - | 0x04
+       | ``RIA_ATTR_LRAND``
      - 31-bit hardware random number seeded with entropy from the RIA.
        Returns a value in the range 0x0 to 0x7FFFFFFF. Suitable for
        seeding a PRNG or direct use. The 16-bit ``rand()`` in the cc65
        library can be seeded with this by calling ``_randomize()``.
-   * - 0x05
-     - ``RIA_ATTR_BEL``
-     - get/set
+   * - | 0x05
+       | ``RIA_ATTR_BEL``
      - BEL (``\a``) output enable on the console UART.
        0 silences the alert; 1 (default) enables it.
-   * - 0x06
-     - ``RIA_ATTR_LAUNCHER``
-     - get/set
+   * - | 0x06
+       | ``RIA_ATTR_LAUNCHER``
      - Launcher flag. When set to 1, the process manager records the
        currently running ROM as the launcher. Whenever any other ROM
        finishes, the launcher ROM is automatically re-executed. When the
