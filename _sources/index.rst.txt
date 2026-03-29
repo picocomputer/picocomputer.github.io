@@ -62,10 +62,10 @@ Programming
 Build It
 ========
 
-100% through-hole construction. Hundreds of people have built one,
-typically for under $100 USD. You can also have a unit manufactured
-in China — no soldering required. All parts are currently in production;
-the Raspberry Pi Pico 2 is guaranteed until at least January 2040.
+100% through-hole construction. No IC programmer needed. Hundreds of people
+have built one, typically for under $100 USD. You can also have a unit
+manufactured in China — no soldering required. All parts are currently in
+production; the Raspberry Pi Pico 2 is guaranteed until at least January 2040.
 
 - :doc:`hardware`: Schematic and manufacturing information.
 

@@ -1199,7 +1199,7 @@ get-only attribute also returns -1 with ``EINVAL``.
 
 
 ERRNO_OPT Compiler Constants
------------------------------
+============================
 
 OS calls will set ``RIA_ERRNO`` when an error occurs. The errno option
 selects which numeric values to use because cc65 and llvm-mos each define
