@@ -514,7 +514,7 @@ a different mode.</p>
 </tr>
 <tr class="row-odd"><td><p>$1:0:04</p></td>
 <td><p>LENGTH</p></td>
-<td><p>Length of config array array in XRAM.</p></td>
+<td><p>Length of config array in XRAM.</p></td>
 </tr>
 <tr class="row-even"><td><p>$1:0:05</p></td>
 <td><p>PLANE</p></td>
@@ -543,8 +543,8 @@ config structure.</p>
 </pre></div>
 </div>
 <p>Affine sprites apply a 3x3 matrix transform. These are slower than
-plain sprites. Only the first two rows of the matrix is useful, which
-is why there’s only six transform values. These are in signed 8.8
+plain sprites. Only the first two rows of the matrix are useful, which
+is why there are only six transform values. These are in signed 8.8
 fixed point format.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="p">{</span>
   <span class="kt">int16_t</span> <span class="n">transform</span><span class="p">[</span><span class="mi">6</span><span class="p">];</span>
@@ -823,7 +823,7 @@ position.</p></li>
 <tr class="row-even"><td><p>CSI n m</p></td>
 <td><p>SGR</p></td>
 <td><p>Select Graphic Rendition</p></td>
-<td><p>Selects colors and styles.</p></td>
+<td><p>See <a class="reference internal" href="#sgr-parameters">SGR Parameters</a>.</p></td>
 </tr>
 <tr class="row-odd"><td><p>CSI 6n</p></td>
 <td><p>DSR</p></td>
@@ -855,7 +855,7 @@ the row and m is the column. 1-indexed.</p></td>
 </table>
 </div>
 <div class="section" id="sgr-parameters">
-<h3>SGR Parameters<a class="headerlink" href="#sgr-parameters" title="Permalink to this headline">¶</a></h3>
+<span id="id1"></span><h3>SGR Parameters<a class="headerlink" href="#sgr-parameters" title="Permalink to this headline">¶</a></h3>
 <p>Send multiple parameters separated by semicolons. Sending CSI m
 without any codes resets all attributes.</p>
 <table class="colwidths-given docutils align-default">
@@ -898,7 +898,13 @@ It’s a quirk of ANSI.SYS on IBM VGA.</p></td>
 </tr>
 <tr class="row-even"><td><p>38</p></td>
 <td><p>Set foreground color</p></td>
-<td><p>Followed by 1 or 5;n or 2;r;g;b or 2::r:g:b</p></td>
+<td><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">;5;n</span></code> — 256-color index n (0-255)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">;2;r;g;b</span></code> — 24-bit RGB color</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">;2::r:g:b</span></code> — 24-bit RGB color</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">;1</span></code> — transparent</p></li>
+</ul>
+</td>
 </tr>
 <tr class="row-odd"><td><p>39</p></td>
 <td><p>Default foreground color</p></td>
@@ -910,7 +916,13 @@ It’s a quirk of ANSI.SYS on IBM VGA.</p></td>
 </tr>
 <tr class="row-odd"><td><p>48</p></td>
 <td><p>Set background color</p></td>
-<td><p>Followed by 1 or 5;n or 2;r;g;b or 2::r:g:b</p></td>
+<td><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">;5;n</span></code> — 256-color index n (0-255)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">;2;r;g;b</span></code> — 24-bit RGB color</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">;2::r:g:b</span></code> — 24-bit RGB color</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">;1</span></code> — transparent</p></li>
+</ul>
+</td>
 </tr>
 <tr class="row-even"><td><p>49</p></td>
 <td><p>Default background color</p></td>

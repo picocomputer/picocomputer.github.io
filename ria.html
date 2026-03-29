@@ -69,14 +69,14 @@ explore deep help such as <code class="docutils literal notranslate"><span class
 <p>The RP6502 monitor is not an operating system shell - it is analogous to a
 UEFI shell. Its primary purpose is loading ROMs, with a small amount of
 hardware and locale configuration kept intentionally minimal.</p>
-<p>Use the <code class="docutils literal notranslate"><span class="pre">load</span></code> command to load ROMs in .rp6502 format.
+<p>Use the <code class="docutils literal notranslate"><span class="pre">load</span></code> command to load ROMs in <code class="docutils literal notranslate"><span class="pre">.rp6502</span></code> format.
 These aren’t ROMs in the traditional (obsolete) sense. A ROM is a file
 that contains a memory image to be loaded in RAM before starting the
 6502. The RIA includes 1MB of flash which you can <code class="docutils literal notranslate"><span class="pre">install</span></code> ROMs to.
 Once a ROM is installed, you can run it directly or <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">boot</span></code> so it
 loads when the RIA boots.</p>
 <p>Some monitor commands, such as <code class="docutils literal notranslate"><span class="pre">upload</span></code> and <code class="docutils literal notranslate"><span class="pre">binary</span></code>, target
-developer tools. The rp6502.py script, included with the examples and
+developer tools. The <code class="docutils literal notranslate"><span class="pre">rp6502.py</span></code> script, included with the examples and
 templates, automates ROM packaging and execution.</p>
 </div>
 <div class="section" id="reset">
@@ -796,16 +796,40 @@ These features existed in Yamaha OPL chips primarily to help
 cost-reduce consumer devices; computers of the era had their own
 timers and rarely used them.</p>
 </div>
+<div class="section" id="console-port">
+<h2>Console Port<a class="headerlink" href="#console-port" title="Permalink to this headline">¶</a></h2>
+<p>The main serial port of the RIA is the console for the system. Modern operating
+systems provide canonical input and translated output via a configurable
+layer such as termios. A full termios is too heavy for an 8-bit system,
+but raw and non-blocking IO options need to be provided.</p>
+<p>The well-known stdin blocks for canonical input. The console user will be
+prompted to edit a line. Once the line is submitted with the enter key,
+the stdin read unblocks and returns the line up to a linefeed character.</p>
+<p>The well-known stdout and stderr block and insert carriage returns
+before newlines if one is not present. The full amount of data is always
+sent and writes will block until sent data is fully unloaded into hardware
+FIFOs.</p>
+<p>These well-known console interfaces are what a C programmer expects, but they are
+not a good interface for a multitasking 6502 OS to use. To that end, a
+non-blocking interface to the console is provided. Simply open the special
+filename <code class="docutils literal notranslate"><span class="pre">&quot;CON:&quot;</span></code>. Reads can return 0 bytes, and writes may send less than the
+requested amount.</p>
+<p>Going one step further, a non-blocking and raw connection to the console
+port is available on special filename <code class="docutils literal notranslate"><span class="pre">&quot;TTY:&quot;</span></code>. There is no canonical input
+and no newline translation. This is exactly the same functionality that
+the <code class="docutils literal notranslate"><span class="pre">RIA_TX</span></code> and <code class="docutils literal notranslate"><span class="pre">RIA_RX</span></code> registers provide, but available as stdio for
+convenience.</p>
+</div>
 <div class="section" id="virtual-communications-port">
 <h2>Virtual Communications Port<a class="headerlink" href="#virtual-communications-port" title="Permalink to this headline">¶</a></h2>
 <p>If you need more serial communications beyond the console UART, USB adapters
 are available to CMOS/TTL, RS-232, RS-422, and RS-485. The RIA includes drivers
 for FTDI, CP210X, CH34X, PL2303, and CDC ACM.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">status</span></code> command lists any connected VCP devices. Open them like
-any file using a special name. By default, “VCP0:” opens at 115200
+any file using a special name. By default, <code class="docutils literal notranslate"><span class="pre">&quot;VCP0:&quot;</span></code> opens at 115200
 baud, 8 data bits, no parity, and 1 stop bit. Specify the baud rate
-with “VCP0:115200” or the full bit configuration with
-“VCP0:115200,8N1”. The file will not open if your hardware does not
+with <code class="docutils literal notranslate"><span class="pre">&quot;VCP0:115200&quot;</span></code> or the full bit configuration with
+<code class="docutils literal notranslate"><span class="pre">&quot;VCP0:115200,8N1&quot;</span></code>. The file will not open if your hardware does not
 support the requested configuration. The open flags are ignored.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="n">open</span><span class="p">(</span><span class="s">&quot;VCP0:1200,7E2&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
 <span class="c1">// then read and write</span>
@@ -815,6 +839,38 @@ support the requested configuration. The open flags are ignored.</p>
 are non-blocking. Reads can return 0 bytes, and writes may send less
 than the requested amount. Resubmit any remaining bytes in a subsequent
 call.</p>
+</div>
+<div class="section" id="near-field-communications-nfc">
+<h2>Near Field Communications (NFC)<a class="headerlink" href="#near-field-communications-nfc" title="Permalink to this headline">¶</a></h2>
+<p>The use of NFC cards has become a common media replacement in the retro
+community. This maps well to the RP6502 use of “ROM files” as a replacement
+for “ROM cartridges”. In 1983 you might have grabbed a game cartridge with
+colorful stickers that make it easy to home in on the exact dopamine hit
+you’re looking for. NFC cards are cheap and easy to decorate with stickers
+or even direct printing. So grab a card, tap it on the NFC reader, then the
+ROM file you want is instantly loaded. Here’s how it works.</p>
+<p>You will need a PN532 card reader with a USB interface. This is the only
+card reader supported and is very inexpensive, around $10 USD. You will
+also need cards (or fobs or stickers) for each of the ROMs you want to
+support. If you are new to NFC technology, buy a pack of NTAG215 cards and
+a sharpie.</p>
+<p>Once the NFC reader is plugged in, issue the monitor command <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">NFC</span> <span class="pre">2</span></code> to
+initiate a scan. Any other VCP devices may get probed with PN532 data, this
+is normal. You will hear an error buzz or two beeps for success. You may also
+check <code class="docutils literal notranslate"><span class="pre">status</span></code> to see if a <code class="docutils literal notranslate"><span class="pre">(NFC)</span></code> is listed after any of your VCP devices.</p>
+<p>Scanning cards will now produce one of three audible signals. An error buzz
+if anything went wrong, two beeps for success, one beep for a partial success.</p>
+<p>Cards are to be programmed with the filename and arguments of the ROM to be
+launched. If you use <code class="docutils literal notranslate"><span class="pre">LOAD</span> <span class="pre">&quot;/My</span> <span class="pre">Games/Jigsaw.rp6502&quot;</span> <span class="pre">cat.bmp</span></code> to manually
+load the ROM, put a NDEF TEXT record on the card without the load command:
+<code class="docutils literal notranslate"><span class="pre">&quot;/My</span> <span class="pre">Games/Jigsaw.rp6502&quot;</span> <span class="pre">cat.bmp</span></code>.</p>
+<p>When the card is read, all mounted drives are scanned for that file. If
+found, two beeps of success are played, the 6502 is stopped, the current
+drive and directory is changed to the ROM location, and the new ROM begins
+loading. If the ROM was already running, a single beep is emitted and nothing
+else happens.</p>
+<p>You can force only a single drive to be searched by including it in the text
+record. <code class="docutils literal notranslate"><span class="pre">MSC0:/encabulator.rp6502</span></code></p>
 </div>
 <div class="section" id="rom-file-format">
 <h2>ROM File Format<a class="headerlink" href="#rom-file-format" title="Permalink to this headline">¶</a></h2>
@@ -964,7 +1020,9 @@ seeks and string compares your application can tolerate is up to you.</p>
 <li class="toctree-l2"><a class="reference internal" href="#gamepads">Gamepads</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#programmable-sound-generator">Programmable Sound Generator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#yamaha-opl2-fm-sound-generator">Yamaha OPL2 FM Sound Generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#console-port">Console Port</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#virtual-communications-port">Virtual Communications Port</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#near-field-communications-nfc">Near Field Communications (NFC)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#rom-file-format">ROM File Format</a></li>
 </ul>
 </li>
