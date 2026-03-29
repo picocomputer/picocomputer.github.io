@@ -501,6 +501,11 @@ ARGV
    e.g. ["ABC", "DEF"] is 06 00 0A 00 00 00 41 42 43 00 44 45 46 00
    The returned data is guaranteed to be valid.
 
+   Because this can use up to 512 bytes of RAM you must opt-in by providing storage
+   for the argv data. You may use static memory, or dynamically allocated memory which
+   can be freed after use. You may also reject an oversized argv by returning NULL.
+   `void *argv_mem(size_t size) { return malloc(size); }`
+
    :Op code: RIA_OP_ARGV 0x08
    :C proto: (none)
    :returns: Size of argv data
