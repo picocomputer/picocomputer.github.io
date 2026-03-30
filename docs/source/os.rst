@@ -1148,8 +1148,8 @@ The launcher is a mechanism in the RP6502 process manager that lets one ROM
 serve as a persistent host for all others. A ROM registers itself as the
 launcher by setting ``RIA_ATTR_LAUNCHER`` to 1 via :c:func:`ria_attr_set`.
 Once registered, the process manager automatically re-executes the launcher
-ROM whenever any subsequently launched ROM exits. When the launcher ROM itself
-exits, the chain ends, the registration is cleared, and control returns to the
+ROM whenever any subsequently launched ROM stops. When the launcher ROM itself
+stops, the chain ends, the registration is cleared, and control returns to the
 console monitor. A console break (Ctrl-Alt-Del) unconditionally clears the
 registration at any time.
 
@@ -1163,14 +1163,14 @@ ROM Cartridge Menu
 The most straightforward use of the launcher is a menu-driven ROM selector,
 analogous to inserting a physical cartridge into a retro console. The launcher
 ROM scans the storage device for ``.rp6502`` files, presents a list to the user,
-and calls `EXEC`_ with the chosen filename. When that ROM exits — whether
+and calls `EXEC`_ with the chosen filename. When that ROM stops — whether
 normally or due to an error — the process manager automatically re-executes the
 launcher, returning the user to the selection menu.
 
 No manual reset is needed between runs. Each ROM is a self-contained binary
 that knows nothing about the menu system. The launcher may supply context
 through argv — for example, a save-file path or difficulty setting — and the
-ROM simply exits when it is done.
+ROM simply calls `EXIT`_ when it is done.
 
 Native OS Boot Sequence
 -----------------------
@@ -1187,7 +1187,7 @@ OS cannot alter the launcher ROM; OS launchers are meant to stay simple and
 trustworthy. This indirection provides important capabilities:
 
 * **Fault recovery** — If the OS kernel encounters a fatal error it cannot
-  handle internally, it exits rather than locking up. The process manager
+  handle internally, it calls `EXIT`_ rather than locking up. The process manager
   re-executes the launcher, which can choose to relaunch the kernel or take
   some other action.
 
