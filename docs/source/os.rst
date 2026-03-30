@@ -1178,7 +1178,7 @@ Native OS Boot Sequence
 A more powerful use is as the foundation for a native 6502 operating system.
 A small launcher ROM is installed to the RIA as the boot ROM using the
 ``set boot`` command in the monitor. When the Picocomputer powers on or
-resets, the process manager loads this launcher ROM automatically.
+reboots, the process manager loads this launcher ROM automatically.
 
 The launcher ROM reads its own argv — supplied by any arguments appended to
 the ``set boot`` command — then searches the mounted drive for the OS ROM and
