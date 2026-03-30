@@ -49,7 +49,8 @@ servers when connected to WiFi. Check NTP status with the ``status`` command.
 - **Set Time Zone:**
   To use local time instead of UTC, set your time zone with ``SET TZ``.
   Use ``HELP SET TZ`` for guidance. Daylight saving adjustments are
-  automatic if your locale observes them.
+  automatic if your locale observes them. The :doc:`os` provides
+  programmatic access to the clock and time zone.
 
 Once WiFi and time zone are configured, timekeeping is automatic.
 

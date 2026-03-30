@@ -59,7 +59,7 @@ crashed or halted 6502, you have two options:
 1. Using a Bluetooth or USB keyboard, press CTRL-ALT-DEL.
 2. Send a break to the RIA UART.
 
-.. warning::
+.. caution::
 
    Do not hook up a physical button to RESB. The RIA must remain
    in control of RESB. What you probably want is the reset that happens
@@ -95,31 +95,31 @@ Registers
      - Read bytes from the UART.
    * - $FFE3
      - VSYNC
-     - Increments every 1/60 second when PIX VGA device 1 is
+     - Increments every 1/60 second when :doc:`PIX VGA <vga>` device 1 is
        connected.
    * - $FFE4
      - RW0
-     - Read or write the XRAM referenced by ADDR0.
+     - Read or write the `Extended RAM (XRAM)`_ referenced by ADDR0.
    * - $FFE5
      - STEP0
      - Signed byte added to ADDR0 after every access to RW0.
    * - | $FFE6 -
        | $FFE7
      - ADDR0
-     - Address of XRAM for RW0.
+     - Address of `Extended RAM (XRAM)`_ for RW0.
    * - $FFE8
      - RW1
-     - Read or write the XRAM referenced by ADDR1.
+     - Read or write the `Extended RAM (XRAM)`_ referenced by ADDR1.
    * - $FFE9
      - STEP1
      - Signed byte added to ADDR1 after every access to RW1.
    * - | $FFEA -
        | $FFEB
      - ADDR1
-     - Address of XRAM for RW1.
+     - Address of `Extended RAM (XRAM)`_ for RW1.
    * - $FFEC
      - XSTACK
-     - 512 bytes for OS call stack.
+     - 512 bytes for `Extended Stack (XSTACK)`_.
    * - $FFED
      - ERRNO_LO
      - Low byte of errno. All errors fit in this byte.
@@ -128,7 +128,7 @@ Registers
      - Ensures errno is optionally a 16-bit int.
    * - $FFEF
      - OP
-     - Write the OS operation id here to begin an OS call.
+     - Write the :doc:`OS <os>` operation id here to begin an OS call.
    * - $FFF0
      - IRQ
      - Set bit 0 high to enable VSYNC interrupts. To clear the
@@ -222,16 +222,16 @@ and device 0 on the PIX bus.
     - Description
   * - $0:0:00
     - KEYBOARD
-    - See Keyboard section
+    - See `Keyboard`_ section
   * - $0:0:01
     - MOUSE
-    - See Mouse section
+    - See `Mouse`_ section
   * - $0:0:02
     - GAMEPADS
-    - See Gamepads section
+    - See `Gamepads`_ section
   * - $0:1:00
     - PSG
-    - See Programmable Sound Generator section
+    - See `Programmable Sound Generator`_ section
 
 
 Pico Information Exchange (PIX)
@@ -399,7 +399,7 @@ Square/Triangle/Cross/Circle and XY/AB layouts are "the official" layout
 of the RP6502. You can, of course, do your own thing and request players
 use a specific gamepad or include a "AB or BA" option.
 
-.. attention::
+.. note::
    **The RP6502 expects modern gamepads.**
 
    The RP6502 is not an emulation platform. Sega, NES, SNES, TG16, Atari,

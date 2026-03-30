@@ -35,28 +35,33 @@ Community
 Specs
 =====
 
-- **CPU** — WDC 65C02 CPU and WDC 65C22 VIA
+- **Core** — WDC 65C02 CPU and WDC 65C22 VIA; variable 0.1-8.0 MHz
 - **RAM** — 64 KB system + 64 KB extended
+- **ROM** — 1 MB of onboard flash for installing and auto-booting ROMs
 - **Video** — VGA and HD output; 3 planes, scanline programmable
-- **Sound** — PSG and OPL2 FM
+- **Sound** — PSG (8 voices) and OPL2 FM (9 voices)
 - **Clock** — Real-Time Clock with DST
+- **TRNG** — True random number generator
 
 
 Connectivity
 ============
 
-- **USB** — keyboard, mouse, gamepads, UART serial, NFC, floppy drives, and flash drives
-- **Bluetooth LE** — keyboard, mouse, and gamepads
 - **WiFi** — NTP time sync, Hayes modem emulation for dialing into BBSs
+- **Bluetooth LE** — keyboard, mouse, and gamepads
+- **USB Host** — keyboard, mouse, gamepads, hubs, UART serial, NFC, floppy drives, and flash drives
+- **USB Device** — driverless CDC ACM; mirrors the VGA ANSI terminal console
 
 
 Programming
 ===========
 
 - **Protected OS** — 32-bit operating system; uses no 6502 RAM
-- **POSIX-compatible API** — stdio.h and unistd.h for cc65 and llvm-mos
 - **FAT filesystem** — read and write files on any USB flash or floppy drive
-- **ROM flash** — 1 MB of onboard flash for installing and auto-booting ROMs
+- **POSIX-compatible API** — stdio.h and unistd.h for cc65 and llvm-mos
+- **cc65** — `VS Code integration for cc65 <https://github.com/picocomputer/vscode-cc65>`__
+- **llvm-mos** — `VS Code integration for llvm-mos <https://github.com/picocomputer/vscode-llvm-mos>`__
+- **AI Assistance** — The latest models via VS Code extensions or GitHub Copilot
 
 
 Build It

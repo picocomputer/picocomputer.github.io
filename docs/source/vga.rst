@@ -68,7 +68,8 @@ ignore the palette. Palettes must be 16-bit aligned.
   } palette[2^bits_per_pixel];
 
 
-Programming the VGA device is done with PIX extended registers -
+Programming the VGA device is done with `PIX extended registers
+<ria.html#pix-extended-registers-xreg>`__ -
 XREGS. VGA is PIX device ID 1. Registers are 16 bit values addressed
 by $device:$channel:register. e.g. $1:0:0F
 
@@ -112,11 +113,11 @@ Setting key registers may return a failure (-1) with errno EINVAL.
       $1:0:02-$1:0:FF cleared after programming. Each mode has a
       section of this document for its own registers.
 
-      * 0 - Console
-      * 1 - Character
-      * 2 - Tile
-      * 3 - Bitmap
-      * 4 - Sprite
+      * 0 - `Console <#mode-0-console>`__
+      * 1 - `Character <#mode-1-character>`__
+      * 2 - `Tile <#mode-2-tile>`__
+      * 3 - `Bitmap <#mode-3-bitmap>`__
+      * 4 - `Sprite <#mode-4-sprite>`__
 
 
 Mode 0: Console
@@ -507,7 +508,8 @@ that set them.
 
   * - $1:F:01
     - CODE_PAGE
-    - Set code page for built-in font.
+    - Set code page for built-in font. Matches
+      `RIA_ATTR_CODE_PAGE <os.html#ria-attributes>`__.
   * - $1:F:02
     - UART
     - Set bit rate. Reserved, not implemented.
@@ -548,7 +550,7 @@ When bit 0x80 is set, the 0x70 bits indicate the command type, and the
 0x0F bits are a scalar for the command.
 
 0x80 VSYNC - The scalar will increment and be used for the LSB of the
-RIA_VSYNC register.
+`RIA VSYNC <ria.html#registers>`__ register.
 
 0x90 OP_ACK - Some XREG locations are triggers for remote calls which
 may fail or take time to complete. This acknowledges a successful

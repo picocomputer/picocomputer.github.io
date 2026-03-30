@@ -122,7 +122,7 @@ is only updated if there is an error.
 
 Some operations return strings or structures on the stack. You must pull the
 entire stack before the next call. However, tail call optimizations are
-possible. For example, you can chain ``read_xstack()`` and ``write_xstack()`` to
+possible. For example, you can chain `read_xstack() <READ_XSTACK_>`_ and `write_xstack() <WRITE_XSTACK_>`_ to
 copy a file without using any RAM or XRAM.
 
 Short Stacking
@@ -130,7 +130,7 @@ Short Stacking
 
 In the pursuit of saving every cycle, you can save a few on the stack
 push when you don't need the full range. This only applies to the first
-stack argument pushed. For example:
+stack argument pushed. For example, in `LSEEK`_:
 
 .. code-block:: C
 
@@ -168,7 +168,7 @@ the type and direction (to or from the OS) of this data. Let's look at some exam
    int open(const char *path, int oflag);
 
 Send ``oflag`` in ``RIA_A``. ``RIA_X`` doesn't need to be set according to the
-docs below. Send the path on XSTACK by pushing the string starting with the last
+`OPEN`_ docs. Send the path on XSTACK by pushing the string starting with the last
 character. You may omit pushing the terminating zero, but strings are
 limited to a length of 255. Calling this from the C SDK will "just work"
 because there's an implementation that pushes the string for you.
@@ -178,7 +178,7 @@ because there's an implementation that pushes the string for you.
    int read_xstack(void *buf, unsigned count, int fildes)
 
 Send ``count`` as a short stack and ``fildes`` in ``RIA_A``. ``RIA_X`` doesn't
-need to be set according to the docs below. The returned value in AX indicates how
+need to be set according to the `READ_XSTACK`_ docs. The returned value in AX indicates how
 many values must be pulled from the stack. If you call this from the C SDK
 then it will copy XSTACK to buf[] for you.
 
@@ -187,7 +187,7 @@ then it will copy XSTACK to buf[] for you.
    int write_xstack(const void *buf, unsigned count, int fildes)
 
 Send ``fildes`` in ``RIA_A``. ``RIA_X`` doesn't need to be set according to the
-docs below. Push the buf data to XSTACK. Do not send ``count``, the OS knows this
+`WRITE_XSTACK`_ docs. Push the buf data to XSTACK. Do not send ``count``, the OS knows this
 from its internal stack pointer. If you call this from the C SDK then it
 will copy count bytes of buf[] to XSTACK for you.
 
@@ -198,7 +198,7 @@ implementation makes multiple OS calls as necessary.
 Bulk XRAM Operations
 ~~~~~~~~~~~~~~~~~~~~
 
-These load and save XRAM directly. You can load game assets without
+These load and save XRAM directly via `READ_XRAM`_ and `WRITE_XRAM`_. You can load game assets without
 going through 6502 RAM or capture a screenshot with ease.
 
 .. code-block:: C
@@ -554,7 +554,7 @@ READ
 
 
    Read `count` bytes from a file to a buffer. This is implemented in the
-   compiler library as a series of calls to read_xstack().
+   compiler library as a series of calls to `READ_XSTACK`_.
 
    :Op code: None
    :C proto: unistd.h
@@ -614,7 +614,7 @@ WRITE
 
 
    Write `count` bytes from buffer to a file. This is implemented in the
-   compiler library as a series of calls to write_xstack().
+   compiler library as a series of calls to `WRITE_XSTACK`_.
 
    :Op code: None
    :C proto: unistd.h
@@ -1169,7 +1169,7 @@ get-only attribute also returns -1 with ``EINVAL``.
    * - | 0x02
        | ``RIA_ATTR_CODE_PAGE``
      - Active OEM code page used by the filesystem, console, and default
-       VGA font. Reverts to the system setting when the 6502 stops. If the
+       :doc:`VGA <vga>` font. Reverts to the system setting when the 6502 stops. If the
        requested page is unavailable, the console setting is selected;
        follow a set with a get to confirm the result.
        One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862,

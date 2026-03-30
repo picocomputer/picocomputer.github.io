@@ -41,11 +41,11 @@ Step 0. Read This
 
 Rev. A and Rev. B circuit boards are identical except for the debug
 connectors under the RIA. These do nothing even when connected. They were
-removed so folks stop asking about them.
+removed so folks would stop asking about them.
 
 Most VGA-to-HDMI cables can get power from the Picocomputer. Some will need
 external power applied. All are zero lag. All VGA video output uses only
-HDMI-compatible timings so these cables are an ideal solution.
+HDMI-compatible timings, so these cables are an ideal solution.
 
 The boot message does not say COLOR anymore. Do not assume your device will
 behave exactly the same as an old YouTube video.
@@ -81,7 +81,7 @@ for production in multiples of five. You won't be able to order only one board.
 
 There are a ton of options you can change if you like. The defaults will get
 you a classic green and white board with lead (Pb) HASL. Consider getting the
-lead-free HASL upgrade if the other four boards will be kicking around a drawer
+lead-free HASL upgrade if the other four boards will be kicking around in a drawer
 for the next 20 years.
 
 
@@ -106,7 +106,7 @@ Expect a short delay while they quote the bill of materials. Then pay
 and wait. They estimated four weeks; mine arrived in three.
 
 If they have a question, make sure both you and your sales rep read the notes
-you sent them. If you have a question about options on their web site, ask your
+you sent them. If you have a question about options on their website, ask your
 sales rep before asking on the forums. They help people all day long with
 projects far more complex than this. Even if you don't understand what you are
 doing, they can figure it out by looking at the zip files. Really, they do this
@@ -127,7 +127,7 @@ Mouser will print the Customer# on each of the parts bags. Assign this
 column to the CSV reference column to get your bags labelled like "C1-C9, C11"
 etc. If you forget, no problem because the PCB silkscreen has location info.
 
-If something is out of stock, consult the substitution notes below.
+If something is out of stock, consult the `Parts Substitution`_ notes below.
 
 
 Step 5. Pi Pico Firmware
