@@ -760,7 +760,7 @@ support. If you are new to NFC technology, buy a pack of NTAG215 cards and
 a sharpie.
 
 Once the NFC reader is plugged in, issue the monitor command ``SET NFC 2`` to
-initiate a scan. Any other VCP devices may get probed with PN532 data, this
+initiate USB detection. Any other VCP devices may get probed with PN532 data, this
 is normal. You will hear an error buzz or two beeps for success. You may also
 check ``status`` to see if a ``(NFC)`` is listed after any of your VCP devices.
 
@@ -768,11 +768,14 @@ Scanning cards will now produce one of three audible signals. An error buzz
 if anything went wrong, two beeps for success, one beep for a partial success.
 
 Cards are to be programmed with the filename and arguments of the ROM to be
-launched. If you use ``LOAD "/My Games/Jigsaw.rp6502" cat.bmp`` to manually
-load the ROM, put a NDEF TEXT record on the card without the load command:
-``"/My Games/Jigsaw.rp6502" cat.bmp``.
+launched. If you use ``LOAD /jigsaw.rp6502`` to load the ROM, put a NDEF TEXT
+record on the card without the load command: ``/jigsaw.rp6502``.
+The leading ``/`` is implied if missing, the current working directory is ignored.
 
-When the card is read, all mounted drives are scanned for that file. If
+Spaces will require quotes. You can also include arguments:
+``"/My Games/jigsaw.rp6502" cat.bmp``
+
+When the card is read, all mounted drives are scanned for the ROM file. If
 found, two beeps of success are played, the 6502 is stopped, the current
 drive and directory is changed to the ROM location, and the new ROM begins
 loading. If the ROM was already running, a single beep is emitted and nothing
@@ -780,7 +783,6 @@ else happens.
 
 You can force only a single drive to be searched by including it in the text
 record. ``MSC0:/encabulator.rp6502``
-
 
 
 ROM File Format
