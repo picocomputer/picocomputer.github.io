@@ -1141,6 +1141,61 @@ EXIT
    :param status: 0 is success, 1-255 for error.
 
 
+Launcher
+========
+
+The launcher is a mechanism in the RP6502 process manager that lets one ROM
+serve as a persistent host for all others. A ROM registers itself as the
+launcher by setting ``RIA_ATTR_LAUNCHER`` to 1 via :c:func:`ria_attr_set`.
+Once registered, the process manager automatically re-executes the launcher
+ROM whenever any subsequently launched ROM exits. When the launcher ROM itself
+exits, the chain ends, the registration is cleared, and control returns to the
+console monitor. A console break (Ctrl-Alt-Del) unconditionally clears the
+registration at any time.
+
+The launcher ROM decides what to run next by calling `EXEC`_ and may pass
+arguments to the new ROM via argv. The launched ROM retrieves those arguments
+with `ARGV`_.
+
+ROM Cartridge Menu
+------------------
+
+The most straightforward use of the launcher is a menu-driven ROM selector,
+analogous to inserting a physical cartridge into a retro console. The launcher
+ROM scans the storage device for ``.rp6502`` files, presents a list to the user,
+and calls `EXEC`_ with the chosen filename. When that ROM exits — whether
+normally or due to an error — the process manager automatically re-executes the
+launcher, returning the user to the selection menu.
+
+No manual reset is needed between runs. Each ROM is a self-contained binary
+that knows nothing about the menu system. The launcher may supply context
+through argv — for example, a save-file path or difficulty setting — and the
+ROM simply exits when it is done.
+
+Native OS Boot Sequence
+-----------------------
+
+A more powerful use is as the foundation for a native 6502 operating system.
+A small launcher ROM is installed to the RIA as the boot ROM using the
+``set boot`` command in the monitor. When the Picocomputer powers on or
+resets, the process manager loads this launcher ROM automatically.
+
+The launcher ROM reads its own argv — supplied by any arguments appended to
+the ``set boot`` command — then searches the mounted drive for the OS ROM and
+calls `EXEC`_ to launch it, forwarding any relevant arguments. By design, the
+OS cannot alter the launcher ROM; OS launchers are meant to stay simple and
+trustworthy. This indirection provides important capabilities:
+
+* **Fault recovery** — If the OS kernel encounters a fatal error it cannot
+  handle internally, it exits rather than locking up. The process manager
+  re-executes the launcher, which can choose to relaunch the kernel or take
+  some other action.
+
+* **Self-update** — An OS can prepare its own ROM update and call `EXIT`_. The
+  launcher detects the pending update, applies it, and boots the new OS ROM —
+  achieving an in-place update without requiring a manual reset.
+
+
 RIA Attributes
 ==============
 
@@ -1165,12 +1220,12 @@ get-only attribute also returns -1 with ``EINVAL``.
    * - | 0x01
        | ``RIA_ATTR_PHI2_KHZ``
      - CPU clock speed in kHz. Range 100–8000. Changes take effect
-       immediately and revert to the system setting when the 6502 stops.
+       immediately and revert to the system setting when the ROM stops.
    * - | 0x02
        | ``RIA_ATTR_CODE_PAGE``
      - Active OEM code page used by the filesystem, console, and default
-       :doc:`VGA <vga>` font. Reverts to the system setting when the 6502 stops. If the
-       requested page is unavailable, the console setting is selected;
+       :doc:`VGA <vga>` font. Reverts to the system setting when the ROM stops. If the
+       requested page is unavailable, the system setting is selected;
        follow a set with a get to confirm the result.
        One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862,
        863, 864, 865, 866, 869, 932, 936, 949, 950.
@@ -1190,12 +1245,9 @@ get-only attribute also returns -1 with ``EINVAL``.
        0 silences the alert; 1 (default) enables it.
    * - | 0x06
        | ``RIA_ATTR_LAUNCHER``
-     - Launcher flag. When set to 1, the process manager records the
-       currently running ROM as the launcher. Whenever any other ROM
-       finishes, the launcher ROM is automatically re-executed. When the
-       launcher ROM itself finishes, the chain ends and the flag is cleared.
-       Setting to 0 clears the launcher registration. A console break
-       (Ctrl-Alt-Del) also clears it unconditionally.
+     - Launcher flag. Set to 1 to register the current ROM as the launcher;
+       set to 0 to deregister. See the `Launcher`_ section for full
+       details and usage patterns.
 
 
 ERRNO_OPT Compiler Constants
