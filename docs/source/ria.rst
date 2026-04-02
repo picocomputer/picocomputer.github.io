@@ -759,6 +759,10 @@ also need cards (or fobs or stickers) for each of the ROMs you want to
 support. If you are new to NFC technology, buy a pack of NTAG215 cards and
 a sharpie.
 
+DO NOT buy a kit of separate USB-to-UART and PN532 boards unless you want a
+project for which you will get no support. Buy a solo board with everything
+already engineered and ready-to-use.
+
 Once the NFC reader is plugged in, issue the monitor command ``SET NFC 2`` to
 initiate USB detection. Any other VCP devices may get probed with PN532 data, this
 is normal. You will hear an error buzz or two beeps for success. You may also
