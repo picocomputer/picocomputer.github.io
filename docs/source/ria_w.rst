@@ -43,8 +43,9 @@ console interface.
 Network Time Protocol (NTP)
 ===========================
 
-The real-time clock (RTC) automatically synchronizes with internet time
-servers when connected to WiFi. Check NTP status with the ``status`` command.
+The real-time clock (RTC) automatically synchronizes with internet
+time servers when connected to WiFi. Check NTP status with the
+``status`` command.
 
 - **Set Time Zone:**
   To use local time instead of UTC, set your time zone with ``SET TZ``.
@@ -103,8 +104,9 @@ BLE has been widely available since Bluetooth 4.0 (June 2010),
 so compatible devices are easy to find, though the occasional oddball
 exists.
 
-To add a new device, use monitor command ``set ble 2`` to enable pairing
-mode. The LED on the RP6502-RIA-W will blink when in pairing mode. See
-your device's manual to enable its pairing mode - probably a button and
-more blinking. When the blinking stops, the device is connected and will
-be remembered (bonded) so it reconnects automatically in the future.
+To add a new device, use monitor command ``set ble 2`` to enable
+pairing mode. The LED on the RP6502-RIA-W will blink when in pairing
+mode. See your device's manual to enable its pairing mode - probably a
+button and more blinking. When the blinking stops, the device is
+connected and will be remembered (bonded) so it reconnects
+automatically in the future.

@@ -80,17 +80,19 @@ as a C declaration like so:
 
 .. c:function:: int doit(int arg0, int arg1);
 
-The RIA has registers called ``RIA_A``, ``RIA_X``, and ``RIA_SREG``. An int is 16 bits,
-so we set the ``RIA_A`` and ``RIA_X`` registers with arg1. I'll use "A" for the 6502
-register and "RIA_A" for the RIA register in this explanation.
+The RIA has registers called ``RIA_A``, ``RIA_X``, and ``RIA_SREG``. An int
+is 16 bits, so we set the ``RIA_A`` and ``RIA_X`` registers with arg1. I'll
+use "A" for the 6502 register and "RIA_A" for the RIA register in this
+explanation.
 
 We use the XSTACK for arg0. Reading ``RIA_XSTACK`` pops bytes; writing
 pushes bytes. It's a top-down stack, so push each argument left to
 right and maintain little-endian byte order.
 
-To execute the call, store the operation ID in ``RIA_OP``. The operation begins
-immediately. You can keep doing 6502 things, like running a loading animation, by
-polling ``RIA_BUSY``. Alternatively, JSR to ``RIA_SPIN`` to block.
+To execute the call, store the operation ID in ``RIA_OP``. The operation
+begins immediately. You can keep doing 6502 things, like running a loading
+animation, by polling ``RIA_BUSY``. Alternatively, JSR to ``RIA_SPIN`` to
+block.
 
 ``JSR RIA_SPIN`` can unblock within 3 clock cycles and immediately loads A
 and X. Sequential operations run fastest with this technique. Under the hood,
@@ -116,13 +118,14 @@ flag N. Once clear, we read ``RIA_A`` and ``RIA_X`` with absolute instructions.
    LDA RIA_A
    LDX RIA_X
 
-All operations returning ``RIA_A`` will also return ``RIA_X`` to assist with C
-integer promotion. ``RIA_SREG`` is only updated for 32-bit returns. ``RIA_ERRNO``
-is only updated if there is an error.
+All operations returning ``RIA_A`` will also return ``RIA_X`` to assist with
+C integer promotion. ``RIA_SREG`` is only updated for 32-bit returns.
+``RIA_ERRNO`` is only updated if there is an error.
 
 Some operations return strings or structures on the stack. You must pull the
 entire stack before the next call. However, tail call optimizations are
-possible. For example, you can chain `read_xstack() <READ_XSTACK_>`_ and `write_xstack() <WRITE_XSTACK_>`_ to
+possible. For example, you can chain
+`read_xstack() <READ_XSTACK>`_ and `write_xstack() <WRITE_XSTACK>`_ to
 copy a file without using any RAM or XRAM.
 
 Short Stacking
@@ -153,23 +156,24 @@ Bulk Data
 ---------
 
 Functions that move bulk data come in two flavors, depending on
-where the data lives. A RAM pointer is meaningless to the RIA because it cannot change 6502
-RAM. Instead, use the XSTACK or XRAM to move data.
+where the data lives. A RAM pointer is meaningless to the RIA because it
+cannot change 6502 RAM. Instead, use the XSTACK or XRAM to move data.
 
 Bulk XSTACK Operations
 ~~~~~~~~~~~~~~~~~~~~~~
 
 These only work if the size is 512 bytes or less. Bulk data is passed on the
 XSTACK, which is 512 bytes. A pointer appears in the C prototype to indicate
-the type and direction (to or from the OS) of this data. Let's look at some examples.
+the type and direction (to or from the OS) of this data. Let's look at some
+examples.
 
 .. code-block:: C
 
    int open(const char *path, int oflag);
 
 Send ``oflag`` in ``RIA_A``. ``RIA_X`` doesn't need to be set according to the
-`OPEN`_ docs. Send the path on XSTACK by pushing the string starting with the last
-character. You may omit pushing the terminating zero, but strings are
+`OPEN`_ docs. Send the path on XSTACK by pushing the string starting with
+the last character. You may omit pushing the terminating zero, but strings are
 limited to a length of 255. Calling this from the C SDK will "just work"
 because there's an implementation that pushes the string for you.
 
@@ -178,18 +182,18 @@ because there's an implementation that pushes the string for you.
    int read_xstack(void *buf, unsigned count, int fildes)
 
 Send ``count`` as a short stack and ``fildes`` in ``RIA_A``. ``RIA_X`` doesn't
-need to be set according to the `READ_XSTACK`_ docs. The returned value in AX indicates how
-many values must be pulled from the stack. If you call this from the C SDK
-then it will copy XSTACK to buf[] for you.
+need to be set according to the `READ_XSTACK`_ docs. The returned value in
+AX indicates how many values must be pulled from the stack. If you call this
+from the C SDK then it will copy XSTACK to buf[] for you.
 
 .. code-block:: C
 
    int write_xstack(const void *buf, unsigned count, int fildes)
 
 Send ``fildes`` in ``RIA_A``. ``RIA_X`` doesn't need to be set according to the
-`WRITE_XSTACK`_ docs. Push the buf data to XSTACK. Do not send ``count``, the OS knows this
-from its internal stack pointer. If you call this from the C SDK then it
-will copy count bytes of buf[] to XSTACK for you.
+`WRITE_XSTACK`_ docs. Push the buf data to XSTACK. Do not send ``count``,
+the OS knows this from its internal stack pointer. If you call this from the
+C SDK then it will copy count bytes of buf[] to XSTACK for you.
 
 Note that read() and write() are part of the C SDK, not an OS operation. C
 requires these to support a count larger than the XSTACK can return so the
@@ -198,26 +202,26 @@ implementation makes multiple OS calls as necessary.
 Bulk XRAM Operations
 ~~~~~~~~~~~~~~~~~~~~
 
-These load and save XRAM directly via `READ_XRAM`_ and `WRITE_XRAM`_. You can load game assets without
-going through 6502 RAM or capture a screenshot with ease.
+These load and save XRAM directly via `READ_XRAM`_ and `WRITE_XRAM`_. You can
+directly load assets without going through 6502 RAM.
 
 .. code-block:: C
 
    int read_xram(xram_addr buf, unsigned count, int fildes)
    int write_xram(xram_addr buf, unsigned count, int fildes)
 
-The OS expects ``buf`` and ``count`` on the XSTACK as integers with ``fildes`` in
-``RIA_A``. The OS has direct access to XRAM so internally it will use
-something like ``&XRAM[buf]``. You will need to use ``RIA_RW0`` or ``RIA_RW1`` to access
-this memory from the 6502.
+The OS expects ``buf`` and ``count`` on the XSTACK as integers with
+``fildes`` in ``RIA_A``. The OS has direct access to XRAM so internally it
+will use something like ``&XRAM[buf]``. You will need to use ``RIA_RW0`` or
+``RIA_RW1`` to access this memory from the 6502.
 
 These operations stand out for their high performance and ability to
 run in the background while the 6502 does other work. Expect close to
-64 KB/sec, meaning a game level's worth of assets loads in under a
-second.
+512 KB/sec, meaning a full 64KB of XRAM can load or save in under 150ms.
 
-Bulk XRAM operations are why the Picocomputer 6502 was designed without
-paged memory.
+Bulk XRAM operations are why the Picocomputer 6502 doesn't have paged memory.
+It's not necessary when "disk" access has no seek time and can move data as
+fast or faster then the CPU.
 
 
 Application Programmer Interface
@@ -243,10 +247,10 @@ The OS is built around FAT filesystems, the de facto standard for
 unsecured USB storage devices. POSIX filesystems are not fully
 compatible with FAT but there is a solid intersection of basic IO that is
 100% compatible. You will see some familiar POSIX functions like ``open()`` and
-others like ``f_stat()`` which are similar to the POSIX function but tailored to
-FAT. Should it ever become necessary to have a POSIX ``stat()``, it can be
-implemented in the C standard library or in an application by translating
-``f_stat()`` data.
+others like ``f_stat()`` which are similar to the POSIX function but
+tailored to FAT. Should it ever become necessary to have a POSIX ``stat()``,
+it can be implemented in the C standard library or in an application by
+translating ``f_stat()`` data.
 
 ZXSTACK
 -------
@@ -299,14 +303,16 @@ ARGV
 .. c:function:: int _argv (char *argv, int size)
 
 
-   The virtual _argv is called by C initialization to provide argc and argv for main().
-   It returns an array of zero terminated string indexes followed by the strings.
+   The virtual _argv is called by C initialization to provide argc and
+   argv for main(). It returns an array of zero terminated string indexes
+   followed by the strings.
    e.g. ["ABC", "DEF"] is 06 00 0A 00 00 00 41 42 43 00 44 45 46 00
    The returned data is guaranteed to be valid.
 
-   Because this can use up to 512 bytes of RAM you must opt-in by providing storage
-   for the argv data. You may use static memory, or dynamically allocated memory which
-   can be freed after use. You may also reject an oversized argv by returning NULL.
+   Because this can use up to 512 bytes of RAM you must opt-in by
+   providing storage for the argv data. You may use static memory, or
+   dynamically allocated memory which can be freed after use. You may also
+   reject an oversized argv by returning NULL.
 
    .. code-block:: c
 
@@ -332,12 +338,14 @@ EXEC
 
    The data sent by _exec() will be checked for pointer safety and sanity, but
    will assume the path points to a loadable ROM file. If EINVAL is returned,
-   the argv buffer is cleared so further attempts to _argv() will return an empty set.
-   If the ROM is invalid, the user will be left on the console with an error message.
+   the argv buffer is cleared so further attempts to _argv() will return an
+   empty set. If the ROM is invalid, the user will be left on the console
+   with an error message.
 
    :Op code: RIA_OP_EXEC 0x09
    :C proto: rp6502.h
-   :returns: Does not return on success — the new ROM begins executing. -1 on error.
+   :returns: Does not return on success — the new ROM begins
+      executing. -1 on error.
    :errno: EINVAL
 
 
@@ -430,8 +438,9 @@ TZSET
          char dstname[5];  /* Name when daylight true, e.g. CEST */
       };
 
-   The virtual _tzset() is called internally by tzset(). Use `help set tz` on the
-   console monitor to learn about configuring your time zone.
+   The virtual _tzset() is called internally by tzset(). Use
+   `help set tz` on the console monitor to learn about configuring your
+   time zone.
 
    :Op code: RIA_OP_TZSET 0x0D
    :C proto: time.h
@@ -784,8 +793,8 @@ STAT
          char fname[255 + 1];
       } f_stat_t;
 
-   Returns file or directory info for requested path.
-   See the `FatFs documentation <https://elm-chan.org/fsw/ff/doc/sfileinfo.html>`__
+   Returns file or directory info for requested path. See the
+   `FatFs documentation <https://elm-chan.org/fsw/ff/doc/sfileinfo.html>`__
    for details about the data structure.
 
    :Op code: RIA_OP_STAT 0x1F
@@ -825,8 +834,8 @@ READDIR
 .. c:function:: int f_readdir (f_stat_t* dirent, int dirdes)
 
 
-   Returns directory entry info for the current read position of a directory descriptor,
-   then advances the read position.
+   Returns directory entry info for the current read position of a
+   directory descriptor, then advances the read position.
 
    :Op code: RIA_OP_READDIR 0x21
    :C proto: rp6502.h
@@ -1162,8 +1171,8 @@ ROM Cartridge Menu
 
 The most straightforward use of the launcher is a menu-driven ROM selector,
 analogous to inserting a physical cartridge into a retro console. The launcher
-ROM scans the storage device for ``.rp6502`` files, presents a list to the user,
-and calls `EXEC`_ with the chosen filename. When that ROM stops — whether
+ROM scans the storage device for ``.rp6502`` files, presents a list to the
+user, and calls `EXEC`_ with the chosen filename. When that ROM stops — whether
 normally or due to an error — the process manager automatically re-executes the
 launcher, returning the user to the selection menu.
 
@@ -1187,9 +1196,9 @@ OS cannot alter the launcher ROM; OS launchers are meant to stay simple and
 trustworthy. This indirection provides important capabilities:
 
 * **Fault recovery** — If the OS kernel encounters a fatal error it cannot
-  handle internally, it calls `EXIT`_ rather than locking up. The process manager
-  re-executes the launcher, which can choose to relaunch the kernel or take
-  some other action.
+  handle internally, it calls `EXIT`_ rather than locking up. The process
+  manager re-executes the launcher, which can choose to relaunch the kernel
+  or take some other action.
 
 * **Self-update** — An OS can prepare its own ROM update and call `EXIT`_. The
   launcher detects the pending update, applies it, and boots the new OS ROM —
@@ -1224,9 +1233,9 @@ get-only attribute also returns -1 with ``EINVAL``.
    * - | 0x02
        | ``RIA_ATTR_CODE_PAGE``
      - Active OEM code page used by the filesystem, console, and default
-       :doc:`VGA <vga>` font. Reverts to the system setting when the ROM stops. If the
-       requested page is unavailable, the system setting is selected;
-       follow a set with a get to confirm the result.
+       :doc:`VGA <vga>` font. Reverts to the system setting when the ROM
+       stops. If the requested page is unavailable, the system setting is
+       selected; follow a set with a get to confirm the result.
        One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862,
        863, 864, 865, 866, 869, 932, 936, 949, 950.
    * - | 0x03

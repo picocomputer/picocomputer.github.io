@@ -81,8 +81,8 @@ for production in multiples of five. You won't be able to order only one board.
 
 There are a ton of options you can change if you like. The defaults will get
 you a classic green and white board with lead (Pb) HASL. Consider getting the
-lead-free HASL upgrade if the other four boards will be kicking around in a drawer
-for the next 20 years.
+lead-free HASL upgrade if the other four boards will be kicking around in a
+drawer for the next 20 years.
 
 
 Step 3. Order Assembly
@@ -131,15 +131,15 @@ If something is out of stock, consult the `Parts Substitution`_ notes below.
 
 
 Step 5. Pi Pico Firmware
-=========================
+========================
 
 Download the `UF2 files
 <https://github.com/picocomputer/rp6502/releases>`_.
 
 To load firmware on a Pi Pico 2, hold its BOOTSEL button down while plugging it
-into a computer. The Pi Pico 2 will appear as a storage device. Copy the RIA UF2
-file to make a :doc:`ria_w` and the VGA UF2 file to make a :doc:`vga`. It should
-take less than 30 seconds to copy. The LED turns on when done.
+into a computer. The Pi Pico 2 will appear as a storage device. Copy the RIA W
+UF2 file to make a :doc:`ria_w` and the VGA UF2 file to make a :doc:`vga`. It
+should take less than 30 seconds to copy. The LED turns on when done.
 
 
 Acrylic Sandwich Case
@@ -152,7 +152,7 @@ top and 3.5 mm for the bottom.
 
 
 Full Parts List (All Components)
-=================================
+================================
 
 `All Parts CSV <_static/rp6502-revb-full.csv>`_
 
@@ -162,7 +162,7 @@ Full Parts List (All Components)
 
 
 Active Parts List (ICs Only)
-=============================
+============================
 
 `Active Parts CSV <_static/rp6502-revb-active.csv>`_
 
@@ -182,7 +182,7 @@ Alternative part numbers for the Pi Picos.
 
 
 Parts Substitution
-===================
+==================
 
 All resistors are <= 1% tolerance. Any power rating. Leads must fit 0.8mm
 plated holes spaced 10mm apart. Recommended size is approximately 0.1" x 0.25"
@@ -220,7 +220,7 @@ The WDC W65C02S and W65C22S must not be substituted. Do not attempt to use
 NMOS chips (without the C in the number). Some older CMOS designs may work but
 there are no plans to support out-of-production ICs.
 
-Only the Raspberry Pi design of the Pi Pico 2 has been tested. Both original and
-"H" (header) versions work great. Pin-compatible alternatives usually work, check
-the forums. The 3-pin SWD connection on the Pi Pico RIA is no longer used and
-may be ignored when looking for alternatives.
+Only the Raspberry Pi design of the Pi Pico 2 has been tested. Both original
+and "H" (header) versions work great. Pin-compatible alternatives usually work,
+check the forums. The 3-pin SWD connection on the Pi Pico RIA is no longer
+used and may be ignored when looking for alternatives.

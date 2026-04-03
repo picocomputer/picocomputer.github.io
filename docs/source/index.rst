@@ -11,10 +11,10 @@
 Picocomputer 6502
 ==================
 
-All the soul of the 6502. None of the compromises. You're welcome.
+Pure 6502. No governor. No speed limits.
 
 The **Picocomputer 6502** is an open source, modern-retro gaming computer
-built around a real WDC 65C02. The design philosophy: keep the essence of
+built around a real WDC 65C02. The design philosophy: keep the soul of
 programming a 6502 and 6522, then rethink everything else.
 
 .. image:: _static/ria-w-sandwich.jpg
@@ -40,8 +40,16 @@ Specs
 - **ROM** — 1 MB of onboard flash for installing and auto-booting ROMs
 - **Video** — VGA and HD output; 3 planes, scanline programmable
 - **Sound** — PSG (8 voices) and OPL2 FM (9 voices)
-- **Clock** — Real-Time Clock with DST
+- **Clock** — Real-Time Clock with Daylight Savings Time
 - **TRNG** — True random number generator
+
+
+Quality of Life
+===============
+- **Open by Design** — DIY-friendly with fully open source hardware and software
+- **Storage** — Blazing fast 512 KB/sec USB flash drive reads and writes
+- **Keyboard** — International keyboard layout support
+- **Fonts** — Built-in code pages for international character sets
 
 
 Connectivity
@@ -50,7 +58,7 @@ Connectivity
 - **WiFi** — NTP time sync, Hayes modem emulation for dialing into BBSs
 - **Bluetooth LE** — keyboard, mouse, and gamepads
 - **USB Host** — keyboard, mouse, gamepads, hubs, UART serial, NFC, floppy drives, and flash drives
-- **USB Device** — driverless CDC ACM; mirrors the VGA ANSI terminal console
+- **USB Device** — driverless CDC ACM; console access (can operate headless)
 
 
 Programming
@@ -58,7 +66,7 @@ Programming
 
 - **Protected OS** — 32-bit operating system; uses no 6502 RAM
 - **FAT filesystem** — read and write files on any USB flash or floppy drive
-- **POSIX-compatible API** — stdio.h and unistd.h for cc65 and llvm-mos
+- **API** — POSIX-like C library for familiar, portable programming
 - **cc65** — `VS Code integration for cc65 <https://github.com/picocomputer/vscode-cc65>`__
 - **llvm-mos** — `VS Code integration for llvm-mos <https://github.com/picocomputer/vscode-llvm-mos>`__
 - **AI Assistance** — The latest models via VS Code extensions or GitHub Copilot

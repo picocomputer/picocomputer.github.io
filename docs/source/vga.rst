@@ -718,8 +718,6 @@ treat 0 as 1 to remain useful without parameters.
     - Makes the cursor invisible.
 
 
-.. _SGR Parameters:
-
 SGR Parameters
 --------------
 Send multiple parameters separated by semicolons. Sending CSI m
