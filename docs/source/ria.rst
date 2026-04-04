@@ -788,6 +788,109 @@ else happens.
 You can force only a single drive to be searched by including it in the text
 record. ``MSC0:/encabulator.rp6502``
 
+NFC Device API
+--------------
+
+Applications can take control over the NFC reader for advanced usage or to
+assist with programming NFC tags. While the ``"NFC:"`` device is open,
+automatic ROM launching is suppressed.
+
+.. code-block:: text
+
+   int fd = open("NFC:", O_RDWR);
+
+The PN532 reader runs autonomously on the RIA. The 6502 arms operations via
+``write()`` and polls results via ``read()``. ``NFC_CMD_READ`` arms a read;
+``NFC_CMD_WRITE`` arms a write. Each posts to its own response slot when done.
+``NFC_CMD_CANCEL`` disarms both. Until a response is ready, ``read()`` returns
+the current NFC floor state (``NFC_RESP_NO_READER``, ``NFC_RESP_NO_CARD``, or
+``NFC_RESP_CARD_INSERTED``).
+
+
+write() -- Commands
+~~~~~~~~~~~~~~~~~~~
+
+.. list-table::
+   :widths: 40 60
+   :header-rows: 1
+
+   * - Byte
+     - Command
+   * - ``NFC_CMD_WRITE`` (0x01), lenLo, lenHi, tag data...
+     - Arm a write
+   * - ``NFC_CMD_READ`` (0x02)
+     - Arm a read
+   * - ``NFC_CMD_CANCEL`` (0x03)
+     - Disarm both pending read and write
+   * - ``NFC_CMD_SUCCESS1`` (0x04)
+     - Play success tone 1
+   * - ``NFC_CMD_SUCCESS2`` (0x05)
+     - Play success tone 2
+   * - ``NFC_CMD_ERROR`` (0x06)
+     - Play error tone
+
+``NFC_CMD_WRITE`` streams the command byte + length + tag data across multiple
+``write()`` calls. Tag data is raw tag memory: TLV-wrapped NDEF records
+terminated with ``0xFE``. Once the full payload arrives, the write is armed.
+It executes on the current card or the next one presented. A second
+``NFC_CMD_WRITE`` overwrites the first (last write wins).
+
+read() -- Responses
+~~~~~~~~~~~~~~~~~~~
+
+Read **1 byte**. ``read()`` always returns immediately. Only ``NFC_RESP_READ``
+has a trailing payload.
+
+.. list-table::
+   :widths: 30 20 50
+   :header-rows: 1
+
+   * - Result
+     - Extra bytes
+     - Meaning
+   * - ``NFC_RESP_NO_READER`` (0x01)
+     - \-\-
+     - Floor: no reader attached
+   * - ``NFC_RESP_NO_CARD`` (0x02)
+     - \-\-
+     - Floor: no card present
+   * - ``NFC_RESP_CARD_INSERTED`` (0x03)
+     - \-\-
+     - Floor: card present, tag data not ready
+   * - ``NFC_RESP_WRITE`` (0x04)
+     - \-\-
+     - Armed write complete
+   * - ``NFC_RESP_READ`` (0x05)
+     - 7 byte header + tag data
+     - Armed read complete
+
+``NFC_RESP_READ`` and ``NFC_RESP_WRITE`` should be followed with one or more
+tone commands, or the application's own sounds. The read or write will then
+need to be armed again as needed.
+
+NFC_RESP_READ header (7 bytes)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. list-table::
+   :widths: 10 20 70
+   :header-rows: 1
+
+   * - Offset
+     - Field
+     - Description
+   * - 0
+     - ``age_ds``
+     - Data age in 0.1 s, data older than 25.5 s is lost.
+   * - 1-4
+     - ``CC[4]``
+     - Capability Container from page 3. CC[2] * 8 = max NDEF bytes.
+   * - 5-6
+     - ``lenLo, lenHi``
+     - Tag data length.
+
+Tag data follows the header and may span multiple ``read()`` calls. It is raw
+tag memory: TLV-wrapped NDEF records (tag ``0x03``) terminated with ``0xFE``.
+
 
 ROM File Format
 ===============
