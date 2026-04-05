@@ -854,18 +854,18 @@ change (including once after ``open()``).
 
    * - Byte
      - Meaning
-   * - ``NFC_RESP_NO_READER`` (0x01)
-     - State: no reader attached
-   * - ``NFC_RESP_NO_CARD`` (0x02)
-     - State: no card present
-   * - ``NFC_RESP_CARD_INSERTED`` (0x03)
-     - State: card present, tag data not ready
-   * - ``NFC_RESP_CARD_READY`` (0x04)
-     - State: card present, tag data ready
-   * - ``NFC_RESP_WRITE`` (0x05)
-     - Armed write complete
-   * - ``NFC_RESP_READ`` (0x06), lenLo, lenHi, tag data...
+   * - ``NFC_RESP_READ`` (0x01), lenLo, lenHi, tag data...
      - Read result
+   * - ``NFC_RESP_WRITE`` (0x02)
+     - Armed write complete
+   * - ``NFC_RESP_NO_READER`` (0x03)
+     - State: no reader attached
+   * - ``NFC_RESP_NO_CARD`` (0x04)
+     - State: no card present
+   * - ``NFC_RESP_CARD_INSERTED`` (0x05)
+     - State: card present, tag data not ready
+   * - ``NFC_RESP_CARD_READY`` (0x06)
+     - State: card present, tag data ready
 
 The ``NFC_RESP_READ`` payload is a two-byte length followed by raw tag data
 starting from page 0, and may span multiple ``read()`` calls. Page layout:
