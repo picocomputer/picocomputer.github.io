@@ -508,7 +508,7 @@ sprites on a second, and 8x8 1bpp bullets on the last.
     - 5 - Sprite
   * - $1:0:02
     - OPTIONS
-    - | bit 3 - 0=8x8, 1=16x16
+    - | bit 5:3 - 0=8x8, 1=16x16, 2=32x32, 3=64x64, 4=128x128, 5=256x256, 6=512x512
       | bit 2:0 - 0=1, 1=2, 2=4, or 3=8 bit color
   * - $1:0:03
     - CONFIG
