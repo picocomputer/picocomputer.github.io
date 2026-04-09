@@ -795,7 +795,7 @@ Applications can take control over the NFC reader for advanced usage or to
 assist with programming NFC tags. While the ``"NFC:"`` device is open,
 automatic ROM launching is suppressed.
 
-.. code-block:: c
+.. code-block:: text
 
    int fd = open("NFC:", O_RDWR);
 

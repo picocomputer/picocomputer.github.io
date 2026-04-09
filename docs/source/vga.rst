@@ -21,11 +21,11 @@ computers and arcades of the 8-bit and early 16-bit era. Adding new
 video modes and sprite systems is straightforward. Application
 programmers can mix and match these modes freely.
 
-The VGA system is built around the scanvideo library from Pi
+The VGA system is built around a modifed scanvideo library from Pi
 Pico Extras. All three planes are enabled with RGB555 color plus
 transparency. The mode 4 sprite system is from Pi Pico Playground.
-The programming system and all other modes are original work for
-the RP6502.
+The scanline programming system and all other modes are original
+work for the RP6502.
 
 The RP6502 VGA system exposes per-scanline configuration of the
 video system to your 6502 application. At the broadest scope we
@@ -117,7 +117,8 @@ Setting key registers may return a failure (-1) with errno EINVAL.
       * 1 - `Character <#mode-1-character>`__
       * 2 - `Tile <#mode-2-tile>`__
       * 3 - `Bitmap <#mode-3-bitmap>`__
-      * 4 - `Sprite <#mode-4-sprite>`__
+      * 4 - `Sprite 16-bit <#mode-4-sprite>`__
+      * 5 - `Sprite 1,2,4,8-bit <#mode-5-sprite>`__
 
 
 Mode 0: Console
@@ -406,12 +407,13 @@ Data for 16 bit color must be 16 bit aligned.
   } data;
 
 
-Mode 4: Sprite
---------------
+Mode 4: Sprite 16-bit
+---------------------
 
 Sprites may be drawn over each fill plane. This is the 16-bit sprite
-system from the Pi Pico Playground. Lower bit depths are planned for
-a different mode.
+system from the Pi Pico Playground. Lower bit depths are available in
+mode 5. The large memory requirements are offset by its ability to do
+affine transforms.
 
 .. list-table::
   :widths: 5 5 90
@@ -425,7 +427,7 @@ a different mode.
     - 4 - Sprite
   * - $1:0:02
     - OPTIONS
-    - | bit 1 - affine
+    - | bit 0 - affine
   * - $1:0:03
     - CONFIG
     - | Address of config array in XRAM.
@@ -481,6 +483,77 @@ Sprite image data is an array of 16 bit colors.
     struct {
         uint16_t color[2^log_size];
     } rows[2^log_size];
+  } sprite;
+
+
+Mode 5: Sprite 1,2,4,8-bit
+--------------------------
+
+This is a memory efficient sprite system using palettes to reduce the bit
+depth. Sprites may be drawn over each fill plane. Even if you have a null
+fill plane, sprites may be drawn there. That means you can put, for example,
+affine sprites for explosions and the player on one plane, 16x16 4bpp enemy
+sprites on a second, and 8x8 1bpp bullets on the last.
+
+
+.. list-table::
+  :widths: 5 5 90
+  :header-rows: 1
+
+  * - Address
+    - Name
+    - Description
+  * - $1:0:01
+    - MODE
+    - 5 - Sprite
+  * - $1:0:02
+    - OPTIONS
+    - | bit 5:3 - 0=8x8, 1=16x16, 2=32x32, 3=64x64, 4=128x128, 5=256x256, 6=512x512
+      | bit 2:0 - 0=1, 1=2, 2=4, or 3=8 bit color
+  * - $1:0:03
+    - CONFIG
+    - | Address of config array in XRAM.
+  * - $1:0:04
+    - LENGTH
+    - Length of config array in XRAM.
+  * - $1:0:05
+    - PLANE
+    - 0-2 to select which sprite plane of scanlines to program.
+  * - $1:0:06
+    - BEGIN
+    - First scanline to program. BEGIN \<= n \< END
+  * - $1:0:07
+    - END
+    - End of scanlines to program. 0 means use canvas height
+      (180-480).
+
+Unused sprites are disabled by moving off screen.
+
+.. code-block:: C
+
+  struct {
+    int16_t x_pos_px;
+    int16_t y_pos_px;
+    uint16_t xram_sprite_ptr;
+    uint16_t palette_ptr;
+  } config[LENGTH];
+
+Sprite image data is the same format as individual mode 2 tiles.
+
+.. code-block:: C
+
+  // 8x8 tiles
+  struct {
+      struct {
+          uint8_t cols[bpp];
+      } rows[8];
+  } sprite;
+
+  // 16x16 tiles
+  struct {
+      struct {
+          uint8_t cols[2*bpp];
+      } rows[16];
   } sprite;
 
 
