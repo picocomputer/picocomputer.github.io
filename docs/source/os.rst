@@ -1159,12 +1159,21 @@ launcher by setting ``RIA_ATTR_LAUNCHER`` to 1 via :c:func:`ria_attr_set`.
 Once registered, the process manager automatically re-executes the launcher
 ROM whenever any subsequently launched ROM stops. When the launcher ROM itself
 stops, the chain ends, the registration is cleared, and control returns to the
-console monitor. A console break (Ctrl-Alt-Del) unconditionally clears the
-registration at any time.
+console monitor.
 
 The launcher ROM decides what to run next by calling `EXEC`_ and may pass
 arguments to the new ROM via argv. The launched ROM retrieves those arguments
 with `ARGV`_.
+
+There are two keystrokes to stop a running ROM. A Ctrl-Alt-Del break will
+stop the running ROM and clears the launcher registration at any time.
+Pressing Alt-F4 will stop the running ROM and return to the launcher.
+If the ROM was run from the monitor, Alt-F4 will return to the monitor.
+Pressing Alt-F4 while the registered laucher ROM is itself running will do
+nothing, it won't stop the ROM. This makes Alt-F4 the best keystroke to
+terminate a ROM and stay within your preferred launcher framework, while
+Ctrl-Alt-Del always returns you to the monitor for when you need to do
+system maintenance.
 
 ROM Cartridge Menu
 ------------------
@@ -1257,6 +1266,9 @@ get-only attribute also returns -1 with ``EINVAL``.
      - Launcher flag. Set to 1 to register the current ROM as the launcher;
        set to 0 to deregister. See the `Launcher`_ section for full
        details and usage patterns.
+   * - | 0x07
+       | ``RIA_ATTR_EXIT_CODE``
+     - **experimental** The exit code of the last ROM to exit.
 
 
 ERRNO_OPT Compiler Constants

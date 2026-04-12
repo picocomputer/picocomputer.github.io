@@ -192,7 +192,7 @@ Config structure may be updated without reprogramming scanlines.
 
 .. code-block:: C
 
-  struct {
+  typedef struct {
       bool x_wrap;
       bool y_wrap;
       int16_t x_px;
@@ -202,7 +202,7 @@ Config structure may be updated without reprogramming scanlines.
       uint16_t data_ptr;
       uint16_t palette_ptr;
       uint16_t font_ptr;
-  } config;
+  } vga_mode1_config_t;
 
 Data is encoded based on the color bit depth selected.
 
@@ -298,7 +298,7 @@ Config structure may be updated without reprogramming scanlines.
 
 .. code-block:: C
 
-  struct {
+  typedef struct {
       bool x_wrap;
       bool y_wrap;
       int16_t x_px;
@@ -308,7 +308,7 @@ Config structure may be updated without reprogramming scanlines.
       uint16_t data_ptr;
       uint16_t palette_ptr;
       uint16_t tile_ptr;
-  } config;
+  } vga_mode2_config_t;
 
 Data is a matrix of tile ids with 0,0 at the top left.
 
@@ -376,7 +376,7 @@ Config structure may be updated without reprogramming scanlines.
 
 .. code-block:: C
 
-  struct {
+  typedef struct {
       bool x_wrap;
       bool y_wrap;
       int16_t x_px;
@@ -385,7 +385,7 @@ Config structure may be updated without reprogramming scanlines.
       int16_t height_px;
       uint16_t data_ptr;
       uint16_t palette_ptr;
-  } config;
+  } vga_mode3_config_t;
 
 Data is the color information packed down to the bit level. 16-bit
 color encodes the color directly as data. 1, 4, and 8 bit color
@@ -450,13 +450,13 @@ config structure.
 
 .. code-block:: C
 
-  struct {
+  typedef struct {
     int16_t x_pos_px;
     int16_t y_pos_px;
     uint16_t xram_sprite_ptr;
     uint8_t log_size;
     bool has_opacity_metadata;
-  } config[LENGTH];
+  } vga_mode4_sprite_t;
 
 Affine sprites apply a 3x3 matrix transform. These are slower than
 plain sprites. Only the first two rows of the matrix are useful, which
@@ -465,14 +465,14 @@ fixed point format.
 
 .. code-block:: C
 
-  struct {
+  typedef struct {
     int16_t transform[6];
     int16_t x_pos_px;
     int16_t y_pos_px;
     uint16_t xram_sprite_ptr;
     uint8_t log_size;
     bool has_opacity_metadata;
-  } config[LENGTH];
+  } vga_mode4_asprite_t;
 
 
 Sprite image data is an array of 16 bit colors.
@@ -483,7 +483,7 @@ Sprite image data is an array of 16 bit colors.
     struct {
         uint16_t color[2^log_size];
     } rows[2^log_size];
-  } sprite;
+  } data;
 
 
 Mode 5: Sprite 1,2,4,8-bit
@@ -531,12 +531,12 @@ Unused sprites are disabled by moving off screen.
 
 .. code-block:: C
 
-  struct {
+  typedef struct {
     int16_t x_pos_px;
     int16_t y_pos_px;
     uint16_t xram_sprite_ptr;
     uint16_t palette_ptr;
-  } config[LENGTH];
+  } vga_mode5_sprite_t;
 
 Sprite image data is the same format as individual mode 2 tiles.
 
@@ -547,14 +547,21 @@ Sprite image data is the same format as individual mode 2 tiles.
       struct {
           uint8_t cols[bpp];
       } rows[8];
-  } sprite;
+  } data;
 
   // 16x16 tiles
   struct {
       struct {
           uint8_t cols[2*bpp];
       } rows[16];
-  } sprite;
+  } data;
+
+  // NxN tiles
+  struct {
+      struct {
+          uint8_t cols[N/8*bpp];
+      } rows[N];
+  } data;
 
 
 Control Channel $F
