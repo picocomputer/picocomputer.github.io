@@ -591,8 +591,8 @@ that set them.
     - Set code page for built-in font. Matches
       `RIA_ATTR_CODE_PAGE <os.html#ria-attributes>`__.
   * - $1:F:02
-    - UART
-    - Set bit rate. Reserved, not implemented.
+    - SUPPRESS_TERM_REPLY
+    - Used by the telnet server to suppress term responses.
   * - $1:F:03
     - UART_TX
     - Alternate path for UART Tx when using backchannel.
@@ -683,6 +683,11 @@ C0 control codes
     - CR
     - Carriage Return
     - Move cursor to first column.
+  * - ^X
+    - 0x18
+    - CAN
+    - Cancel
+    - Abort an in-progress escape sequence.
   * - ^[
     - 0x1B
     - ESC
@@ -775,11 +780,19 @@ treat 0 as 1 to remain useful without parameters.
     - SGR
     - Select Graphic Rendition
     - See `SGR Parameters`_.
-  * - CSI 6n
+  * - CSI n c
+    - DA
+    - Device Attributes
+    - Responds with ``ESC[?6c`` identifying as a VT102.
+  * - CSI 5 n
     - DSR
     - Device Status Report
-    - Responds with the cursor position (CPR) ESC\[n;mR, where n is
-      the row and m is the column. 1-indexed.
+    - Responds with ``ESC[0n`` indicating terminal OK.
+  * - CSI 6 n
+    - DSR
+    - Device Status Report
+    - Responds with the cursor position (CPR) ``ESC[n;mR``, where n
+      is the row and m is the column. 1-indexed.
   * - CSI s
     - SCP
     - Save Current Cursor Position
@@ -788,6 +801,14 @@ treat 0 as 1 to remain useful without parameters.
     - RCP
     - Restore Saved Cursor Position
     - Moves cursor to position stored by SCP.
+  * - CSI ?12h
+    - AT&T 610
+    - Show Cursor
+    - Treated as an alias for DECTCEM show.
+  * - CSI ?12l
+    - AT&T 610
+    - Hide Cursor
+    - Treated as an alias for DECTCEM hide.
   * - CSI ?25h
     - DECTCEM
     - Show Cursor

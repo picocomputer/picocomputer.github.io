@@ -1190,29 +1190,6 @@ that knows nothing about the menu system. The launcher may supply context
 through argv — for example, a save-file path or difficulty setting — and the
 ROM simply calls `EXIT`_ when it is done.
 
-Native OS Boot Sequence
------------------------
-
-A more powerful use is as the foundation for a native 6502 operating system.
-A small launcher ROM is installed to the RIA as the boot ROM using the
-``set boot`` command in the monitor. When the Picocomputer powers on or
-reboots, the process manager loads this launcher ROM automatically.
-
-The launcher ROM reads its own argv — supplied by any arguments appended to
-the ``set boot`` command — then searches the mounted drive for the OS ROM and
-calls `EXEC`_ to launch it, forwarding any relevant arguments. By design, the
-OS cannot alter the launcher ROM; OS launchers are meant to stay simple and
-trustworthy. This indirection provides important capabilities:
-
-* **Fault recovery** — If the OS kernel encounters a fatal error it cannot
-  handle internally, it calls `EXIT`_ rather than locking up. The process
-  manager re-executes the launcher, which can choose to relaunch the kernel
-  or take some other action.
-
-* **Self-update** — An OS can prepare its own ROM update and call `EXIT`_. The
-  launcher detects the pending update, applies it, and boots the new OS ROM —
-  achieving an in-place update without requiring a manual reset.
-
 
 RIA Attributes
 ==============
