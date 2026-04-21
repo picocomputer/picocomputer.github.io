@@ -38,8 +38,8 @@ Specs
 - **Core** — WDC 65C02 CPU and WDC 65C22 VIA; variable 0.1-8.0 MHz
 - **RAM** — 64 KB system + 64 KB extended
 - **ROM** — 1 MB of onboard flash for installing and auto-booting ROMs
-- **Video** — VGA and HD output; 3 planes, scanline programmable
-- **Sound** — PSG (8 voices) and OPL2 FM (9 voices)
+- **Video** — VGA and HD output; 16-bit color with alpha
+- **Sound** — PSG (8 voices) or OPL2 FM (9 voices)
 - **Clock** — Real-Time Clock with Daylight Savings Time
 - **TRNG** — True random number generator
 
@@ -47,7 +47,8 @@ Specs
 Quality of Life
 ===============
 - **Open by Design** — DIY-friendly with fully open source hardware and software
-- **Storage** — Blazing fast 512 KB/sec USB flash drive reads and writes
+- **Fan-in Console** — Telnet, serial, and direct access to the console
+- **Storage** — Blazing fast >512 KB/sec USB flash drive reads and writes
 - **Keyboard** — International keyboard layout support
 - **Fonts** — Built-in code pages for international character sets
 
@@ -55,10 +56,10 @@ Quality of Life
 Connectivity
 ============
 
-- **WiFi** — NTP time sync, Hayes modem emulation for dialing into BBSs
+- **WiFi** — NTP time sync, telnet server, and Hayes modem emulation
 - **Bluetooth LE** — keyboard, mouse, and gamepads
 - **USB Host** — keyboard, mouse, gamepads, hubs, UART serial, NFC, floppy drives, and flash drives
-- **USB Device** — driverless CDC ACM; console access (can operate headless)
+- **USB Device** — driverless CDC ACM for console access (can operate headless)
 
 
 Programming
