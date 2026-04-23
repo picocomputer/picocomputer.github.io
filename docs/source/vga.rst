@@ -568,8 +568,8 @@ Sprite image data is the same format as individual mode 2 tiles.
 Control Channel $F
 ------------------
 
-The RIA manages these registers. Do not distribute applications
-that set them.
+The RIA manages these registers. 6502 applications will be denied
+access to sending these if a VGA module is connected.
 
 .. list-table::
   :widths: 5 5 90
@@ -604,6 +604,12 @@ that set them.
       * 0 - Disable
       * 1 - Enable
       * 2 - Request
+  * - $1:F:05
+    - FLASH_SECTOR
+    - Flash the contents of XRAM[0..4095] to the specified sector.
+  * - $1:F:06
+    - REBOOT_OR_LOCKUP
+    - Called after flashing. Non-0 locks up to leave error message visible.
 
 
 Backchannel
