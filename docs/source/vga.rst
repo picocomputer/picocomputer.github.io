@@ -510,6 +510,7 @@ sprites on a second, and 8x8 1bpp bullets on the last.
     - OPTIONS
     - | bit 5:3 - 0=8x8, 1=16x16, 2=32x32, 3=64x64, 4=128x128, 5=256x256, 6=512x512
       | bit 2:0 - 0=1, 1=2, 2=4, or 3=8 bit color
+      | 512x512 only supports 1-bit and 2-bit color.
   * - $1:0:03
     - CONFIG
     - | Address of config array in XRAM.
@@ -709,6 +710,10 @@ Fe Escape Sequences
     - CSI
     - Control Sequence Inducer
     - Begins most of the interesting sequences.
+  * - ESC ]
+    - OSC
+    - Operating System Command
+    - Begins a dynamic color sequence. See `OSC Sequences`_.
   * - ESC N
     - SS2
     - Single Shift Two
@@ -804,11 +809,11 @@ treat 0 as 1 to remain useful without parameters.
   * - CSI ?12h
     - AT&T 610
     - Show Cursor
-    - Treated as an alias for DECTCEM show.
+    - Makes the cursor visible.
   * - CSI ?12l
     - AT&T 610
     - Hide Cursor
-    - Treated as an alias for DECTCEM hide.
+    - Makes the cursor invisible.
   * - CSI ?25h
     - DECTCEM
     - Show Cursor
@@ -877,3 +882,32 @@ without any codes resets all attributes.
   * - 100-107
     - Set bright background color
     - Colors 8-15
+
+
+OSC Sequences
+-------------
+
+Operating System Command sequences set dynamic terminal colors.
+The color argument must be ``#rrggbb``; other xterm spellings
+(X11 names, ``rgb:``) are not accepted. Each sequence is terminated
+by BEL (``0x07``) or ST (``ESC \``).
+
+.. list-table::
+  :widths: 25 75
+  :header-rows: 1
+
+  * - Code
+    - Effect
+  * - OSC 10 ; #rrggbb ST
+    - Set default foreground color.
+  * - OSC 11 ; #rrggbb ST
+    - Set default background color.
+  * - OSC 12 ; #rrggbb ST
+    - Set cursor color. The cursor paints this color behind the
+      glyph at the cursor position; the glyph keeps its own color.
+  * - OSC 110 ST
+    - Reset default foreground color.
+  * - OSC 111 ST
+    - Reset default background color.
+  * - OSC 112 ST
+    - Reset cursor color.

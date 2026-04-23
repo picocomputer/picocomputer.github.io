@@ -64,14 +64,15 @@ reach the monitor or a running 6502 from a remote telnet client.
 Connections are unencrypted in transit.
 
 - **Set Listening Port:**
-  ``SET PORT (port|0)`` sets the TCP port. The standard telnet port is
-  23. Setting ``0`` disables the telnet console.
+  ``SET PORT (port|0)`` sets the TCP port. The default is ``23``, the
+  standard telnet port. Setting ``0`` disables the telnet console.
 
 - **Set Passkey:**
   ``SET KEY (key|-)`` sets the passkey required to connect. Use ``-``
   to clear.
 
-Both ``PORT`` and ``KEY`` must be set to enable the telnet console.
+The telnet console starts listening once ``KEY`` is set and ``PORT``
+is non-zero.
 
 
 Modem Emulation
