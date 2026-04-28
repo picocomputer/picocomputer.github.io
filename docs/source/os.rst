@@ -1011,7 +1011,7 @@ CHDRIVE
 .. c:function:: int f_chdrive (const char* name)
 
    Change the current drive.
-   Valid names are ``USB0:``–``USB9:`` with shortcuts ``0:``–``9:``.
+   Valid names are ``MSC0:``–``MSC9:`` with shortcuts ``0:``–``9:``.
 
    :Op code: RIA_OP_CHDRIVE 0x2A
    :C proto: rp6502.h
