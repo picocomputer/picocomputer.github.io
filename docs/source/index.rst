@@ -25,6 +25,8 @@ programming a 6502 and 6522, then rethink everything else.
 Community
 =========
 
+Most of the activity is on Discord, where you can also get the
+
 - **Discord:** https://discord.gg/TC6X8kTr6d
 - **Forums:** https://github.com/picocomputer/community/discussions
 - **Wiki:** https://github.com/picocomputer/community/wiki
@@ -47,8 +49,8 @@ Specs
 Quality of Life
 ===============
 - **Open by Design** — DIY-friendly with fully open source hardware and software
-- **Fan-in Console** — Telnet, serial, and direct access to the console
-- **Storage** — Blazing fast >512 KB/sec USB flash drive reads and writes
+- **Fan-inout Console** — Telnet, serial, and direct access to the console
+- **Storage** — Fast >512 KB/sec USB flash drive reads and writes
 - **Keyboard** — International keyboard layout support
 - **Fonts** — Built-in code pages for international character sets
 

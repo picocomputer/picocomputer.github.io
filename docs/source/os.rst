@@ -252,10 +252,10 @@ tailored to FAT. Should it ever become necessary to have a POSIX ``stat()``,
 it can be implemented in the C standard library or in an application by
 translating ``f_stat()`` data.
 
+
 ZXSTACK
 -------
 .. c:function:: void zxstack (void);
-
 
    Abandon the xstack by resetting the xstack pointer. This is the only
    operation that doesn't require waiting for completion. You do not need to
@@ -265,12 +265,12 @@ ZXSTACK
    :Op code: RIA_OP_ZXSTACK 0x00
    :C proto: rp6502.h
 
+
 XREG
 ----
 
 .. c:function:: int xreg (char device, char channel, unsigned char address, ...);
 .. c:function:: int xregn (char device, char channel, unsigned char address, unsigned count, ...);
-
 
    Using xreg() from C is preferred to avoid making a counting error. Count
    doesn't need to be sent in the ABI so both prototypes are correct.
@@ -302,7 +302,6 @@ ARGV
 
 .. c:function:: int _argv (char *argv, int size)
 
-
    The virtual _argv is called by C initialization to provide argc and
    argv for main(). It returns an array of zero terminated string indexes
    followed by the strings.
@@ -330,7 +329,6 @@ EXEC
 .. c:function:: int ria_execv (const char *path, char * const argv[])
 .. c:function:: int _exec (const char *argv, int size)
 
-
    The virtual _exec is called by ria_execl() and ria_execv(). Be aware of the
    one difference from the execl() and execv() you may be used to. Because RAM
    is precious, the path is only supplied once, not again in argv[0]. The
@@ -354,7 +352,6 @@ ATTR_GET
 
 .. c:function:: long ria_attr_get (unsigned char id)
 
-
    Returns the current value of a RIA attribute. See `RIA Attributes`_
    for attribute IDs and descriptions.
 
@@ -370,7 +367,6 @@ ATTR_SET
 --------
 
 .. c:function:: int ria_attr_set (long val, unsigned char id)
-
 
    Sets the value of a RIA attribute. See `RIA Attributes`_ for
    attribute IDs and descriptions.
@@ -389,7 +385,6 @@ CLOCK
 
 .. c:function:: unsigned long clock (void)
 
-
    Obtain the value of a monotonic clock that updates 100 times per second.
    Wraps approximately every 497 days.
 
@@ -403,7 +398,6 @@ CLOCK_GETRES
 ------------
 
 .. c:function:: int clock_getres (clockid_t clock_id, struct timespec *res)
-
 
    .. code-block:: c
 
@@ -474,7 +468,6 @@ CLOCK_GETTIME
 
 .. c:function:: int clock_gettime (clockid_t clock_id, struct timespec *tp)
 
-
    Obtains the current time.
 
    :Op code: RIA_OP_CLOCK_GETTIME 0x11
@@ -490,7 +483,6 @@ CLOCK_SETTIME
 
 .. c:function:: int clock_settime (clockid_t clock_id, const struct timespec *tp)
 
-
    Sets the current time.
 
    :Op code: RIA_OP_CLOCK_SETTIME 0x12
@@ -504,7 +496,6 @@ OPEN
 ----
 
 .. c:function:: int open (const char *path, int oflag)
-
 
    Create a connection between a file and a file descriptor. Up to 8 files
    may be open at once.
@@ -543,7 +534,6 @@ CLOSE
 
 .. c:function:: int close (int fildes)
 
-
    Finish pending writes and release the file descriptor. File descriptor
    will rejoin the pool available for use by open().
 
@@ -560,7 +550,6 @@ READ
 ----
 
 .. c:function:: int read (int fildes, void *buf, unsigned count)
-
 
    Read `count` bytes from a file to a buffer. This is implemented in the
    compiler library as a series of calls to `READ_XSTACK`_.
@@ -582,7 +571,6 @@ READ_XSTACK
 
 .. c:function:: int read_xstack (void *buf, unsigned count, int fildes)
 
-
    Read `count` bytes from a file to xstack.
 
    :Op code: RIA_OP_READ_XSTACK 0x16
@@ -600,7 +588,6 @@ READ_XRAM
 ---------
 
 .. c:function:: int read_xram (unsigned buf, unsigned count, int fildes)
-
 
    Read `count` bytes from a file to xram.
 
@@ -620,7 +607,6 @@ WRITE
 -----
 
 .. c:function:: int write (int fildes, const void *buf, unsigned count)
-
 
    Write `count` bytes from buffer to a file. This is implemented in the
    compiler library as a series of calls to `WRITE_XSTACK`_.
@@ -642,7 +628,6 @@ WRITE_XSTACK
 
 .. c:function:: int write_xstack (const void *buf, unsigned count, int fildes)
 
-
    Write `count` bytes from xstack to a file.
 
    :Op code: RIA_OP_WRITE_XSTACK 0x18
@@ -661,7 +646,6 @@ WRITE_XRAM
 ----------
 
 .. c:function:: int write_xram (unsigned buf, unsigned count, int fildes)
-
 
    Write `count` bytes from xram to a file.
 
@@ -682,7 +666,6 @@ LSEEK
 
 .. c:function:: static long f_lseek (long offset, char whence, int fildes)
 .. c:function:: off_t lseek (int fildes, off_t offset, int whence)
-
 
    Move the read/write pointer. The OS uses the ABI format of f_seek(). An
    lseek() compatible wrapper is provided with the compiler library.
@@ -726,7 +709,6 @@ UNLINK
 
 .. c:function:: int unlink (const char* name)
 
-
    Removes a file or directory from the volume.
 
    :Op code: RIA_OP_UNLINK 0x1B
@@ -743,7 +725,6 @@ RENAME
 ------
 
 .. c:function:: int rename (const char* oldname, const char* newname)
-
 
    Renames and/or moves a file or directory.
 
@@ -762,7 +743,6 @@ SYNCFS
 ------
 
 .. c:function:: int syncfs (int fildes)
-
 
    Finish pending writes for the file descriptor.
 
@@ -813,7 +793,6 @@ OPENDIR
 
 .. c:function:: int f_opendir (const char* name)
 
-
    Create a connection between a directory and a directory descriptor. Up to
    8 directories may be open at once.
 
@@ -833,7 +812,6 @@ READDIR
 
 .. c:function:: int f_readdir (f_stat_t* dirent, int dirdes)
 
-
    Returns directory entry info for the current read position of a
    directory descriptor, then advances the read position.
 
@@ -852,7 +830,6 @@ CLOSEDIR
 
 .. c:function:: int f_closedir (int dirdes)
 
-
    Release the directory descriptor. Directory descriptor will rejoin the
    pool available for use by f_opendir().
 
@@ -869,7 +846,6 @@ TELLDIR
 
 .. c:function:: long f_telldir (int dirdes)
 
-
    Returns the read position of the directory descriptor.
 
    :Op code: RIA_OP_TELLDIR 0x23
@@ -884,7 +860,6 @@ SEEKDIR
 -------
 
 .. c:function:: int f_seekdir (long offs, int dirdes)
-
 
    Set the read position for the directory descriptor. Internally, the FatFs
    directory read position can only move forward by one, so use this for
@@ -904,7 +879,6 @@ REWINDDIR
 
 .. c:function:: int f_rewinddir (int dirdes)
 
-
    Rewind the read position of the directory descriptor.
 
    :Op code: RIA_OP_REWINDDIR 0x25
@@ -920,7 +894,6 @@ CHMOD
 -----
 
 .. c:function:: int f_chmod (const char* path, unsigned char attr, unsigned char mask)
-
 
    Change the attributes of a file or directory.
 
@@ -957,7 +930,6 @@ UTIME
 -----
 
 .. c:function:: int f_utime (const char* path, unsigned fdate, unsigned ftime, unsigned crdate, unsigned crtime)
-
 
    Update the date and time stamps of a file or directory. A date of 0
    (invalid) leaves the date and time unchanged.
@@ -1003,7 +975,6 @@ MKDIR
 
 .. c:function:: int f_mkdir (const char* name)
 
-
    Make a new directory entry.
 
    :Op code: RIA_OP_MKDIR 0x28
@@ -1022,7 +993,6 @@ CHDIR
 
 .. c:function:: int chdir (const char* name)
 
-
    Change to a directory entry.
 
    :Op code: RIA_OP_CHDIR 0x29
@@ -1040,7 +1010,6 @@ CHDRIVE
 
 .. c:function:: int f_chdrive (const char* name)
 
-
    Change the current drive.
    Valid names are ``USB0:``–``USB9:`` with shortcuts ``0:``–``9:``.
 
@@ -1056,7 +1025,6 @@ GETCWD
 -------
 
 .. c:function:: int f_getcwd (char* name, int size)
-
 
    Get the current working directory. Size is ignored by the OS but the C
    wrapper will use it.
@@ -1074,7 +1042,6 @@ SETLABEL
 
 .. c:function:: int f_setlabel (const char* name)
 
-
    Change the volume label. Max 11 characters.
 
    :Op code: RIA_OP_SETLABEL 0x2C
@@ -1091,7 +1058,6 @@ GETLABEL
 --------
 
 .. c:function:: int f_getlabel (const char* path, char* label)
-
 
    Get the volume label. Label must have room for (22+1) bytes.
 
@@ -1130,16 +1096,73 @@ GETFREE
       FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
 
 
+READLINE_LASTKEY
+----------------
+
+.. c:function:: int ria_readline_lastkey (char* key, int size)
+
+   Returns the raw bytes of the most recently completed input sequence
+   typed by the user during a non-blocking ``stdin`` read from ``CON:``.
+   This includes single characters and multi-byte escape sequences such
+   as arrow, function, and editing keys.
+   Reading consumes the captured sequence; the next call returns 0
+   until another key is typed. Sequences longer than 32 bytes, or any
+   call made while no line read is in progress, return 0.
+
+   :Op code: RIA_OP_READLINE_LASTKEY 0x30
+   :C proto: rp6502.h
+   :param key: Storage for the returned byte sequence.
+   :returns: Number of bytes returned. 0 if no key is available.
+   :a regs: return
+   :errno: EINVAL
+
+
+READLINE_PEEK
+-------------
+
+.. c:function:: int ria_readline_peek (char* peek, int size)
+
+   Returns the current contents of the line editor buffer as a
+   null-terminated string and the current cursor position within it.
+   The string is pushed to the xstack. Returns 0 with an empty string
+   when no line read is in progress.
+
+   :Op code: RIA_OP_READLINE_PEEK 0x31
+   :C proto: rp6502.h
+   :param peek: Storage for the returned buffer contents.
+   :returns: Cursor position within the returned buffer.
+   :a regs: return
+   :errno: EINVAL
+
+
+READLINE_POKE
+-------------
+
+.. c:function:: int ria_readline_poke (const char* poke)
+
+   Feeds a string to the line editor as if the user had typed it. The
+   bytes pass through the same input pipeline as live keystrokes, so
+   printable characters are inserted at the cursor and recognized
+   editing escape sequences are honored. Processing stops at the first
+   carriage return. Has no effect when no line read is in progress.
+
+   :Op code: RIA_OP_READLINE_POKE 0x32
+   :C proto: rp6502.h
+   :param poke: Null-terminated string to feed into the editor.
+   :returns: Cursor position after processing.
+   :a regs: return
+   :errno: EINVAL
+
+
 EXIT
 ----
 
 .. c:function:: void exit (int status)
 
-
    Halt the 6502 and return the console to RP6502 monitor control. This is
    the only operation that does not return. The OS pulls RESB low before
-   the next instruction can execute. The status argument is currently
-   unused but reserved for future use.
+   the next instruction can execute. The status value is retained for the
+   next ROM and is readable via ``RIA_ATTR_EXIT_CODE``.
 
    In general, dropping the user back to the monitor is discouraged. But
    calling exit() or falling off main() is preferred to locking up.
@@ -1245,7 +1268,19 @@ get-only attribute also returns -1 with ``EINVAL``.
        details and usage patterns.
    * - | 0x07
        | ``RIA_ATTR_EXIT_CODE``
-     - **experimental** The exit code of the last ROM to exit.
+     - The exit code of the last ROM to exit.
+   * - | 0x08
+       | ``RIA_ATTR_SIGINT``
+     - Read-only Ctrl-C latch. Returns 1 if a Ctrl-C has been seen on
+       any console input — UART, USB, or telnet (including the telnet
+       Interrupt Process command) — since the previous get; returns 0
+       otherwise. Reading clears the latch.
+   * - | 0x09
+       | ``RIA_ATTR_RLN_CAPS``
+     - Caps mode applied to keystrokes by the stdin line editor.
+       0 (default) passes characters through unchanged; 1 forces all
+       letters to upper case; 2 inverts the case of letters. Reverts
+       to the system setting when the ROM stops.
 
 
 ERRNO_OPT Compiler Constants
