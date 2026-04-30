@@ -25,13 +25,15 @@ programming a 6502 and 6522, then rethink everything else.
 Community
 =========
 
-Most of the activity is on Discord, where you can also get the
+Most of the activity is on Discord, where you can also get ROMs.
+Be sure to subscribe to the YouTube channel and share this project
+on social media.
 
 - **Discord:** https://discord.gg/TC6X8kTr6d
 - **Forums:** https://github.com/picocomputer/community/discussions
 - **Wiki:** https://github.com/picocomputer/community/wiki
 - **GitHub:** https://github.com/picocomputer
-- **YouTube:** https://youtube.com/playlist?list=PLvCRDUYedILfHDoD57Yj8BAXNmNJLVM2r
+- **YouTube:** https://www.youtube.com/@rumbledethumps
 
 
 Specs
@@ -61,7 +63,7 @@ Connectivity
 - **WiFi** — NTP time sync, telnet server, and Hayes modem emulation
 - **Bluetooth LE** — keyboard, mouse, and gamepads
 - **USB Host** — keyboard, mouse, gamepads, hubs, UART serial, NFC, floppy drives, and flash drives
-- **USB Device** — driverless CDC ACM for console access (can operate headless)
+- **USB Device** — driverless CDC ACM for console access
 
 
 Programming
