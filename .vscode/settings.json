@@ -1,5 +1,8 @@
 {
+    "esbonio.sphinx.pythonCommand": [
+        ".venv/bin/python"
+    ],
     "restructuredtext.linter.doc8.extraArgs": [
         "--ignore D001"
-    ],
+    ]
 }
