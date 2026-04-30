@@ -629,9 +629,7 @@ the UART Tx pin.
 Values 0x00 to 0x7F are used to send a version string as ASCII
 terminated with a 0x0D or 0x0A. This must be sent immediately after
 the backchannel enable message is received for it to be displayed as
-part of the boot message. It may be updated any time after that and
-inspected with the ``status`` monitor command, but currently there is
-no reason to do so.
+part of the boot message.
 
 When bit 0x80 is set, the 0x70 bits indicate the command type, and the
 0x0F bits are a scalar for the command.
