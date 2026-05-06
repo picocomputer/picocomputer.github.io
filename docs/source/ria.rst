@@ -716,6 +716,9 @@ and no newline translation. This is exactly the same functionality that
 the ``RIA_TX`` and ``RIA_RX`` registers provide, but available as stdio for
 convenience.
 
+``"CON:"` and ``"TTY:"`` are each locked to their own file descriptors which
+can not be closed. A second open will return the same file descriptor as the
+first open. A close will succeed as a no-op.
 
 Virtual Communications Port
 ===========================
