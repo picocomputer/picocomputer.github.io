@@ -1274,7 +1274,7 @@ get-only attribute also returns -1 with ``EINVAL``.
      - Read-only Ctrl-C latch. Returns 1 if a Ctrl-C has been seen on
        any console input — UART, USB, or telnet (including the telnet
        Interrupt Process command) — since the previous get; returns 0
-       otherwise. Reading clears the latch.
+       otherwise. Reading clears the latch. Same as RIA IRQ SIGINT.
    * - | 0x09
        | ``RIA_ATTR_RLN_CAPS``
      - Caps mode applied to keystrokes by the stdin line editor.

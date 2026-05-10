@@ -131,9 +131,13 @@ Registers
      - Write the :doc:`OS <os>` operation id here to begin an OS call.
    * - $FFF0
      - IRQ
-     - Set bit 0 high to enable VSYNC interrupts. To clear the
-       interrupt, first verify the source by checking the VSYNC
-       counter, then read or write this register.
+     - Interrupt enable mask. Reading returns the triggered signals
+       as bits and clears them. Writing sets the enable mask and
+       also clears any triggered signals.
+
+       * bit 7 - VSYNC
+       * bit 6 - SIGINT
+
    * - $FFF1
      - RETURN
      - Always $80 (the BRA opcode). JSR here to spin-wait for an
