@@ -582,8 +582,7 @@ Compatibility and Limits
   (Linux console).
 * xterm extensions supported: 256-color and truecolor SGR
   (38 / 48 / 58 sub-args); dynamic colors via OSC 10 / 11 / 12;
-  alternate screen buffer (``?47`` / ``?1047`` / ``?1049``);
-  bracketed paste (``?2004``).
+  alternate screen buffer (``?47`` / ``?1047`` / ``?1049``).
 * 8-bit codepage encoding only — no UTF-8 decode.
 
 Behavior Notes
@@ -605,13 +604,6 @@ restores the cursor on exit.
 **DEC Special Graphics.** A built-in line-drawing font (boxes,
 dashes, arrows) for borders and ASCII-art frames without UTF-8.
 See `Charset Designation`_.
-
-**REP** (``CSI n b``). Repeats the last printed character n times.
-Most C0 controls (BS, HT, LF, FF, CR, SO, SI) break the REP chain;
-NUL, BEL, and ESC do not.
-
-**Cursor style** (DECSCUSR). Accepted and stored, but the
-software block-invert cursor does not yet render the chosen shape.
 
 C0 Control Codes
 ----------------
@@ -899,10 +891,6 @@ CSI — Editing
     - DL
     - Delete Line
     - Delete n lines at cursor row.
-  * - CSI n b
-    - REP
-    - Repeat
-    - Repeat the last printed character n times.
 
 CSI — Erase
 -----------
@@ -1038,8 +1026,7 @@ CSI — Reset and Cursor Style
     - DECSCUSR
     - Set Cursor Style
     - 0 = host default, 1 / 2 = block, 3 / 4 = underline,
-      5 / 6 = bar. Stored; the software cursor does not yet render
-      the chosen shape.
+      5 / 6 = bar.
 
 DEC Private Modes
 -----------------
@@ -1055,10 +1042,6 @@ may be combined in one sequence (semicolon-separated parameters).
     - Abbr
     - Name
     - Effect
-  * - 1
-    - DECCKM
-    - Application Cursor Keys
-    - Stored; read by the input layer.
   * - 6
     - DECOM
     - Origin Mode
@@ -1094,10 +1077,6 @@ may be combined in one sequence (semicolon-separated parameters).
     - Alt screen + save
     - Modern app default: saves cursor on entry, swaps, clears on
       entry, restores cursor on exit.
-  * - 2004
-    - —
-    - Bracketed paste
-    - Stored; read by the input layer.
 
 SGR Parameters
 --------------
@@ -1237,16 +1216,6 @@ terminated by BEL (``0x07``) or ST (``ESC \``).
     - Reset default background color.
   * - OSC 112 ST
     - Reset cursor color.
-
-Pre-Launch Soft Reset
----------------------
-
-The OS ensures this sequence is sent before launching a ROM. Screen
-contents are preserved but all out state is reset.
-
-.. code-block::
-
-  \30\33[?1049l\33[!p\33[3g\33]110\7\33]111\7\33]112\7
 
 Control Channel $F
 ==================
