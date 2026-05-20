@@ -5,6 +5,7 @@
    RP6502-RIA <ria>
    RP6502-RIA-W <ria_w>
    RP6502-VGA <vga>
+   RP6502-TERM <term>
    RP6502-OS <os>
 
 ==================
@@ -51,7 +52,7 @@ Specs
 Quality of Life
 ===============
 - **Open by Design** — DIY-friendly with fully open source hardware and software
-- **Fan-inout Console** — Telnet, serial, and direct access to the console
+- **Manifold Console** — Telnet, serial, and direct access to the console
 - **Storage** — Fast >512 KB/sec USB flash drive reads and writes
 - **Keyboard** — International keyboard layout support
 - **Fonts** — Built-in code pages for international character sets
@@ -63,7 +64,7 @@ Connectivity
 - **WiFi** — NTP time sync, telnet server, and Hayes modem emulation
 - **Bluetooth LE** — keyboard, mouse, and gamepads
 - **USB Host** — keyboard, mouse, gamepads, hubs, UART serial, NFC, floppy drives, and flash drives
-- **USB Device** — driverless CDC ACM for console access
+- **USB Device** —  Serial console access, no driver needed (CDC ACM)
 
 
 Programming
@@ -97,6 +98,7 @@ The only required module is the RP6502-RIA.
 - :doc:`ria`: Interface adapter for the 6502, akin to CIA, VIA, and ACIA devices.
 - :doc:`ria_w`: Wireless features available when using the "Pico 2 W".
 - :doc:`vga`: Optional video adapter.
+- :doc:`term`: Console and terminal escape sequences.
 - :doc:`os`: The operating system and application programming interface.
 
 

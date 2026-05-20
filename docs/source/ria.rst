@@ -67,7 +67,7 @@ crashed or halted 6502, you have two options:
    reboot button is hooked up to the RIA RUN pin. Rebooting the RIA
    like this will cause any configured boot ROM to load, like at power
    on. Resetting the 6502 from keyboard or UART will only return you to
-   the RP6502 console.
+   the RP6502 monitor.
 
 
 Registers
@@ -959,7 +959,7 @@ as memory chunks, which load into RAM/XRAM when the ROM loads.
   rp6502_asset(your_project 0x10000 img/intro.bin)
 
 The ROM can also hold named assets of raw data. Some names have special
-meanings. The help asset is shown with the HELP and INFO console commands.
+meanings. The help asset is shown with the HELP and INFO monitor commands.
 
 .. code-block:: cmake
 

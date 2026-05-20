@@ -433,7 +433,7 @@ TZSET
       };
 
    The virtual _tzset() is called internally by tzset(). Use
-   `help set tz` on the console monitor to learn about configuring your
+   `help set tz` on the monitor to learn about configuring your
    time zone.
 
    :Op code: RIA_OP_TZSET 0x0D
@@ -1099,12 +1099,14 @@ GETFREE
 READLINE_LASTKEY
 ----------------
 
-.. c:function:: int ria_readline_lastkey (char* key, int size)
+.. c:function:: int ria_readline_lastkey (char* key, unsigned char* action)
 
    Returns the raw bytes of the most recently completed input sequence
    typed by the user during a non-blocking ``stdin`` read from ``CON:``.
    This includes single characters and multi-byte escape sequences such
-   as arrow, function, and editing keys.
+   as arrow, function, and editing keys. The ``action`` out-parameter
+   reports whether the line editor handled the key as an editing
+   action (non-zero) or passed it through (zero).
    Reading consumes the captured sequence; the next call returns 0
    until another key is typed. Sequences longer than 32 bytes, or any
    call made while no line read is in progress, return 0.
@@ -1112,7 +1114,9 @@ READLINE_LASTKEY
    :Op code: RIA_OP_READLINE_LASTKEY 0x30
    :C proto: rp6502.h
    :param key: Storage for the returned byte sequence.
-   :returns: Number of bytes returned. 0 if no key is available.
+   :param action: Out-parameter set non-zero if the key triggered an
+      editing action.
+   :returns: Length of key sequence. 0 if no key is available.
    :a regs: return
    :errno: EINVAL
 
@@ -1120,17 +1124,19 @@ READLINE_LASTKEY
 READLINE_PEEK
 -------------
 
-.. c:function:: int ria_readline_peek (char* peek, int size)
+.. c:function:: int ria_readline_peek (char* peek, unsigned char* pos)
 
-   Returns the current contents of the line editor buffer as a
-   null-terminated string and the current cursor position within it.
-   The string is pushed to the xstack. Returns 0 with an empty string
-   when no line read is in progress.
+   Returns the current contents of the line editor buffer and the
+   current cursor position within it. The buffer bytes are pushed to
+   the xstack. Returns 0 with an empty buffer when no line read is in
+   progress.
 
    :Op code: RIA_OP_READLINE_PEEK 0x31
    :C proto: rp6502.h
    :param peek: Storage for the returned buffer contents.
-   :returns: Cursor position within the returned buffer.
+   :param pos: Out-parameter set to the cursor position within the
+      buffer.
+   :returns: Length of the buffer contents.
    :a regs: return
    :errno: EINVAL
 
@@ -1142,14 +1148,18 @@ READLINE_POKE
 
    Feeds a string to the line editor as if the user had typed it. The
    bytes pass through the same input pipeline as live keystrokes, so
-   printable characters are inserted at the cursor and recognized
-   editing escape sequences are honored. Processing stops at the first
-   carriage return. Has no effect when no line read is in progress.
+   printable characters are written at the cursor (in overwrite mode
+   while the editor is in line-edit phase) and recognized editing
+   escape sequences are honored. Any C0 control byte (0x00–0x1F)
+   finishes the input — including CR (``\r``) and LF (``\n``) — except
+   ESC (``\33``), which begins a CSI sequence, and CAN (``\30``),
+   which aborts an in-flight sequence. Control bytes other than CR
+   and LF echo in caret notation (``^@``..``^_``).
 
    :Op code: RIA_OP_READLINE_POKE 0x32
    :C proto: rp6502.h
    :param poke: Null-terminated string to feed into the editor.
-   :returns: Cursor position after processing.
+   :returns: 0.
    :a regs: return
    :errno: EINVAL
 
@@ -1182,7 +1192,7 @@ launcher by setting ``RIA_ATTR_LAUNCHER`` to 1 via :c:func:`ria_attr_set`.
 Once registered, the process manager automatically re-executes the launcher
 ROM whenever any subsequently launched ROM stops. When the launcher ROM itself
 stops, the chain ends, the registration is cleared, and control returns to the
-console monitor.
+monitor.
 
 The launcher ROM decides what to run next by calling `EXEC`_ and may pass
 arguments to the new ROM via argv. The launched ROM retrieves those arguments
@@ -1281,6 +1291,19 @@ get-only attribute also returns -1 with ``EINVAL``.
        0 (default) passes characters through unchanged; 1 forces all
        letters to upper case; 2 inverts the case of letters. Reverts
        to the system setting when the ROM stops.
+   * - | 0x0A
+       | ``RIA_ATTR_RLN_WIDTH``
+     - Terminal width in columns used by the stdin line editor.
+       Setting a non-zero value pins the width and bypasses
+       auto-detect; 0 returns the channel to auto-detect (default).
+       Reverts to 0 when the ROM stops. See :doc:`term` for how the
+       console manifold probes terminal size.
+   * - | 0x0B
+       | ``RIA_ATTR_RLN_HEIGHT``
+     - Terminal height in rows used by the stdin line editor. Setting
+       and revert semantics match ``RIA_ATTR_RLN_WIDTH``. With both
+       width and height pinned, the size-probe handshake is skipped
+       entirely.
 
 
 ERRNO_OPT Compiler Constants
