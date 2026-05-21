@@ -2,9 +2,6 @@
 RP6502-TERM
 ==================================
 
-RP6502 - Terminal
-
-
 Manifold Console
 ================
 
@@ -217,11 +214,11 @@ Fe Escape Sequences
     - OSC
     - Operating System Command
     - Begins an OSC sequence. See `OSC Sequences`_.
-  * - ESC ( c
+  * - ESC (
     - —
     - Load primary charset
     - Load a font into the G0 slot. See `Charset Designation`_.
-  * - ESC ) c
+  * - ESC )
     - —
     - Load alternate charset
     - Load a font into the G1 slot. See `Charset Designation`_.
@@ -252,23 +249,18 @@ font into G1 once, then toggle between G0 and G1 as you go.
 which font to load:
 
 .. list-table::
-  :widths: 12 12 76
+  :widths: 15 85
   :header-rows: 1
 
   * - Sequence
-    - Byte
     - Font loaded
-  * - ``ESC ( c``
-    - ``B``
+  * - ESC ( B
     - US ASCII (default) into G0.
-  * - ``ESC ( c``
-    - ``0``
+  * - ESC ( 0
     - DEC Special Graphics into G0.
-  * - ``ESC ) c``
-    - ``B``
+  * - ESC ) B
     - US ASCII (default) into G1.
-  * - ``ESC ) c``
-    - ``0``
+  * - ESC ) 0
     - DEC Special Graphics into G1.
 
 Any other byte after ``ESC (`` or ``ESC )`` is silently consumed.
@@ -276,7 +268,7 @@ Any other byte after ``ESC (`` or ``ESC )`` is silently consumed.
 **Switch the active slot.** Send one byte:
 
 .. list-table::
-  :widths: 15 85
+  :widths: 17 83
   :header-rows: 1
 
   * - Code
@@ -693,7 +685,7 @@ The color argument must be ``#rrggbb``; other xterm spellings
 terminated by BEL (``0x07``) or ST (``ESC \``).
 
 .. list-table::
-  :widths: 30 70
+  :widths: 33 67
   :header-rows: 1
 
   * - Code
