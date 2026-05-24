@@ -1096,10 +1096,10 @@ GETFREE
       FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
 
 
-READLINE_LASTKEY
-----------------
+RLN_LASTKEY
+-----------
 
-.. c:function:: int ria_readline_lastkey (char* key, unsigned char* action)
+.. c:function:: int ria_rln_lastkey (char* key, unsigned char* action)
 
    Returns the raw bytes of the most recently completed input sequence
    typed by the user during a non-blocking ``stdin`` read from ``CON:``.
@@ -1111,7 +1111,7 @@ READLINE_LASTKEY
    until another key is typed. Sequences longer than 32 bytes, or any
    call made while no line read is in progress, return 0.
 
-   :Op code: RIA_OP_READLINE_LASTKEY 0x30
+   :Op code: RIA_OP_RLN_LASTKEY 0x30
    :C proto: rp6502.h
    :param key: Storage for the returned byte sequence.
    :param action: Out-parameter set non-zero if the key triggered an
@@ -1121,17 +1121,17 @@ READLINE_LASTKEY
    :errno: EINVAL
 
 
-READLINE_PEEK
--------------
+RLN_PEEK
+--------
 
-.. c:function:: int ria_readline_peek (char* peek, unsigned char* pos)
+.. c:function:: int ria_rln_peek (char* peek, unsigned char* pos)
 
    Returns the current contents of the line editor buffer and the
    current cursor position within it. The buffer bytes are pushed to
    the xstack. Returns 0 with an empty buffer when no line read is in
    progress.
 
-   :Op code: RIA_OP_READLINE_PEEK 0x31
+   :Op code: RIA_OP_RLN_PEEK 0x31
    :C proto: rp6502.h
    :param peek: Storage for the returned buffer contents.
    :param pos: Out-parameter set to the cursor position within the
@@ -1141,10 +1141,10 @@ READLINE_PEEK
    :errno: EINVAL
 
 
-READLINE_POKE
--------------
+RLN_POKE
+--------
 
-.. c:function:: int ria_readline_poke (const char* poke)
+.. c:function:: int ria_rln_poke (const char* poke)
 
    Feeds a string to the line editor as if the user had typed it. The
    bytes pass through the same input pipeline as live keystrokes, so
@@ -1156,7 +1156,7 @@ READLINE_POKE
    which aborts an in-flight sequence. Control bytes other than CR
    and LF echo in caret notation (``^@``..``^_``).
 
-   :Op code: RIA_OP_READLINE_POKE 0x32
+   :Op code: RIA_OP_RLN_POKE 0x32
    :C proto: rp6502.h
    :param poke: Null-terminated string to feed into the editor.
    :returns: 0.

@@ -58,6 +58,75 @@ Writing 0 returns the channel to auto-detect, and both attributes revert
 to 0 when the ROM stops.
 
 
+Read Line
+=========
+
+A **cooked** read returns a complete line. The user has edited freely
+with backspace, arrow keys, and optionally command completion and history;
+the editor flushes the line
+when Enter is pressed. A **raw** read returns bytes as they arrive,
+keystroke by keystroke, with no echo and no editing. The OS implements
+cooked input with the line editor in ``rln.c``.
+
+Reading ``stdin`` is cooked but blocks until the user presses Enter.
+Two alternate file paths offer non-blocking variants of the same channels:
+
+* ``CON:`` — non-blocking cooked input. ``read()`` returns 0 while the
+  user is still editing and returns the full newline-terminated line
+  once the editor flushes.
+* ``TTY:`` — non-blocking raw input. ``read()`` returns whatever bytes
+  are queued, with no editing applied.
+
+Non-blocking Read Line
+----------------------
+
+A non-blocking cooked read is more than just a prompt that doesn't
+stall. Between the activating read and the line flush, the application
+can inspect and modify the editor's state. That is what makes features
+like history recall, tab completion, and multi-field form navigation
+possible. The hooks are `RLN_LASTKEY <os.html#rln-lastkey>`__,
+`RLN_PEEK <os.html#rln-peek>`__, and `RLN_POKE <os.html#rln-poke>`__.
+
+The basic pattern:
+
+#. **Open the channel.** ``open("CON:", 0)`` returns a file descriptor.
+#. **Set the input cap** (optional): write ``RIA_ATTR_RLN_LENGTH``.
+   Different prompts — or different fields in a form — can use
+   different caps. The default is 254.
+#. **Pin the terminal size** (optional): write ``RIA_ATTR_RLN_WIDTH``
+   and ``RIA_ATTR_RLN_HEIGHT`` when the layout is built for a fixed
+   canvas. See `Locking the Size`_.
+#. **Loop on ``read()``** until the line flushes.
+
+   * The first call always returns 0 and activates the editor at the
+     current cursor position and SGR state. Position the cursor *before*
+     this read.
+   * A non-zero return means the line is complete. Pull it whole with a
+     buffer at least ``RIA_ATTR_RLN_LENGTH`` bytes long, or drain it in
+     fragments until you see the newline.
+   * On the first pass after activation, call ``ria_rln_poke()`` to
+     pre-load any text you want to appear in the line. The poked bytes
+     are echoed by the editor as if the user had typed them.
+   * Check for Ctrl-C via ``RIA_ATTR_SIGINT`` or the RIA SIGINT IRQ.
+     To leave cooked input cleanly, poke ``\x03`` to print a visible
+     ``^C`` and flush, or poke ``\r`` to flush silently.
+   * ``ria_rln_lastkey()`` reports the last keystroke and whether the
+     editor consumed it as an editing action. When ``action == 0`` the
+     editor passed the key through — that is the application's chance
+     to handle Tab, function keys, arrow keys for history or form
+     navigation, and any other keys it wants to claim. Respond by
+     poking literal characters or ANSI sequences (``CUF``, ``CUB``,
+     ``ICH``, ``DCH``) back into the editor as if the user had typed
+     them.
+
+Anything you can do by typing, you can do by poking. To pull the buffer
+out without the user pressing Enter — for example, when Tab should jump
+to the next field of a form — poke ``\r``. The editor flushes through
+``read()`` like any other line, and the application can move on,
+re-entering the next field with a fresh ``ria_rln_poke()`` to restore
+its prior contents.
+
+
 Terminal
 ========
 
