@@ -114,10 +114,14 @@ The basic pattern:
      editor consumed it as an editing action. When ``action == 0`` the
      editor passed the key through — that is the application's chance
      to handle Tab, function keys, arrow keys for history or form
-     navigation, and any other keys it wants to claim. Respond by
+     navigation, and any other keys it wants to claim. Call ``ria_rln_peek()``
+     to get the current input text and cursor position. Respond by
      poking literal characters or ANSI sequences (``CUF``, ``CUB``,
      ``ICH``, ``DCH``) back into the editor as if the user had typed
      them.
+
+  #. **Read ``RIA_ATTR_RLN_WIDTH`` and ``RIA_ATTR_RLN_HEIGHT``** to obtain
+     the dynamic size after the read line completes.
 
 Anything you can do by typing, you can do by poking. To pull the buffer
 out without the user pressing Enter — for example, when Tab should jump
@@ -659,7 +663,7 @@ parameters resets all attributes.
     - Halve foreground channel brightness.
   * - 3
     - Italic
-    - Accepted; no italic font, never rendered.
+    - Only ASCII 32-127.
   * - 4
     - Underline
     - —
@@ -688,7 +692,7 @@ parameters resets all attributes.
     - Cancels both bold (1) and faint (2).
   * - 23
     - Italic off
-    - No-op (3 is also no-op).
+    - —
   * - 24
     - Underline off
     - Clears both single and double underline.
@@ -724,6 +728,7 @@ parameters resets all attributes.
     - - ``;5;n`` — 256-color index n (0-255)
       - ``;2;r;g;b`` — 24-bit RGB color
       - ``;2::r:g:b`` — 24-bit RGB color
+      - ``:2:r:g:b`` — 24-bit RGB color
       - ``;1`` — transparent
   * - 49
     - Default background
@@ -736,8 +741,7 @@ parameters resets all attributes.
     - —
   * - 58
     - Underline color
-    - Sub-args parsed (same form as 38) and discarded — not
-      rendered.
+    - Same format as 38.
   * - 90-97
     - Bright foreground
     - Colors 8-15.
