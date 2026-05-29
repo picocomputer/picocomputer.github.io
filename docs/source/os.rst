@@ -1151,10 +1151,12 @@ RLN_POKE
    printable characters are written at the cursor (in overwrite mode
    while the editor is in line-edit phase) and recognized editing
    escape sequences are honored. Any C0 control byte (0x00–0x1F)
-   finishes the input — including CR (``\r``) and LF (``\n``) — except
+   finishes the input except
    ESC (``\33``), which begins a CSI sequence, and CAN (``\30``),
-   which aborts an in-flight sequence. Control bytes other than CR
-   and LF echo in caret notation (``^@``..``^_``).
+   which aborts an in-flight sequence. Control bytes other than CR (``\r``)
+   and LF (``\n``) echo in caret notation (``^@``..``^_``) if the input length >= 2.
+   LF submits the field like CR but will not add a linefeed;
+   useful for form input on the last terminal row.
 
    :Op code: RIA_OP_RLN_POKE 0x32
    :C proto: rp6502.h
