@@ -675,7 +675,7 @@ parameters resets all attributes.
       quirk.
   * - 6
     - Blink (rapid)
-    - Aliased to 5 (one phase rate).
+    - Same as 5 at double the blink rate.
   * - 7
     - Reverse video
     - Swap foreground and background.
