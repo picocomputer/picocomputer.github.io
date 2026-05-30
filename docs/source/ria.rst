@@ -8,66 +8,69 @@ RP6502 - RP6502 Interface Adapter
 Introduction
 ============
 
-The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico 2 with
-RP6502-RIA firmware. The RIA provides all essential services to
-support a WDC W65C02S microprocessor.
+The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico 2 running
+RP6502-RIA firmware. It provides every essential service a WDC W65C02S
+microprocessor needs to run.
 
-The RIA must be installed at $FFE0-$FFFF and must be in control of
-RESB and PHI2. These are the only requirements. Everything else about
-your Picocomputer can be customized. Even the :doc:`vga` is optional.
+The RIA must live at $FFE0-$FFFF and must control RESB and PHI2. Those
+are the only hard requirements — everything else about your Picocomputer
+is yours to customize. Even the :doc:`vga` is optional.
 
-A new RIA boots to the RP6502 monitor, accessible from the console in
-one of three ways: from a VGA monitor with a USB or Bluetooth keyboard
-when using a :doc:`vga`; from the USB CDC device the :doc:`vga`
-presents when plugged into a host PC; or from the UART RX/TX
-(115200 8N1) pins on the RIA when not using a :doc:`vga`. The monitor
-is not documented here beyond a few common commands. The built-in help
-is extensive and always up-to-date. Type ``help`` to get started, and
-explore deep help such as ``help set phi2``.
+A fresh RIA boots into the RP6502 monitor. The easiest way to get started
+is the standard setup: a :doc:`vga` module for the display and a USB
+keyboard plugged into the RIA. The monitor runs on the console, which
+isn't tied to any single device — other terminals fan in through the
+`console manifold <term.html#console-manifold>`__, including USB serial,
+telnet, and the RIA's bare UART pins (115200 8N1). The monitor itself is
+documented here only by a few common commands — its built-in help is
+extensive and always current. Type ``help`` to get started, then dig into
+deep help like ``help set phi2``.
 
-The RP6502 monitor is not an operating system shell - it is analogous to a
-UEFI shell. Its primary purpose is loading ROMs, with a small amount of
-hardware and locale configuration kept intentionally minimal.
+The RP6502 monitor is not an operating-system shell; think of it more
+like a UEFI shell. Its main job is loading ROMs, with just enough
+hardware and locale configuration to get going — kept deliberately
+minimal.
 
-Use the ``load`` command to load ROMs in ``.rp6502`` format.
-These aren't ROMs in the traditional (obsolete) sense. A ROM is a file
-that contains a memory image to be loaded in RAM before starting the
-6502. The RIA includes 1MB of flash which you can ``install`` ROMs to.
-Once a ROM is installed, you can run it directly or ``set boot`` so it
-loads when the RIA boots.
+Use the ``load`` command to load ROMs in ``.rp6502`` format. These
+aren't ROMs in the traditional (obsolete) sense: a ROM here is a file
+holding a memory image that's loaded into RAM before the 6502 starts.
+The RIA has 1 MB of flash you can ``install`` ROMs into. Once installed,
+a ROM can be run directly, or you can ``set boot`` to load it whenever
+the RIA boots.
 
-Some monitor commands, such as ``upload`` and ``binary``, target
-developer tools. The ``rp6502.py`` script, included with the examples and
-templates, automates ROM packaging and execution.
+A few monitor commands, such as ``upload`` and ``binary``, exist for
+developer tools. The ``rp6502.py`` script that ships with the examples
+and templates automates ROM packaging and execution.
 
 
 Reset
 =====
 
-Think of reset as two states, not a pulse on RESB. When reset is low,
-the 6502 is stopped and the console connects to the RP6502 monitor.
-When reset is high, the 6502 runs and the console connects to both
-stdio in the :doc:`os` and the UART TX/RX registers described below.
+Think of reset as two states rather than a pulse on RESB. While reset
+is low, the 6502 is stopped and the console talks to the RP6502 monitor.
+While reset is high, the 6502 runs and the console manifold connects to both
+the :doc:`os` and the UART TX/RX registers described below.
 
-If you want to move reset from low to high, either ``load`` a ROM with
-a reset vector, or use the ``reset`` command if you have prepared RAM
-some other way.
+To bring reset from low to high, either ``load`` a ROM that has a reset
+vector, or use the ``reset`` command if you've prepared RAM some other
+way.
 
-To move reset from high to low and return to the monitor, even with a
-crashed or halted 6502, you have two options:
+To drop reset from high to low and return to the monitor — even from a
+crashed or halted 6502 — use any terminal on the `console manifold
+<term.html#console-manifold>`__:
 
-1. Using a Bluetooth or USB keyboard, press CTRL-ALT-DEL.
-2. Send a break to the RIA UART.
+1. Press Alt-F4 or Ctrl-Alt-Del from a keyboard.
+2. Send a break from a serial terminal.
+3. Send a break from a telnet terminal.
 
 .. caution::
 
-   Do not hook up a physical button to RESB. The RIA must remain
-   in control of RESB. What you probably want is the reset that happens
-   from the RIA RUN pin. We call this a ``reboot``. The reference hardware
-   reboot button is hooked up to the RIA RUN pin. Rebooting the RIA
-   like this will cause any configured boot ROM to load, like at power
-   on. Resetting the 6502 from keyboard or UART will only return you to
-   the RP6502 monitor.
+   Don't wire a physical button to RESB — the RIA must stay in control
+   of it. What you probably want is the reset driven by the RIA RUN pin,
+   which we call a ``reboot``. The reference hardware's reboot button is
+   wired to the RIA RUN pin, and rebooting this way loads any configured
+   boot ROM, just like at power-on. Resetting the 6502 from a terminal
+   only returns you to the RP6502 monitor.
 
 
 Registers
@@ -184,38 +187,37 @@ Registers
 UART
 ----
 
-Easy and direct access to the UART RX/TX pins of the RIA is
-available from $FFE0-$FFE2. The ready flags on bits 6-7 enable testing
-with the BIT operator. You may choose to use these or stdio
-from the :doc:`os`. Using the UART directly while a stdio
-OS function is in progress will result in undefined behavior.
-The UART hardware runs at 115200 bps, 8 bit words, no parity, 1 stop bit.
+The RIA's UART RX/TX pins are directly accessible at $FFE0-$FFE2. The
+ready flags on bits 6-7 let you test with the BIT operator. Use these or
+the :doc:`os` stdio — but not both at once: driving the UART directly
+while a stdio OS function is in progress is undefined behavior. The UART
+runs at 115200 bps, 8-bit words, no parity, 1 stop bit.
 
 Extended RAM (XRAM)
 -------------------
 
-RW0 and RW1 are two portals to the same 64K XRAM. Having only one
-portal would make moving XRAM very slow since data would have to
-buffer in 6502 RAM. Ideally, you won't move XRAM and can use the pair
-for better optimizations.
+RW0 and RW1 are two portals into the same 64 KB of XRAM. A single
+portal would make moving XRAM slow, since data would have to buffer
+through 6502 RAM. Ideally you won't move XRAM at all and can use the
+pair for smarter optimizations.
 
-STEP0 and STEP1 default to 1 after reset. Both are signed, so
-negative values traverse XRAM in reverse. These auto-increment
-adders enable very fast sequential access, which more than offsets
-the slightly slower random access compared to 6502 system RAM.
+STEP0 and STEP1 default to 1 after reset. Both are signed, so negative
+values walk XRAM in reverse. These auto-increment adders make sequential
+access very fast — more than enough to offset the slightly slower random
+access compared to 6502 system RAM.
 
 Extended Stack (XSTACK)
 -----------------------
 
-This is 512 bytes of last-in, first-out, top-down stack used for the
-fastcall mechanism described in the :doc:`os`. Reading past the end
-is guaranteed to return zeros. Simply write to push and read to pull.
+This is a 512-byte, top-down, last-in-first-out stack used by the
+fastcall mechanism described in the :doc:`os`. Reading past the end is
+guaranteed to return zeros. Write to push, read to pull.
 
 Extended Registers (XREG)
 -------------------------
 
-The RIA is both the host of the PIX bus (documented below)
-and device 0 on the PIX bus.
+The RIA is both the host of the PIX bus (documented below) and device 0
+on it.
 
 .. list-table::
   :widths: 5 5 90
@@ -241,77 +243,68 @@ and device 0 on the PIX bus.
 Pico Information Exchange (PIX)
 ===============================
 
-The limited number of GPIO pins on the Raspberry Pi Pico required
-creating a new bus for high bandwidth devices like video systems. This
-is an addressable broadcast system which any number of devices can
-listen to.
+The Raspberry Pi Pico has only so many GPIO pins, so high-bandwidth
+devices like video systems needed a bus of their own. PIX is that bus:
+an addressable broadcast system that any number of devices can listen
+to.
 
 Physical layer
 --------------
 
-Pi Pico PIO decodes the physical layer easily - PIO is essentially a
-shift register. The signals are PHI2 and PIX0-3. This double data rate
-bus shifts PIX0-3 left on both transitions of PHI2. A frame is 32 bits
-transmitted over 4 PHI2 cycles.
+The Pico's PIO decodes the physical layer easily, since PIO is
+essentially a shift register. The signals are PHI2 and PIX0-3. This is a
+double-data-rate bus: it shifts PIX0-3 left on both transitions of PHI2,
+so a 32-bit frame travels in just 4 PHI2 cycles.
 
-Bit 28 (0x10000000) is the framing bit, set in every message. An
-all-zero payload repeats on device ID 7 when the bus is idle. A
-receiver synchronizes by ensuring PIX0 is high on a low transition of
-PHI2; if not, stall until the next clock cycle.
+Bit 28 (0x10000000) is the framing bit, set in every message. When the
+bus is idle, an all-zero payload repeats on device ID 7. A receiver
+synchronizes by checking that PIX0 is high on a falling transition of
+PHI2; if it isn't, stall until the next clock cycle.
 
-Bits 31-29 (0xE0000000) indicate the device ID number for a message.
+Bits 31-29 (0xE0000000) carry the device ID for a message:
 
-Device 0 is allocated to the RIA. Device 0 is also overloaded to
-broadcast XRAM.
+- **Device 0** — the RIA. It's also overloaded to broadcast XRAM.
+- **Device 1** — the :doc:`vga`.
+- **Devices 2-6** — open for user expansion.
+- **Device 7** — synchronization. (0xF0000000 is hard to miss on test equipment.)
 
-Device 1 is allocated to :doc:`vga`.
+The remaining bits address a register within a device:
 
-Devices 2-6 are available for user expansion.
-
-Device 7 is used for synchronization. Because 0xF0000000 is hard to
-miss on test equipment.
-
-Bits 27-24 (0x0F000000) indicate the channel ID number for a message.
-Each device can have 16 channels.
-
-Bits 23-16 (0x00FF0000) indicate the register address in the channel
-on the device.
-
-Bits 15-0 (0x0000FFFF) is a value to store in the register.
+- **Bits 27-24** (0x0F000000) — the channel ID; each device can have 16 channels.
+- **Bits 23-16** (0x00FF0000) — the register address within that channel.
+- **Bits 15-0** (0x0000FFFF) — the value to store in the register.
 
 PIX Extended RAM (XRAM)
 -----------------------
 
-The RIA broadcasts all changes to its 64KB of XRAM to PIX device 0.
-Bits 15-0 carry the XRAM address. Bits 23-16 carry the XRAM data.
+The RIA broadcasts every change to its 64 KB of XRAM on PIX device 0.
+Bits 15-0 carry the XRAM address; bits 23-16 carry the XRAM data.
 
-PIX devices maintain a local replica of the XRAM they use. Typically,
-all 64K is replicated and an XREG set by a 6502 application will
-install virtual hardware at a location in XRAM.
+Each PIX device keeps a local replica of the XRAM it uses. Typically all
+64 KB is replicated, and an XREG set by a 6502 application installs
+virtual hardware at some location in XRAM.
 
 PIX Extended Registers (XREG)
 -----------------------------
 
-PIX devices may use bits 27-0 however they choose. The suggested
-division of these bits is:
+PIX devices may use bits 27-0 however they like. The suggested split
+is:
 
-Bits 27-24 indicate a channel. For example, the RIA device has a
-channel for audio, a channel for keyboard, a channel for mice, and so
-on. Bits 23-16 contain an extended register address. Bits 15-0 contain
-the value to be stored.
+- **Bits 27-24** — a channel. The RIA, for example, has separate channels for audio, keyboard, mice, and so on.
+- **Bits 23-16** — an extended register address.
+- **Bits 15-0** — the value to store.
 
-So we have seven PIX devices, each with 16 internal channels having 256
-16-bit registers. The idea is to use these extended registers to
-configure virtual hardware and map it into extended memory.
+That gives seven PIX devices, each with 16 channels of 256 16-bit
+registers. The idea is to use these extended registers to configure
+virtual hardware and map it into extended memory.
 
 
 Keyboard
 ========
 
-The RIA can provide direct access to keyboard data. This is intended
-for applications that need to detect both key up and down events or the
-modifier keys. You may instead use the UART or stdin if you don't need
-this kind of direct access.
+The RIA can hand applications direct access to keyboard data, which is
+what you want when you need key-up and key-down events or the modifier
+keys. If you don't need that, the UART or stdin works just as well.
 
 Enable and disable direct keyboard access by mapping it to an address
 in XRAM.
@@ -322,11 +315,10 @@ in XRAM.
   xreg(0, 0, 0x00, 0xFFFF); // disable
   xreg_ria_keyboard(xaddr); // macro shortcut
 
-The RIA continuously updates XRAM with a bit array of USB HID
-keyboard keycodes. Note that these are not PS/2 scancodes.
-Each keycode is one bit in the array — bit N is 1 when the key
-with HID keycode N is currently pressed. The first four keycodes
-have special meaning:
+The RIA continuously updates XRAM with a bit array of USB HID keyboard
+keycodes — note these are HID keycodes, not PS/2 scancodes. Each keycode
+is one bit in the array: bit N is 1 while the key with HID keycode N is
+pressed. The first four keycodes are special:
 
 - 0 - No key pressed
 - 1 - Num Lock on
@@ -343,8 +335,8 @@ have special meaning:
 Mouse
 =====
 
-The RIA can provide direct access to mouse information. Enable and
-disable by mapping it to an address in XRAM.
+The RIA can give applications direct access to mouse data. Enable and
+disable it by mapping it to an address in XRAM.
 
 .. code-block:: C
 
@@ -352,8 +344,7 @@ disable by mapping it to an address in XRAM.
   xreg(0, 0, 0x01, 0xFFFF); // disable
   xreg_ria_mouse(xaddr);    // macro shortcut
 
-This sets the address in XRAM for a structure containing direct
-mouse input.
+This sets the XRAM address of a structure holding the live mouse input.
 
 .. code-block:: C
 
@@ -365,14 +356,13 @@ mouse input.
       uint8_t pan;
   } mouse;
 
-Compute movement by subtracting the previous value from the current
-value. Vsync timing (60 Hz) is period-correct but too slow by modern
-standards. For precise mouse input, use an ISR at 8 ms or faster
-(125 Hz).
+Compute movement by subtracting the previous value from the current one.
+VSYNC timing (60 Hz) is period-correct but slow by modern standards. For
+precise mouse input, poll from an ISR at 8 ms or faster (125 Hz).
 
-Applications should account for canvas resolution when interpreting
-movement. At 640x480 and 640x360, one unit equals one pixel. At
-320x240 and 320x180, two units equal one pixel.
+Account for canvas resolution when interpreting movement. At 640x480 and
+640x360, one unit equals one pixel; at 320x240 and 320x180, two units
+equal one pixel.
 
 .. code-block:: C
 
@@ -391,17 +381,17 @@ Mouse buttons are a bitfield:
 Gamepads
 ========
 
-The RIA supports up to four gamepads. There are drivers for Generic HID,
-XInput, and Playstation gamepads.
+The RIA supports up to four gamepads, with drivers for Generic HID,
+XInput, and PlayStation controllers.
 
-Modern gamepads have all evolved to the same four face buttons, d-pad,
-dual analog sticks, select, start, and quad shoulders. The minor variations
-of the four face buttons are XY/AB, YX/BA, or Square/Triangle/Cross/Circle.
-This is generally of no consequence to the application unless those buttons
-are intended to represent a direction. In that case, the
-Square/Triangle/Cross/Circle and XY/AB layouts are "the official" layout
-of the RP6502. You can, of course, do your own thing and request players
-use a specific gamepad or include a "AB or BA" option.
+Modern gamepads have all converged on the same layout: four face
+buttons, a d-pad, dual analog sticks, select, start, and four shoulders.
+The face buttons vary only in labeling — XY/AB, YX/BA, or
+Square/Triangle/Cross/Circle. That rarely matters to an application
+unless the buttons stand in for directions, in which case the
+Square/Triangle/Cross/Circle and XY/AB arrangements are "the official"
+RP6502 layout. You're free to do your own thing, of course — ask players
+to use a specific gamepad, or offer an "AB or BA" option.
 
 .. note::
    **The RP6502 expects modern gamepads.**
@@ -409,14 +399,14 @@ use a specific gamepad or include a "AB or BA" option.
    The RP6502 is not an emulation platform. Sega, NES, SNES, TG16, Atari,
    and other retro-style gamepads are **not supported**.
 
-   Retro-style gamepads are designed with button mappings for emulators while
-   emulators expect the button layout of a modern gamepad. These do not cancel
-   each other out. Instead, you end up with wonky button mappings that do not
-   follow the de facto standard for modern gamepads.
+   Retro-style gamepads are wired with button mappings meant for emulators,
+   and emulators in turn expect the layout of a modern gamepad. The two
+   don't cancel out — you just end up with wonky mappings that don't follow
+   the de facto modern standard.
 
-Enable and disable access to the RIA gamepad XRAM registers by setting
-the extended register. The register value is the XRAM start address of
-the gamepad data. Any invalid address disables the gamepads.
+Enable and disable the RIA gamepad data by setting its extended
+register. The register value is the XRAM start address of the gamepad
+data; any invalid address disables the gamepads.
 
 .. code-block:: C
 
@@ -424,25 +414,24 @@ the gamepad data. Any invalid address disables the gamepads.
   xreg(0, 0, 2, 0xFFFF);   // disable
   xreg_ria_gamepad(xaddr); // macro shortcut
 
-The RIA continuously updates extended memory with gamepad information.
-The 10-byte structure described here repeats four times for a total of
-40 bytes representing four gamepads.
+The RIA continuously updates extended memory with gamepad state. The
+10-byte structure below repeats four times — 40 bytes total, one block
+per gamepad.
 
-The upper bits of the DPAD register indicate gamepad readiness and
-type. The connected bit is high when a gamepad is present in that
-player slot. The Sony bit indicates the player is using a
-PlayStation-style gamepad with Circle/Cross/Square/Triangle button
-faces.
+The upper bits of the DPAD register report readiness and type. The
+connected bit is high when a gamepad occupies that player slot. The Sony
+bit indicates a PlayStation-style gamepad with
+Circle/Cross/Square/Triangle faces.
 
-Both digital and analog values are available for the left and right
-sticks and triggers L2/R2, so applications can ignore the analog
-values entirely if desired.
+Both digital and analog values are available for the sticks and the
+L2/R2 triggers, so applications can ignore the analog values entirely if
+they like.
 
-Some gamepads only report digital data; applications supporting L2 and
-R2 should expect analog values of only 0 or 255 in that case.
+Some gamepads report only digital data; in that case, code that uses L2
+and R2 should expect analog values of just 0 or 255.
 
-Applications using a simple "one stick and buttons" approach should
-support both the d-pad and left stick as merged input.
+Applications taking the simple "one stick and buttons" approach should
+merge the d-pad and left stick into a single input.
 
 .. list-table::
    :widths: 1 1 20
@@ -514,18 +503,18 @@ support both the d-pad and left stick as merged input.
 Programmable Sound Generator
 =============================
 
-The RIA includes a Programmable Sound Generator (PSG). It is configured
-with extended register device 0 channel 1 address 0x00.
+The RIA includes a Programmable Sound Generator (PSG), configured
+through extended register device 0, channel 1, address 0x00.
 
-* Eight 24kHz 8-bit oscillator channels.
+* Eight 24 kHz 8-bit oscillator channels.
 * Five waveforms: Sine, Square, Sawtooth, Triangle, Noise.
 * ADSR envelope: Attack, Decay, Sustain, Release.
 * Stereo panning.
 * PWM for all waveforms.
 
 Each of the eight oscillators uses eight bytes of XRAM for
-configuration. The structure size is a power of two so indexing
-into the oscillator array is a bit shift rather than a multiply.
+configuration. The structure size is a power of two, so indexing into
+the oscillator array is a bit shift rather than a multiply.
 
 .. code-block:: C
 
@@ -540,19 +529,18 @@ into the oscillator array is a bit shift rather than a multiply.
       unsigned char unused;
   } ria_psg_t;
 
-Enable and disable the RIA PSG by setting the extended register. The
-register value is the XRAM start address for the 64 bytes of config.
-This start address must be int-aligned. The 64 bytes of config must
-not cross a page boundary. Any invalid address disables the PSG.
+Enable and disable the PSG by setting its extended register. The value
+is the XRAM start address for the 64 bytes of config; it must be
+int-aligned and must not cross a page boundary. Any invalid address
+disables the PSG.
 
 .. code-block:: C
 
   xreg(0, 1, 0x00, xaddr); // enable
   xreg(0, 1, 0x00, 0xFFFF); // disable
 
-All configuration changes take effect immediately. This allows for
-effects like panning, slide instruments, and other CPU-driven
-shenanigans.
+Configuration changes take effect immediately, which opens the door to
+panning, slide instruments, and other CPU-driven shenanigans.
 
 .. list-table::
    :widths: 5 90
@@ -671,152 +659,150 @@ Volume attenuation is logarithmic.
 Yamaha OPL2 FM Sound Generator
 ==============================
 
-The RIA includes a YM3812 FM Sound Generator (OPL2). It is configured
-with extended register device 0 channel 1 address 0x01.
+The RIA includes a YM3812 FM Sound Generator (OPL2), configured through
+extended register device 0, channel 1, address 0x01.
 
-Enable and disable the RIA OPL2 by setting the extended register. The
-extended register value is the XRAM start address for the 256 OPL2
-registers. The OPL2 registers must begin on a page boundary.
+Enable and disable the OPL2 by setting its extended register. The value
+is the XRAM start address for the 256 OPL2 registers, which must begin
+on a page boundary.
 
 .. code-block:: C
 
   xreg(0, 1, 0x01, xaddr); // enable
   xreg(0, 1, 0x01, 0xFFFF); // disable
 
-If, for example, xaddr is 0x4200 then the 256 registers of an OPL2 chip
-are mapped into XRAM from 0x4200 to 0x42FF.
+So if xaddr is 0x4200, the 256 OPL2 registers map into XRAM from 0x4200
+to 0x42FF.
 
-Timers, interrupts, and the status register are not supported.
-These features existed in Yamaha OPL chips primarily to help
-cost-reduce consumer devices; computers of the era had their own
-timers and rarely used them.
+Timers, interrupts, and the status register are not supported. Those
+features existed mainly to cost-reduce consumer devices; computers of
+the era had their own timers and rarely used the chip's.
 
 Console Port
 ============
 
-The main serial port of the RIA is the console for the system. Modern operating
-systems provide canonical input and translated output via a configurable
-layer such as termios. A full termios is too heavy for an 8-bit system,
-but raw and non-blocking IO options need to be provided.
+The RIA's main serial port is the system console. Modern operating
+systems layer canonical input and translated output over something
+configurable like termios. A full termios is too heavy for an 8-bit
+system, but raw and non-blocking I/O still need to be on the table.
 
-The well-known stdin blocks for canonical input. The console user will be
-prompted to edit a line. Once the line is submitted with the enter key,
-the stdin read unblocks and returns the line up to a linefeed character.
+The familiar stdin blocks for canonical input: the console user edits a
+line, and once they press Enter the stdin read unblocks and returns the
+line up to a linefeed.
 
-The well-known stdout and stderr block and insert carriage returns
-before newlines if one is not present. The full amount of data is always
-sent and writes will block until sent data is fully unloaded into hardware
-FIFOs.
+The familiar stdout and stderr block too, inserting a carriage return
+before any newline that lacks one. All of the data is always sent, and
+writes block until it has fully drained into the hardware FIFOs.
 
-These well-known console interfaces are what a C programmer expects, but they are
-not a good interface for a multitasking 6502 OS to use. To that end, a
-non-blocking interface to the console is provided. Simply open the special
-filename ``"CON:"``. Reads can return 0 bytes, and writes may send less than the
-requested amount.
+These interfaces are exactly what a C programmer expects, but they're a
+poor fit for a multitasking 6502 program. For that, a non-blocking
+interface is available: open the special filename ``"CON:"``. Reads can
+return 0 bytes, and writes may send less than you asked for.
 
-Going one step further, a non-blocking and raw connection to the console
-port is available on special filename ``"TTY:"``. There is no canonical input
-and no newline translation. This is exactly the same functionality that
-the ``RIA_TX`` and ``RIA_RX`` registers provide, but available as stdio for
-convenience.
+Going one step further, the special filename ``"TTY:"`` gives a
+non-blocking, raw connection to the console port — no canonical input,
+no newline translation. It's exactly what the ``RIA_TX`` and ``RIA_RX``
+registers provide, just packaged as stdio for convenience.
 
-``"CON:"` and ``"TTY:"`` are each locked to their own file descriptors which
-can not be closed. A second open will return the same file descriptor as the
-first open. A close will succeed as a no-op.
+``"CON:"`` and ``"TTY:"`` are each locked to their own file descriptor,
+which cannot be closed. A second open returns the same file descriptor
+as the first, and a close succeeds as a no-op.
 
-Virtual Communications Port
-===========================
+Virtual COM Port
+================
 
-If you need more serial communications beyond the console UART, USB adapters
-are available to CMOS/TTL, RS-232, RS-422, and RS-485. The RIA includes drivers
-for FTDI, CP210X, CH34X, PL2303, and CDC ACM.
+If you need serial ports beyond the console UART, USB adapters are
+available for CMOS/TTL, RS-232, RS-422, and RS-485. The RIA includes
+drivers for FTDI, CP210X, CH34X, PL2303, and CDC ACM, and each one
+appears as a Virtual COM Port (VCP).
 
-The ``status`` command lists any connected VCP devices. Open them like
-any file using a special name. By default, ``"VCP0:"`` opens at 115200
-baud, 8 data bits, no parity, and 1 stop bit. Specify the baud rate
-with ``"VCP0:115200"`` or the full bit configuration with
-``"VCP0:115200,8N1"``. The file will not open if your hardware does not
-support the requested configuration. The open flags are ignored.
+The ``status`` command lists any connected VCP devices. Open one like a
+file, using a special name. By default ``"VCP0:"`` opens at 115200 bps
+with 8 data bits, no parity, and 1 stop bit. Set the baud rate with
+``"VCP0:115200"``, or the full bit configuration with
+``"VCP0:115200,8N1"``. The file won't open if your hardware can't
+support the requested configuration, and the open flags are ignored.
 
 .. code-block:: C
 
   open("VCP0:1200,7E2", 0);
   // then read and write
 
-Generous FIFO buffers service both reading and writing. Both operations
-are non-blocking. Reads can return 0 bytes, and writes may send less
-than the requested amount. Resubmit any remaining bytes in a subsequent
-call.
+Generous FIFO buffers serve both directions, and both reads and writes
+are non-blocking. Reads can return 0 bytes, and writes may send less than
+you asked for — resubmit any remaining bytes on a later call.
 
 
 Near Field Communications (NFC)
 ===============================
 
-The use of NFC cards has become a common media replacement in the retro
-community. This maps well to the RP6502 use of "ROM files" as a replacement
-for "ROM cartridges". In 1983 you might have grabbed a game cartridge with
-colorful stickers that make it easy to home in on the exact dopamine hit
-you're looking for. NFC cards are cheap and easy to decorate with stickers
-or even direct printing. So grab a card, tap it on the NFC reader, then the
-ROM file you want is instantly loaded. Here's how it works.
+NFC cards have become a popular media replacement in the retro
+community, and they map neatly onto the RP6502's use of "ROM files" in
+place of "ROM cartridges". In 1983 you might have grabbed a cartridge
+with colorful stickers to home in on the exact dopamine hit you were
+after. NFC cards are cheap and just as easy to decorate, whether with
+stickers or direct printing. Grab a card, tap it on the reader, and the
+ROM you want loads instantly. Here's how it works.
 
-You will need a PN532 card reader with a USB interface. This is the only
-card reader supported and is very inexpensive, around $10 USD. You will
-also need cards (or fobs or stickers) for each of the ROMs you want to
-support. If you are new to NFC technology, buy a pack of NTAG215 cards and
-a sharpie.
+You'll need a PN532 card reader with a USB interface. It's the only
+reader supported, and it's cheap — around $10 USD. You'll also want a
+card (or fob, or sticker) for each ROM you plan to support. New to NFC?
+Buy a pack of NTAG215 cards and a sharpie.
 
-DO NOT buy a kit of separate USB-to-UART and PN532 boards unless you want a
-project for which you will get no support. Buy a solo board with everything
-already engineered and ready-to-use.
+Do **not** buy a kit of separate USB-to-UART and PN532 boards unless you
+want an unsupported project on your hands. Buy a single board with
+everything already engineered and ready to use.
 
-Once the NFC reader is plugged in, issue the monitor command ``SET NFC 2`` to
-initiate USB detection. Any other VCP devices may get probed with PN532 data, this
-is normal. You will hear an error buzz or two beeps for success. You may also
-check ``status`` to see if a ``(NFC)`` is listed after any of your VCP devices.
+With the reader plugged in, run the monitor command ``SET NFC 2`` to
+start USB detection. It may probe your other VCP devices with PN532 data
+along the way; that's normal. You'll hear an error buzz, or two beeps for
+success. You can also run ``status`` to see whether ``(NFC)`` is listed
+next to one of your VCP devices.
 
-Scanning cards will now produce one of three audible signals. An error buzz
-if anything went wrong, two beeps for success, one beep for a partial success.
+From now on, scanning a card produces one of three sounds: an error buzz
+if something went wrong, two beeps for success, or a single beep for a
+partial success.
 
-Cards are to be programmed with the filename and arguments of the ROM to be
-launched. If you use ``LOAD /jigsaw.rp6502`` to load the ROM, put a NDEF TEXT
-record on the card without the load command: ``/jigsaw.rp6502``.
-The leading ``/`` is implied if missing, the current working directory is ignored.
+Program each card with the filename and arguments of the ROM to launch.
+If you'd load the ROM with ``LOAD /jigsaw.rp6502``, put an NDEF TEXT
+record on the card holding just ``/jigsaw.rp6502`` — no load command. A
+leading ``/`` is implied if you leave it off, and the current working
+directory is ignored.
 
-Spaces will require quotes. You can also include arguments:
+Paths with spaces need quotes, and you can include arguments:
 ``"/My Games/jigsaw.rp6502" cat.bmp``
 
-When the card is read, all mounted drives are scanned for the ROM file. If
-found, two beeps of success are played, the 6502 is stopped, the current
-drive and directory is changed to the ROM location, and the new ROM begins
-loading. If the ROM was already running, a single beep is emitted and nothing
-else happens.
+When a card is read, every mounted drive is scanned for the ROM file. On
+a match, you get two beeps, the 6502 stops, the current drive and
+directory switch to the ROM's location, and the new ROM starts loading.
+If that ROM is already running, you get a single beep and nothing else
+happens.
 
-You can force only a single drive to be searched by including it in the text
-record. ``MSC0:/encabulator.rp6502``
+To search just one drive, name it in the text record:
+``MSC0:/encabulator.rp6502``
 
 NFC Device API
 --------------
 
-Applications can take control over the NFC reader for advanced usage or to
-assist with programming NFC tags. While the ``"NFC:"`` device is open,
-automatic ROM launching is suppressed.
+Applications can take over the NFC reader for advanced uses, or to help
+program NFC tags. While the ``"NFC:"`` device is open, automatic ROM
+launching is suppressed.
 
 .. code-block:: text
 
    int fd = open("NFC:", O_RDWR);
 
-The PN532 reader runs autonomously on the RIA. The 6502 arms operations via
-``write()`` and polls results via ``read()``. ``NFC_CMD_READ`` returns the
-current tag data immediately. ``NFC_CMD_WRITE`` arms a write.
-``NFC_CMD_CANCEL`` disarms a pending write. State changes and write
-completions are posted automatically to ``read()``.
+The PN532 reader runs autonomously on the RIA. The 6502 arms operations
+with ``write()`` and polls results with ``read()``: ``NFC_CMD_READ``
+returns the current tag data immediately, ``NFC_CMD_WRITE`` arms a write,
+and ``NFC_CMD_CANCEL`` disarms a pending one. State changes and write
+completions are posted to ``read()`` automatically.
 
 write() -- Commands
 ~~~~~~~~~~~~~~~~~~~
 
-``write()`` is non-blocking and streaming. A call may consume less than the
-requested amount; resubmit any remaining bytes in a subsequent call.
+``write()`` is non-blocking and streaming. A call may consume less than
+you passed; resubmit the remaining bytes on a later call.
 
 .. list-table::
    :widths: 40 60
@@ -837,23 +823,24 @@ requested amount; resubmit any remaining bytes in a subsequent call.
    * - ``NFC_CMD_ERROR`` (0x06)
      - Play error tone
 
-The ``NFC_CMD_WRITE`` payload begins with the start page, a two-byte length,
-then tag data. ``page`` is the NTAG page to begin writing at (page 4 = start
-of user data). Data is written in 4-byte pages; the final page is
-zero-padded if the payload is not a multiple of 4. The write is armed once
-the full payload arrives and executes on the current card or the next one
-presented. A second ``NFC_CMD_WRITE`` overwrites the first (last write wins).
+The ``NFC_CMD_WRITE`` payload starts with the start page, a two-byte
+length, then the tag data. ``page`` is the NTAG page to begin writing at
+(page 4 is the start of user data). Data is written in 4-byte pages, and
+the final page is zero-padded if the payload isn't a multiple of 4. The
+write arms once the full payload arrives and runs on the current card or
+the next one presented. A second ``NFC_CMD_WRITE`` overwrites the first —
+last write wins.
 
-``NFC_CMD_READ`` always returns ``NFC_RESP_READ`` on the next ``read()``.
-If no card data is available, length is zero.
+``NFC_CMD_READ`` always returns ``NFC_RESP_READ`` on the next ``read()``;
+if no card data is available, the length is zero.
 
 read() -- Responses
 ~~~~~~~~~~~~~~~~~~~
 
-``read()`` is non-blocking and streaming. It returns 0 bytes when there is
-no new information. Responses may arrive split across multiple calls;
-callers must buffer and reassemble. State changes are sent once per
-change (including once after ``open()``).
+``read()`` is non-blocking and streaming. It returns 0 bytes when there's
+nothing new. Responses may be split across multiple calls, so callers
+must buffer and reassemble them. State changes are sent once per change,
+including once right after ``open()``.
 
 .. list-table::
    :widths: 40 60
@@ -874,25 +861,25 @@ change (including once after ``open()``).
    * - ``NFC_RESP_CARD_READY`` (0x06)
      - State: card present, tag data ready
 
-The ``NFC_RESP_READ`` payload is a two-byte length followed by raw tag data
-starting from page 0, and may span multiple ``read()`` calls. Page layout:
-pages 0-2 = UID/lock bytes, page 3 = Capability Container (CC[2] * 8 = max
-NDEF bytes), pages 4+ = user data (TLV-wrapped NDEF records terminated with
-``0xFE``).
+The ``NFC_RESP_READ`` payload is a two-byte length followed by raw tag
+data starting at page 0, and it may span multiple ``read()`` calls. The
+page layout is: pages 0-2 are UID/lock bytes, page 3 is the Capability
+Container (CC[2] * 8 = max NDEF bytes), and pages 4+ are user data
+(TLV-wrapped NDEF records terminated with ``0xFE``).
 
-After ``NFC_RESP_READ`` or ``NFC_RESP_WRITE``, send one or more tone commands
-or play application sounds. Typically, reads are requested on
-``NFC_RESP_CARD_READY`` with writes armed on ``NFC_RESP_NO_CARD``.
-But you may also choose to arm writes after reading and verifying a card.
-The state changes give you flexibility in how you sequence operations.
+After ``NFC_RESP_READ`` or ``NFC_RESP_WRITE``, send one or more tone
+commands or play your own sounds. Typically you request reads on
+``NFC_RESP_CARD_READY`` and arm writes on ``NFC_RESP_NO_CARD``, but you
+can also arm a write after reading and verifying a card. The state
+changes give you flexibility in how you sequence operations.
 
 
 ROM File Format
 ===============
 
 A ROM file begins with a shebang line, followed by any number of assets.
-All text lines end with ``\r`` or ``\n`` or both. All numbers may be
-specified in decimal (255), C-style hex (0xFF), or MOS-style hex ($FF).
+Text lines end with ``\r``, ``\n``, or both, and numbers may be written
+in decimal (255), C-style hex (0xFF), or MOS-style hex ($FF).
 
 **Shebang** — first line of every ROM file:
 
@@ -906,8 +893,8 @@ specified in decimal (255), C-style hex (0xFF), or MOS-style hex ($FF).
 
   #>len crc
 
-Followed by one or more memory chunks, each consisting of a header line
-and ``len`` bytes of raw binary data:
+Followed by one or more memory chunks, each a header line plus ``len``
+bytes of raw binary data:
 
 .. code-block:: text
 
@@ -949,30 +936,31 @@ until end of file.
    * - ``name``
      - Asset identifier string.
 
-The rp6502.py tool, part of the templates for new projects, handles
-these details and integrates with the CMake system. Adding assets is
+The ``rp6502.py`` tool that comes with the new-project templates handles
+these details and integrates with CMake, so adding assets is
 straightforward. In this example the image data is packed into the ROM
-as memory chunks, which load into RAM/XRAM when the ROM loads.
+as memory chunks that load into RAM or XRAM when the ROM loads:
 
 .. code-block:: cmake
 
   rp6502_asset(your_project 0x10000 img/intro.bin)
 
-The ROM can also hold named assets of raw data. Some names have special
-meanings. The help asset is shown with the HELP and INFO monitor commands.
+A ROM can also hold named assets of raw data, and some names are
+special — the ``help`` asset is shown by the HELP and INFO monitor
+commands.
 
 .. code-block:: cmake
 
   rp6502_asset(your_project help src/help.txt)
 
-All ROM assets become part of the filesystem while the ROM runs.
-Precede the asset name with "ROM:" and open it like any other file.
-ROM assets are read-only, but you can have multiple open simultaneously.
+While a ROM runs, its assets become part of the filesystem. Prefix the
+asset name with "ROM:" and open it like any other file. ROM assets are
+read-only, but you can have several open at once.
 
 .. code-block:: C
 
   open("ROM:help", O_RDONLY)
 
-There's no enforced limit to the number or size of named assets. Opening
-files is a linear search. The search will skip over the data, but how many
-seeks and string compares your application can tolerate is up to you.
+There's no enforced limit on the number or size of named assets. Opening
+a file is a linear search; it skips over the data, but how many seeks and
+string compares your application can tolerate is up to you.

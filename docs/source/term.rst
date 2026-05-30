@@ -2,7 +2,7 @@
 RP6502-TERM
 ==================================
 
-Manifold Console
+Console Manifold
 ================
 
 In the RP6502 vocabulary, a **terminal** is any device a user types into
@@ -24,18 +24,17 @@ can be attached at once and fanned in to one console; this is the
 * **Telnet.** The :doc:`ria_w` exposes the console over the network. See
   `Telnet Console <ria_w.html#telnet-console>`__ for setup.
 
-Any terminal attached to the console manifold can be used for software
-development and scripting. This is powerful and convenient, but has
-limits when software requests the terminal respond with information.
+Any terminal on the console manifold can be used for development and
+scripting. That's powerful and convenient, but it has limits when
+software needs the terminal to report information back.
 
 Size and Feature Detection
 --------------------------
 
-The monitor, and some ROMs like MS-BASIC, send ANSI commands that
-terminals respond to. This is used for screen size and feature
-detection. At the start of every cooked stdin read, the active terminal
-is queried for this information using the Cursor Position Report (CPR)
-sequence.
+The monitor — and some ROMs, like MS-BASIC — send ANSI commands that
+terminals reply to, which is how they detect screen size and features.
+At the start of every cooked stdin read, the active terminal is queried
+with a Cursor Position Report (CPR) sequence.
 
 The built-in VGA terminal stops responding to these queries if a telnet
 or USB terminal is connected, so the external terminal wins. **If both
@@ -43,10 +42,10 @@ USB and telnet terminals are connected at the same time and both reply,
 the system may get confused.** If pagination or word-wrap seem wrong,
 check what terminals are attached to the console manifold.
 
-The monitor word-wraps and column-fits its output — listings, help
-text, status responses, settings, the timezone selector — to the
-detected width. ROMs that use cooked stdin and read the size get the
-same information.
+The monitor word-wraps and column-fits its output to the detected
+width. That includes listings, help text, status responses, settings,
+and the time zone selector. ROMs that use cooked stdin and read the size
+get the same information.
 
 Locking the Size
 ----------------
@@ -107,9 +106,10 @@ The basic pattern:
    * On the first pass after activation, call ``ria_rln_poke()`` to
      pre-load any text you want to appear in the line. The poked bytes
      are echoed by the editor as if the user had typed them.
-   * Check for Ctrl-C via ``RIA_ATTR_SIGINT`` or the RIA SIGINT IRQ.
+   * Optionally check for Ctrl-C via ``RIA_ATTR_SIGINT`` or the RIA SIGINT IRQ.
      To leave cooked input cleanly, poke ``\x03`` to print a visible
-     ``^C`` and flush, or poke ``\r`` to flush silently.
+     ``^C``, or poke ``\r`` or ``\n`` to flush silently - then
+     wait for to read() to flush.
    * ``ria_rln_lastkey()`` reports the last keystroke and whether the
      editor consumed it as an editing action. When ``action == 0`` the
      editor passed the key through — that is the application's chance
@@ -120,15 +120,15 @@ The basic pattern:
      ``ICH``, ``DCH``) back into the editor as if the user had typed
      them.
 
-  #. **Read ``RIA_ATTR_RLN_WIDTH`` and ``RIA_ATTR_RLN_HEIGHT``** to obtain
-     the dynamic size after the read line completes.
+#. **Read ``RIA_ATTR_RLN_WIDTH`` and ``RIA_ATTR_RLN_HEIGHT``** to obtain
+   the dynamic size after the read line completes.
 
 Anything you can do by typing, you can do by poking. To pull the buffer
 out without the user pressing Enter — for example, when Tab should jump
-to the next field of a form — poke ``\r``. The editor flushes through
+to the next field of a form — poke ``\r`` or ``\n``. The editor flushes through
 ``read()`` like any other line, and the application can move on,
-re-entering the next field with a fresh ``ria_rln_poke()`` to restore
-its prior contents.
+entering the next field with a fresh ``read()`` and ``ria_rln_poke()``
+to restore its prior contents.
 
 
 Terminal
@@ -149,7 +149,7 @@ Compatibility and Limits
 * xterm extensions supported: 256-color and truecolor SGR
   (38 / 48 / 58 sub-args); dynamic colors via OSC 10 / 11 / 12;
   alternate screen buffer (``?47`` / ``?1047`` / ``?1049``).
-* 8-bit codepage encoding only — no UTF-8 decode.
+* 8-bit code page encoding only — no UTF-8 decode.
 
 Behavior Notes
 --------------
@@ -354,11 +354,12 @@ Any other byte after ``ESC (`` or ``ESC )`` is silently consumed.
 Both slots are US ASCII at startup, so until you load something
 into G1 you can ignore this entire feature.
 
-CSI sequences default missing numbers to 0. Some functions
-(cursor movement) treat 0 as 1 to remain useful without parameters.
-
 CSI — Cursor Movement
 ---------------------
+
+CSI sequences default missing numbers to 0. Some functions,
+especially cursor movement, treat 0 as 1 to remain useful without
+parameters.
 
 .. list-table::
   :widths: 19 8 25 48
