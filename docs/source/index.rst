@@ -30,7 +30,6 @@ Most of the action is on Discord, where you can also grab ROMs. Subscribe to
 the YouTube channel and share the project around while you're at it.
 
 - **Discord:** https://discord.gg/TC6X8kTr6d
-- **Forums:** https://github.com/picocomputer/community/discussions
 - **Wiki:** https://github.com/picocomputer/community/wiki
 - **GitHub:** https://github.com/picocomputer
 - **YouTube:** https://www.youtube.com/@rumbledethumps

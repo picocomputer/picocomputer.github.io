@@ -1149,7 +1149,7 @@ RLN_POKE
    escape sequences are honored. Any C0 control byte (0x00–0x1F) finishes
    the input, with two exceptions — ESC (``\33``) begins a CSI sequence,
    and CAN (``\30``) aborts an in-flight one. Control bytes other than
-   CR (``\r``) and LF (``\n``) echo in caret notation (``^@``..``^_``)
+   CR (``\r``) echo in caret notation (``^@``..``^_``)
    when the input length is at least 2. LF submits the field like CR but
    adds no linefeed, which is useful for form input on the last terminal
    row.
@@ -1299,6 +1299,10 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
        and revert semantics match ``RIA_ATTR_RLN_WIDTH``. With both
        width and height pinned, the size-probe handshake is skipped
        entirely.
+   * - | 0x0C
+       | ``RIA_ATTR_RLN_SUPPRESS_NL``
+     - Prevents read line from sending a CRLF at the end of input.
+       Useful for using the last terminal line for field input.
 
 
 ERRNO_OPT Compiler Constants
