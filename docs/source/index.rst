@@ -31,7 +31,7 @@ the YouTube channel and share the project around while you're at it.
 
 - **Discord:** https://discord.gg/TC6X8kTr6d
 - **Wiki:** https://github.com/picocomputer/community/wiki
-- **GitHub:** https://github.com/picocomputer
+- **GitHub Q&A:** https://github.com/picocomputer/community/discussions
 - **YouTube:** https://www.youtube.com/@rumbledethumps
 
 
