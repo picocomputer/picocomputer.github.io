@@ -130,6 +130,12 @@ Tail-call optimizations are still possible, though — you can chain
 `read_xstack() <READ_XSTACK>`_ and `write_xstack() <WRITE_XSTACK>`_ to
 copy a file without touching any RAM or XRAM.
 
+The time operations chain the same way, without cycling the XSTACK:
+`TIME_GET`_ returns seconds positioned as the input to `GMTIME`_,
+`LOCALTIME`_, or `TIME_SET`_; their struct tm feeds `MKTIME`_ directly,
+or `STRFTIME`_ after pushing only the zero-terminated format on top;
+and `MKTIME`_ returns seconds ready for another conversion.
+
 Short Stacking
 ---------------
 
@@ -144,6 +150,10 @@ stack argument pushed. Take `LSEEK`_:
 Here you push a 32-bit value, and — not by coincidence — it sits in the
 right position for short stacking. If the offset always fits in 16 bits,
 push two bytes instead of four.
+
+Trimmed bytes are zero-filled, so short pushes read as unsigned. The
+time operations accept seconds as 4 or 8 bytes; negative values need
+all 8.
 
 Shorter AX
 ----------
@@ -393,103 +403,132 @@ CLOCK
    :errno: will not fail
 
 
-CLOCK_GETRES
-------------
+TIME_GET
+--------
 
-.. c:function:: int clock_getres (clockid_t clock_id, struct timespec *res)
+.. c:function:: time_t time (time_t *timep)
+
+   Obtains the current time as seconds since the Unix epoch,
+   1970-01-01T00:00:00Z. The seconds are pushed to the XSTACK as a
+   64-bit signed integer.
+
+   :Op code: RIA_OP_TIME_GET 0x38
+   :C proto: time.h
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: EIO
+
+
+TIME_SET
+--------
+
+.. c:function:: int time_set (long long time)
+
+   Sets the clock to seconds since the Unix epoch. Push the seconds to
+   the XSTACK as a signed integer of up to 64 bits; short pushes are
+   unsigned.
+
+   :Op code: RIA_OP_TIME_SET 0x39
+   :C proto: rp6502.h
+   :param time: Seconds since 1970-01-01T00:00:00Z.
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: EINVAL, ERANGE
+
+
+GMTIME
+------
+
+.. c:function:: struct tm *gmtime (const time_t *timep)
 
    .. code-block:: c
 
-      struct timespec {
-         uint32_t tv_sec; /* seconds */
-         int32_t tv_nsec; /* nanoseconds */
+      struct tm {
+         int16_t tm_sec;   /* 0-61 */
+         int16_t tm_min;   /* 0-59 */
+         int16_t tm_hour;  /* 0-23 */
+         int16_t tm_mday;  /* 1-31 */
+         int16_t tm_mon;   /* 0-11 */
+         int16_t tm_year;  /* years since 1900 */
+         int16_t tm_wday;  /* 0-6, Sunday = 0 */
+         int16_t tm_yday;  /* 0-365 */
+         int16_t tm_isdst; /* >0 DST, 0 no DST, <0 unknown */
       };
 
-   Obtains the clock resolution.
+   Converts seconds since the Unix epoch to UTC broken-down time.
+   Push the seconds as a signed integer of up to 64 bits; short pushes
+   are unsigned. The struct tm above is pushed back to the XSTACK.
 
-   :Op code: RIA_OP_CLOCK_GETRES 0x10
+   :Op code: RIA_OP_GMTIME 0x3A
    :C proto: time.h
-   :param clock_id: 0 for CLOCK_REALTIME.
    :returns: 0 on success. -1 on error.
-   :a regs: return, clock_id
+   :a regs: return
+   :errno: EINVAL, ERANGE
+
+
+LOCALTIME
+---------
+
+.. c:function:: struct tm *localtime (const time_t *timep)
+
+   Converts seconds since the Unix epoch to local broken-down time
+   using the configured time zone. Run ``help set tz`` on the monitor
+   to learn how to configure your time zone. Push the seconds as a
+   signed integer of up to 64 bits; short pushes are unsigned. A
+   struct tm (see `GMTIME`_) is pushed back to the XSTACK.
+
+   :Op code: RIA_OP_LOCALTIME 0x3B
+   :C proto: time.h
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: EINVAL, ERANGE
+
+
+MKTIME
+------
+
+.. c:function:: time_t mktime (struct tm *timep)
+
+   Converts local broken-down time to seconds since the Unix epoch.
+   Push a struct tm (see `GMTIME`_) to the XSTACK; fields outside
+   their ranges are normalized. The seconds are pushed back as a
+   64-bit signed integer. The C library mktime() then calls
+   `LOCALTIME`_ to write the normalized struct, with tm_wday and
+   tm_yday set, back to the caller.
+
+   :Op code: RIA_OP_MKTIME 0x3C
+   :C proto: time.h
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: EINVAL, ERANGE
+
+
+STRFTIME
+--------
+
+.. c:function:: size_t strftime (char *buf, size_t bufsize, const char *format, const struct tm *tm)
+
+   Formats a broken-down time as a string. Push a struct tm (see
+   `GMTIME`_), then a zero-terminated format string, to the XSTACK.
+   All struct tm fields must be in range, e.g. as returned by
+   `GMTIME`_, `LOCALTIME`_, or `MKTIME`_. The formatted string is
+   pushed back without a terminator and its length returned; the
+   format and result share the XSTACK, which limits the result. The
+   C library strftime() compares the length to its buffer size and
+   abandons an oversized result with `ZXSTACK`_.
+
+   ``%a %A %b %B %c %p %r %x %X`` follow the locale set with
+   ``SET LOC``. ``%z %Z`` follow the time zone set with ``SET TZ``.
+   The format and result are code page text. ``%E`` and ``%O``
+   modifiers are ignored.
+
+   :Op code: RIA_OP_STRFTIME 0x3D
+   :C proto: time.h
+   :returns: Length of the formatted string. 0 if empty or it does
+      not fit. -1 on error.
+   :a regs: return
    :errno: EINVAL
 
-
-TZSET
------
-
-.. c:function:: void tzset(void);
-.. c:function:: int _tzset (struct _tzset *tz)
-
-   .. code-block:: c
-
-      struct _tzset
-      {
-         int8_t daylight;  /* non 0 if daylight savings time active */
-         int32_t timezone; /* Number of seconds behind UTC */
-         char tzname[5];   /* Name of timezone, e.g. CET */
-         char dstname[5];  /* Name when daylight true, e.g. CEST */
-      };
-
-   The virtual _tzset() is called internally by tzset(). Run
-   ``help set tz`` on the monitor to learn how to configure your
-   time zone.
-
-   :Op code: RIA_OP_TZSET 0x0D
-   :C proto: time.h
-   :returns: 0 on success. -1 on error.
-   :errno: EINVAL
-
-
-TZQUERY
--------
-
-.. c:function:: struct tm *localtime(const time_t *timep);
-.. c:function:: int _tzquery (uint32_t time, struct _tzquery *dst)
-
-   .. code-block:: c
-
-      struct _tzquery
-      {
-         int8_t daylight;  /* non 0 if daylight savings time active */
-      };
-
-   The virtual _tzquery() is called internally by localtime().
-
-   :Op code: RIA_OP_TZQUERY 0x0E
-   :C proto: time.h
-   :returns: Seconds to add to UTC for localtime.
-   :errno: will not fail
-
-
-CLOCK_GETTIME
--------------
-
-.. c:function:: int clock_gettime (clockid_t clock_id, struct timespec *tp)
-
-   Obtains the current time.
-
-   :Op code: RIA_OP_CLOCK_GETTIME 0x11
-   :C proto: time.h
-   :param clock_id: 0 for CLOCK_REALTIME.
-   :returns: 0 on success. -1 on error.
-   :a regs: return, clock_id
-   :errno: EINVAL, EUNKNOWN
-
-
-CLOCK_SETTIME
--------------
-
-.. c:function:: int clock_settime (clockid_t clock_id, const struct timespec *tp)
-
-   Sets the current time.
-
-   :Op code: RIA_OP_CLOCK_SETTIME 0x12
-   :C proto: time.h
-   :param clock_id: 0 for CLOCK_REALTIME.
-   :returns: 0 on success. -1 on error.
-   :a regs: return, clock_id
-   :errno: EINVAL, EUNKNOWN
 
 OPEN
 ----
