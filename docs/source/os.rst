@@ -393,20 +393,6 @@ ATTR_SET
    :errno: EINVAL
 
 
-CLOCK
------
-
-.. c:function:: unsigned long clock (void)
-
-   Obtain the value of a monotonic clock that updates 100 times per second.
-   Wraps approximately every 497 days.
-
-   :Op code: RIA_OP_CLOCK 0x0F
-   :C proto: time.h
-   :returns: 1/100 second monotonic clock
-   :errno: will not fail
-
-
 TIME_GET
 --------
 
@@ -416,7 +402,7 @@ TIME_GET
    1970-01-01T00:00:00Z. The seconds are pushed to the XSTACK as a
    64-bit signed integer.
 
-   :Op code: RIA_OP_TIME_GET 0x38
+   :Op code: RIA_OP_TIME_GET 0x3F
    :C proto: time.h
    :returns: 0 on success. -1 on error.
    :a regs: return
@@ -432,7 +418,7 @@ TIME_SET
    the XSTACK as a signed integer of up to 64 bits; short pushes are
    unsigned.
 
-   :Op code: RIA_OP_TIME_SET 0x39
+   :Op code: RIA_OP_TIME_SET 0x3E
    :C proto: rp6502.h
    :param time: Seconds since 1970-01-01T00:00:00Z.
    :returns: 0 on success. -1 on error.
@@ -1349,6 +1335,23 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
        | ``RIA_ATTR_RLN_SUPPRESS_NL``
      - Prevents read line from sending a CRLF at the end of input.
        Useful for using the last terminal line for field input.
+   * - | 0x10
+       | ``RIA_ATTR_CLK_RUN_MS``
+     - Read-only milliseconds the 6502 has been running, counted from
+       the release of reset. Wraps approximately every 24.8 days. This
+       is the C ``clock()``, which has a ``CLOCKS_PER_SEC`` of 1000.
+   * - | 0x11
+       | ``RIA_ATTR_CLK_RUN_CS``
+     - Read-only 6502 run time in 1/100 second ticks. Wraps
+       approximately every 248 days.
+   * - | 0x12
+       | ``RIA_ATTR_CLK_RUN_DS``
+     - Read-only 6502 run time in 1/10 second ticks. Wraps
+       approximately every 6.8 years.
+   * - | 0x13
+       | ``RIA_ATTR_CLK_RUN_S``
+     - Read-only 6502 run time in whole seconds. Wraps approximately
+       every 68 years.
 
 
 ERRNO_OPT Compiler Constants
