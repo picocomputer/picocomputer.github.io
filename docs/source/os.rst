@@ -145,7 +145,7 @@ stack argument pushed. Take `LSEEK`_:
 
 .. code-block:: C
 
-   long f_lseek(long offset, char whence, int fildes)
+   long f_lseek(long offset, int whence, int fildes)
 
 Here you push a 32-bit value, and — not by coincidence — it sits in the
 right position for short stacking. If the offset always fits in 16 bits,
@@ -217,8 +217,8 @@ so you can pull assets straight in without routing them through 6502 RAM.
 
 .. code-block:: C
 
-   int read_xram(xram_addr buf, unsigned count, int fildes)
-   int write_xram(xram_addr buf, unsigned count, int fildes)
+   int read_xram(unsigned buf, unsigned count, int fildes)
+   int write_xram(unsigned buf, unsigned count, int fildes)
 
 The OS expects ``buf`` and ``count`` on the XSTACK as integers, with
 ``fildes`` in ``RIA_A``. From the 6502, reach
@@ -348,6 +348,10 @@ EXEC
    buffer is cleared, so later calls to _argv() return an empty set. If the
    ROM turns out to be invalid, the user is dropped back to the console
    with an error message.
+
+   The ria_execl() and ria_execv() wrappers accept at most 16 strings (the
+   path plus up to 15 arguments) totaling no more than 512 bytes including
+   the offset table; exceeding either limit returns -1 with EINVAL.
 
    :Op code: RIA_OP_EXEC 0x09
    :C proto: rp6502.h
@@ -613,7 +617,7 @@ READ_XSTACK
    :Op code: RIA_OP_READ_XSTACK 0x16
    :C proto: rp6502.h
    :param buf: Destination for the returned data.
-   :param count: Quantity of bytes to read. 0x100 max.
+   :param count: Quantity of bytes to read. 0x200 max.
    :param fildes: File descriptor from open().
    :returns: On success, number of bytes read is returned. On error, -1 is
       returned.
@@ -670,7 +674,7 @@ WRITE_XSTACK
    :Op code: RIA_OP_WRITE_XSTACK 0x18
    :C proto: rp6502.h
    :param buf: Location of the data.
-   :param count: Quantity of bytes to write. 0x100 max.
+   :param count: Quantity of bytes to write. 0x200 max.
    :param fildes: File descriptor from open().
    :returns: On success, number of bytes written is returned. On error, -1
       is returned.
@@ -701,10 +705,10 @@ WRITE_XRAM
 LSEEK
 -----
 
-.. c:function:: static long f_lseek (long offset, char whence, int fildes)
+.. c:function:: long f_lseek (long offset, int whence, int fildes)
 .. c:function:: off_t lseek (int fildes, off_t offset, int whence)
 
-   Move the read/write pointer. The OS uses the ABI format of f_seek(). An
+   Move the read/write pointer. The OS uses the ABI format of f_lseek(). An
    lseek() compatible wrapper is provided with the compiler library.
 
    This can also be used to obtain the current read/write position with
@@ -752,7 +756,7 @@ UNLINK
    :C proto: unistd.h
    :param name: File or directory name to unlink (remove).
    :returns: 0 on success. -1 on error.
-   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
       FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_WRITE_PROTECTED,
       FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT,
       FR_LOCKED, FR_NOT_ENOUGH_CORE
@@ -819,7 +823,7 @@ STAT
    :param path: Pathname to a directory entry.
    :param dirent: Returned f_stat_t data.
    :returns: 0 on success. -1 on error.
-   :a regs: return, dirent
+   :a regs: return
    :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
       FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED,
       FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
@@ -856,7 +860,7 @@ READDIR
    :param dirdes: Directory descriptor from f_opendir().
    :param dirent: Returned f_stat_t data.
    :returns: 0 on success. -1 on error.
-   :a regs: return, dirent
+   :a regs: return, dirdes
    :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT,
       FR_NOT_ENOUGH_CORE
 
@@ -903,6 +907,7 @@ SEEKDIR
 
    :Op code: RIA_OP_SEEKDIR 0x24
    :C proto: rp6502.h
+   :param offs: New read position, as returned by f_telldir().
    :param dirdes: Directory descriptor from f_opendir().
    :returns: Read position. -1 on error.
    :a regs: return, dirdes
@@ -978,7 +983,7 @@ UTIME
    :param crdate: Creation date.
    :param crtime: Creation time.
    :returns: 0 on success. -1 on error.
-   :a regs: return, mask
+   :a regs: return, crtime
    :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
       FR_NO_PATH, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE,
       FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
@@ -1036,7 +1041,7 @@ CHDIR
    :param name: Pathname of the directory to make current.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH,
+   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH,
       FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM,
       FR_TIMEOUT, FR_NOT_ENOUGH_CORE
 
@@ -1168,7 +1173,9 @@ RLN_PEEK
 
    :Op code: RIA_OP_RLN_PEEK 0x31
    :C proto: rp6502.h
-   :param peek: Storage for the returned buffer contents.
+   :param peek: Storage for the returned buffer contents. The C wrapper
+      null-terminates the result, so it must hold up to
+      ``RIA_ATTR_RLN_LENGTH`` + 1 bytes (256 max).
    :param pos: Out-parameter set to the cursor position within the
       buffer.
    :returns: Length of the buffer contents.
@@ -1382,7 +1389,7 @@ documented with its native FatFs errors to help when cross-referencing the
      - FR_NOT_ENOUGH_CORE
    * - EACCES
      - 3
-     - 23
+     - 13
      - FR_DENIED, FR_WRITE_PROTECTED
    * - ENODEV
      - 4
@@ -1452,3 +1459,8 @@ documented with its native FatFs errors to help when cross-referencing the
      - 18
      - 85
      -
+
+.. note::
+
+   cc65 does not define ``EDOM`` or ``EILSEQ``; under option 1 the OS reports
+   both as ``EUNKNOWN`` (18).

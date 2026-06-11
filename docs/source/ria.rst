@@ -142,9 +142,9 @@ Registers
        * bit 6 - SIGINT
 
    * - $FFF1
-     - RETURN
-     - Always $80 (the BRA opcode). JSR here to spin-wait for an
-       OS call: the CPU loops on this BRA until BUSY clears, then
+     - SPIN
+     - Always $80 (the BRA opcode). JSR here (``RIA_SPIN``) to spin-wait
+       for an OS call: the CPU loops on this BRA until BUSY clears, then
        falls through to LDA and LDX below.
    * - $FFF2
      - BUSY
