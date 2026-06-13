@@ -733,6 +733,105 @@ are non-blocking. Reads can return 0 bytes, and writes may send less than
 you asked for — resubmit any remaining bytes on a later call.
 
 
+MIDI
+====
+
+USB MIDI instruments plug right in, and the ``status`` command lists
+them. Each virtual cable is its own device — ``"MIDI0:"`` onward,
+assigned in the order cables appear, up to four at a time. A simple
+keyboard is one cable (1X1); a multi-port interface is several. Open one
+like a file.
+
+These are not plain byte pipes. Raw MIDI has no timing, so the RIA
+handles timing for you using the event format from Standard MIDI Files:
+every MIDI message is prefixed with a variable length quantity delta
+time, measured in ticks. Time starts at the open — the first byte in
+either direction is a delta measuring from the open itself, and a delta
+of zero means right now. Writes are scheduled — the RIA holds each
+message and sends it to the instrument exactly on time, so your program
+only needs to keep the buffer fed. Reads are a recording — incoming
+messages arrive with delta times measuring when they actually happened,
+ready to store in a file or play back later.
+
+The division — ticks per quarter note, what an SMF carries in its
+header — goes in the open name: ``"MIDI0:96"``. It defaults to 480,
+accepts 1 to 32767, and is fixed while open; reopen between songs to
+change it. The open flags are ignored. A cable can be input, output, or
+both; reading an output-only cable or writing an input-only one returns
+an error.
+
+Tempo changes on the fly with the standard SMF Set Tempo meta event,
+which the RIA consumes locally and never forwards to the instrument —
+``FF``, a type, a length, then that many data bytes:
+
+.. list-table::
+   :widths: 32 68
+   :header-rows: 1
+
+   * - Control event
+     - Effect
+   * - ``FF 51 03 tt tt tt``
+     - Set tempo in microseconds per quarter note — the standard SMF
+       event. The tick rate becomes tempo × 1000 ÷ division.
+   * - ``FF FF``
+     - A wire System Reset. The doubled escape is the whole event — no
+       length byte — and unlike the others it is sent to the instrument.
+
+Tempo defaults to 500000 µs per quarter note — 120 BPM, a 1041667 ns
+tick at 480 PPQN. Every other ``FF`` event, including the rest of the
+SMF meta set, is swallowed without effect, so a Standard MIDI File track
+plays through nearly verbatim — division from the file header, tempo
+events straight from the track:
+
+.. code-block:: C
+
+  open("MIDI0:96", 0); // division from the MThd header
+  // FF 51 03 07 A1 20  tempo = 500000 (120 BPM at 96 PPQN)
+  // then delta-timed events; the RIA paces them and tracks tempo changes
+
+The RIA echoes every tempo event onto the read stream at the moment it
+takes effect, so a recording is self-describing. A rejected event —
+malformed, or a value of zero or out of range — is echoed with its value
+zeroed and the tempo unchanged; zero is never a valid tempo, so it
+unambiguously marks an event that didn't apply. Your read parser must
+handle ``FF``: a second ``FF`` is a System Reset, and anything else is
+a meta type and length to skip.
+
+The stream carries raw wire MIDI messages after each delta time: channel
+voice messages (running status accepted on writes), system common, and
+single-byte real-time messages F8-FE. System Reset travels as the
+``FF FF`` escape in both directions: write a delta then ``FF FF`` to
+send one, and a reset from the instrument is recorded the same way. The
+undefined bytes F4 and F5 are quietly dropped.
+
+System Exclusive — sysex — is how instruments move the big stuff, like
+patch banks and sample dumps, in one long message: ``F0``, any number of
+data bytes, then ``F7`` to finish. Only the opening ``F0`` takes a delta
+time; the data bytes flow without timing until the ``F7``, on writes and
+recordings alike. Real MIDI lets real-time messages like clock barge
+into the middle of a sysex — the RIA passes them through in place, so
+expect the occasional F8-FE byte inside a recorded dump. And if a tempo
+echo comes due during a dump, the recording closes the sysex early and
+reopens it after — everything arrives, just split into two
+``F0`` ... ``F7`` fragments.
+
+Delta times measure from the previous event, so timing stays exact over
+any song length: events are anchored to an absolute tick count, and
+ticks are kept internally in nanoseconds, holding arithmetic rounding
+below one part per million. What remains is the hardware — the
+microsecond timer's crystal drifts single-digit milliseconds over a
+several-minute song, and USB full-speed framing sets the
+moment-to-moment jitter near one millisecond, the same pace as the
+classic MIDI wire itself.
+
+If your program stops feeding the buffer and resumes, messages already
+past due play immediately and the timeline continues from there. If you
+stop reading, the recording drops whole messages rather than backing up,
+and the timing of everything that survives stays exact. Reads and writes
+are non-blocking with the same short read/write rules as other
+non-blocking devices.
+
+
 Near Field Communications (NFC)
 ===============================
 

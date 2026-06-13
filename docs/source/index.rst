@@ -61,7 +61,7 @@ Connectivity
 
 - **Wi-Fi** — NTP time sync, telnet server, and Hayes modem emulation
 - **Bluetooth LE** — keyboards, mice, and gamepads
-- **USB host** — keyboards, mice, gamepads, hubs, UART serial, NFC, floppy and flash drives
+- **USB host** — keyboards, mice, gamepads, hubs, UART serial, MIDI, NFC, floppy and flash drives
 - **USB device** — serial console access with no driver needed (CDC ACM)
 
 
