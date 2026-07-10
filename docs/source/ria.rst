@@ -235,6 +235,9 @@ on it.
   * - $0:0:02
     - GAMEPADS
     - See `Gamepads`_ section
+  * - $0:0:03
+    - TABLET
+    - See `Tablet`_ section
   * - $0:1:00
     - PSG
     - See `Programmable Sound Generator`_ section
@@ -379,6 +382,81 @@ Mouse buttons are a bitfield:
 - 2 - MIDDLE
 - 3 - BACKWARD
 - 4 - FORWARD
+
+
+Tablet
+======
+
+The RIA can give applications an *absolute* pointer — a "tablet" — instead of
+the relative mouse. It reports a canvas pixel position directly: a plain mouse
+is integrated and clamped to the canvas, and an absolute USB or Bluetooth
+digitizer or touchscreen is scaled to it. Enable and disable it by mapping it
+to an address in XRAM.
+
+.. code-block:: C
+
+  xreg(0, 0, 0x03, xaddr);  // enable
+  xreg(0, 0, 0x03, 0xFFFF); // disable
+  xreg_ria_tablet(xaddr);   // macro shortcut
+
+The block is a two-byte header followed by eight contact records for
+multi-touch; a mouse or pen uses only the first.
+
+.. code-block:: C
+
+  struct {
+      uint8_t status;   // RIA -> application
+      uint8_t control;  // application -> RIA
+      struct {
+          uint8_t flags;
+          uint8_t x0, x1, x2;
+          uint8_t y0, y1;
+      } contact[8];
+  } tablet;
+
+Each axis is a set of single-byte *windows*: exactly one is non-zero, and it
+alone carries the value. Decode by taking the first non-zero byte.
+
+.. code-block:: C
+
+  // X is 0..639, Y is 0..479
+  if (c.x0) x = c.x0 - 1;
+  else if (c.x1) x = c.x1 + 254;
+  else if (c.x2) x = c.x2 + 509;
+  else { /* read the contact once more, then keep the previous X */ }
+
+  if (c.y0) y = c.y0 - 1;
+  else if (c.y1) y = c.y1 + 254;
+  else { /* read the contact once more, then keep the previous Y */ }
+
+Contact flags are a bitfield:
+
+- 0 - LEFT / tip
+- 1 - RIGHT
+- 2 - MIDDLE
+- 3 - BACKWARD
+- 4 - FORWARD
+- 7 - HOVER
+
+HOVER is set when the contact tracks a position without a press — always for a
+mouse, and for a pen while it is in range — and clear for a touchscreen.
+
+The application and the RIA exchange pointer preferences through the header.
+``status`` bit 0 (host cursor) is set only when the host can draw a cursor for
+the application — the emulator or web build with a mouse — and is always clear
+on real hardware and for touch input. ``control`` selects the host cursor shape
+the application wants, or hides it so the application can draw its own.
+
+- 0 - OFF (host cursor hidden; the application draws its own pointer)
+- 1 - ARROW
+- 2 - CROSSHAIR
+- 3 - IBEAM
+- 4 - HAND
+- 5 - RESIZE_EW
+- 6 - RESIZE_NS
+
+When the host cursor bit is clear the application must draw its own pointer, and
+``control`` has no effect. This is always the case on real hardware.
 
 
 Gamepads
