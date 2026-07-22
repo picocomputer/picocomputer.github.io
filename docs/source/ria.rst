@@ -399,20 +399,26 @@ to an address in XRAM.
   xreg(0, 0, 0x03, 0xFFFF); // disable
   xreg_ria_tablet(xaddr);   // macro shortcut
 
-The block is a two-byte header followed by eight contact records for
+The block is a four-byte header followed by eight contact records for
 multi-touch; a mouse or pen uses only the first.
 
 .. code-block:: C
 
   struct {
-      uint8_t status;   // RIA -> application
       uint8_t control;  // application -> RIA
+      uint8_t status;   // RIA -> application
+      uint8_t wheel;    // RIA -> application
+      uint8_t pan;      // RIA -> application
       struct {
           uint8_t flags;
           uint8_t x0, x1, x2;
           uint8_t y0, y1;
       } contact[8];
   } tablet;
+
+``wheel`` and ``pan`` are scroll counters in the same format as the mouse: read
+them by subtracting the previous value. They advance only while a mouse drives
+the tablet.
 
 Each axis is a set of single-byte *windows*: exactly one is non-zero, and it
 alone carries the value. Decode by taking the first non-zero byte.

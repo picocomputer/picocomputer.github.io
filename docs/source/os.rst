@@ -324,7 +324,7 @@ ARGV
 
    .. code-block:: c
 
-      void *argv_mem(size_t size) { return malloc(size); }
+      void *__argv_mem(size_t size) { return malloc(size); }
 
    :Op code: RIA_OP_ARGV 0x08
    :C proto: (none)
