@@ -593,7 +593,7 @@ Programmable Sound Generator
 The RIA includes a Programmable Sound Generator (PSG), configured
 through extended register device 0, channel 1, address 0x00.
 
-* Eight 24 kHz 8-bit oscillator channels.
+* Eight 48 kHz 16-bit oscillator channels.
 * Five waveforms: Sine, Square, Sawtooth, Triangle, Noise.
 * ADSR envelope: Attack, Decay, Sustain, Release.
 * Stereo panning.

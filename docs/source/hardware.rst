@@ -133,8 +133,9 @@ If something is out of stock, check the `Parts Substitution`_ notes below.
 Step 5. Pi Pico Firmware
 ========================
 
-Download the `UF2 files
-<https://github.com/picocomputer/rp6502/releases>`_.
+Download the `pico zip
+<https://github.com/picocomputer/rp6502/releases>`_ and unpack the UF2 files
+inside it.
 
 To flash a Pico 2, hold its BOOTSEL button while plugging it into a computer.
 The Pico 2 mounts as a storage device. Copy the RIA-W UF2 file to make a
