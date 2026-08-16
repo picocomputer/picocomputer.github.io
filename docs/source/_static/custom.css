@@ -2,3 +2,50 @@
 dl.c.function > dd {
     margin-top: 1em;
 }
+
+/* Wide content scrolls inside itself instead of dragging the whole page
+   sideways. Register tables and the parts lists are wider than a phone, and
+   the block diagrams are wider than a phone by design. */
+div.body table.docutils,
+div.body div[class*="highlight"],
+div.body pre {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* A bare URL is one long word, and there are several on the front page.
+   Inline literals are long words too — a path or a signature can be wider
+   than a phone on its own. */
+div.body {
+    overflow-wrap: break-word;
+}
+
+div.body code.literal,
+div.body code.literal span.pre {
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+/* Block diagrams are drawn to a fixed column count and would otherwise be
+   the only thing on the site you have to scroll to read. */
+div.body div.diagram pre {
+    font-size: 0.78em;
+    line-height: 1.35;
+}
+
+/* The embedded emulator. Alabaster leaves a 650px content column at its
+   default width, so 640 fits; below 876px the theme drops the sidebar and the
+   percentage keeps the frame inside whatever is left. height:auto is
+   load-bearing, or the height attribute fights aspect-ratio. */
+iframe.emu-frame {
+    display: block;
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    max-height: 75vh;
+    margin: 0 auto 1em auto;
+    border: 1px solid #B1B4B6;
+    background: #000;
+}

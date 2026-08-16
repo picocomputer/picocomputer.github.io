@@ -1,7 +1,10 @@
 .. toctree::
    :hidden:
 
-   Hardware <hardware>
+   RP6502-PICO <pico>
+   RP6502-EMU <emu>
+   RP6502-FPGA <fpga>
+   RP6502-SDK <sdk>
    RP6502-RIA <ria>
    RP6502-RIA-W <ria_w>
    RP6502-VGA <vga>
@@ -49,6 +52,7 @@ Specs
 
 Quality of Life
 ===============
+
 - **Open by design** — fully open source hardware and software, friendly to DIY builds
 - **Console manifold** — reach the console over telnet, serial, or direct attach
 - **Storage** — fast USB flash drive access, over 512 KB/sec read and write
@@ -71,20 +75,31 @@ Programming
 - **Protected OS** — 32-bit operating system that uses no 6502 RAM
 - **FAT filesystem** — read and write files on any USB flash or floppy drive
 - **POSIX-like API** — a familiar C library for portable code
-- **cc65 and llvm-mos** — `SDK <https://github.com/picocomputer/vscode-cc65>`__ for either 6502 compiler
+- **cc65 and llvm-mos** — :doc:`SDK <sdk>` for either 6502 compiler
 - **AI assistance** — the latest models via VS Code extensions or GitHub Copilot
 
 
-Build It
-========
+Get a Machine
+=============
 
-100% through-hole construction, no IC programmer required. Hundreds of people
-have built one, typically for under $100 USD. Prefer not to solder? You can
-have a unit manufactured in China instead. Every part is currently in
-production, and the Raspberry Pi Pico 2 is guaranteed through at least
-January 2040.
+There are three of them, and they are the same computer. Software written
+for one runs on the others.
 
-- :doc:`hardware`: Schematic and manufacturing information.
+- :doc:`pico`: build the real thing. 100% through-hole construction, no IC
+  programmer required. Hundreds of people have built one, typically for
+  under $100 USD. Prefer not to solder? You can have a unit manufactured
+  in China instead. Every part is currently in production, and the
+  Raspberry Pi Pico 2 is guaranteed through at least January 2040.
+- :doc:`emu`: software emulation, for Windows, macOS, Linux, Android, and
+  the browser. There's a playable one on that page — you can be running
+  6502 code in about two seconds.
+- :doc:`fpga`: hardware emulation. The whole machine in gates, on an
+  Analogue Pocket today and MiSTer next.
+
+The specs above describe the Picocomputer, and the wireless and USB
+features belong to the physical hardware that has the radios and the
+ports. What every host does have is the 6502, the video, the sound, and
+the operating system.
 
 
 Documentation
@@ -93,6 +108,7 @@ Documentation
 The Picocomputer 6502 is a reference design for RP6502 modular hardware.
 The only required module is the RP6502-RIA.
 
+- :doc:`sdk`: writing software, from a new project to a running program.
 - :doc:`ria`: the interface adapter for the 6502, in the spirit of the classic CIA, VIA, and ACIA chips.
 - :doc:`ria_w`: the wireless features unlocked by the Pico 2 W.
 - :doc:`vga`: the optional video adapter.

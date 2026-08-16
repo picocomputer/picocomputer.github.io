@@ -87,36 +87,36 @@ Key Registers
 Setting a key register may fail, returning -1 with errno EINVAL.
 
 .. list-table::
-  :widths: 5 5 90
-  :header-rows: 1
+   :widths: 5 5 90
+   :header-rows: 1
 
-  * - Address
-    - Name
-    - Description
-  * - $1:0:00
-    - CANVAS
-    - Select a graphics canvas. This clears $1:0:02-$1:0:FF and all
-      scanline programming. The 80 column console canvas is used as
-      a failsafe and therefore not scanline programmable.
+   * - Address
+     - Name
+     - Description
+   * - $1:0:00
+     - CANVAS
+     - Select a graphics canvas. This clears $1:0:02-$1:0:FF and all
+       scanline programming. The 80 column console canvas is used as
+       a failsafe and therefore not scanline programmable.
 
-      * 0 - 80 column console. (4:3 or 5:4)
-      * 1 - 320x240 (4:3)
-      * 2 - 320x180 (16:9)
-      * 3 - 640x480 (4:3)
-      * 4 - 640x360 (16:9)
+       * 0 - 80 column console. (4:3 or 5:4)
+       * 1 - 320x240 (4:3)
+       * 2 - 320x180 (16:9)
+       * 3 - 640x480 (4:3)
+       * 4 - 640x360 (16:9)
 
-  * - $1:0:01
-    - MODE
-    - Program a mode into a plane of scanlines.
-      $1:0:02-$1:0:FF cleared after programming. Each mode has a
-      section of this document for its own registers.
+   * - $1:0:01
+     - MODE
+     - Program a mode into a plane of scanlines.
+       $1:0:02-$1:0:FF cleared after programming. Each mode has a
+       section of this document for its own registers.
 
-      * 0 - `Console <#mode-0-console>`__
-      * 1 - `Character <#mode-1-character>`__
-      * 2 - `Tile <#mode-2-tile>`__
-      * 3 - `Bitmap <#mode-3-bitmap>`__
-      * 4 - `Sprite 16-bit <#mode-4-sprite-16-bit>`__
-      * 5 - `Sprite 1,2,4,8-bit <#mode-5-sprite-1-2-4-8-bit>`__
+       * 0 - `Console <#mode-0-console>`__
+       * 1 - `Character <#mode-1-character>`__
+       * 2 - `Tile <#mode-2-tile>`__
+       * 3 - `Bitmap <#mode-3-bitmap>`__
+       * 4 - `Sprite 16-bit <#mode-4-sprite-16-bit>`__
+       * 5 - `Sprite 1,2,4,8-bit <#mode-5-sprite-1-2-4-8-bit>`__
 
 
 Mode 0: Console
@@ -133,24 +133,24 @@ another removes the previous one.
 See :doc:`term` for the terminal protocol and escape sequences.
 
 .. list-table::
-  :widths: 5 5 90
-  :header-rows: 1
+   :widths: 5 5 90
+   :header-rows: 1
 
-  * - Address
-    - Name
-    - Description
-  * - $1:0:01
-    - MODE
-    - 0 - Console
-  * - $1:0:02
-    - PLANE
-    - 0-2 to select which fill plane of scanlines to program.
-  * - $1:0:03
-    - BEGIN
-    - First scanline to program. BEGIN \<= n \< END
-  * - $1:0:04
-    - END
-    - End of scanlines to program. 0 means use canvas height (180-480).
+   * - Address
+     - Name
+     - Description
+   * - $1:0:01
+     - MODE
+     - 0 - Console
+   * - $1:0:02
+     - PLANE
+     - 0-2 to select which fill plane of scanlines to program.
+   * - $1:0:03
+     - BEGIN
+     - First scanline to program. BEGIN \<= n \< END
+   * - $1:0:04
+     - END
+     - End of scanlines to program. 0 means use canvas height (180-480).
 
 
 Mode 1: Character
@@ -162,32 +162,32 @@ mode you want for colorful text — menus, status bars, anything where the
 glyphs change color.
 
 .. list-table::
-  :widths: 5 5 90
-  :header-rows: 1
+   :widths: 5 5 90
+   :header-rows: 1
 
-  * - Address
-    - Name
-    - Description
-  * - $1:0:01
-    - MODE
-    - 1 - Character
-  * - $1:0:02
-    - OPTIONS
-    - | bit 0:2 - 0=1, 1=4r, 2=4, 3=8, or 4=16 bit color
-      | bit 3 - font size 0=8x8, 1=8x16
-  * - $1:0:03
-    - CONFIG
-    - Address of config structure in XRAM.
-  * - $1:0:04
-    - PLANE
-    - 0-2 to select which fill plane of scanlines to program.
-  * - $1:0:05
-    - BEGIN
-    - First scanline to program. BEGIN \<= n \< END
-  * - $1:0:06
-    - END
-    - End of scanlines to program. 0 means use canvas height
-      (180-480).
+   * - Address
+     - Name
+     - Description
+   * - $1:0:01
+     - MODE
+     - 1 - Character
+   * - $1:0:02
+     - OPTIONS
+     - | bit 0:2 - 0=1, 1=4r, 2=4, 3=8, or 4=16 bit color
+       | bit 3 - font size 0=8x8, 1=8x16
+   * - $1:0:03
+     - CONFIG
+     - Address of config structure in XRAM.
+   * - $1:0:04
+     - PLANE
+     - 0-2 to select which fill plane of scanlines to program.
+   * - $1:0:05
+     - BEGIN
+     - First scanline to program. BEGIN \<= n \< END
+   * - $1:0:06
+     - END
+     - End of scanlines to program. 0 means use canvas height
+       (180-480).
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -269,34 +269,34 @@ the mode you want for a video-game playfield, where a small set of tiles
 is repeated across a large map.
 
 .. list-table::
-  :widths: 5 5 90
-  :header-rows: 1
+   :widths: 5 5 90
+   :header-rows: 1
 
-  * - Address
-    - Name
-    - Description
-  * - $1:0:01
-    - MODE
-    - 2 - Tile
-  * - $1:0:02
-    - OPTIONS
-    - | bit 0:2 - 0=1, 1=2, 2=4, or 3=8 bit color
-      | bit 3 - 0=8x8, 1=16x16
-      | bit 4:7 - X trim, columns dropped off the tile right (0-15)
-      | bit 8:11 - Y trim, rows dropped off the tile bottom (0-15)
-  * - $1:0:03
-    - CONFIG
-    - Address of config structure in XRAM.
-  * - $1:0:04
-    - PLANE
-    - 0-2 to select which fill plane of scanlines to program.
-  * - $1:0:05
-    - BEGIN
-    - First scanline to program. BEGIN \<= n \< END
-  * - $1:0:06
-    - END
-    - End of scanlines to program. 0 means use canvas height
-      (180-480).
+   * - Address
+     - Name
+     - Description
+   * - $1:0:01
+     - MODE
+     - 2 - Tile
+   * - $1:0:02
+     - OPTIONS
+     - | bit 0:2 - 0=1, 1=2, 2=4, or 3=8 bit color
+       | bit 3 - 0=8x8, 1=16x16
+       | bit 4:7 - X trim, columns dropped off the tile right (0-15)
+       | bit 8:11 - Y trim, rows dropped off the tile bottom (0-15)
+   * - $1:0:03
+     - CONFIG
+     - Address of config structure in XRAM.
+   * - $1:0:04
+     - PLANE
+     - 0-2 to select which fill plane of scanlines to program.
+   * - $1:0:05
+     - BEGIN
+     - First scanline to program. BEGIN \<= n \< END
+   * - $1:0:06
+     - END
+     - End of scanlines to program. 0 means use canvas height
+       (180-480).
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -354,32 +354,32 @@ full-screen image can go: monochrome at 640x480, 16 colors at 320x240,
 or 256 colors at 320x180 (16:9).
 
 .. list-table::
-  :widths: 5 5 90
-  :header-rows: 1
+   :widths: 5 5 90
+   :header-rows: 1
 
-  * - Address
-    - Name
-    - Description
-  * - $1:0:01
-    - MODE
-    - 3 - Bitmap
-  * - $1:0:02
-    - OPTIONS
-    - | bit 0:2 - 0=1, 1=2, 2=4, 3=8, or 4=16 bit color
-      | bit 3 - reverse bit order
-  * - $1:0:03
-    - CONFIG
-    - Address of config structure in XRAM.
-  * - $1:0:04
-    - PLANE
-    - 0-2 to select which fill plane of scanlines to program.
-  * - $1:0:05
-    - BEGIN
-    - First scanline to program. BEGIN \<= n \< END
-  * - $1:0:06
-    - END
-    - End of scanlines to program. 0 means use canvas height
-      (180-480).
+   * - Address
+     - Name
+     - Description
+   * - $1:0:01
+     - MODE
+     - 3 - Bitmap
+   * - $1:0:02
+     - OPTIONS
+     - | bit 0:2 - 0=1, 1=2, 2=4, 3=8, or 4=16 bit color
+       | bit 3 - reverse bit order
+   * - $1:0:03
+     - CONFIG
+     - Address of config structure in XRAM.
+   * - $1:0:04
+     - PLANE
+     - 0-2 to select which fill plane of scanlines to program.
+   * - $1:0:05
+     - BEGIN
+     - First scanline to program. BEGIN \<= n \< END
+   * - $1:0:06
+     - END
+     - End of scanlines to program. 0 means use canvas height
+       (180-480).
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -425,34 +425,34 @@ Its appetite for memory is offset by something the others can't do —
 affine transforms.
 
 .. list-table::
-  :widths: 5 5 90
-  :header-rows: 1
+   :widths: 5 5 90
+   :header-rows: 1
 
-  * - Address
-    - Name
-    - Description
-  * - $1:0:01
-    - MODE
-    - 4 - Sprite
-  * - $1:0:02
-    - OPTIONS
-    - | bit 0 - affine
-  * - $1:0:03
-    - CONFIG
-    - | Address of config array in XRAM.
-  * - $1:0:04
-    - LENGTH
-    - Length of config array in XRAM.
-  * - $1:0:05
-    - PLANE
-    - 0-2 to select which sprite plane of scanlines to program.
-  * - $1:0:06
-    - BEGIN
-    - First scanline to program. BEGIN \<= n \< END
-  * - $1:0:07
-    - END
-    - End of scanlines to program. 0 means use canvas height
-      (180-480).
+   * - Address
+     - Name
+     - Description
+   * - $1:0:01
+     - MODE
+     - 4 - Sprite
+   * - $1:0:02
+     - OPTIONS
+     - | bit 0 - affine
+   * - $1:0:03
+     - CONFIG
+     - | Address of config array in XRAM.
+   * - $1:0:04
+     - LENGTH
+     - Length of config array in XRAM.
+   * - $1:0:05
+     - PLANE
+     - 0-2 to select which sprite plane of scanlines to program.
+   * - $1:0:06
+     - BEGIN
+     - First scanline to program. BEGIN \<= n \< END
+   * - $1:0:07
+     - END
+     - End of scanlines to program. 0 means use canvas height
+       (180-480).
 
 Move unused sprites off screen. Non-affine sprites use this config
 structure:
@@ -506,36 +506,36 @@ bullets on the third.
 
 
 .. list-table::
-  :widths: 5 5 90
-  :header-rows: 1
+   :widths: 5 5 90
+   :header-rows: 1
 
-  * - Address
-    - Name
-    - Description
-  * - $1:0:01
-    - MODE
-    - 5 - Sprite
-  * - $1:0:02
-    - OPTIONS
-    - | bit 0:2 - 0=1, 1=2, 2=4, or 3=8 bit color
-      | bit 3:5 - 0=8x8, 1=16x16, 2=32x32, 3=64x64, 4=128x128, 5=256x256, 6=512x512
-      | 512x512 only supports 1-bit and 2-bit color.
-  * - $1:0:03
-    - CONFIG
-    - | Address of config array in XRAM.
-  * - $1:0:04
-    - LENGTH
-    - Length of config array in XRAM.
-  * - $1:0:05
-    - PLANE
-    - 0-2 to select which sprite plane of scanlines to program.
-  * - $1:0:06
-    - BEGIN
-    - First scanline to program. BEGIN \<= n \< END
-  * - $1:0:07
-    - END
-    - End of scanlines to program. 0 means use canvas height
-      (180-480).
+   * - Address
+     - Name
+     - Description
+   * - $1:0:01
+     - MODE
+     - 5 - Sprite
+   * - $1:0:02
+     - OPTIONS
+     - | bit 0:2 - 0=1, 1=2, 2=4, or 3=8 bit color
+       | bit 3:5 - 0=8x8, 1=16x16, 2=32x32, 3=64x64, 4=128x128, 5=256x256, 6=512x512
+       | 512x512 only supports 1-bit and 2-bit color.
+   * - $1:0:03
+     - CONFIG
+     - | Address of config array in XRAM.
+   * - $1:0:04
+     - LENGTH
+     - Length of config array in XRAM.
+   * - $1:0:05
+     - PLANE
+     - 0-2 to select which sprite plane of scanlines to program.
+   * - $1:0:06
+     - BEGIN
+     - First scanline to program. BEGIN \<= n \< END
+   * - $1:0:07
+     - END
+     - End of scanlines to program. 0 means use canvas height
+       (180-480).
 
 Disable unused sprites by moving them off screen.
 
@@ -581,44 +581,44 @@ The RIA manages these registers. If a VGA module is connected, 6502
 applications are denied access to them.
 
 .. list-table::
-  :widths: 5 5 90
-  :header-rows: 1
+   :widths: 5 5 90
+   :header-rows: 1
 
-  * - Address
-    - Name
-    - Description
-  * - $1:F:00
-    - DISPLAY
-    - This sets the aspect ratio of your display. This also resets
-      CANVAS to the console.
+   * - Address
+     - Name
+     - Description
+   * - $1:F:00
+     - DISPLAY
+     - This sets the aspect ratio of your display. This also resets
+       CANVAS to the console.
 
-      * 0 - VGA (4:3) 640x480
-      * 1 - HD (16:9) 640x480 and 1280x720
-      * 2 - SXGA (5:4) 1280x1024
+       * 0 - VGA (4:3) 640x480
+       * 1 - HD (16:9) 640x480 and 1280x720
+       * 2 - SXGA (5:4) 1280x1024
 
-  * - $1:F:01
-    - CODE_PAGE
-    - Set code page for built-in font. Matches
-      `RIA_ATTR_CODE_PAGE <os.html#ria-attributes>`__.
-  * - $1:F:02
-    - SUPPRESS_TERM_REPLY
-    - Used by the telnet server to suppress term responses.
-  * - $1:F:03
-    - UART_TX
-    - Alternate path for UART Tx when using backchannel.
-  * - $1:F:04
-    - BACKCHAN
-    - Control using UART Tx as backchannel.
+   * - $1:F:01
+     - CODE_PAGE
+     - Set code page for built-in font. Matches
+       `RIA_ATTR_CODE_PAGE <os.html#ria-attributes>`__.
+   * - $1:F:02
+     - SUPPRESS_TERM_REPLY
+     - Used by the telnet server to suppress term responses.
+   * - $1:F:03
+     - UART_TX
+     - Alternate path for UART Tx when using backchannel.
+   * - $1:F:04
+     - BACKCHAN
+     - Control using UART Tx as backchannel.
 
-      * 0 - Disable
-      * 1 - Enable
-      * 2 - Request
-  * - $1:F:05
-    - FLASH_SECTOR
-    - Flash the contents of XRAM[0..4095] to the specified sector.
-  * - $1:F:06
-    - REBOOT_OR_LOCKUP
-    - Called after flashing. Non-0 locks up to leave error message visible.
+       * 0 - Disable
+       * 1 - Enable
+       * 2 - Request
+   * - $1:F:05
+     - FLASH_SECTOR
+     - Flash the contents of XRAM[0..4095] to the specified sector.
+   * - $1:F:06
+     - REBOOT_OR_LOCKUP
+     - Called after flashing. Non-0 locks up to leave error message visible.
 
 
 Backchannel
