@@ -39,8 +39,10 @@ a ROM can be run directly, or you can ``set boot`` to load it whenever
 the RIA boots.
 
 A few monitor commands, such as ``upload`` and ``binary``, exist for
-developer tools. The ``rp6502.py`` script that ships with the examples
-and templates automates ROM packaging and execution.
+developer tools. The ``rp6502.py`` script automates ROM packaging and
+execution. A new project fetches it into ``tools/`` on the first build,
+along with the emulator built for whatever machine you develop on, and
+updates both from there.
 
 
 Reset
@@ -474,11 +476,13 @@ XInput, and PlayStation controllers.
 Modern gamepads have all converged on the same layout: four face
 buttons, a d-pad, dual analog sticks, select, start, and four shoulders.
 The face buttons vary only in labeling — XY/AB, YX/BA, or
-Square/Triangle/Cross/Circle. That rarely matters to an application
-unless the buttons stand in for directions, in which case the
-Square/Triangle/Cross/Circle and XY/AB arrangements are "the official"
-RP6502 layout. You're free to do your own thing, of course — ask players
-to use a specific gamepad, or offer an "AB or BA" option.
+Square/Triangle/Cross/Circle. Each button reports in the same place
+whatever it is called, so that rarely matters to an application until it
+wants to print a button's name, or the buttons stand in for directions.
+For those, the DPAD register reports which labeling the gamepad wears
+when the RIA can be sure of it. You're free to do your own thing, of
+course — ask players to use a specific gamepad, or offer an "AB or BA"
+option.
 
 .. note::
    **The RP6502 expects modern gamepads.**
@@ -506,9 +510,40 @@ The RIA continuously updates extended memory with gamepad state. The
 per gamepad.
 
 The upper bits of the DPAD register report readiness and type. The
-connected bit is high when a gamepad occupies that player slot. The Sony
-bit indicates a PlayStation-style gamepad with
-Circle/Cross/Square/Triangle faces.
+connected bit is high when a gamepad occupies that player slot.
+
+The button type says where the face button labels sit, so an application
+can print the right one. The buttons themselves never move: BTN0 bit 0 is
+the button labeled A or Cross, wherever that label happens to be
+printed. A type is only reported when the RIA is certain.
+
+.. list-table::
+   :widths: 1 1 1 1 1
+   :header-rows: 1
+
+   * - Type
+     - BTN0 bit 0
+     - BTN0 bit 1
+     - BTN0 bit 3
+     - BTN0 bit 4
+   * - 1 Western AB
+     - A, south
+     - B, east
+     - X, west
+     - Y, north
+   * - 2 Eastern BA
+     - A, east
+     - B, south
+     - X, north
+     - Y, west
+   * - 3 PlayStation
+     - Cross, south
+     - Circle, east
+     - Square, west
+     - Triangle, north
+
+The sticks bit is high when the gamepad has both analog sticks. One
+stick is not enough to set it.
 
 Both digital and analog values are available for the sticks and the
 L2/R2 triggers, so applications can ignore the analog values entirely if
@@ -533,9 +568,9 @@ merge the d-pad and left stick into a single input.
        * bit 1: Direction pad down
        * bit 2: Direction pad left
        * bit 3: Direction pad right
-       * bit 4: Reserved
-       * bit 5: Reserved
-       * bit 6: Sony button faces
+       * bits 4-5: Button type. 0=unknown, 1=Western AB,
+         2=Eastern BA, 3=PlayStation
+       * bit 6: Both analog sticks present
        * bit 7: Connected
    * - 1
      - STICKS
@@ -1152,8 +1187,8 @@ until end of file.
    * - ``name``
      - Asset identifier string.
 
-The ``rp6502.py`` tool that comes with the new-project templates handles
-these details and integrates with CMake, so adding assets is
+The ``rp6502.py`` tool in a project's ``tools/`` directory handles these
+details and integrates with CMake, so adding assets is
 straightforward. In this example the image data is packed into the ROM
 as memory chunks that load into RAM or XRAM when the ROM loads:
 

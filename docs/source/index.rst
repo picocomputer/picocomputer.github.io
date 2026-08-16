@@ -71,8 +71,7 @@ Programming
 - **Protected OS** — 32-bit operating system that uses no 6502 RAM
 - **FAT filesystem** — read and write files on any USB flash or floppy drive
 - **POSIX-like API** — a familiar C library for portable code
-- **cc65** — `VS Code integration for cc65 <https://github.com/picocomputer/vscode-cc65>`__
-- **llvm-mos** — `VS Code integration for llvm-mos <https://github.com/picocomputer/vscode-llvm-mos>`__
+- **cc65 and llvm-mos** — `SDK <https://github.com/picocomputer/vscode-cc65>`__ for either 6502 compiler
 - **AI assistance** — the latest models via VS Code extensions or GitHub Copilot
 
 
