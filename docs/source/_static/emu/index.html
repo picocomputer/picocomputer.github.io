@@ -68,6 +68,29 @@
       var canvas = document.getElementById('canvas');
       var msg = document.getElementById('msg');
       var overlay = document.getElementById('overlay');
+
+      // Nothing reaches the speakers until the reader asks for it. Suspending
+      // the context does not work: sokol installs its own onstatechange that
+      // resumes anything suspended, so it wins. Hold the graph apart instead —
+      // sokol connects its node once at init and never looks again.
+      var audioGated = true;
+      var deferredConnects = [];
+      var nativeConnect = AudioNode.prototype.connect;
+      AudioNode.prototype.connect = function (dest) {
+        if (audioGated && dest instanceof AudioDestinationNode) {
+          deferredConnects.push([this, arguments]);
+          return dest;
+        }
+        return nativeConnect.apply(this, arguments);
+      };
+      function ungateAudio() {
+        if (!audioGated) return;
+        audioGated = false;
+        AudioNode.prototype.connect = nativeConnect;
+        deferredConnects.splice(0).forEach(function (c) {
+          nativeConnect.apply(c[0], c[1]);
+        });
+      }
       var overlayTitle = document.getElementById('overlay-title');
       var overlayHint = document.getElementById('overlay-hint');
       // The overlay paints over #msg, so anything that wants to be read has to
@@ -213,10 +236,14 @@
       };
       window.Module = Module;
 
-      // The game starts running on load. Browser autoplay policy keeps the audio
-      // context suspended until a user gesture, so resume it (and focus the
-      // canvas for keys) on the first click or key.
+      // The game starts running on load, silently. Sound waits for a deliberate
+      // click, always — asking the audio context whether a gesture is still owed
+      // is the wrong question here. Chrome shares user activation across
+      // same-origin frames, so a reader who merely followed a link to the page
+      // this frame sits in hands it an already-running context, and the answer
+      // comes back "no gesture owed" for a reader who never asked for sound.
       function start() {
+        ungateAudio();
         var ctx = Module._saudio_context;
         if (ctx && ctx.state !== 'running') ctx.resume();
         overlay.classList.add('hidden');
@@ -229,23 +256,13 @@
       overlay.addEventListener('click', start);
       window.addEventListener('keydown', start);
 
-      // Whether a gesture is still owed is the context's own answer: the browser
-      // hands back a running one when the document already has user activation,
-      // which a click that navigated here carries across — sound and all, making
-      // the prompt a lie. Activation does not reach a frame from the page around
-      // it, so embedded the answer is always suspended and the prompt always
-      // shows. sokol creates the context on the first frame, so wait for it
-      // before deciding.
+      // The prompt says click, not "click or press a key". Embedded, the frame
+      // has no focus until something clicks it, so a keystroke goes to the page
+      // around it. The keydown listener above is still worth having for a
+      // standalone deploy, where the page does have the keyboard.
       function gateAudio() {
-        var tries = 20;
-        var t = setInterval(function () {
-          var ctx = Module._saudio_context;
-          if (!ctx && --tries) return;
-          clearInterval(t);
-          if (ctx && ctx.state === 'running') return start();
-          overlayTitle.textContent = '▶ Play';
-          overlayHint.textContent = 'Click or press a key to start (enables sound)';
-        }, 50);
+        overlayTitle.textContent = '▶ Play';
+        overlayHint.textContent = 'Click to start (enables sound)';
       }
 
       // Best-effort save flush when the tab is hidden/closed (async, so an abrupt
