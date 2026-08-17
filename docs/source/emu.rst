@@ -349,49 +349,14 @@ and pointers expand, and the call stack is read rather than guessed.
 
 Neither offers XRAM or XSTACK as variable scopes. Use the memory views.
 
-Installing llvm-mos
--------------------
-
-The compiler and its platform libraries ship together in the `LLVM-MOS
-SDK <https://github.com/llvm-mos/llvm-mos-sdk/releases/latest>`__.
-Download the archive for your platform, extract it anywhere, and you're
-done.
-
-- `Linux
-  <https://github.com/llvm-mos/llvm-mos-sdk/releases/latest/download/llvm-mos-linux.tar.xz>`__
-- `macOS
-  <https://github.com/llvm-mos/llvm-mos-sdk/releases/latest/download/llvm-mos-macos.tar.xz>`__
-- `Windows
-  <https://github.com/llvm-mos/llvm-mos-sdk/releases/latest/download/llvm-mos-windows.7z>`__
-
-On macOS the download is quarantined, which stops the extracted binaries
-from running. Clear it before extracting.
-
-.. code-block:: text
-
-  xattr -d com.apple.quarantine llvm-mos-macos.tar.xz
-
-Adding the ``bin`` directory to your PATH is optional and comes with a
-warning: LLVM-MOS conflicts with any other LLVM or Clang installation on
-the same PATH. The Picocomputer driver is ``mos-rp6502-clang``, and a
-project from the :doc:`sdk` template names the platform in its preset, so
-CMake finds the right one either way.
-
-What DWARF will unlock
-----------------------
-
-The gap above is a compiler problem rather than a debugger one, and it's
-being closed upstream. The `DWARF overview
+Fuller DWARF for llvm-mos is being worked on upstream, and there are two
+places to go look. The `DWARF overview
 <https://llvm-mos.org/wiki/DWARF_overview>`__ on the llvm-mos wiki is the
-place to follow it.
-
-The short of it is that a 6502 has two stacks — the 256-byte hardware
-stack for return addresses, and a soft stack for everything that doesn't
-fit — and the debugging format assumes one. Describing a frame split
-across both takes DWARF *expressions*, which LLVM's assembler had no
-first-class way to emit. That work is in review now; the linker half has
-already landed. The series it belongs to ends with an LLDB plugin for the
-6502 and a debugger shipping in the toolchain itself.
+write-up. The code is on the numbered ``feature/debug`` branches of `the
+fork it's developed in
+<https://github.com/johnwbyrd/llvm-mos/branches/all?query=feature%2Fdebug>`__,
+highest number newest. Nothing is released, so trying it means building
+LLVM from source.
 
 The on-screen debugger
 ----------------------
