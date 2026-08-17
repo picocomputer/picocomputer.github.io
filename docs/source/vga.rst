@@ -13,6 +13,26 @@ over a 5-wire PIX bus. You can put more than one VGA module on a PIX
 bus, but note that all of them share the same 64 KB of XRAM, and only
 the first generates frame numbers and VSYNC interrupts.
 
+Two Implementations
+===================
+
+Everything on this page exists twice. There's a software renderer in C,
+``src/vga/modes``, and there's RTL, ``src/rtl/vid``, and neither one is a
+sketch of the other. Same registers, same config structures at the same
+offsets, same pixels.
+
+The C is the RP6502-VGA firmware, and the :doc:`emu` compiles the same
+files, so the Pico 2 module and every software host draw with one
+renderer. The RTL is the :doc:`fpga`'s, where each mode is a scanline
+engine in fabric.
+
+They're held to each other. A generator writes a corpus of small ROMs
+covering every mode. Every fixture boots on both machines, settles, and
+the two framebuffers are compared word for word.
+
+Which is why nothing below says which machine it's describing. There's
+one video system here, and you can have it in software or in gates.
+
 Video Programming
 ==================
 
