@@ -278,29 +278,58 @@ Multiple Compiler Artifacts
 ===========================
 
 A linker configuration can write more than one output file, and CMake's
-``add_executable()`` only models one of them. In an ld65 config, every
-memory area with a ``file`` of its own is another file the linker writes.
-``%O`` is the one CMake knows about; a literal name is one it doesn't.
+``add_executable()`` models exactly one. In an ld65 config, every memory
+area with a ``file`` of its own is another file the linker writes. ``%O``
+is the one CMake knows about; every other name is one it doesn't.
+``rp6502_byproducts()`` closes the gap. It tells CMake that building
+``<target>`` is what produces these files.
+
+.. code-block:: cmake
+
+  rp6502_byproducts(<target> <file>...)
+
+From there they're ordinary build outputs: you can name them as inputs,
+they're regenerated when the target relinks, and a clean removes them.
+
+Microsoft BASIC is the real case. Its image is three loads at three
+addresses with nothing contiguous between them — the ``CHRGET`` routine
+in zero page, the init code, and the interpreter — so its linker
+configuration writes three files, each named off ``%O``.
 
 .. code-block:: text
 
   MEMORY {
-      RAM:  file = %O,         start = $0200,  size = $7E00;
-      XRAM: file = "xram.bin", start = $10000, size = $10000;
+      ZP:       start = $0000, size = $00E7, file = "";
+      CHRGETZP: start = $00E8, size = $0018, file = "%O.00E8";
+      INITROM:  start = $1000, size = $8000, file = "%O.1000";
+      BASROM:   start = $C000, size = $3DDE, file = "%O.C000";
+      # areas with file = "" write nothing; trimmed here
+      TOUCH:    start = $0000, size = $0000, file = %O;
   }
 
-Nothing depends on ``xram.bin``, nothing cleans it, and nothing rebuilds
-when it changes, because as far as the build is concerned it doesn't
-exist. ``rp6502_byproducts()`` is how you say that it does.
+``TOUCH`` is a zero-size area whose file is ``%O``, and it's there so the
+linker still writes the output CMake was told to expect. It costs
+nothing, and it keeps the target CMake is modeling from going missing.
+
+The three real files are then declared as byproducts, added at the
+addresses their memory areas named, and packaged.
 
 .. code-block:: cmake
 
-  rp6502_byproducts(hello ${CMAKE_CURRENT_BINARY_DIR}/xram.bin)
+  rp6502_byproducts(basic
+      ${CMAKE_CURRENT_BINARY_DIR}/basic.00E8
+      ${CMAKE_CURRENT_BINARY_DIR}/basic.1000
+      ${CMAKE_CURRENT_BINARY_DIR}/basic.C000
+  )
+  rp6502_asset(basic help src/help.txt)
+  rp6502_asset(basic 0x00E8 ${CMAKE_CURRENT_BINARY_DIR}/basic.00E8)
+  rp6502_asset(basic 0x1000 ${CMAKE_CURRENT_BINARY_DIR}/basic.1000)
+  rp6502_asset(basic 0xC000 ${CMAKE_CURRENT_BINARY_DIR}/basic.C000)
+  rp6502_executable(basic RESET 0x1000)
 
-From there it's an ordinary input, and goes into the ROM like anything
-else — as an asset at an address, as a named asset, or as an extra ROM
-merged by ``rp6502_executable()``. One linker configuration, several
-output files, one ``.rp6502``.
+Note what isn't in that last line. There's no ``DATA``, because the
+linker output is the empty ``TOUCH`` file. The whole ROM is built from
+assets. One linker configuration, several output files, one ``.rp6502``.
 
 Multiple ROMs
 =============
