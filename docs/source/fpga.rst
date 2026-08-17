@@ -8,11 +8,12 @@ RP6502 - Field Programmable Gate Array
 Introduction
 ============
 
-The whole machine, in fabric. The 65C02 and the 65C22 are RTL, and the
-RIA's operating system runs on a Hazard3 RISC-V soft CPU executing a
-trimmed build of the same firmware C the real machine runs. That isn't a
-reimplementation of the Picocomputer — it's the Picocomputer, with the
-same split between a 6502 and something modern minding the store.
+The whole machine, in fabric. The 65C02, the 65C22, and the entire
+:doc:`vga` video system are RTL, and the RIA's operating system runs on a
+Hazard3 RISC-V soft CPU executing a trimmed build of the same firmware C
+the real machine runs. That isn't a reimplementation of the Picocomputer
+— it's the Picocomputer, with the same split between a 6502 and something
+modern minding the store.
 
 Which means the Picocomputer 6502 is now entirely ours. Nothing in the
 machine depends on a part only WDC makes, or a part only Raspberry Pi
@@ -20,27 +21,13 @@ makes. The 6502 is source. The VIA is source. The operating system runs
 on a soft CPU anyone can put in any fabric. The design can be produced
 whole from the repository, and nobody is in a position to end it.
 
-Where it runs is a separate question, and not an RP6502 one. This project
-targets a lot of hosts — eight today, counting the real Picos, Linux,
-macOS, Windows, the browser, Android, and the Analogue Pocket — and every
-one of them is a thin wrapper around the same machine. See :doc:`emu` for
-the ones made of software. This page is the ones made of gates: the
-Analogue Pocket ships now and MiSTer is next. Both are Cyclone V, which
-is why the machine itself names no board at all.
-
 
 The Analogue Pocket Core
 ========================
 
 Everything the machine does, on a handheld. Every video mode, the PSG and
-the OPL2, the dock, the keyboard layouts, and the microSD card as
-``MSC0:``. Closing the lid sleeps it and opening it puts the 6502 back on
-the cycle it left.
-
-The scaler is offered four ways: 640x480 at 4:3, 640x360 at 16:9, and
-both again at half size for a sharper integer scale.
-
-You'll need Pocket firmware 2.3 or later.
+the OPL2, the dock, the keyboard layouts, the mouse, sleep, memories,
+and the microSD card as ``MSC0:``.
 
 Install
 -------
@@ -49,10 +36,6 @@ Copy ``Cores``, ``Platforms``, ``Saves``, and ``Assets`` onto the microSD
 card in the same folder structure. They merge with what's already there
 and nothing replaces another core's files. Then open the core from the
 Pocket menu under openFPGA.
-
-The ``Saves/rp6502/common/`` folder ships in the zip and has to. The
-Pocket won't create it, and nothing in the openFPGA runtime API can make
-a directory.
 
 ROMs
 ----
@@ -90,10 +73,6 @@ The Pocket knows nothing about time zones, so the offset has to be set by
 hand, and a list holds at most sixteen options against an offset that
 spans twenty-seven hours.
 
-There's deliberately no Controls submenu. This core doesn't remap
-anything, so a menu describing its mapping would have been describing one
-that doesn't exist.
-
 Sleep
 -----
 
@@ -102,7 +81,7 @@ froze. Two things don't survive, both on purpose:
 
 - The audio engines' internal state. The registers come back and a held
   note is re-keyed, but what the engines had made of them starts again —
-  you'll hear a click.
+  you may hear a click.
 - Up to sixteen console bytes that hadn't been read yet. Reading them to
   save them would pop the queue, which would eat a character every time
   you made a savestate.
@@ -114,32 +93,16 @@ froze. Two things don't survive, both on purpose:
    limit, tracked at `issue #183
    <https://github.com/picocomputer/rp6502/issues/183>`__.
 
-No monitor
-----------
-
-There's no RP6502 monitor here, so Ctrl-Alt-Del is an ordinary keystroke
-and falls through to your program. Alt-F4 works when a launcher is
-registered, because then there's somewhere to go.
-
 
 The Dock
 ========
 
 The Pocket hands the core four controller slots, and the core hands all
 four straight to the firmware as HID reports — buttons and axes, exactly
-what the machine's own HID API expects. So the keyboard, the mouse, and
+what the Picocomputer expects. So the keyboard, the mouse, and
 up to four controllers all work through the same drivers the real
 hardware uses: international layouts, dead keys, key repeat, the escape
-sequences a terminal expects, four players in slot order, and a d-pad
-that reports as a d-pad instead of a left stick pretending.
-
-The mouse lands in the tablet driver as well as the mouse one, so
-programs written for either find it.
-
-What a slot holds is read from the slot itself rather than assumed from
-its number. Analogue assigns the keyboard and the mouse to particular
-slots today and says the assignment is theirs to make, so the firmware
-believes the slot and not the convention.
+sequences a terminal expects, and four players in slot order.
 
 
 Internals
@@ -176,9 +139,11 @@ Internals
    │ │  │ a trimmed build of src/ria firmware │  PLL, rising with it   │ │
    │ │  └───┬─────────────────────────────────┘                        │ │
    │ │      │ one system bus, one master                               │ │
-   │ │  xram64k   vid_timing  vid_font  vid_prog  vid_mode0  vid_sched │ │
-   │ │  vid_fill  vid_mode  vid_sprite  vid_compose  aud_psg  aud_opl  │ │
-   │ │  aud_rsmp  sst_engine, the serializer, on clk_sys, never gated  │ │
+   │ │  xram64k   vid_timing  vid_prog  vid_sched  vid_fill  vid_mode  │ │
+   │ │  vid_mode0 vid_mode1 vid_mode2 vid_mode3 vid_mode4 vid_mode5    │ │
+   │ │  vid_pixtail  vid_sprite  vid_sbuf  vid_palcache  vid_palram    │ │
+   │ │  vid_font  vid_compose   aud_psg  aud_opl  aud_rsmp             │ │
+   │ │  sst_engine, the serializer, on clk_sys, never gated            │ │
    │ └────┬────────────────────────────────┬───────────────────────────┘ │
    │      │ stage port,                    │ ram_a is the 6502's port,   │
    │      │ through pocket_sdram           │ ram_b the soft CPU's window,│
@@ -197,11 +162,9 @@ Read the boxes as nesting, not stacking. The top level is Analogue's
 template with our clocks and one instance of the wrapper in it; the
 wrapper holds one instance of the machine; and the machine knows nothing
 about either. Everything the Pocket can say arrives over the APF bridge
-on its own clock and is crossed once before the machine sees it. Nothing
-in the machine names a Pocket, which is the whole point — MiSTer replaces
-the middle band and the inner box doesn't change.
+on its own clock and is crossed once before the machine sees it.
 
-The triangle in the middle is the real machine's split, in gates. Your
+The triangle in the middle is the real machine's split, in gates. The
 6502 reaches the VIA at $FFD0 and the RIA's register window at $FFE0
 exactly as it does on a board, and behind that window sits a Hazard3
 RISC-V running the same firmware C an RP2350 runs, doing the same job:
@@ -219,15 +182,9 @@ the clock you get, deterministic beats fast on average. The SDRAM is the
 staging store the Pocket writes ROMs, fonts, code pages, and keyboard
 layouts into, and the machine reads back a byte at a time.
 
-The PSG is RTL and agrees with the emulator's, sample for sample. The
-OPL2 is Greg Taylor's reverse-engineered YM3812 under LGPL-3.0, credited
-in the distribution — a different implementation from the emulator's
-rather than a port of it, so there's no bit-exact claim to make about it.
-
 All of it is checked against the emulator. The machine is simulated with
 Verilator and run on the same ROMs as ``emu_core``, the same code the
-:doc:`emu` is built from, and the two are compared. The emulator is the
-reference for behavior the gates have to reproduce.
+:doc:`emu` is built from, and the two are compared.
 
 What sleep takes away
 ---------------------
