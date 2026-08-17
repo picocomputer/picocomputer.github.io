@@ -15,7 +15,7 @@ The design has already survived the Pico 1 to Pico 2 transition, and its
 manufacturing lifetime should stretch into the coming era of democratized
 hobbyist ASICs.
 
-Building one takes money and a month of shipping. Trying one takes
+Building one takes money and a delay of shipping. Trying one takes
 neither — the :doc:`emu` runs in your browser, and everything you write
 for it runs here.
 
@@ -140,15 +140,14 @@ Step 5. Pi Pico Firmware
 ========================
 
 Download the `pico zip
-<https://github.com/picocomputer/rp6502/releases>`_ and unpack the UF2 files
+<https://github.com/picocomputer/rp6502/releases/latest>`_ and unpack the UF2 files
 inside it.
 
 Every Picocomputer needs both Picos flashed with two different files. The VGA
 file is the same for everyone. The RIA file depends on which Pi Pico you have —
-use the "-w" file unless you know you have a plain Pi Pico 2, because wireless
-is where the Wi-Fi, Bluetooth, network time, and modem support live.
+use the "-w" if you have a Pi Pico 2 W.
 
-To flash a Pico 2, hold its BOOTSEL button while plugging it into a computer.
+To flash a Pi Pico, hold its BOOTSEL button while plugging it into a computer.
 The Pico 2 mounts as a storage device. Copy the RIA-W UF2 file to make a
 :doc:`ria_w`, or the VGA UF2 file to make a :doc:`vga`. The copy takes under 30
 seconds, and the LED turns on when it's done.

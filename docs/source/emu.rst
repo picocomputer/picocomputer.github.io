@@ -17,33 +17,26 @@ Space Raiders
            allow="gamepad; fullscreen; autoplay"
            allowfullscreen></iframe>
 
-Click the screen to start, which also turns on the sound. You'll need a
-keyboard.
-
-- ``1`` one player, ``2`` two players, ``d`` demo, ``p`` pause,
-  ``r`` restart.
+- ``1`` one player, ``2`` two players, ``p`` pause,  ``r`` restart.
 - Arrows move. Space, up, or down fires.
-- ``Esc`` quits to the Picocomputer console. Reload the page to play
-  again.
-
-While the game holds the keyboard, the arrow keys belong to it and not to
-this page — click outside the frame to get them back.
+- Gamepads: left stick to move, any button to fire.
 
 That's a real Picocomputer 6502 running a real ROM, and it's the same
-WebAssembly build you can put on your own page. The rest of this page is
-how.
+WebAssembly build you can put on your own page or share on `itch.io
+<https://itch.io/games/tag-rp6502>`__. The rest of this page is how.
 
 
 Introduction
 ============
 
-The Picocomputer 6502 is a machine, and a **host** is a thin wrapper that
-binds that machine to somewhere it can run. There are eight hosts today —
+The Picocomputer 6502 is a machine, and a **host** is bound with a thin
+wrapper that translates IO and OS services. There are eight hosts today —
 Linux on x86_64 and aarch64, macOS, Windows, the browser, Android, the
 :doc:`fpga`, and a pair of real Picos — and every one of them runs the
-same machine. Adding another doesn't change it.
+same machine.
 
 This page is the software hosts. :doc:`fpga` is the one made of gates.
+:doc:`pico` is a standalone machine you can build.
 
 An emulator is expected to *be* an RP6502, not merely resemble one. It
 runs the same 6502 code, answers the same registers, and maps its own
@@ -59,10 +52,6 @@ What differs between the software hosts:
      - Linux, macOS, Windows
      - Browser
      - Android
-   * - Graphics
-     - OpenGL, Metal, Direct3D 11
-     - WebGL2
-     - OpenGL ES 3
    * - On-screen debugger
      - yes
      - no
@@ -76,8 +65,8 @@ What differs between the software hosts:
      - no
      - no
    * - Arguments
-     - the command line
-     - a config block in the page
+     - command line
+     - config block
      - none
    * - Drop a ROM on the window
      - yes
@@ -86,8 +75,7 @@ What differs between the software hosts:
 
 The browser build is three files — ``index.html``, ``rp6502.js``, and
 ``rp6502.wasm`` — and they are **one matched set from a single build**.
-Mixing versions is the failure everyone hits eventually. It's also why
-everything you configure lives in one block at the top of the page:
+It's why everything you configure lives in one block at the top of the page:
 upgrading is copying three files and re-applying that block.
 
 
@@ -95,7 +83,7 @@ Install
 =======
 
 Pre-built emulators are on the `releases page
-<https://github.com/picocomputer/rp6502/releases>`__. A project made from
+<https://github.com/picocomputer/rp6502/releases/latest>`__. A project made from
 the :doc:`sdk` template already fetched the right one into ``tools/``, so
 you may have it already.
 
@@ -266,7 +254,7 @@ Web Builds
 ==========
 
 The itch.io package in the `releases
-<https://github.com/picocomputer/rp6502/releases>`__ is a ready-to-publish
+<https://github.com/picocomputer/rp6502/releases/latest>`__ is a ready-to-publish
 HTML5 project that plays one Picocomputer program in a browser. It's
 generic on purpose — the page is the same for everyone, and the program
 is yours.
@@ -318,30 +306,19 @@ else at https://itch.io/games/tag-rp6502.
 Saves and browser storage
 -------------------------
 
-``MSC0:`` is the working directory, and with ``persist: true`` anything
+``MSC0:/db`` is the working directory, and with ``persist: true`` anything
 your program writes there lands in an IndexedDB database in the player's
 browser, which is how players keep saved games and high scores. Without
 it, saves last until the player leaves the page and nothing touches
 browser storage at all.
 
-.. caution::
-
-   itch.io serves every HTML game from one shared origin, and IndexedDB is
-   per-origin, so your database name shares a namespace with every other
-   itch.io game the player runs. Two unrelated games that both ship
-   ``game.rp6502`` will read and write each other's saves. Set ``db`` to
-   something unique — ``yourname-yourgame`` — and the problem goes away.
-
-   You can use this on purpose. Give several of your pages the same ``db``
-   and their programs share one ``MSC0:`` drive.
-
-Credits
--------
-
-Add ``?credits`` to the page URL and the emulator prints the license
-notice of every component it bundles. There's no link to it on the page;
-it's the attribution path for anyone redistributing the emulator, so keep
-it reachable if you do.
+itch.io serves every HTML game from one shared origin, and IndexedDB is
+per-origin, so your database name shares a namespace with every other
+itch.io game the player runs. Two unrelated games that both ship
+``game.rp6502`` will read and write each other's saves. Set ``db`` to
+something unique — ``yourname-yourgame`` — and the problem goes away.
+You can use this on purpose. Give several of your pages the same ``db``
+and their programs share one ``MSC0:`` drive.
 
 
 Debugging
@@ -445,11 +422,6 @@ own help.
    * - ``F11``
      - Step into
 
-.. note::
-
-   The Disassembler window has to be focused for those keys to work.
-   Otherwise they're just keystrokes, and they go to the 6502.
-
 The Debug Adapter Protocol
 --------------------------
 
@@ -457,15 +429,10 @@ The Debug Adapter Protocol
 launches the emulator and talks to it over the pipe.
 
 The launch request takes ``program``, ``args``, and optionally ``elf`` or
-``dbg`` to name the debug information. Leave those out and the emulator
-looks for them beside the ROM, which is why ``program`` is usually the
-only thing a launch configuration has to say. ``stopOnEntry`` breaks
+``dbg`` to name the debug information. ``stopOnEntry`` breaks
 before the first instruction. ``stopOnExit`` is on by default and keeps
 the session alive after the program ends, so the final screen is still
 there to look at.
-
-Debug information only exists in a Debug build. A Release build runs, but
-there's nothing to stop on.
 
 
 Scripting
@@ -569,13 +536,3 @@ Reproducibility is the other half. ``--seed`` fixes the random number
 generator, ``--mute`` takes the audio device out of the picture,
 ``--tmpdrive`` isolates the filesystem, and ``--frames`` with
 ``--screenshot`` renders without a window at all.
-
-
-Building From Source
-====================
-
-The emulator builds from `picocomputer/rp6502
-<https://github.com/picocomputer/rp6502>`__ with CMake and a C compiler.
-Its README has the dependency list for each platform, including the
-WebAssembly toolchain, which installs itself the first time you configure
-for the web.

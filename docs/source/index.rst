@@ -96,11 +96,6 @@ for one runs on the others.
 - :doc:`fpga`: hardware emulation. The whole machine in gates, on an
   Analogue Pocket today and MiSTer next.
 
-The specs above describe the Picocomputer, and the wireless and USB
-features belong to the physical hardware that has the radios and the
-ports. What every host does have is the 6502, the video, the sound, and
-the operating system.
-
 
 Documentation
 =============
