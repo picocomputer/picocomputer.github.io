@@ -39,10 +39,8 @@ a ROM can be run directly, or you can ``set boot`` to load it whenever
 the RIA boots.
 
 A few monitor commands, such as ``upload`` and ``binary``, exist for
-developer tools. The ``rp6502.py`` script automates ROM packaging and
-execution. A new project fetches it into ``tools/`` on the first build,
-along with the emulator built for whatever machine you develop on, and
-updates both from there.
+developer tools rather than for people. See :doc:`sdk` for what drives
+them.
 
 
 Reset
@@ -222,30 +220,30 @@ The RIA is both the host of the PIX bus (documented below) and device 0
 on it.
 
 .. list-table::
-  :widths: 5 5 90
-  :header-rows: 1
+   :widths: 5 5 90
+   :header-rows: 1
 
-  * - Address
-    - Name
-    - Description
-  * - $0:0:00
-    - KEYBOARD
-    - See `Keyboard`_ section
-  * - $0:0:01
-    - MOUSE
-    - See `Mouse`_ section
-  * - $0:0:02
-    - GAMEPADS
-    - See `Gamepads`_ section
-  * - $0:0:03
-    - TABLET
-    - See `Tablet`_ section
-  * - $0:1:00
-    - PSG
-    - See `Programmable Sound Generator`_ section
-  * - $0:1:01
-    - OPL
-    - See `Yamaha OPL2 FM Sound Generator`_ section
+   * - Address
+     - Name
+     - Description
+   * - $0:0:00
+     - KEYBOARD
+     - See `Keyboard`_ section
+   * - $0:0:01
+     - MOUSE
+     - See `Mouse`_ section
+   * - $0:0:02
+     - GAMEPADS
+     - See `Gamepads`_ section
+   * - $0:0:03
+     - TABLET
+     - See `Tablet`_ section
+   * - $0:1:00
+     - PSG
+     - See `Programmable Sound Generator`_ section
+   * - $0:1:01
+     - OPL
+     - See `Yamaha OPL2 FM Sound Generator`_ section
 
 
 Pico Information Exchange (PIX)
@@ -451,8 +449,8 @@ mouse, and for a pen while it is in range — and clear for a touchscreen.
 
 The application and the RIA exchange pointer preferences through the header.
 ``status`` bit 0 (host cursor) is set only when the host can draw a cursor for
-the application — the emulator or web build with a mouse — and is always clear
-on real hardware and for touch input. ``control`` selects the host cursor shape
+the application — the :doc:`emu` with a mouse, in a window or a browser — and
+is always clear on real hardware and for touch input. ``control`` selects the host cursor shape
 the application wants, or hides it so the application can draw its own.
 
 - 0 - OFF (host cursor hidden; the application draws its own pointer)
@@ -487,13 +485,14 @@ option.
 .. note::
    **The RP6502 expects modern gamepads.**
 
-   The RP6502 is not an emulation platform. Sega, NES, SNES, TG16, Atari,
-   and other retro-style gamepads are **not supported**.
+   The RP6502 is not a platform for emulating other retro consoles. Sega,
+   NES, SNES, TG16, Atari, and other retro-style gamepads are **not
+   supported**.
 
-   Retro-style gamepads are wired with button mappings meant for emulators,
-   and emulators in turn expect the layout of a modern gamepad. The two
-   don't cancel out — you just end up with wonky mappings that don't follow
-   the de facto modern standard.
+   Retro-style gamepads are wired with button mappings meant for console
+   emulators, and those in turn expect the layout of a modern gamepad. The
+   two don't cancel out — you just end up with wonky mappings that don't
+   follow the de facto modern standard.
 
 Enable and disable the RIA gamepad data by setting its extended
 register. The register value is the XRAM start address of the gamepad

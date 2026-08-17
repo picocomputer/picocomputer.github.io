@@ -264,6 +264,7 @@ built in the C standard library or in an application by translating
 
 ZXSTACK
 -------
+
 .. c:function:: void zxstack (void);
 
    Abandon the XSTACK by resetting the XSTACK pointer. This is the only
@@ -1092,7 +1093,7 @@ GETLABEL
 
    :Op code: RIA_OP_GETLABEL 0x2D
    :C proto: rp6502.h
-   :param name: Volume name.
+   :param path: Volume to read the label from.
    :param label: Storage for returned label.
    :returns: Size of returned label. -1 on error.
    :a regs: return
@@ -1366,9 +1367,9 @@ runtime, and ``errno`` in C maps directly to ``RIA_ERRNO``. Assembly
 programs must set ``RIA_ATTR_ERRNO_OPT`` themselves before any OS call that
 can fail.
 
-The OS maps FatFs errors onto errno, and RP6502 emulators and simulators
-are expected to map their native errors too. The table below lists the
-FatFs mappings. Because FatFs is so central to the OS, each call is
+The OS maps FatFs errors onto errno, and every other RP6502 host — the
+:doc:`emu` and the :doc:`fpga` alike — maps its native errors the same
+way. The table below lists the FatFs mappings. Because FatFs is so central to the OS, each call is
 documented with its native FatFs errors to help when cross-referencing the
 `FatFs documentation <https://elm-chan.org/fsw/ff/>`__.
 

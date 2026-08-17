@@ -1,6 +1,8 @@
-========
-Hardware
-========
+============================
+RP6502-PICO
+============================
+
+RP6502 - Picocomputer 6502
 
 The Picocomputer 6502 is a homebrew computer you build yourself. You don't
 need to understand the electronics, and you don't even need to solder — but
@@ -12,6 +14,10 @@ to stay that way until at least `January 2040
 The design has already survived the Pico 1 to Pico 2 transition, and its
 manufacturing lifetime should stretch into the coming era of democratized
 hobbyist ASICs.
+
+Building one takes money and a delay of shipping. Trying one takes
+neither — the :doc:`emu` runs in your browser, and everything you write
+for it runs here.
 
 Schematic
 =========
@@ -134,13 +140,29 @@ Step 5. Pi Pico Firmware
 ========================
 
 Download the `pico zip
-<https://github.com/picocomputer/rp6502/releases>`_ and unpack the UF2 files
+<https://github.com/picocomputer/rp6502/releases/latest>`_ and unpack the UF2 files
 inside it.
 
-To flash a Pico 2, hold its BOOTSEL button while plugging it into a computer.
+Every Picocomputer needs both Picos flashed with two different files. The VGA
+file is the same for everyone. The RIA file depends on which Pi Pico you have —
+use the "-w" if you have a Pi Pico 2 W.
+
+To flash a Pi Pico, hold its BOOTSEL button while plugging it into a computer.
 The Pico 2 mounts as a storage device. Copy the RIA-W UF2 file to make a
 :doc:`ria_w`, or the VGA UF2 file to make a :doc:`vga`. The copy takes under 30
 seconds, and the LED turns on when it's done.
+
+Once you have a machine running, later upgrades don't need BOOTSEL. Put the
+UF2 files on a USB drive, plug it into your Picocomputer, and flash both from
+the monitor. The system reboots after each one.
+
+.. code-block:: text
+
+  FLASH rp6502-ria-w.uf2
+  FLASH rp6502-vga.uf2
+
+It is not possible to "brick" a Pi Pico from a failed flash. You can always
+recover with the BOOTSEL method.
 
 
 Acrylic Sandwich Case
@@ -176,6 +198,8 @@ Pi Picos Parts List
 ===================
 
 Alternative part numbers for the Pi Picos.
+
+`Pi Picos CSV <_static/rp6502-revb-picos.csv>`_
 
 .. csv-table::
    :file: _static/rp6502-revb-picos.csv
