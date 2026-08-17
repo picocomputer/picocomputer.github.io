@@ -33,17 +33,12 @@ for you. Clone it and open the folder in VS Code.
 
 **2. Install the recommended extensions** when prompted. That's CMake
 Tools, the C/C++ pack, lldb-dap for debugging in the emulator, and
-debugpy for debugging on hardware.
+debugpy for the Python tool that runs your ROM on hardware.
 
 **3. Choose a compiler.** The choice is a CMake preset, and there are
 four: a Debug and a Release of each compiler, each building into its own
 directory so you can switch back and forth without starting over. Pick
 one from the CMake side panel.
-
-.. note::
-
-   Debugging needs a Debug build. That's the one carrying the information
-   a debugger uses to stop on a line of your source.
 
 **4. Let the first configure finish.** A new project starts with only a
 small script in ``tools/``, which goes and gets the ROM packager, the
@@ -109,8 +104,8 @@ git, because it describes your machine rather than your project.
      - Attach a console terminal when running on hardware.
 
 The file holds more than these settings. The emulator keeps its debugger
-window layout in the same file, so a project remembers where you left its
-windows, and the two halves pass each other through untouched.
+window layout in the same file, so each project remembers where you left
+its windows.
 
 
 Running and Debugging
@@ -126,12 +121,14 @@ in.
 Picocomputer 6502. Connect with telnet, or with a USB cable plugged into
 the RP6502-VGA USB port.
 
-Breakpoints, stepping, the call stack, and watch expressions work in
-both. What a debugger can see depends on which compiler you chose —
-:doc:`emu` has the details, and the short version is that llvm-mos
-carries type information and cc65 doesn't.
+Breakpoints, stepping, the call stack, and watch expressions work only on
+the emulator. Debugging on hardware gets you a terminal instead — the ROM
+is uploaded and run, and you may interact with it from the console. What a
+debugger can see depends on which compiler you chose — :doc:`emu` has the
+details, and the short version is that llvm-mos carries type information
+and cc65 doesn't.
 
-Three tasks are set up alongside them:
+Three VS Code tasks are set up alongside them:
 
 - **RP6502: update tools** pulls down current versions of everything in
   ``tools/``, leaving a diff you can read before you commit it.
@@ -197,16 +194,13 @@ what goes in the three 6502 vectors.
    * - ``RESET``
      - Stored at ``$FFFC-$FFFD``. Required.
    * - ``IRQ``
-     - Stored at ``$FFFE-$FFFF``.
+     - Stored at ``$FFFE-$FFFF``. Optional.
    * - ``NMI``
-     - Stored at ``$FFFA-$FFFB``.
+     - Stored at ``$FFFA-$FFFB``. Optional.
 
 Each takes an address, which may be a literal like ``0x200``, the word
 ``file`` to read it out of the linker output, or the word ``default`` to
-take whatever convention your compiler uses. The conventions differ,
-which is the whole reason ``default`` exists: cc65 links a flat image at
-a fixed address, and llvm-mos writes the load address into the start of
-its own output.
+take whatever convention your compiler uses.
 
 When you outgrow the stock layout, give the linker a configuration of
 your own.
@@ -248,10 +242,12 @@ else — as an asset at an address, as a named asset, or as an extra ROM
 merged by ``rp6502_executable()``. One linker configuration, several
 output files, one ``.rp6502``.
 
-Building several programs from one project is the other thing this
-heading could mean, and it's simpler: call ``add_executable()`` and
-``rp6502_executable()`` once for each. Every program gets its own ROM,
-and the CMake launch target chooses which one F5 runs.
+Packaging Multiple ROMs
+=======================
+
+Call ``add_executable()`` and ``rp6502_executable()`` once for each.
+Every program gets its own ROM, and the CMake launch target chooses
+which one F5 runs.
 
 .. code-block:: cmake
 

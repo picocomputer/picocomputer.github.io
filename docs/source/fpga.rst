@@ -76,8 +76,9 @@ spans twenty-seven hours.
 Sleep
 -----
 
-Sleeping produces a savestate, and the 6502 resumes on the exact cycle it
-froze. Two things don't survive, both on purpose:
+The Power Button sleeps the Pocket and wakes it again. Sleeping produces
+a savestate, and the 6502 resumes on the exact cycle it froze. Two things
+don't survive, both on purpose:
 
 - The audio engines' internal state. The registers come back and a held
   note is re-keyed, but what the engines had made of them starts again —
@@ -168,97 +169,20 @@ The triangle in the middle is the real machine's split, in gates. The
 6502 reaches the VIA at $FFD0 and the RIA's register window at $FFE0
 exactly as it does on a board, and behind that window sits a Hazard3
 RISC-V running the same firmware C an RP2350 runs, doing the same job:
-syscalls, HID, and ROM loading. It's also the only master of the system
-bus that reaches everything else, so every block below it hangs off one
-line.
+syscalls, HID, and ROM loading.
 
 Two clocks and two chips finish the picture. The soft CPU runs at half
-speed because its frontend is the one block that can't make 50.4 MHz, and
-its clock comes from the PLL rather than a divider in the fabric. The
-6502's 64 KB lives in the board's asynchronous SRAM, which answers in
-55 ns every time — no rows, no refresh, nothing a program can do to make
-it slower. For a machine whose promise is that the clock you asked for is
-the clock you get, deterministic beats fast on average. The SDRAM is the
+speed because its frontend is the one block that can't make 50.4 MHz. The
+6502's 64 KB lives in the board's asynchronous SRAM. The SDRAM is the
 staging store the Pocket writes ROMs, fonts, code pages, and keyboard
-layouts into, and the machine reads back a byte at a time.
+layouts into.
 
 All of it is checked against the emulator. The machine is simulated with
 Verilator and run on the same ROMs as ``emu_core``, the same code the
 :doc:`emu` is built from, and the two are compared.
 
-What sleep takes away
----------------------
-
-Closing the lid is a savestate, and a savestate is one clock gate.
-
-.. code-block:: text
-   :class: diagram
-
-                     clk_sys 50.4 MHz, straight from the PLL
-                                      │
-                ┌─────────────────────┴─────────────────────┐
-                │ one altclkctrl, ena taken on the falling  │
-                │ edge, so no period is ever shortened      │
-                └─────────────────────┬─────────────────────┘
-                                      │ clk_mach
-   ┌──────────────────────────────────┴─────────────────────────────────┐
-   │ stopped, all of it, on the same missing edge — w65c02, w65c22,     │
-   │ ria_regs, phi2_div, the bus, every vid_*, every aud_*, and the     │
-   │ pixel and sample queues in pocket_video and pocket_i2s             │
-   └────────────────────────────────────────────────────────────────────┘
-
-     still clocked, because they still have work: the SDRAM controller,
-     which refreshes itself; sst_engine and every array it owns; the APF
-     bridge; and rv_soc, which is not gated at all — it is halted at its
-     debug port and its registers are spilled through it a few injected
-     instructions at a time.
-
-Stopping the machine at the source is what makes this coherent. Every
-register freezes on the same missing edge and resumes on the same
-returned one, so there's no boundary condition to get wrong and no
-special case for an instruction that was already waiting. Nothing inside
-is gated, and nothing inside knows.
-
-
-Building It
-===========
-
-A bitstream needs Quartus and ``gcc-riscv64-unknown-elf``, and nothing
-else — no simulator and no test suite.
-
-.. code-block:: text
-
-  cd src/rtl
-  cmake --preset pocket
-  cmake --build --preset "Card package"
-
-That assembles the whole card tree, ready to zip. The ``Bitstream``
-preset stops one step earlier if that's all you want.
-
-Placing and routing takes about nine minutes and happens when the RTL or
-the constraints change. Putting new soft-CPU firmware into an existing
-bitstream takes about twenty seconds, because firmware is the initial
-contents of memory rather than logic — it places nothing and routes
-nothing. CMake knows which of those your edit touched, so there's one
-target to ask for and no decision to make.
-
-Simulation is where development actually happens, and it wants Verilator,
-Ninja, and a RISC-V toolchain with picolibc.
-
-.. code-block:: text
-
-  cd src/rtl
-  cmake --preset verilator/Release
-  cmake --build --preset Tests
-  ctest --preset verilator/Release
-
-See the `repository <https://github.com/picocomputer/rp6502>`__ for the
-dependency lists.
-
 
 MiSTer
 ======
 
-Planned. It arrives as one more host directory and one more line in the
-build, and the machine doesn't change. Every host is named explicitly for
-exactly that reason.
+Planned.
