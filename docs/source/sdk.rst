@@ -8,6 +8,11 @@ RP6502 - Software Development Kit
 Introduction
 ============
 
+The SDK is what turns your source into a ROM. Picocomputer software is
+distributed as one file ending in ``.rp6502`` — the program, its assets,
+and the 6502 vectors in a single package — and everything here exists to
+build one of those, put it on a machine, and debug it while it runs.
+
 The `RP6502 project template <https://github.com/picocomputer/rp6502-sdk>`__
 is scaffolding for a new Picocomputer 6502 program. It builds with either
 6502 compiler, cc65 or llvm-mos, and switching between them is one
@@ -18,13 +23,60 @@ assembler's syntax.
 Its README covers installing the tools and driving everything from a
 command line. This page picks up where that leaves off, in VS Code.
 
-VS Code is strongly recommended and the template is set up for it, but
-nothing here is required. Everything works from a command line and any
-editor.
+
+Three Layers
+============
+
+The SDK is three of them, and only the bottom one is required. Each is
+ordinary files in your repository — nothing is installed, nothing is
+hidden — so you can read any layer, and throw away the ones you don't
+want.
+
+.. code-block:: text
+   :class: diagram
+
+   ┌───────────────────────────────────────────────────────────┐
+   │ .vscode/                                         optional │
+   │   launch configurations, tasks, recommended extensions    │
+   ├───────────────────────────────────────────────────────────┤
+   │ CMakeLists.txt  CMakePresets.json                optional │
+   │   tools/rp6502.cmake — a preset per compiler and config,  │
+   │   rp6502_asset(), rp6502_executable()                     │
+   ├───────────────────────────────────────────────────────────┤
+   │ tools/rp6502.py                                  required │
+   │   packs the ROM, sends it to a machine, gives you a       │
+   │   console. Python 3 and nothing else.                     │
+   └───────────────────────────────────────────────────────────┘
+
+**VS Code** is the top layer, and it's a folder. The launch
+configurations behind F5, the three tasks, and the list of extensions the
+project asks you to install. It is strongly recommended and the template
+is set up for it, but nothing below it knows it's there — delete the
+folder and the project still builds.
+
+**CMake** is the middle layer, and it's where the rest of this page
+lives. ``CMakePresets.json`` carries a preset per compiler and
+configuration; ``tools/rp6502.cmake`` adds the commands your
+``CMakeLists.txt`` calls, finds a compiler, and packages the result.
+Drive it from a command line with any editor you like — VS Code's CMake
+panel is a front end for the same presets, running the same builds into
+the same directories.
+
+**The Python tool** is the bottom layer and the only one you can't do
+without. ``tools/rp6502.py`` packs a ROM, sends it to a Picocomputer,
+uploads files, and attaches a console, and it needs Python 3 and nothing
+else. Every ROM the layer above builds is built by calling it. You can
+call it yourself instead — though by the time that appeals, you could
+probably write the `ROM File Format <ria.html#rom-file-format>`__ out
+yourself and skip it too.
 
 
 Getting Started
 ===============
+
+This is the VS Code path — the top layer, with the two under it doing
+the work. The template's README walks the same ground from a command
+line.
 
 **1. Make a project.** Go to the `template
 <https://github.com/picocomputer/rp6502-sdk>`__ and select "Use this
@@ -41,9 +93,9 @@ directory so you can switch back and forth without starting over. Pick
 one from the CMake side panel.
 
 **4. Let the first configure finish.** A new project starts with only a
-small script in ``tools/``, which goes and gets the ROM packager, the
-CMake commands your project calls, and the toolchain files. The emulator
-for your machine comes down at the same time.
+small script in ``tools/``, which goes and gets the two lower layers —
+``rp6502.py``, ``rp6502.cmake``, and the cc65 toolchain files. The
+emulator for your machine comes down at the same time.
 
 They're ordinary files in your repository after that, so commit them
 along with everything else — except the emulator, which is a binary that
@@ -59,12 +111,17 @@ stays deleted.
 settings file described next.
 
 
-The .rp6502 File
-================
+The .rp6502 Settings File
+=========================
 
 Everything about *running* your program lives in one file in the project
 root. It's created the first time you Start Debugging and is ignored by
 git, because it describes your machine rather than your project.
+
+The settings file is a dotfile called ``.rp6502``. The
+Python tool reads the settings with ``-c``, and the settings are the same
+things it takes as command-line flags, which is why both layers above it
+can use one file.
 
 .. code-block:: text
 
@@ -114,8 +171,7 @@ Running and Debugging
 "Start Debugging" (F5) offers two configurations.
 
 **RP6502 (Emulator)** is the default. It builds your project and runs it
-with source-level debugging in the :doc:`emu`. Nothing has to be plugged
-in.
+with source-level debugging in the :doc:`emu`. No hardware needed.
 
 **RP6502 (Hardware)** builds your project and runs it on a real
 Picocomputer 6502. Connect with telnet, or with a USB cable plugged into
@@ -138,6 +194,10 @@ Three VS Code tasks are set up alongside them:
 
 Adding Assets
 =============
+
+From here down is the middle layer — the commands ``tools/rp6502.cmake``
+adds to your ``CMakeLists.txt``. They work the same whether you press F7
+or type ``cmake --build``, because the editor isn't in the picture.
 
 Your program is rarely just code. Graphics, level data, help text, and
 anything else you want to ship travel inside the same ``.rp6502`` file,
@@ -210,12 +270,12 @@ your own.
   target_link_options(hello PRIVATE -C ${CMAKE_SOURCE_DIR}/src/hello.cfg)
 
 That's ld65's config for cc65; llvm-mos takes a linker script with ``-T``
-instead. Once you've moved the load address, ``default`` is no longer the
-right answer — use ``file`` or say the address outright.
+instead. Once you've moved the load address, use ``file`` or the
+address outright.
 
 
-Packaging Multiple Artifacts
-============================
+Multiple Compiler Artifacts
+===========================
 
 A linker configuration can write more than one output file, and CMake's
 ``add_executable()`` only models one of them. In an ld65 config, every
@@ -242,8 +302,8 @@ else — as an asset at an address, as a named asset, or as an extra ROM
 merged by ``rp6502_executable()``. One linker configuration, several
 output files, one ``.rp6502``.
 
-Packaging Multiple ROMs
-=======================
+Multiple ROMs
+=============
 
 Call ``add_executable()`` and ``rp6502_executable()`` once for each.
 Every program gets its own ROM, and the CMake launch target chooses
@@ -269,5 +329,8 @@ Where To Go Next
 - :doc:`vga` — the video modes.
 - :doc:`emu` — the debugger's reach, and how to put your program on the
   web.
+- `The template's README
+  <https://github.com/picocomputer/rp6502-sdk#readme>`__ — installing the
+  compilers, and the same walk from a command line with no editor in it.
 - `Examples <https://github.com/picocomputer/examples>`__ — dozens of
   small programs, each one a working ``CMakeLists.txt`` entry.
