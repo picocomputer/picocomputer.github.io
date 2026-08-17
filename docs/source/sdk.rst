@@ -20,9 +20,6 @@ setting. Three "Hello, world!" examples are included to start from — one
 in C that builds with either compiler, and the same program in each
 assembler's syntax.
 
-Its README covers installing the tools and driving everything from a
-command line. This page picks up where that leaves off, in VS Code.
-
 
 Three Layers
 ============
@@ -74,9 +71,11 @@ yourself and skip it too.
 Getting Started
 ===============
 
-This is the VS Code path — the top layer, with the two under it doing
-the work. The template's README walks the same ground from a command
-line.
+Install the required software using the README in the `template
+<https://github.com/picocomputer/rp6502-sdk>`__. Information about tools
+and other requirements is kept in the README so that it may carry forward
+with your project if desired. Once you have a compiler and tools installed,
+you may return here.
 
 **1. Make a project.** Go to the `template
 <https://github.com/picocomputer/rp6502-sdk>`__ and select "Use this
@@ -93,16 +92,16 @@ directory so you can switch back and forth without starting over. Pick
 one from the CMake side panel.
 
 **4. Let the first configure finish.** A new project starts with only a
-small script in ``tools/``, which goes and gets the two lower layers —
-``rp6502.py``, ``rp6502.cmake``, and the cc65 toolchain files. The
-emulator for your machine comes down at the same time.
+small script in ``tools/``, which downloads the latest tools and an
+emulator if one is available for your system.
 
 They're ordinary files in your repository after that, so commit them
-along with everything else — except the emulator, which is a binary that
-won't work for other developers and is in ``.gitignore`` instead. Nothing
-is fetched behind your back afterwards: configuring a project that
-already has its tools never goes to the network, and a tool you delete
-stays deleted.
+along with everything else. Updating ``tools/`` is a CMake script you
+run directly or as a VS Code task.
+
+.. code-block:: text
+
+  cmake -P tools/rp6502.cmake
 
 **5. Press F7 to build.** That leaves a ROM at
 ``build/<compiler>/<config>/hello.rp6502``.
@@ -190,6 +189,38 @@ Three VS Code tasks are set up alongside them:
   ``tools/``, leaving a diff you can read before you commit it.
 - **RP6502: upload ROM** copies the built ROM to USB storage.
 - **RP6502: console terminal** attaches a terminal and nothing else.
+
+
+Command Line
+============
+
+None of that is required. The two layers under the editor are a CMake
+project and a Python script, and both are drivable from a shell.
+
+Configure and build. These are the same four presets the CMake panel
+offers, building into the same directories.
+
+.. code-block:: text
+
+  cmake --list-presets
+  cmake --preset cc65/Debug
+  cmake --build --preset cc65/Debug
+
+That leaves a ROM at ``build/cc65/debug/hello.rp6502``. The first
+configure is the one that fetches ``tools/`` and the emulator.
+
+Run it on hardware. ``tools/rp6502.py`` uploads the ROM, starts it, and
+attaches a terminal — Ctrl-A then X exits, Ctrl-A then B sends a break.
+
+.. code-block:: text
+
+  python3 tools/rp6502.py run build/cc65/debug/hello.rp6502
+  python3 tools/rp6502.py term
+  python3 tools/rp6502.py upload file...
+
+``-d`` picks the device: a serial port, or a hostname to reach it over
+telnet with ``-k`` for the passkey. ``-c`` reads a settings file instead
+of flags, which is what the launch configurations do with ``.rp6502``.
 
 
 Adding Assets
@@ -360,6 +391,6 @@ Where To Go Next
   web.
 - `The template's README
   <https://github.com/picocomputer/rp6502-sdk#readme>`__ — installing the
-  compilers, and the same walk from a command line with no editor in it.
+  compilers, and every command on this page in one place.
 - `Examples <https://github.com/picocomputer/examples>`__ — dozens of
   small programs, each one a working ``CMakeLists.txt`` entry.
