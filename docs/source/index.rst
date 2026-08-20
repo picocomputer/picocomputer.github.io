@@ -115,11 +115,11 @@ Read the docs
 
 - :doc:`sdk`: writing software, from a new project to a running program.
   Start here.
-- :doc:`os`: the system calls, the ABI, and the C library sitting on them.
 - :doc:`ria`: the register map and every device reached through it — the
   interface adapter, in the spirit of the classic CIA, VIA, and ACIA
   chips. Assumes you are comfortable at the bus level.
+- :doc:`ria_w`: setting up Wi-Fi, Bluetooth, telnet, and the Hayes modem.
 - :doc:`vga`: canvases, video modes, sprites, and the scanline programming
   underneath.
 - :doc:`term`: the console, its escape sequences, and the line editor.
-- :doc:`ria_w`: setting up Wi-Fi, Bluetooth, telnet, and the Hayes modem.
+- :doc:`os`: the system calls, the ABI, and the C library sitting on them.
