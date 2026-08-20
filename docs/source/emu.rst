@@ -185,8 +185,8 @@ work.
    * - ``--script``
      - ``file``, or
        ``-``
-     - Drive input and check results. See `Scripting`_. Headless unless a
-       window is also asked for.
+     - Drive input and check results. See `Scripting`_. Always headless;
+       the script is the only clock.
      - desktop
    * - ``--tmpdrive``
      - \-
@@ -212,8 +212,17 @@ work.
      - all
    * - ``--seed``
      - number
-     - Fixed seed for the random number generator, for runs that repeat
-       exactly. Default is host entropy.
+     - Fixed seed for the run, covering both the memory fill and the
+       random numbers a program draws, for runs that repeat exactly.
+       Default is host entropy, and a run that took it says which seed
+       it used.
+     - all
+   * - ``--fill``
+     - ``random``,
+       or a byte
+     - What RAM and XRAM hold before anything writes them. Default is
+       ``random``, which is what the hardware hands a program; give it a
+       byte, as ``$00`` or ``0``, for a machine that starts clean.
      - all
    * - ``--mute``
      - \-
@@ -222,7 +231,8 @@ work.
    * - ``--debug``
      - \-
      - The on-screen machine debugger. Also holds the window open after
-       the program exits, so you can look at where it stopped.
+       the program exits, so you can look at where it stopped. Opens no
+       window alongside ``--script``, which runs headless.
      - desktop
    * - ``--dap``
      - \-
@@ -421,6 +431,12 @@ is what lets a driver written in any language work the machine with no
 protocol to implement. The machine waits for each line, so the driver is
 the clock.
 
+A script always runs headless, even with ``--debug``, and nothing paces
+it against the host's clock: a frame elapses because the script asked for
+one. ``run 600`` is six hundred frames, and six hundred VSYNCs, every
+time — so a run that reaches a different answer twice is telling you
+about the program, not the emulator.
+
 One command per line. ``#`` starts a comment. Text is always in double
 quotes and takes ``\n``, ``\r``, ``\t``, ``\\``, and ``\"``. Numbers may
 be decimal, C-style ``0xFF``, or MOS-style ``$FF``.
@@ -441,7 +457,7 @@ be decimal, C-style ``0xFF``, or MOS-style ``$FF``.
    * - Command
      - Description
    * - ``run [frames]``
-     - Let frames elapse. Default 1.
+     - Let exactly that many frames elapse, one VSYNC each. Default 1.
    * - ``wait "text" [frames]``
      - Run until the console says it. Default budget 600 frames.
    * - ``type "text"``
@@ -481,6 +497,9 @@ be decimal, C-style ``0xFF``, or MOS-style ``$FF``.
      - Run until the program exits, then check its code.
    * - ``peek [xram:|ram:]<addr> <byte>...``
      - Compare memory.
+   * - ``poke [xram:|ram:]<addr> <byte>...``
+     - Write memory. The program reads what you wrote, which is how a
+       test skips ahead to the state it wants to exercise.
    * - ``dump [xram:|ram:]<addr> [count]``
      - Print memory as hex.
    * - ``crc``
@@ -497,7 +516,17 @@ be decimal, C-style ``0xFF``, or MOS-style ``$FF``.
 A failed check names the script and the line it was on, then exits 1,
 which is all a test runner needs.
 
-Reproducibility is the other half. ``--seed`` fixes the random number
-generator, ``--mute`` takes the audio device out of the picture,
-``--tmpdrive`` isolates the filesystem, and ``--frames`` with
-``--screenshot`` renders without a window at all.
+Memory starts random, the way a real machine's does: the 6502's SRAM
+keeps whatever was last in it and neither the RIA nor the VGA clears
+XRAM, so a program that reads a byte it never wrote fails here rather
+than only on hardware. ``--fill 00`` puts the clean machine back when a
+test wants one.
+
+Reproducibility is the other half. ``--seed`` fixes both the fill and
+the numbers ``lrand`` returns, and fixes them independently -- the same
+seed hands a program the same random sequence whatever ``--fill`` says,
+so changing the fill changes one thing and not two. An unseeded run
+names its seed on stderr, which is how a failure found by a random fill
+becomes a failure you can repeat. ``--mute`` takes the audio device out
+of the picture, ``--tmpdrive`` isolates the filesystem, and ``--frames``
+with ``--screenshot`` renders without a window at all.
