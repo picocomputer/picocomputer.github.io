@@ -292,11 +292,13 @@ Bits 31-29 (0xE0000000) carry the device ID for a message:
 - **Device 0** — the RIA. It's also overloaded to broadcast XRAM.
 - **Device 1** — the :doc:`vga`.
 - **Devices 2-6** — open for user expansion.
-- **Device 7** — synchronization. (0xF0000000 is hard to miss on test equipment.)
+- **Device 7** — synchronization. (0xF0000000 is hard to miss on test
+  equipment.)
 
 The remaining bits address a register within a device:
 
-- **Bits 27-24** (0x0F000000) — the channel ID; each device can have 16 channels.
+- **Bits 27-24** (0x0F000000) — the channel ID; each device can have 16
+  channels.
 - **Bits 23-16** (0x00FF0000) — the register address within that channel.
 - **Bits 15-0** (0x0000FFFF) — the value to store in the register.
 
@@ -316,7 +318,8 @@ PIX Extended Registers (XREG)
 PIX devices may use bits 27-0 however they like. The suggested split
 is:
 
-- **Bits 27-24** — a channel. The RIA, for example, has separate channels for audio, keyboard, mice, and so on.
+- **Bits 27-24** — a channel. The RIA, for example, has separate channels
+  for audio, keyboard, mice, and so on.
 - **Bits 23-16** — an extended register address.
 - **Bits 15-0** — the value to store.
 
@@ -470,8 +473,9 @@ mouse, and for a pen while it is in range — and clear for a touchscreen.
 The application and the RIA exchange pointer preferences through the header.
 ``status`` bit 0 (host cursor) is set only when the host can draw a cursor for
 the application — the :doc:`emu` with a mouse, in a window or a browser — and
-is always clear on real hardware and for touch input. ``control`` selects the host cursor shape
-the application wants, or hides it so the application can draw its own.
+is always clear on real hardware and for touch input. ``control`` selects
+the host cursor shape the application wants, or hides it so the
+application can draw its own.
 
 - 0 - OFF (host cursor hidden; the application draws its own pointer)
 - 1 - ARROW
@@ -481,8 +485,9 @@ the application wants, or hides it so the application can draw its own.
 - 5 - RESIZE_EW
 - 6 - RESIZE_NS
 
-When the host cursor bit is clear the application must draw its own pointer, and
-``control`` has no effect. This is always the case on real hardware.
+When the host cursor bit is clear the application must draw its own
+pointer, and ``control`` has no effect. This is always the case on real
+hardware.
 
 
 Gamepads

@@ -711,7 +711,8 @@ LSEEK
       0x7FFFFFFF cannot be represented in the returned long; the seek then
       fails with errno ERANGE and the file position is left unchanged.
    :a regs: fildes
-   :errno: EINVAL, ERANGE, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
+   :errno: EINVAL, ERANGE, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
+      FR_TIMEOUT
 
    .. list-table::
       :header-rows: 1
@@ -1370,9 +1371,10 @@ can fail.
 
 The OS maps FatFs errors onto errno, and every other RP6502 host — the
 :doc:`emu` and the :doc:`fpga` alike — maps its native errors the same
-way. The table below lists the FatFs mappings. Because FatFs is so central to the OS, each call is
-documented with its native FatFs errors to help when cross-referencing the
-`FatFs documentation <https://elm-chan.org/fsw/ff/>`__.
+way. The table below lists the FatFs mappings. Because FatFs is so central
+to the OS, each call is documented with its native FatFs errors to help
+when cross-referencing the `FatFs documentation
+<https://elm-chan.org/fsw/ff/>`__.
 
 .. list-table::
    :header-rows: 1

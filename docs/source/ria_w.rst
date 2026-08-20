@@ -111,9 +111,11 @@ Example AT commands:
 - ``AT&Z0=example.com:23`` — Save phonebook entry (0-3) to flash
 - ``AT\L=23`` and ``AT\L?`` — Listen port for ``ATA`` (0 disables)
 - ``AT\N0`` or ``AT\N1`` and ``AT\N?`` — Network mode: 0=raw TCP, 1=telnet
-- ``AT\T=ANSI`` and ``AT\T?`` — Terminal type advertised during telnet negotiation
+- ``AT\T=ANSI`` and ``AT\T?`` — Terminal type advertised during telnet
+  negotiation
 - ``AT+RFCC=US``, ``AT+RFCC?``, and ``AT+RFCC!`` — Access RIA setting RFCC
-- ``AT+SSID=your_ssid``, ``AT+SSID?``, and ``AT+SSID!`` — Access RIA setting SSID
+- ``AT+SSID=your_ssid``, ``AT+SSID?``, and ``AT+SSID!`` — Access RIA
+  setting SSID
 - ``AT+PASS=your_pass`` and ``AT+PASS?`` — Access RIA setting PASS
 
 Each ``AT+`` setting uses ``=`` to set, ``?`` to query the current value,

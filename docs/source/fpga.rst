@@ -61,7 +61,8 @@ neither does the core.
 Core Settings
 -------------
 
-The core menu has four entries.
+The core menu has four entries: the keyboard layout, and a UTC offset
+split across three of them.
 
 - **Keyboard** selects the layout. There is one entry rather than a list
   plus an alternate, because on real hardware reaching the monitor to

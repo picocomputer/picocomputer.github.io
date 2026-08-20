@@ -362,10 +362,10 @@ Tiles themselves are encoded in a "tall" bitmap format.
       } rows[16];
   } tile[up_to_256];
 
-Trim values shrink the drawn tile to an arbitrary size up to the base 8x8 or 16x16,
-dropping X trim columns off the right and Y trim rows off the bottom. Tiles are
-still stored at the full base size, so the dropped cells are unused. A 16x16 tile
-with X trim 5 and Y trim 6 draws as 11x10.
+Trim values shrink the drawn tile to an arbitrary size up to the base 8x8
+or 16x16, dropping X trim columns off the right and Y trim rows off the
+bottom. Tiles are still stored at the full base size, so the dropped
+cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
 
 
 Mode 3: Bitmap
@@ -646,16 +646,16 @@ applications are denied access to them.
 Backchannel
 ===========
 
+The 6502 programmer never has to think about any of this; it happens
+automatically. What follows is for hardware explorers probing the UART
+Tx pin.
+
 Because the PIX bus is unidirectional, the VGA system can't send data
 straight back to the RIA. The UART Rx path won't do either — it would
 add framing overhead or unusable control characters. But the PIX bus has
 plenty of idle bandwidth (it only carries data when the 6502 writes to
 XRAM), so all Tx data is routed over PIX, leaving the UART Tx pin free to
 serve as a backchannel.
-
-The 6502 programmer never has to think about this; it happens
-automatically. This note is mainly for hardware explorers probing the
-UART Tx pin.
 
 Values 0x00 to 0x7F send a version string as ASCII, terminated by 0x0D
 or 0x0A. Send it immediately after the backchannel-enable message
