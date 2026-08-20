@@ -16,22 +16,22 @@ the first generates frame numbers and VSYNC interrupts.
 Two Implementations
 ===================
 
-Everything on this page exists twice. There's a software renderer in C,
-``src/vga/modes``, and there's RTL, ``src/rtl/vid``, and neither one is a
-sketch of the other. Same registers, same config structures at the same
-offsets, same pixels.
+Everything on this page exists twice. There is a software renderer in C,
+``src/vga/modes``, and there is RTL, ``src/rtl/vid``, and neither one is
+a simplification of the other. They have the same registers, the same
+config structures at the same offsets, and they produce the same pixels.
 
 The C is the RP6502-VGA firmware, and the :doc:`emu` compiles the same
 files, so the Pico 2 module and every software host draw with one
-renderer. The RTL is the :doc:`fpga`'s, where each mode is a scanline
-engine in fabric.
+renderer. The RTL belongs to the :doc:`fpga`, where each mode is a
+scanline engine in fabric.
 
-They're held to each other. A generator writes a corpus of small ROMs
-covering every mode. Every fixture boots on both machines, settles, and
-the two framebuffers are compared word for word.
+The two are tested against each other. A generator writes a corpus of
+small ROMs covering every mode. Every fixture boots on both machines,
+settles, and the two framebuffers are compared word for word.
 
-Which is why nothing below says which machine it's describing. There's
-one video system here, and you can have it in software or in gates.
+Nothing below says which machine it is describing, because there is one
+video system here and you can have it in software or in gates.
 
 Video Programming
 ==================
