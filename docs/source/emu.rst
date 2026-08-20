@@ -90,16 +90,16 @@ the :doc:`sdk` template already fetched the right one into ``tools/``, so
 you may have it already.
 
 - **Linux** — a tarball. Built on Ubuntu 22.04, so it needs glibc 2.35 or
-  later plus the GL, X11, and ALSA runtime libraries your desktop
-  already provides. The tarball preserves the execute bit; if something
+  later plus the GL, X11, and ALSA runtime libraries.
+  The tarball preserves the execute bit; if something
   along the way stripped it, ``chmod +x rp6502-emu``.
 - **macOS** — drag ``rp6502-emu.app`` to Applications. Apple silicon,
   macOS 11 or later. It isn't signed or notarized, so Gatekeeper blocks
   the first launch — allow it under System Settings > Privacy & Security >
   "Open Anyway", or ``xattr -dr com.apple.quarantine rp6502-emu.app``.
-- **Windows** — ``rp6502-emu.exe`` needs no installer and a GPU with
-  Direct3D 11. It isn't code signed, so SmartScreen warns on first launch;
-  choose "More info" then "Run anyway".
+- **Windows** — ``rp6502-emu.exe`` is the program itself, not an installer.
+  Requires  a GPU with Direct3D 11. It isn't code signed, so SmartScreen
+  warns on first launch; choose "More info" then "Run anyway".
 - **Android** — the APK from the same release.
 
 6502 software is distributed as files ending in ``.rp6502``. Find them on
@@ -128,15 +128,12 @@ you didn't name a ROM to run.
   rp6502-emu --rom menu.rp6502 --rom game.rp6502
 
 ``MSC0:`` is the directory you ran from, so a program's saves land in the
-same directory. ``--tmpdrive`` swaps that for a fresh throwaway, which
-keeps a ROM from writing anywhere you care about.
-
-Everything after a bare ``--`` becomes the ROM's ``argv[1..]``, reaching
-the program through `ARGV <os.html#argv>`__.
+same directory. Everything after a bare ``--`` becomes the ROM's
+``argv[1..]``, reaching the program through `ARGV <os.html#argv>`__.
 
 .. code-block:: text
 
-  rp6502-emu --tmpdrive editor.rp6502 -- notes.txt
+  rp6502-emu editor.rp6502 -- notes.txt
 
 
 Arguments
@@ -233,8 +230,7 @@ work.
    * - ``--debug``
      - \-
      - The on-screen machine debugger. It also holds the window open
-       after the program exits, so you can examine where it stopped. It
-       opens no window alongside ``--script``, which runs headless.
+       after the program exits, so you can examine where it stopped.
      - desktop
    * - ``--dap``
      - \-
@@ -243,7 +239,8 @@ work.
    * - ``--ini``
      - ``file``
      - Where the debugger keeps its window layout. Defaults to your
-       config directory; a project points it at ``.rp6502``.
+       config directory; an :doc:`sdk` project points it at ``.rp6502``
+       in the project root.
      - desktop
    * - ``--credits``
      - \-
@@ -267,9 +264,9 @@ Web Builds
 
 The itch.io package in the `releases
 <https://github.com/picocomputer/rp6502/releases/latest>`__ is a ready-to-publish
-HTML5 project that plays one Picocomputer program in a browser. The page
-is deliberately generic: it is the same for everyone, and the program is
-yours.
+HTML5 project that plays one Picocomputer ROM in a browser. The page
+is deliberately generic: it is the same for everyone, and the ROM is
+provided by you.
 
 Unpack it to get the three matched files plus a sample program.
 Everything you change lives in one block near the top of ``index.html``:
@@ -366,9 +363,8 @@ Fuller DWARF for llvm-mos is being worked on upstream. The `DWARF
 overview <https://llvm-mos.org/wiki/DWARF_overview>`__ on the llvm-mos
 wiki describes the work, and the code is on the numbered
 ``feature/debug`` branches of `the fork it's developed in
-<https://github.com/johnwbyrd/llvm-mos/branches/all?query=feature%2Fdebug>`__,
-where the highest number is newest. Nothing is released, so trying it
-means building LLVM from source.
+<https://github.com/johnwbyrd/llvm-mos/branches/all?query=feature%2Fdebug>`__.
+Nothing is released, so trying it means building LLVM from source.
 
 The on-screen debugger
 ----------------------
@@ -379,25 +375,6 @@ disassembly, execution history, breakpoints, a stopwatch, memory editors
 for RAM and XRAM and XSTACK, a memory heatmap, and the linker's segments.
 The Options menu sets window and UI scale and the theme, and it shows the
 loaded ROM's own help.
-
-.. list-table::
-   :widths: 20 80
-   :header-rows: 1
-
-   * - Key
-     - Action
-   * - ``F5``
-     - Continue
-   * - ``F6``
-     - Break
-   * - ``F8``
-     - Step one cycle
-   * - ``F9``
-     - Toggle a breakpoint at the program counter
-   * - ``F10``
-     - Step over
-   * - ``F11``
-     - Step into
 
 The Debug Adapter Protocol
 --------------------------
@@ -432,11 +409,10 @@ Given ``-`` instead of a filename it reads stdin a line at a time, so a
 driver written in any language can work the machine with no protocol to
 implement. The machine waits for each line, so the driver sets the pace.
 
-A script always runs headless, even with ``--debug``, and nothing paces
+A script always runs headless, and nothing paces
 it against the host's clock. Frames elapse only when the script asks for
 them, so ``run 600`` is six hundred frames and six hundred VSYNCs every
-time. A run that reaches a different answer twice has found a problem in
-the program rather than in the emulator.
+time.
 
 One command per line. ``#`` starts a comment. Text is always in double
 quotes and takes ``\n``, ``\r``, ``\t``, ``\\``, and ``\"``. Numbers may
@@ -524,8 +500,8 @@ hardware. ``--fill 00`` gives a test known memory when it needs it.
 
 ``--seed`` fixes both the fill and the numbers ``lrand`` returns, and it
 fixes them independently — the same seed gives a program the same random
-sequence whatever ``--fill`` says, so changing the fill changes one thing
-and not two. An unseeded run reports its seed on stderr, so a failure
+sequence whatever ``--fill`` says. An unseeded run reports its seed on
+stderr, so a failure
 found by a random fill can be repeated. ``--mute`` removes the audio
 device, ``--tmpdrive`` isolates the filesystem, and ``--frames`` with
 ``--screenshot`` renders without a window at all.

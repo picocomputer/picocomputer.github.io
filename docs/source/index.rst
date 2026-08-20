@@ -1,9 +1,15 @@
 .. toctree::
    :hidden:
+   :caption: Machine
 
    RP6502-PICO <pico>
    RP6502-EMU <emu>
    RP6502-FPGA <fpga>
+
+.. toctree::
+   :hidden:
+   :caption: Reference
+
    RP6502-SDK <sdk>
    RP6502-RIA <ria>
    RP6502-RIA-W <ria_w>
@@ -22,9 +28,6 @@ built around a real WDC 65C02. The design philosophy is simple: keep the
 soul of programming a 6502 and 6522, then rethink everything else. The
 hardware and the software are both open, and the whole design is friendly
 to DIY builds.
-
-There are three of them, and they are the same computer. Software written
-for one runs on the others.
 
 .. image:: _static/ria-w-sandwich.jpg
    :width: 600
@@ -48,8 +51,8 @@ Specs
 
 - **Core** — WDC 65C02 CPU and 65C22 VIA, variable from 0.1 to 8.0 MHz
 - **RAM** — 64 KB system plus 64 KB extended
-- **ROM** — 1 MB of onboard flash for installing and auto-booting programs
-- **Video** — VGA and HD output, 16-bit color with alpha
+- **ROM** — 1 MB of onboard flash for installing and auto-booting
+- **Video** — VGA and HD output, 16-bit color tile and sprite engine
 - **Sound** — PSG (8 voices) or OPL2 FM (9 voices)
 - **Storage** — fast USB flash drive access, over 512 KB/sec read and write
 - **Clock** — real-time clock with automatic Daylight Saving Time
@@ -72,15 +75,14 @@ Writing Software
 ================
 
 A **ROM** here is one ``.rp6502`` file holding a program, its assets, and
-the 6502 vectors. Nothing is burned into a chip — the file loads into RAM
-before the 6502 starts, and the onboard flash holds the ones you install.
+the 6502 vectors. Nothing is burned into a chip — this file prepares RAM
+before the 6502 starts and delivers assets to the program.
 
 - **Protected OS** — 32-bit operating system that uses no 6502 RAM
 - **FAT filesystem** — read and write files on any USB flash or floppy drive
 - **POSIX-like API** — a familiar C library for portable code
 - **cc65 and llvm-mos** — :doc:`SDK <sdk>` for either 6502 compiler
-- **International** — keyboard layouts and built-in code pages for
-  character sets past ASCII
+- **International** — keyboard layouts and OEM code pages
 
 
 Get a Machine
@@ -108,11 +110,8 @@ tests as the first emulator was developed, so when two hosts disagree it
 is the test corpus that settles it, not whichever one is made of silicon.
 
 
-Documentation
+Read the docs
 =============
-
-The Picocomputer 6502 is a reference design for RP6502 modular hardware.
-The only required module is the RP6502-RIA.
 
 - :doc:`sdk`: writing software, from a new project to a running program.
   Start here.

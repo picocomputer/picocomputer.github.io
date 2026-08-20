@@ -12,9 +12,8 @@ Every part is currently in production, and the Raspberry Pi Pico 2 is slated
 to stay that way until at least `January 2040
 <https://www.raspberrypi.com/products/raspberry-pi-pico-2/>`_.
 The design has already survived the Pico 1 to Pico 2 transition, and it does
-not depend on any one of these parts staying in production: the 6502 and the
-VIA are source, and the whole machine already runs in gates on the
-:doc:`fpga`.
+not depend on any one of these parts staying in production because
+the whole machine also runs in gates on the :doc:`fpga`.
 
 Building one takes money and a delay of shipping. Trying one takes
 neither — the :doc:`emu` runs in your browser, and everything you write

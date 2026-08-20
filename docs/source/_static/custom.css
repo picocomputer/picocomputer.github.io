@@ -49,3 +49,19 @@ iframe.emu-frame {
     border: 1px solid #B1B4B6;
     background: #000;
 }
+
+/* The sidebar toctree is split into groups. Alabaster resolves p.caption to
+   inherit/inherit, so without this the group headings render at the same size
+   and weight as the links they head. */
+div.sphinxsidebar p.caption {
+    margin: 1.4em 0 0.2em 0;
+    font-size: 0.85em;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #555;
+}
+
+div.sphinxsidebar p.caption:first-of-type {
+    margin-top: 0.6em;
+}
