@@ -63,9 +63,8 @@ directories.
 without. ``tools/rp6502.py`` packs a ROM, sends it to a Picocomputer,
 uploads files, and attaches a console, and it needs Python 3 and nothing
 else. Every ROM the layer above builds is built by calling it, and you
-can call it yourself instead. The `ROM File Format
-<ria.html#rom-file-format>`__ is documented too, if you would rather
-write one directly.
+can call it yourself instead. The `ROM File Format`_ is documented too,
+if you would rather write one directly.
 
 
 Getting Started
@@ -222,11 +221,6 @@ INFO commands display, and the on-screen debugger shows it too.
 
 Every ``rp6502_asset()`` has to come before ``rp6502_executable()``. The
 order is checked, and the error says so.
-
-.. seealso::
-
-   :doc:`ria` — `ROM File Format <ria.html#rom-file-format>`__ describes
-   what these turn into on disk.
 
 
 Linker Configuration
@@ -457,10 +451,74 @@ and two named assets, ``help`` and ``level1``. Run it like any other ROM.
    number is decimal, so ``-a 10000`` is ``$2710`` rather than the bottom
    of XRAM.
 
-.. seealso::
+ROM File Format
+===============
 
-   :doc:`ria` — `ROM File Format <ria.html#rom-file-format>`__ is what
-   these commands write.
+A ROM file begins with a shebang line, followed by any number of assets.
+Text lines end with ``\r``, ``\n``, or both, and numbers may be written
+in decimal (255), C-style hex (0xFF), or MOS-style hex ($FF).
+
+**Shebang** — first line of every ROM file:
+
+.. code-block:: text
+
+  #!RP6502
+
+**Null-named asset** — a group of memory chunks loaded directly into RAM:
+
+.. code-block:: text
+
+  #>len crc
+
+Followed by one or more memory chunks, each a header line plus ``len``
+bytes of raw binary data:
+
+.. code-block:: text
+
+  addr len crc
+
+.. list-table::
+   :widths: 1 20
+   :header-rows: 1
+
+   * - Field
+     - Description
+   * - ``addr``
+     - Destination address in 6502 RAM (0x0000-0xFEFF) or XRAM
+       (0x10000-0x1FFFF).
+   * - ``len``
+     - Number of raw binary bytes that immediately follow this line.
+   * - ``crc``
+     - CRC of the binary payload (checked).
+
+**Named asset** — a raw binary blob identified by name:
+
+.. code-block:: text
+
+  #>len crc name
+
+Followed immediately by ``len`` bytes of raw binary data. Assets repeat
+until end of file.
+
+.. list-table::
+   :widths: 1 20
+   :header-rows: 1
+
+   * - Field
+     - Description
+   * - ``len``
+     - Number of raw binary bytes that immediately follow this line.
+   * - ``crc``
+     - CRC of the binary payload (ignored by RIA).
+   * - ``name``
+     - Asset identifier string.
+
+`Adding Assets`_ and `Packaging a ROM by Hand`_ both write this format, so
+you only need it to build a ROM some other way.
+
+There's no enforced limit on the number or size of named assets. Opening
+a file is a linear search; it skips over the data, but how many seeks and
+string compares your application can tolerate is up to you.
 
 
 Where To Go Next

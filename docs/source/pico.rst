@@ -11,9 +11,10 @@ you will need to plug the eight ICs into their sockets.
 Every part is currently in production, and the Raspberry Pi Pico 2 is slated
 to stay that way until at least `January 2040
 <https://www.raspberrypi.com/products/raspberry-pi-pico-2/>`_.
-The design has already survived the Pico 1 to Pico 2 transition, and its
-manufacturing lifetime should stretch into the coming era of democratized
-hobbyist ASICs.
+The design has already survived the Pico 1 to Pico 2 transition, and it does
+not depend on any one of these parts staying in production: the 6502 and the
+VIA are source, and the whole machine already runs in gates on the
+:doc:`fpga`.
 
 Building one takes money and a delay of shipping. Trying one takes
 neither — the :doc:`emu` runs in your browser, and everything you write
@@ -60,9 +61,8 @@ older YouTube videos exactly.
 Step 1. Watch the Videos
 ========================
 
-To solder, or not to solder — that is the question. We're living in the
-future: you can homebrew a 6502 without ever touching a soldering iron. Choose
-your path.
+To solder, or not to solder — that is the question. You can homebrew a 6502
+today without ever touching a soldering iron. Choose your path.
 
 `Here's the video where I build one without soldering.
 <https://youtu.be/4CjouKoCMUw>`_

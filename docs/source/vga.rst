@@ -7,11 +7,13 @@ RP6502 - Video Graphics Array
 Introduction
 =============
 
-The RP6502 Video Graphics Array is a Raspberry Pi Pico 2 running
-RP6502-VGA firmware. Its primary data connection is to a :doc:`ria`
-over a 5-wire PIX bus. You can put more than one VGA module on a PIX
-bus, but note that all of them share the same 64 KB of XRAM, and only
-the first generates frame numbers and VSYNC interrupts.
+The RP6502 Video Graphics Array is a specification for a video system
+connected by PIX and programmed with extended registers (XREGs). It is
+designed to fit entirely on a Raspberry Pi Pico 2 as part of an
+:doc:`pico`, where its data connection is to a :doc:`ria` over a 5-wire
+PIX bus. You can put more than one VGA module on a PIX bus, but note
+that all of them share the same 64 KB of XRAM, and only the first
+generates frame numbers and VSYNC interrupts.
 
 Two Implementations
 ===================
@@ -37,9 +39,9 @@ Video Programming
 ==================
 
 The VGA system provides virtual video hardware modeled on the home
-computers and arcades of the 8-bit and early-16-bit era. Adding new
-video modes and sprite systems is straightforward, and applications can
-mix and match the existing ones freely.
+computers and arcades of the 8-bit and early-16-bit era. Applications mix
+and match the existing modes freely, and a new mode is one more scanline
+engine alongside the ones already here.
 
 Under the hood, it's built around a modified scanvideo library from Pi
 Pico Extras. All three planes run RGB555 color plus transparency. The
@@ -143,12 +145,12 @@ Mode 0: Console
 ---------------
 
 The console can be rendered on any canvas plane. ANSI color 0 (black)
-is transparent, which makes it easy to lay text over a background image
-across planes. The console can occupy a partial screen, but its scanline
-count must be a multiple of the font height. 640-pixel-wide canvases use
-an 8x16 font for 80 columns; 320-pixel-wide canvases use an 8x8 font for
-40 columns. Only one console can be visible at a time — programming
-another removes the previous one.
+is transparent, so text laid over a background image on another plane
+shows the image through it. The console can occupy a partial screen, but
+its scanline count must be a multiple of the font height. 640-pixel-wide
+canvases use an 8x16 font for 80 columns; 320-pixel-wide canvases use an
+8x8 font for 40 columns. Only one console can be visible at a time —
+programming another removes the previous one.
 
 See :doc:`term` for the terminal protocol and escape sequences.
 

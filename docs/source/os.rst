@@ -66,7 +66,8 @@ Application Binary Interface
 
 The ABI for calling the operating system is based on fastcall from the
 `cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The OS
-itself uses nothing from cc65 and is just as easy to call from assembly.
+itself uses nothing from cc65, so assembly reaches it the same way C
+does — the compiler is a convenience here, not a dependency.
 At its core, the ABI is four simple rules:
 
 * Stack arguments are pushed left to right.
@@ -82,7 +83,7 @@ specified as a C declaration, like so:
 .. c:function:: int doit(int arg0, int arg1);
 
 The RIA has registers called ``RIA_A``, ``RIA_X``, and ``RIA_SREG``. An
-int is 16 bits, so we load arg1 into the ``RIA_A`` and ``RIA_X``
+int is 16 bits, so arg1 goes into the ``RIA_A`` and ``RIA_X``
 registers. Throughout this explanation, "A" means the 6502 register and
 "RIA_A" means the RIA register.
 

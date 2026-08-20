@@ -19,7 +19,12 @@ Pure 6502. No governor. No speed limits.
 
 The **Picocomputer 6502** is an open source, modern-retro gaming computer
 built around a real WDC 65C02. The design philosophy is simple: keep the
-soul of programming a 6502 and 6522, then rethink everything else.
+soul of programming a 6502 and 6522, then rethink everything else. The
+hardware and the software are both open, and the whole design is friendly
+to DIY builds.
+
+There are three of them, and they are the same computer. Software written
+for one runs on the others.
 
 .. image:: _static/ria-w-sandwich.jpg
    :width: 600
@@ -43,47 +48,47 @@ Specs
 
 - **Core** — WDC 65C02 CPU and 65C22 VIA, variable from 0.1 to 8.0 MHz
 - **RAM** — 64 KB system plus 64 KB extended
-- **ROM** — 1 MB of onboard flash for installing and auto-booting ROMs
+- **ROM** — 1 MB of onboard flash for installing and auto-booting programs
 - **Video** — VGA and HD output, 16-bit color with alpha
 - **Sound** — PSG (8 voices) or OPL2 FM (9 voices)
+- **Storage** — fast USB flash drive access, over 512 KB/sec read and write
 - **Clock** — real-time clock with automatic Daylight Saving Time
 - **TRNG** — true random number generator
 
 
-Quality of Life
-===============
+Connections
+===========
 
-- **Open by design** — fully open source hardware and software, friendly to DIY builds
-- **Console manifold** — reach the console over telnet, serial, or direct attach
-- **Storage** — fast USB flash drive access, over 512 KB/sec read and write
-- **Keyboards** — international keyboard layout support
-- **Fonts** — built-in code pages for international character sets
-
-
-Connectivity
-============
-
+- **Console manifold** — reach the console over telnet, serial, or direct
+  attach
 - **Wi-Fi** — NTP time sync, telnet server, and Hayes modem emulation
 - **Bluetooth LE** — keyboards, mice, and gamepads
-- **USB host** — keyboards, mice, gamepads, hubs, UART serial, MIDI, NFC, floppy and flash drives
+- **USB host** — keyboards, mice, gamepads, hubs, UART serial, MIDI, NFC,
+  floppy and flash drives
 - **USB device** — serial console access with no driver needed (CDC ACM)
 
 
-Programming
-===========
+Writing Software
+================
+
+A **ROM** here is one ``.rp6502`` file holding a program, its assets, and
+the 6502 vectors. Nothing is burned into a chip — the file loads into RAM
+before the 6502 starts, and the onboard flash holds the ones you install.
 
 - **Protected OS** — 32-bit operating system that uses no 6502 RAM
 - **FAT filesystem** — read and write files on any USB flash or floppy drive
 - **POSIX-like API** — a familiar C library for portable code
 - **cc65 and llvm-mos** — :doc:`SDK <sdk>` for either 6502 compiler
-- **AI assistance** — the latest models via VS Code extensions or GitHub Copilot
+- **International** — keyboard layouts and built-in code pages for
+  character sets past ASCII
 
 
 Get a Machine
 =============
 
-There are three of them, and they are the same computer. Software written
-for one runs on the others.
+The original idea — use a modern CPU to remove the friction of enjoying
+the best parts of the 6502 — carries forward on every host. What changes
+is which modern CPU, and how much of the machine it is asked to be.
 
 - :doc:`pico`: build the real thing. 100% through-hole construction, no IC
   programmer required. Hundreds of people have built one, typically for
@@ -91,10 +96,16 @@ for one runs on the others.
   in China instead. Every part is currently in production, and the
   Raspberry Pi Pico 2 is guaranteed through at least January 2040.
 - :doc:`emu`: software emulation, for Windows, macOS, Linux, Android, and
-  the browser. There's a playable one on that page — you can be running
-  6502 code in about two seconds.
+  the browser. The host CPU runs everything natively except a small
+  emulator for the 6502 and 6522. There's a playable one on that page —
+  you can be running 6502 code in about two seconds.
 - :doc:`fpga`: hardware emulation. The whole machine in gates, on an
-  Analogue Pocket today and MiSTer next.
+  Analogue Pocket today and MiSTer next. Mostly RTL, with a RISC-V
+  embedded to run the OS bridge to the host platform.
+
+None of the three is the sentinel. That moved from the RP6502-PICO to the
+tests as the first emulator was developed, so when two hosts disagree it
+is the test corpus that settles it, not whichever one is made of silicon.
 
 
 Documentation
@@ -104,12 +115,12 @@ The Picocomputer 6502 is a reference design for RP6502 modular hardware.
 The only required module is the RP6502-RIA.
 
 - :doc:`sdk`: writing software, from a new project to a running program.
-- :doc:`ria`: the interface adapter for the 6502, in the spirit of the classic CIA, VIA, and ACIA chips.
-- :doc:`ria_w`: the wireless features unlocked by the Pico 2 W.
-- :doc:`vga`: the optional video adapter.
-- :doc:`term`: the console and its terminal escape sequences.
-- :doc:`os`: the operating system and its application programming interface.
-
-
-`Please contribute to this documentation.
-<https://github.com/picocomputer/picocomputer.github.io>`_
+  Start here.
+- :doc:`os`: the system calls, the ABI, and the C library sitting on them.
+- :doc:`ria`: the register map and every device reached through it — the
+  interface adapter, in the spirit of the classic CIA, VIA, and ACIA
+  chips. Assumes you are comfortable at the bus level.
+- :doc:`vga`: canvases, video modes, sprites, and the scanline programming
+  underneath.
+- :doc:`term`: the console, its escape sequences, and the line editor.
+- :doc:`ria_w`: setting up Wi-Fi, Bluetooth, telnet, and the Hayes modem.

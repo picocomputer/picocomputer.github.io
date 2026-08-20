@@ -13,7 +13,7 @@ The RP6502-FPGA is the Picocomputer 6502 in programmable logic. The
 RIA's operating system runs on a Hazard3 RISC-V soft CPU executing a
 trimmed build of the same firmware C the real machine runs. It keeps the
 same split between a 6502 and a modern processor providing its services,
-so this is the Picocomputer rather than a reimplementation of it.
+which is what makes this a Picocomputer.
 
 Nothing in the machine depends on a part only WDC makes, or a part only
 Raspberry Pi makes. The 6502 is source, the VIA is source, and the
@@ -160,8 +160,9 @@ Internals
    └──────────────┘
 
 The boxes nest rather than stack. The top level is Analogue's template
-with our clocks and one instance of the wrapper in it, the wrapper holds
-one instance of the machine, and the machine knows nothing about either.
+with the project's clocks and one instance of the wrapper in it, the
+wrapper holds one instance of the machine, and the machine knows nothing
+about either.
 Everything the Pocket can say arrives over the APF bridge on its own
 clock and is crossed once before the machine sees it.
 
