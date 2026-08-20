@@ -24,9 +24,9 @@ Voice
 **2. The reason rides along in the same sentence — never its own
 paragraph.**
 
-   "There is one entry rather than a list plus an alternate, because on
-   real hardware reaching the monitor to change layouts interrupts
-   whatever you were doing, and this menu is two button presses away."
+   "One entry covers it, because on real hardware reaching the monitor
+   to change layouts interrupts whatever you were doing, and this menu
+   is two button presses away."
 
    Give the reason, not the argument. One subordinate clause, then move
    on. This is the trait most worth protecting.

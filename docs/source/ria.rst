@@ -266,10 +266,10 @@ on it.
      - See `Yamaha OPL2 FM Sound Generator`_ section
 
 
-Pico Information Exchange (PIX)
-===============================
+Peripheral Information Exchange (PIX)
+=====================================
 
-The Raspberry Pi Pico has only so many GPIO pins, so high-bandwidth
+A Raspberry Pi Pico has only so many GPIO pins, so high-bandwidth
 devices like video systems needed a bus of their own. PIX is that bus:
 an addressable broadcast system that any number of devices can listen
 to.
