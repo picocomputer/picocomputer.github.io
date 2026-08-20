@@ -34,8 +34,8 @@ terminal is made of never reaches the 6502; everything below applies
 whatever is on the other end.
 
 Any terminal on the console manifold can be used for development and
-scripting. That's powerful and convenient, but it has limits when
-software needs the terminal to report information back.
+scripting. The limits show up when software needs the terminal to report
+information back.
 
 Size and Feature Detection
 --------------------------

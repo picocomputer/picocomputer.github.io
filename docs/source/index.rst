@@ -90,7 +90,7 @@ The original idea — use a modern CPU to remove the friction of enjoying
 the best parts of the 6502 — carries forward on every host. What changes
 is which modern CPU, and how much of the machine it is asked to be.
 
-- :doc:`pico`: build the real thing. 100% through-hole construction, no IC
+- :doc:`pico`: the one you build. 100% through-hole construction, no IC
   programmer required. Hundreds of people have built one, typically for
   under $100 USD. Prefer not to solder? You can have a unit manufactured
   in China instead. Every part is currently in production, and the

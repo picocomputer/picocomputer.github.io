@@ -660,7 +660,7 @@ through extended register device 0, channel 1, address 0x00.
 
 Each of the eight oscillators uses eight bytes of XRAM for
 configuration. The structure size is a power of two, so indexing into
-the oscillator array is a bit shift rather than a multiply.
+the oscillator array is a bit shift.
 
 .. code-block:: C
 

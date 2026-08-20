@@ -68,7 +68,8 @@ The ABI for calling the operating system is based on fastcall from the
 `cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The OS
 itself uses nothing from cc65, so assembly reaches it the same way C
 does — the compiler is a convenience here, not a dependency.
-At its core, the ABI is four simple rules:
+
+At its core, the ABI is four rules:
 
 * Stack arguments are pushed left to right.
 * Last argument passed by register A, AX, or AXSREG.

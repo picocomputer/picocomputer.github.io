@@ -64,10 +64,9 @@ Core Settings
 The core menu has four entries: the keyboard layout, and a UTC offset
 split across three of them.
 
-- **Keyboard** selects the layout. There is one entry rather than a list
-  plus an alternate, because on real hardware reaching the monitor to
-  change layouts interrupts whatever you were doing, and this menu is two
-  button presses away.
+- **Keyboard** selects the layout. One entry covers it, because on real
+  hardware reaching the monitor to change layouts interrupts whatever you
+  were doing, and this menu is two button presses away.
 
 - **UTC offset** is three entries: a side, an hour, and a quarter hour.
   The Pocket knows nothing about time zones, so the offset has to be set

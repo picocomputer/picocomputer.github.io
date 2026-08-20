@@ -41,7 +41,7 @@ of gates, and the :doc:`pico` is a standalone machine you can build.
 
 An emulator here is an RP6502 rather than something that resembles one.
 It runs the same 6502 code, answers the same registers, and maps its own
-errors onto the same errno values the real hardware reports.
+errors onto the same errno values every other host reports.
 
 What differs between the software hosts:
 
