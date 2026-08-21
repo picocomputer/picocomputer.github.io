@@ -8,10 +8,10 @@ RP6502 - Software Development Kit
 Introduction
 ============
 
-The SDK is what turns your source into a ROM. Picocomputer software is
+The SDK turns your source into a ROM. Picocomputer software is
 distributed as one file ending in ``.rp6502`` — the program, its assets,
-and the 6502 vectors in a single package — and everything here exists to
-build one of those, put it on a machine, and debug it while it runs.
+and the 6502 vectors in a single package — and the SDK builds one of
+those, puts it on a machine, and debugs it while it runs.
 
 The `RP6502 project template <https://github.com/picocomputer/rp6502-sdk>`__
 is scaffolding for a new Picocomputer 6502 program. It builds with either
@@ -24,48 +24,25 @@ assembler's syntax.
 Three Layers
 ============
 
-The SDK is three of them, and only the bottom one is required. Each is
-ordinary files in your repository — nothing is installed, nothing is
-hidden — so you can read any layer, and throw away the ones you don't
-want.
+The SDK has three layers, and only the bottom one is required. The
+layers are ordinary files in your repository. Nothing is installed and
+nothing is hidden, so you can read any layer and delete the ones you
+don't want.
 
 .. code-block:: text
    :class: diagram
 
    ┌───────────────────────────────────────────────────────────┐
-   │ .vscode/                                         optional │
-   │   launch configurations, tasks, recommended extensions    │
+   │ .vscode/                                                  │
+   │   Launch configurations, tasks, recommended extensions.   │
    ├───────────────────────────────────────────────────────────┤
-   │ CMakeLists.txt  CMakePresets.json                optional │
-   │   tools/rp6502.cmake — a preset per compiler and config,  │
-   │   rp6502_asset(), rp6502_executable()                     │
+   │ CMakeLists.txt  CMakePresets.json  tools/rp6502.cmake     │
+   │   The CMake build system works with many other editors.   │
    ├───────────────────────────────────────────────────────────┤
-   │ tools/rp6502.py                                  required │
-   │   packs the ROM, sends it to a machine, gives you a       │
-   │   console. Python 3 and nothing else.                     │
+   │ tools/rp6502.py                                 Python 3  │
+   │   Packages the ROM with its assets and communicates with  │
+   │   RP6502-PICO and RP6502-EMU machines for debugging.      │
    └───────────────────────────────────────────────────────────┘
-
-**VS Code** is the top layer, and it's a folder. The launch
-configurations behind F5, the three tasks, and the list of extensions the
-project asks you to install. It is strongly recommended and the template
-is set up for it, but nothing below it knows it's there — delete the
-folder and the project still builds.
-
-**CMake** is the middle layer, and it's where the rest of this page
-lives. ``CMakePresets.json`` carries a preset per compiler and
-configuration; ``tools/rp6502.cmake`` adds the commands your
-``CMakeLists.txt`` calls, finds a compiler, and packages the result.
-Drive it from a command line with any editor you like — VS Code's CMake
-panel is a front end for the same presets, running the same builds into
-the same directories.
-
-**The Python tool** is the bottom layer and the only one you can't do
-without. ``tools/rp6502.py`` packs a ROM, sends it to a Picocomputer,
-uploads files, and attaches a console, and it needs Python 3 and nothing
-else. Every ROM the layer above builds is built by calling it. You can
-call it yourself instead — though by the time that appeals, you could
-probably write the `ROM File Format <ria.html#rom-file-format>`__ out
-yourself and skip it too.
 
 
 Getting Started
@@ -86,41 +63,30 @@ for you. Clone it and open the folder in VS Code.
 Tools, the C/C++ pack, lldb-dap for debugging in the emulator, and
 debugpy for the Python tool that runs your ROM on hardware.
 
-**3. Choose a compiler.** The choice is a CMake preset, and there are
-four: a Debug and a Release of each compiler, each building into its own
-directory so you can switch back and forth without starting over. Pick
-one from the CMake side panel.
+**3. Choose a compiler.** You will be prompted the first time you open
+up a new project. You may change it later from the CMake side panel.
 
-**4. Let the first configure finish.** A new project starts with only a
-small script in ``tools/``, which downloads the latest tools and an
-emulator if one is available for your system.
-
-They're ordinary files in your repository after that, so commit them
-along with everything else. Updating ``tools/`` is a CMake script you
-run directly or as a VS Code task.
+**4. Press F5 to debug.** This will download the latest tools and
+emulator for your system then build hello world and run it in the emulator.
+It will also create the ``.rp6502`` settings file described in the next
+section. It is expected that you commit these tools to your repository
+and update them manually as needed, either from a task or the command line.
+The emulator executable and settings file are ignored by git.
 
 .. code-block:: text
 
   cmake -P tools/rp6502.cmake
 
-**5. Press F7 to build.** That leaves a ROM at
-``build/<compiler>/<config>/hello.rp6502``.
-
-**6. Press F5 to debug.** The first time, this creates the ``.rp6502``
-settings file described next.
+Your debugger may take focus when the program stops so make sure to
+check if the emulator hides behind your debugger or editor window.
 
 
 The .rp6502 Settings File
 =========================
 
-Everything about *running* your program lives in one file in the project
-root. It's created the first time you Start Debugging and is ignored by
-git, because it describes your machine rather than your project.
-
-The settings file is a dotfile called ``.rp6502``. The
-Python tool reads the settings with ``-c``, and the settings are the same
-things it takes as command-line flags, which is why both layers above it
-can use one file.
+The settings file is a dotfile called ``.rp6502`` in your project root.
+Edit the first section with the correct communications port
+or IP address and key of a :doc:`pico` you want to test with.
 
 .. code-block:: text
 
@@ -139,14 +105,10 @@ can use one file.
    * - Setting
      - Description
    * - ``emulator``
-     - Path to the emulator, filled in with the one the tools fetched. A
-       bare ``rp6502-emu`` means the fetch had nothing for this machine,
-       and the name is searched on your PATH.
+     - Path to the emulator. A bare filename will search the PATH.
    * - ``device``
-     - The serial port your Picocomputer appears on, or a hostname to
-       reach it over telnet. This is the one you'll edit — if you get a
-       Python error about the communications device not being found, this
-       is why.
+     - The serial port the machine appears on, or a hostname to
+       reach it over telnet.
    * - ``key``
      - Passkey for telnet. See `Telnet Console
        <ria_w.html#telnet-console>`__.
@@ -160,8 +122,8 @@ can use one file.
      - Attach a console terminal when running on hardware.
 
 The file holds more than these settings. The emulator keeps its debugger
-window layout in the same file, so each project remembers where you left
-its windows.
+window layout here too, so each project remembers where you left its
+windows.
 
 
 Running and Debugging
@@ -172,63 +134,17 @@ Running and Debugging
 **RP6502 (Emulator)** is the default. It builds your project and runs it
 with source-level debugging in the :doc:`emu`. No hardware needed.
 
-**RP6502 (Hardware)** builds your project and runs it on a real
-Picocomputer 6502. Connect with telnet, or with a USB cable plugged into
-the RP6502-VGA USB port.
+**RP6502 (Hardware)** builds your project and runs it on an :doc:`pico`.
+Connect with telnet, or with a USB cable to the VGA module's USB port.
 
 Breakpoints, stepping, the call stack, and watch expressions work only on
-the emulator. Debugging on hardware gets you a terminal instead — the ROM
-is uploaded and run, and you may interact with it from the console. What a
-debugger can see depends on which compiler you chose — :doc:`emu` has the
-details, and the short version is that llvm-mos carries type information
-and cc65 doesn't.
-
-Three VS Code tasks are set up alongside them:
-
-- **RP6502: update tools** pulls down current versions of everything in
-  ``tools/``, leaving a diff you can read before you commit it.
-- **RP6502: upload ROM** copies the built ROM to USB storage.
-- **RP6502: console terminal** attaches a terminal and nothing else.
-
-
-Command Line
-============
-
-None of that is required. The two layers under the editor are a CMake
-project and a Python script, and both are drivable from a shell.
-
-Configure and build. These are the same four presets the CMake panel
-offers, building into the same directories.
-
-.. code-block:: text
-
-  cmake --list-presets
-  cmake --preset cc65/Debug
-  cmake --build --preset cc65/Debug
-
-That leaves a ROM at ``build/cc65/debug/hello.rp6502``. The first
-configure is the one that fetches ``tools/`` and the emulator.
-
-Run it on hardware. ``tools/rp6502.py`` uploads the ROM, starts it, and
-attaches a terminal — Ctrl-A then X exits, Ctrl-A then B sends a break.
-
-.. code-block:: text
-
-  python3 tools/rp6502.py run build/cc65/debug/hello.rp6502
-  python3 tools/rp6502.py term
-  python3 tools/rp6502.py upload file...
-
-``-d`` picks the device: a serial port, or a hostname to reach it over
-telnet with ``-k`` for the passkey. ``-c`` reads a settings file instead
-of flags, which is what the launch configurations do with ``.rp6502``.
+the emulator. Debugging on hardware provides a terminal instead. What
+a debugger can see depends on which compiler you chose. llvm-mos provides
+type information and cc65 does not; the :doc:`emu` has the details.
 
 
 Adding Assets
 =============
-
-From here down is the middle layer — the commands ``tools/rp6502.cmake``
-adds to your ``CMakeLists.txt``. They work the same whether you press F7
-or type ``cmake --build``, because the editor isn't in the picture.
 
 Your program is rarely just code. Graphics, level data, help text, and
 anything else you want to ship travel inside the same ``.rp6502`` file,
@@ -241,7 +157,7 @@ added in ``CMakeLists.txt``.
 
 A numeric address is a memory chunk. The file is loaded straight into RAM
 (``$0000-$FEFF``) or XRAM (``$10000-$1FFFF``) when the ROM loads, before
-the 6502 starts, so it's simply there when your program runs.
+the 6502 starts, so it is already in place when your program runs.
 
 Anything else is a name, and named assets become part of the filesystem
 while your ROM runs. Prefix the name with ``ROM:`` and open it like any
@@ -251,23 +167,17 @@ other file. They're read-only, and you can have several open at once.
 
   open("ROM:help", O_RDONLY);
 
-Some names are special. The ``help`` asset is what the monitor's HELP and
-INFO commands display, and the on-screen debugger shows it too.
+Some names are special. The ``help`` asset is what an :doc:`pico`
+monitor's HELP and INFO commands display.
 
-Every ``rp6502_asset()`` has to come before ``rp6502_executable()``. The
-order is checked, and the error says so.
-
-.. seealso::
-
-   :doc:`ria` — `ROM File Format <ria.html#rom-file-format>`__ describes
-   what these turn into on disk.
+Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
 
 
 Linker Configuration
 ====================
 
-``rp6502_executable()`` packages your program: where its code loads, and
-what goes in the three 6502 vectors.
+``rp6502_executable()`` packages the linker output into a .rp6502 ROM file
+with all the assets you specified.
 
 .. code-block:: cmake
 
@@ -280,8 +190,8 @@ what goes in the three 6502 vectors.
    * - Keyword
      - Description
    * - ``DATA``
-     - Where the linker output loads. Omit it entirely and the executable
-       isn't included at all, which builds a ROM of nothing but assets.
+     - Where the linker output loads. Omit it and the linker output
+       isn't included at all, which builds a ROM of only assets.
    * - ``RESET``
      - Stored at ``$FFFC-$FFFD``. Required.
    * - ``IRQ``
@@ -298,31 +208,26 @@ your own.
 
 .. code-block:: cmake
 
+  # cc65:
   target_link_options(hello PRIVATE -C ${CMAKE_SOURCE_DIR}/src/hello.cfg)
-
-That's ld65's config for cc65; llvm-mos takes a linker script with ``-T``
-instead. Once you've moved the load address, use ``file`` or the
-address outright.
+  # llvm-mos:
+  target_link_options(hello PRIVATE -T ${CMAKE_SOURCE_DIR}/src/hello.cfg)
 
 
 Multiple Compiler Artifacts
 ===========================
 
 A linker configuration can write more than one output file, and CMake's
-``add_executable()`` models exactly one. In an ld65 config, every memory
-area with a ``file`` of its own is another file the linker writes. ``%O``
-is the one CMake knows about; every other name is one it doesn't.
-``rp6502_byproducts()`` closes the gap. It tells CMake that building
-``<target>`` is what produces these files.
+``add_executable()`` models only one. In an ld65 config, every memory
+area with a ``file`` of its own is another file the linker writes. CMake
+knows only about the ``%O`` file. ``rp6502_byproducts()`` tells
+CMake that building ``<target>`` produces additional files.
 
 .. code-block:: cmake
 
   rp6502_byproducts(<target> <file>...)
 
-From there they're ordinary build outputs: you can name them as inputs,
-they're regenerated when the target relinks, and a clean removes them.
-
-Microsoft BASIC is the real case. Its image is three loads at three
+Microsoft BASIC is a working example. Its image is three loads at three
 addresses with nothing contiguous between them — the ``CHRGET`` routine
 in zero page, the init code, and the interpreter — so its linker
 configuration writes three files, each named off ``%O``.
@@ -338,10 +243,8 @@ configuration writes three files, each named off ``%O``.
       TOUCH:    start = $0000, size = $0000, file = %O;
   }
 
-``TOUCH`` is a zero-size area whose file is ``%O``, and it's there so the
-linker still writes the output CMake was told to expect. It costs
-nothing, and it keeps the target CMake is modeling from going missing.
-
+``TOUCH`` is a zero-size area to touch the file ``%O`` which signals
+the build system of a successful compile.
 The three real files are then declared as byproducts, added at the
 addresses their memory areas named, and packaged.
 
@@ -358,9 +261,9 @@ addresses their memory areas named, and packaged.
   rp6502_asset(basic 0xC000 ${CMAKE_CURRENT_BINARY_DIR}/basic.C000)
   rp6502_executable(basic RESET 0x1000)
 
-Note what isn't in that last line. There's no ``DATA``, because the
-linker output is the empty ``TOUCH`` file. The whole ROM is built from
-assets. One linker configuration, several output files, one ``.rp6502``.
+That last line has no ``DATA``, because the linker output is the empty
+``TOUCH`` file.
+
 
 Multiple ROMs
 =============
@@ -381,16 +284,141 @@ which one F5 runs.
   target_sources(setup PRIVATE src/setup.c)
 
 
-Where To Go Next
-================
+Command Line
+============
 
-- :doc:`os` — the system calls and the ABI your C library sits on.
-- :doc:`ria` — the register map, and every device reached through it.
-- :doc:`vga` — the video modes.
-- :doc:`emu` — the debugger's reach, and how to put your program on the
-  web.
-- `The template's README
-  <https://github.com/picocomputer/rp6502-sdk#readme>`__ — installing the
-  compilers, and every command on this page in one place.
-- `Examples <https://github.com/picocomputer/examples>`__ — dozens of
-  small programs, each one a working ``CMakeLists.txt`` entry.
+The editor is the intended way to work, and everything above assumes it.
+This section is for the cases it doesn't cover: a build server, an editor
+that isn't VS Code, or a 6502 image that comes from a toolchain other
+than cc65 and llvm-mos.
+
+Building
+--------
+
+The CMake system is configured from presets. These commands do the same
+thing as selecting a preset from the VS Code side panel.
+
+.. code-block:: text
+
+  cmake --list-presets
+  cmake --preset cc65/Debug
+  cmake --build --preset cc65/Debug
+
+That leaves a ROM at ``build/cc65/debug/hello.rp6502``.
+
+Running on Hardware
+-------------------
+
+``tools/rp6502.py`` with the run option uploads the ROM, starts it, and
+attaches a terminal — Ctrl-A then X exits, Ctrl-A then B sends a break.
+
+.. code-block:: text
+
+  python3 tools/rp6502.py run build/cc65/debug/hello.rp6502
+
+You will need additional arguments depending on how your device is connected.
+By choosing to bypass both CMake and VS Code, you have put yourself on
+the road less travelled. You will need to use the help.
+
+.. code-block:: text
+
+  python3 tools/rp6502.py --help
+
+
+Packaging a ROM by Hand
+-----------------------
+
+``rp6502.py create`` builds a ``.rp6502`` from files, and it is what
+``rp6502_executable()`` calls underneath. Use it directly when your 6502
+image comes from somewhere CMake isn't driving, such as a macro assembler
+that emits a fully linked binary.
+
+
+Here is a whole program: an assembler's linked binary that loads at
+``$0400``, a help file, a data file, and a splash image staged in XRAM.
+
+.. code-block:: text
+
+  # The help text, as a named asset.
+  python3 tools/rp6502.py -a help -o help.rp6502 create plvm.help
+
+  # A data file the program opens as ROM:level1.
+  python3 tools/rp6502.py -a level1 -o level1.rp6502 create level1.dat
+
+  # A binary staged in XRAM before the 6502 starts.
+  python3 tools/rp6502.py -a 0x10000 -o splash.rp6502 create splash.bin
+
+  # The assembler output at $0400 with a reset vector, merging the rest.
+  python3 tools/rp6502.py -a 0x0400 -r 0x0400 -o plvm.rp6502 \
+      create plvm.bin help.rp6502 level1.rp6502 splash.rp6502
+
+That writes one ``plvm.rp6502`` holding three memory chunks — the code at
+``$0400``, the reset vector at ``$FFFC``, and the splash at ``$10000`` —
+and two named assets, ``help`` and ``level1``.
+
+
+ROM File Format
+===============
+
+A ROM file begins with a shebang line, followed by any number of assets.
+Text lines end with ``\r``, ``\n``, or both, and numbers may be written
+in decimal (255), C-style hex (0xFF), or MOS-style hex ($FF).
+
+**Shebang** — first line of every ROM file:
+
+.. code-block:: text
+
+  #!RP6502
+
+**Null-named asset** — a group of memory chunks loaded directly into RAM:
+
+.. code-block:: text
+
+  #>len crc
+
+Followed by one or more memory chunks, each a header line plus ``len``
+bytes of raw binary data:
+
+.. code-block:: text
+
+  addr len crc
+
+.. list-table::
+   :widths: 1 20
+   :header-rows: 1
+
+   * - Field
+     - Description
+   * - ``addr``
+     - Destination address in 6502 RAM (0x0000-0xFEFF) or XRAM
+       (0x10000-0x1FFFF).
+   * - ``len``
+     - Number of raw binary bytes that immediately follow this line.
+   * - ``crc``
+     - CRC of the binary payload.
+
+**Named asset** — a raw binary blob identified by name:
+
+.. code-block:: text
+
+  #>len crc name
+
+Followed immediately by ``len`` bytes of raw binary data. Assets repeat
+until end of file.
+
+.. list-table::
+   :widths: 1 20
+   :header-rows: 1
+
+   * - Field
+     - Description
+   * - ``len``
+     - Number of raw binary bytes that immediately follow this line.
+   * - ``crc``
+     - CRC of the binary payload.
+   * - ``name``
+     - Asset identifier string.
+
+There's no enforced limit on the number or size of named assets. Opening
+a file is a linear search; it skips over the data, but how many seeks and
+string compares your application can tolerate is up to you.

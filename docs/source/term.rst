@@ -11,17 +11,17 @@ Console Manifold
 In the RP6502 vocabulary, a **terminal** is any device a user types into
 and reads from. The **console** is the main terminal — the one connected
 to ``stdin``, ``stdout``, ``stderr``, ``CON:``, and ``TTY:``. The
-**monitor** is the system program that runs on the console to assist
-with configuration and ROM loading.
+**monitor** is the system program an :doc:`pico` runs on the console to
+assist with configuration and ROM loading.
 
 The console is not tied to a single physical device. Multiple terminals
 can be attached at once and fanned in to one console; this is the
-**console manifold**. The physical hardware attaches a terminal three
-ways:
+**console manifold**. Each machine attaches terminals its own way. An
+:doc:`pico` attaches one three ways:
 
 * **VGA and USB keyboard.** In the standard configuration with a
   :doc:`vga` module, the console is accessed with a VGA monitor and a
-  USB keyboard plugged into the RIA module.
+  USB keyboard plugged into the RIA.
 * **USB CDC ACM.** Connect the USB port on the VGA module to a computer
   and access the console over the USB CDC ACM serial port that appears.
   No driver is needed.
@@ -34,8 +34,8 @@ terminal is made of never reaches the 6502; everything below applies
 whatever is on the other end.
 
 Any terminal on the console manifold can be used for development and
-scripting. That's powerful and convenient, but it has limits when
-software needs the terminal to report information back.
+scripting. The limits show up when software needs the terminal to report
+information back.
 
 Size and Feature Detection
 --------------------------
@@ -70,20 +70,36 @@ Read Line
 =========
 
 A **cooked** read returns a complete line. The user has edited freely
-with backspace, arrow keys, and optionally command completion and history;
-the editor flushes the line
-when Enter is pressed. A **raw** read returns bytes as they arrive,
-keystroke by keystroke, with no echo and no editing. The OS implements
-cooked input with the line editor in ``rln.c``.
+with backspace, arrow keys, and optionally command completion and
+history; the editor flushes the line when Enter is pressed. A **raw**
+read returns bytes as they arrive, keystroke by keystroke, with no echo
+and no editing. The OS implements cooked input with the line editor in
+``rln.c``.
 
-Reading ``stdin`` is cooked but blocks until the user presses Enter.
-Two alternate file paths offer non-blocking variants of the same channels:
+A modern operating system layers canonical input and translated output
+over something configurable like termios. A full termios is too heavy
+for an 8-bit system, so the two modes worth having arrive as separate
+device names instead.
+
+Reading ``stdin`` is cooked and blocks until the user presses Enter.
+``stdout`` and ``stderr`` block too, inserting a carriage return before
+any newline that lacks one; all of the data is always sent, and a write
+blocks until it has fully drained into the output FIFOs. That is what a
+C programmer expects, and a poor fit for a multitasking 6502 program.
+Two alternate file paths offer non-blocking variants of the same
+channels:
 
 * ``CON:`` — non-blocking cooked input. ``read()`` returns 0 while the
   user is still editing and returns the full newline-terminated line
-  once the editor flushes.
-* ``TTY:`` — non-blocking raw input. ``read()`` returns whatever bytes
-  are queued, with no editing applied.
+  once the editor flushes. Writes may send less than you asked for.
+* ``TTY:`` — non-blocking raw input, with no canonical input and no
+  newline translation. ``read()`` returns whatever bytes are queued.
+  This is what the `RIA TX and RX registers <ria.html#uart>`__ provide,
+  packaged as stdio.
+
+``CON:`` and ``TTY:`` are each locked to their own file descriptor,
+which cannot be closed. A second open returns the same file descriptor
+as the first, and a close succeeds as a no-op.
 
 Non-blocking Read Line
 ----------------------
@@ -143,7 +159,7 @@ to restore its prior contents.
 Terminal
 ========
 
-The RP6502 :doc:`vga` module includes a color terminal that attaches to
+The :doc:`vga` specification includes a color terminal that attaches to
 the console manifold. It implements the Linux console subset of
 ECMA-48 / VT102 with xterm-color extensions. The terminal does not
 require flow control to keep up with 115200 bps.

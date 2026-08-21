@@ -7,39 +7,39 @@ RP6502 - Video Graphics Array
 Introduction
 =============
 
-The RP6502 Video Graphics Array is a Raspberry Pi Pico 2 running
-RP6502-VGA firmware. Its primary data connection is to a :doc:`ria`
-over a 5-wire PIX bus. You can put more than one VGA module on a PIX
-bus, but note that all of them share the same 64 KB of XRAM, and only
-the first generates frame numbers and VSYNC interrupts.
+The RP6502 Video Graphics Array is a specification for a video system
+connected by PIX and programmed with extended registers (XREGs). Its
+data connection is to a :doc:`ria` over a 5-wire PIX bus.
+
+More than one VGA device can sit on a PIX bus, but all of them share the
+same 64 KB of XRAM, and only the first generates frame numbers and VSYNC
+interrupts.
 
 Two Implementations
 ===================
 
-Everything on this page exists twice. There's a software renderer in C,
-``src/vga/modes``, and there's RTL, ``src/rtl/vid``, and neither one is a
-sketch of the other. Same registers, same config structures at the same
-offsets, same pixels.
+Everything on this page exists twice. There is a software renderer in C,
+``src/vga/modes``, and there is RTL, ``src/rtl/vid``, and neither one is
+a simplification of the other. They have the same registers, the same
+config structures at the same offsets, and they produce the same pixels.
 
-The C is the RP6502-VGA firmware, and the :doc:`emu` compiles the same
-files, so the Pico 2 module and every software host draw with one
-renderer. The RTL is the :doc:`fpga`'s, where each mode is a scanline
-engine in fabric.
+The C is the RP6502-VGA firmware, which is designed to fit entirely on a
+Raspberry Pi Pico 2 as part of an :doc:`pico`, and the :doc:`emu`
+compiles the same files, so that module and every software host draw
+with one renderer. The RTL belongs to the :doc:`fpga`, where each mode
+is a scanline engine in fabric.
 
-They're held to each other. A generator writes a corpus of small ROMs
-covering every mode. Every fixture boots on both machines, settles, and
-the two framebuffers are compared word for word.
-
-Which is why nothing below says which machine it's describing. There's
-one video system here, and you can have it in software or in gates.
+The two are tested against each other. A generator writes a corpus of
+small ROMs covering every mode. Every fixture boots on both machines,
+settles, and the two framebuffers are compared word for word.
 
 Video Programming
 ==================
 
 The VGA system provides virtual video hardware modeled on the home
-computers and arcades of the 8-bit and early-16-bit era. Adding new
-video modes and sprite systems is straightforward, and applications can
-mix and match the existing ones freely.
+computers and arcades of the 8-bit and early-16-bit era. Applications mix
+and match the existing modes freely, and a new mode is one more scanline
+engine alongside the ones already here.
 
 Under the hood, it's built around a modified scanvideo library from Pi
 Pico Extras. All three planes run RGB555 color plus transparency. The
@@ -52,8 +52,7 @@ application. At the broadest level there are three planes, and each
 plane has two layers: a fill layer and a sprite layer. Your application
 can assign different fill and sprite modes to specific planes and
 scanlines. There's enough fill rate to blow past any classic 8-bit
-system — but push too hard and you'll see a half-blue screen telling you
-that you went too far.
+system — but push too hard and you overrun the renderer.
 
 The built-in 8x8 and 8x16 fonts are available through the sentinel XRAM
 pointer $FFFF. Glyphs 0-127 are ASCII; glyphs 128-255 vary by code page.
@@ -143,12 +142,12 @@ Mode 0: Console
 ---------------
 
 The console can be rendered on any canvas plane. ANSI color 0 (black)
-is transparent, which makes it easy to lay text over a background image
-across planes. The console can occupy a partial screen, but its scanline
-count must be a multiple of the font height. 640-pixel-wide canvases use
-an 8x16 font for 80 columns; 320-pixel-wide canvases use an 8x8 font for
-40 columns. Only one console can be visible at a time — programming
-another removes the previous one.
+is transparent, so text laid over a background image on another plane
+shows the image through it. The console can occupy a partial screen, but
+its scanline count must be a multiple of the font height. 640-pixel-wide
+canvases use an 8x16 font for 80 columns; 320-pixel-wide canvases use an
+8x8 font for 40 columns. Only one console can be visible at a time —
+programming another removes the previous one.
 
 See :doc:`term` for the terminal protocol and escape sequences.
 
@@ -360,10 +359,10 @@ Tiles themselves are encoded in a "tall" bitmap format.
       } rows[16];
   } tile[up_to_256];
 
-Trim values shrink the drawn tile to an arbitrary size up to the base 8x8 or 16x16,
-dropping X trim columns off the right and Y trim rows off the bottom. Tiles are
-still stored at the full base size, so the dropped cells are unused. A 16x16 tile
-with X trim 5 and Y trim 6 draws as 11x10.
+Trim values shrink the drawn tile to an arbitrary size up to the base 8x8
+or 16x16, dropping X trim columns off the right and Y trim rows off the
+bottom. Tiles are still stored at the full base size, so the dropped
+cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
 
 
 Mode 3: Bitmap
@@ -644,16 +643,16 @@ applications are denied access to them.
 Backchannel
 ===========
 
+The 6502 programmer never has to think about any of this; it happens
+automatically. What follows is the return path for machines where the
+RIA and the VGA are separate chips joined by a serial wire.
+
 Because the PIX bus is unidirectional, the VGA system can't send data
 straight back to the RIA. The UART Rx path won't do either — it would
 add framing overhead or unusable control characters. But the PIX bus has
 plenty of idle bandwidth (it only carries data when the 6502 writes to
 XRAM), so all Tx data is routed over PIX, leaving the UART Tx pin free to
 serve as a backchannel.
-
-The 6502 programmer never has to think about this; it happens
-automatically. This note is mainly for hardware explorers probing the
-UART Tx pin.
 
 Values 0x00 to 0x7F send a version string as ASCII, terminated by 0x0D
 or 0x0A. Send it immediately after the backchannel-enable message

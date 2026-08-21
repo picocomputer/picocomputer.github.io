@@ -8,51 +8,51 @@ RP6502 - RP6502 Interface Adapter W
 Introduction
 ============
 
-The **RP6502 Interface Adapter W** is a Raspberry Pi Pico 2 W running
-RP6502-RIA-W firmware. It does everything the :doc:`ria` does, plus the
-wireless services described below.
+The **RP6502 Interface Adapter W** is the :doc:`ria` with a radio — the
+same specification, extended for wireless. Everything on the RIA page
+applies here; this page is only the wireless part. See :doc:`pico` for
+the hardware that implements it; the ``SET`` commands below are monitor
+commands, so they are entered there.
 
 
 Wi-Fi Setup
 ===========
 
-The RP6502-RIA-W supports Wi-Fi 4 (802.11n). Configure it from the
-monitor.
+The radio is configured from the monitor. Set the network name and the
+password and it connects, remembering both across reboots. The
+``status`` command shows where it got to.
 
-- **Enable or disable the radio.**
-  ``SET RF (0|1)`` turns all radios on (1, the default) or off (0)
-  without touching your other settings.
+.. list-table::
+   :widths: 25 75
+   :header-rows: 1
 
-- **Set the country code.**
-  ``SET RFCC (cc|-)`` sets the Wi-Fi country code for best performance
-  (for example ``US`` or ``GB``). Run ``help set rfcc`` to list supported
-  codes, or use ``-`` to reset to the worldwide default.
-
-- **Set the network name (SSID).**
-  ``SET SSID (ssid|-)`` sets your Wi-Fi network name, the Service Set
-  Identifier. Use ``-`` to clear it. Run ``help set ssid`` to scan for and
-  list nearby networks.
-
-- **Set the network password.**
-  ``SET PASS (pass|-)`` sets your Wi-Fi password. Use ``-`` to clear it.
-
-- **Check status.**
-  The ``status`` command shows your current Wi-Fi connection and
-  settings.
+   * - Command
+     - Description
+   * - ``SET RF (0|1)``
+     - Turn all radios on (1, the default) or off (0) without disturbing
+       any other setting.
+   * - ``SET RFCC (cc|-)``
+     - Country code, for best performance — ``US`` or ``GB``, say. Run
+       ``help set rfcc`` to list the supported codes, or use ``-`` for
+       the worldwide default.
+   * - ``SET SSID (ssid|-)``
+     - The network name, the Service Set Identifier. Run ``help set
+       ssid`` to scan for and list nearby networks. ``-`` clears it.
+   * - ``SET PASS (pass|-)``
+     - The network password. ``-`` clears it.
 
 
 Network Time Protocol (NTP)
 ===========================
 
-The real-time clock (RTC) synchronizes with internet time servers
-automatically whenever Wi-Fi is connected. Check NTP status with the
-``status`` command.
+The real-time clock synchronizes with internet time servers whenever
+Wi-Fi is connected, so it is right without being asked. The ``status``
+command reports what NTP is doing.
 
-- **Set the time zone.**
-  To use local time instead of UTC, set your time zone with ``SET TZ``;
-  run ``HELP SET TZ`` for guidance. Daylight Saving Time adjustments are
-  automatic if your locale observes them. The :doc:`os` offers
-  programmatic access to the clock and time zone.
+The clock keeps UTC. For local time, set your time zone with ``SET TZ``
+and run ``HELP SET TZ`` for guidance; Daylight Saving adjustments are
+automatic if your locale observes them. The :doc:`os` reaches both the
+clock and the time zone programmatically.
 
 Once Wi-Fi and the time zone are configured, timekeeping takes care of
 itself.
@@ -61,33 +61,35 @@ itself.
 Telnet Console
 ==============
 
-The RP6502-RIA-W can expose its console over the network, so you can
-reach the monitor or a running 6502 from a remote telnet client. Traffic
-is unencrypted, so treat it like any other telnet session.
+The console can be exposed over the network, putting the monitor or a
+running 6502 in reach of any telnet client. Traffic is unencrypted, so
+treat it like any other telnet session.
 
-- **Set the listening port.**
-  ``SET PORT (port|0)`` sets the TCP port. The default is ``23``, the
-  standard telnet port; setting ``0`` disables the telnet console.
+.. list-table::
+   :widths: 25 75
+   :header-rows: 1
 
-- **Set the passkey.**
-  ``SET KEY (key|-)`` sets the passkey required to connect. Use ``-``
-  to clear it.
+   * - Command
+     - Description
+   * - ``SET PORT (port|0)``
+     - The TCP port to listen on. The default is ``23``, the standard
+       telnet port; ``0`` disables the telnet console.
+   * - ``SET KEY (key|-)``
+     - The passkey required to connect. ``-`` clears it.
 
-The telnet console starts listening once ``KEY`` is set and ``PORT``
-is non-zero.
+The telnet console starts listening once ``KEY`` is set and ``PORT`` is
+non-zero — both, because a console on the open network with no passkey
+is not a feature.
 
 
 Modem Emulation
 ===============
 
-The RP6502-RIA-W can emulate a Hayes modem — the classic AT command
-set — for reaching BBSes (bulletin board systems). It places outgoing
-calls and answers incoming ones over either raw TCP or telnet. As with
-the telnet console, the connection is unencrypted.
-
-- **AT commands.**
-  The modem speaks the standard AT command set for dialing, answering,
-  and configuration.
+The RP6502-RIA-W emulates a Hayes modem — the classic AT command set —
+for reaching BBSes (bulletin board systems). It places outgoing calls
+and answers incoming ones over either raw TCP or telnet. As with the
+telnet console the connection is unencrypted, which is at least
+period-accurate.
 
 Example AT commands:
 
@@ -110,9 +112,11 @@ Example AT commands:
 - ``AT&Z0=example.com:23`` — Save phonebook entry (0-3) to flash
 - ``AT\L=23`` and ``AT\L?`` — Listen port for ``ATA`` (0 disables)
 - ``AT\N0`` or ``AT\N1`` and ``AT\N?`` — Network mode: 0=raw TCP, 1=telnet
-- ``AT\T=ANSI`` and ``AT\T?`` — Terminal type advertised during telnet negotiation
+- ``AT\T=ANSI`` and ``AT\T?`` — Terminal type advertised during telnet
+  negotiation
 - ``AT+RFCC=US``, ``AT+RFCC?``, and ``AT+RFCC!`` — Access RIA setting RFCC
-- ``AT+SSID=your_ssid``, ``AT+SSID?``, and ``AT+SSID!`` — Access RIA setting SSID
+- ``AT+SSID=your_ssid``, ``AT+SSID?``, and ``AT+SSID!`` — Access RIA
+  setting SSID
 - ``AT+PASS=your_pass`` and ``AT+PASS?`` — Access RIA setting PASS
 
 Each ``AT+`` setting uses ``=`` to set, ``?`` to query the current value,

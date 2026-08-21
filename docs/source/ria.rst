@@ -8,46 +8,40 @@ RP6502 - RP6502 Interface Adapter
 Introduction
 ============
 
-The RP6502 Interface Adapter (RIA) is a Raspberry Pi Pico 2 running
-RP6502-RIA firmware. It provides every essential service a WDC W65C02S
-microprocessor needs to run.
+The RP6502 Interface Adapter (RIA) is a specification for the interface
+between a host CPU and a 6502. It provides every essential service a WDC
+W65C02S microprocessor needs to run: the clock, reset, memory beyond the
+6502's own 64 KB, an operating system, and every device the 6502 reaches.
 
 The RIA must live at $FFE0-$FFFF and must control RESB and PHI2. Those
-are the only hard requirements — everything else about your Picocomputer
-is yours to customize. Even the :doc:`vga` is optional.
+are the only hard requirements. Everything else is yours to customize —
+even the :doc:`vga` is optional.
 
-A fresh RIA boots into the RP6502 monitor. The easiest way to get started
-is the standard setup: a :doc:`vga` module for the display and a USB
-keyboard plugged into the RIA. The monitor runs on the console, which
-isn't tied to any single device — other terminals fan in through the
-`console manifold <term.html#console-manifold>`__, including USB serial,
-telnet, and the RIA's bare UART pins (115200 8N1). The monitor itself is
-documented here only by a few common commands — its built-in help is
-extensive and always current. Type ``help`` to get started, then dig into
-deep help like ``help set phi2``.
 
-The RP6502 monitor is not an operating-system shell; think of it more
-like a UEFI shell. Its main job is loading ROMs, with just enough
-hardware and locale configuration to get going — kept deliberately
-minimal.
+Implementations
+===============
 
-Use the ``load`` command to load ROMs in ``.rp6502`` format. These
-aren't ROMs in the traditional (obsolete) sense: a ROM here is a file
-holding a memory image that's loaded into RAM before the 6502 starts.
-The RIA has 1 MB of flash you can ``install`` ROMs into. Once installed,
-a ROM can be run directly, or you can ``set boot`` to load it whenever
-the RIA boots.
+The specification is what matters; what runs it does not.
 
-A few monitor commands, such as ``upload`` and ``binary``, exist for
-developer tools rather than for people. See :doc:`sdk` for what drives
-them.
+- :doc:`pico` — RIA firmware on a Raspberry Pi Pico 2. The RIA is
+  designed to fit entirely on one.
+- :doc:`fpga` — a trimmed build of the same firmware C on a Hazard3
+  RISC-V soft CPU, behind the same register window in fabric.
+- :doc:`emu` — that same register window handed to a native host CPU.
+
+The RP6502 monitor is RIA firmware, so every ``load``, ``install``,
+``set``, ``status``, and ``help`` command on this page belongs to an
+:doc:`pico`. The :doc:`emu` takes command-line arguments instead, and
+the :doc:`fpga` uses the Pocket's own menus.
 
 
 Reset
 =====
 
 Think of reset as two states rather than a pulse on RESB. While reset
-is low, the 6502 is stopped and the console talks to the RP6502 monitor.
+is low, the 6502 is stopped and the console belongs to the machine
+rather than to a running program — on an :doc:`pico` that is the RP6502
+monitor.
 While reset is high, the 6502 runs and the console manifold connects to both
 the :doc:`os` and the UART TX/RX registers described below.
 
@@ -55,26 +49,22 @@ To bring reset from low to high, either ``load`` a ROM that has a reset
 vector, or use the ``reset`` command if you've prepared RAM some other
 way.
 
+The :doc:`pico` is unique in that it hosts itself and therefore requires
+a way to terminate a halted or wedged 6502.
 To drop reset from high to low and return to the monitor — even from a
 crashed or halted 6502 — use any terminal on the `console manifold
 <term.html#console-manifold>`__:
 
-1. Press Alt-F4 or Ctrl-Alt-Del from a keyboard.
+1. Press Ctrl-Alt-Del from a USB keyboard.
 2. Send a break from a serial terminal.
 3. Send a break from a telnet terminal.
-
-.. caution::
-
-   Don't wire a physical button to RESB — the RIA must stay in control
-   of it. What you probably want is the reset driven by the RIA RUN pin,
-   which we call a ``reboot``. The reference hardware's reboot button is
-   wired to the RIA RUN pin, and rebooting this way loads any configured
-   boot ROM, just like at power-on. Resetting the 6502 from a terminal
-   only returns you to the RP6502 monitor.
 
 
 Registers
 =========
+
+The 6502 sees the RIA as 32 bytes at $FFE0-$FFFF. The last six are the
+6502's own vectors; everything before them is the interface.
 
 .. list-table::
    :widths: 5 5 90
@@ -187,11 +177,11 @@ Registers
 UART
 ----
 
-The RIA's UART RX/TX pins are directly accessible at $FFE0-$FFE2. The
-ready flags on bits 6-7 let you test with the BIT operator. Use these or
-the :doc:`os` stdio — but not both at once: driving the UART directly
-while a stdio OS function is in progress is undefined behavior. The UART
-runs at 115200 bps, 8-bit words, no parity, 1 stop bit.
+The UART behind $FFE0-$FFE2 is reached directly through these registers,
+and the ready flags on bits 6-7 let you test with the BIT operator. Use
+these or the :doc:`os` stdio — but not both at once: driving the UART
+directly while a stdio OS function is in progress is undefined behavior.
+The line runs at 115200 bps, 8-bit words, no parity, 1 stop bit.
 
 Extended RAM (XRAM)
 -------------------
@@ -246,21 +236,21 @@ on it.
      - See `Yamaha OPL2 FM Sound Generator`_ section
 
 
-Pico Information Exchange (PIX)
-===============================
+Peripheral Information Exchange (PIX)
+=====================================
 
-The Raspberry Pi Pico has only so many GPIO pins, so high-bandwidth
-devices like video systems needed a bus of their own. PIX is that bus:
-an addressable broadcast system that any number of devices can listen
-to.
+High-bandwidth devices like video systems need a bus of their own. PIX
+is that bus: an addressable broadcast system that any number of devices
+can listen to, narrow enough to fit the GPIO budget of a Raspberry Pi
+Pico, wide enough to move data as fast as the 6502 writes.
 
 Physical layer
 --------------
 
-The Pico's PIO decodes the physical layer easily, since PIO is
-essentially a shift register. The signals are PHI2 and PIX0-3. This is a
-double-data-rate bus: it shifts PIX0-3 left on both transitions of PHI2,
-so a 32-bit frame travels in just 4 PHI2 cycles.
+The signals are PHI2 and PIX0-3. This is a double-data-rate bus: it
+shifts PIX0-3 left on both transitions of PHI2, so a 32-bit frame travels
+in just 4 PHI2 cycles. On an :doc:`pico` a PIO block decodes it, since
+PIO is essentially a shift register.
 
 Bit 28 (0x10000000) is the framing bit, set in every message. When the
 bus is idle, an all-zero payload repeats on device ID 7. A receiver
@@ -272,11 +262,13 @@ Bits 31-29 (0xE0000000) carry the device ID for a message:
 - **Device 0** — the RIA. It's also overloaded to broadcast XRAM.
 - **Device 1** — the :doc:`vga`.
 - **Devices 2-6** — open for user expansion.
-- **Device 7** — synchronization. (0xF0000000 is hard to miss on test equipment.)
+- **Device 7** — synchronization. (0xF0000000 is hard to miss on test
+  equipment.)
 
 The remaining bits address a register within a device:
 
-- **Bits 27-24** (0x0F000000) — the channel ID; each device can have 16 channels.
+- **Bits 27-24** (0x0F000000) — the channel ID; each device can have 16
+  channels.
 - **Bits 23-16** (0x00FF0000) — the register address within that channel.
 - **Bits 15-0** (0x0000FFFF) — the value to store in the register.
 
@@ -296,7 +288,8 @@ PIX Extended Registers (XREG)
 PIX devices may use bits 27-0 however they like. The suggested split
 is:
 
-- **Bits 27-24** — a channel. The RIA, for example, has separate channels for audio, keyboard, mice, and so on.
+- **Bits 27-24** — a channel. The RIA, for example, has separate channels
+  for audio, keyboard, mice, and so on.
 - **Bits 23-16** — an extended register address.
 - **Bits 15-0** — the value to store.
 
@@ -389,9 +382,9 @@ Tablet
 
 The RIA can give applications an *absolute* pointer — a "tablet" — instead of
 the relative mouse. It reports a canvas pixel position directly: a plain mouse
-is integrated and clamped to the canvas, and an absolute USB or Bluetooth
-digitizer or touchscreen is scaled to it. Enable and disable it by mapping it
-to an address in XRAM.
+is integrated and clamped to the canvas, and an absolute digitizer or
+touchscreen is scaled to it. Enable and disable it by mapping it to an address
+in XRAM.
 
 .. code-block:: C
 
@@ -450,8 +443,9 @@ mouse, and for a pen while it is in range — and clear for a touchscreen.
 The application and the RIA exchange pointer preferences through the header.
 ``status`` bit 0 (host cursor) is set only when the host can draw a cursor for
 the application — the :doc:`emu` with a mouse, in a window or a browser — and
-is always clear on real hardware and for touch input. ``control`` selects the host cursor shape
-the application wants, or hides it so the application can draw its own.
+is always clear on real hardware and for touch input. ``control`` selects
+the host cursor shape the application wants, or hides it so the
+application can draw its own.
 
 - 0 - OFF (host cursor hidden; the application draws its own pointer)
 - 1 - ARROW
@@ -461,15 +455,16 @@ the application wants, or hides it so the application can draw its own.
 - 5 - RESIZE_EW
 - 6 - RESIZE_NS
 
-When the host cursor bit is clear the application must draw its own pointer, and
-``control`` has no effect. This is always the case on real hardware.
+When the host cursor bit is clear the application must draw its own
+pointer, and ``control`` has no effect. This is always the case on real
+hardware.
 
 
 Gamepads
 ========
 
-The RIA supports up to four gamepads, with drivers for Generic HID,
-XInput, and PlayStation controllers.
+The RIA supports up to four gamepads. :doc:`pico` firmware carries drivers
+for Generic HID, XInput, and PlayStation controllers.
 
 Modern gamepads have all converged on the same layout: four face
 buttons, a d-pad, dual analog sticks, select, start, and four shoulders.
@@ -635,7 +630,7 @@ through extended register device 0, channel 1, address 0x00.
 
 Each of the eight oscillators uses eight bytes of XRAM for
 configuration. The structure size is a power of two, so indexing into
-the oscillator array is a bit shift rather than a multiply.
+the oscillator array is a bit shift.
 
 .. code-block:: C
 
@@ -799,43 +794,22 @@ Timers, interrupts, and the status register are not supported. Those
 features existed mainly to cost-reduce consumer devices; computers of
 the era had their own timers and rarely used the chip's.
 
-Console Port
-============
+Console
+=======
 
-The RIA's main serial port is the system console. Modern operating
-systems layer canonical input and translated output over something
-configurable like termios. A full termios is too heavy for an 8-bit
-system, but raw and non-blocking I/O still need to be on the table.
-
-The familiar stdin blocks for canonical input: the console user edits a
-line, and once they press Enter the stdin read unblocks and returns the
-line up to a linefeed.
-
-The familiar stdout and stderr block too, inserting a carriage return
-before any newline that lacks one. All of the data is always sent, and
-writes block until it has fully drained into the hardware FIFOs.
-
-These interfaces are exactly what a C programmer expects, but they're a
-poor fit for a multitasking 6502 program. For that, a non-blocking
-interface is available: open the special filename ``"CON:"``. Reads can
-return 0 bytes, and writes may send less than you asked for.
-
-Going one step further, the special filename ``"TTY:"`` gives a
-non-blocking, raw connection to the console port — no canonical input,
-no newline translation. It's exactly what the ``RIA_TX`` and ``RIA_RX``
-registers provide, just packaged as stdio for convenience.
-
-``"CON:"`` and ``"TTY:"`` are each locked to their own file descriptor,
-which cannot be closed. A second open returns the same file descriptor
-as the first, and a close succeeds as a no-op.
+The system console is the terminal the RIA and the 6502 talk to, and the
+`UART`_ registers above are its rawest form. The OS wraps that same port as
+``stdin``, ``stdout``, ``stderr``, and the ``CON:`` and ``TTY:`` device
+names. See :doc:`term` for cooked and raw reads, the non-blocking
+variants, and the line editor behind them.
 
 Virtual COM Port
 ================
 
 If you need serial ports beyond the console UART, USB adapters are
-available for CMOS/TTL, RS-232, RS-422, and RS-485. The RIA includes
-drivers for FTDI, CP210X, CH34X, PL2303, and CDC ACM, and each one
-appears as a Virtual COM Port (VCP).
+available for CMOS/TTL, RS-232, RS-422, and RS-485, and each one appears
+as a Virtual COM Port (VCP). RIA firmware carries drivers for FTDI,
+CP210X, CH34X, PL2303, and CDC ACM.
 
 The ``status`` command lists any connected VCP devices. Open one like a
 file, using a special name. By default ``"VCP0:"`` opens at 115200 bps
@@ -857,11 +831,12 @@ you asked for — resubmit any remaining bytes on a later call.
 MIDI
 ====
 
-USB MIDI instruments plug right in, and the ``status`` command lists
-them. Each virtual cable is its own device — ``"MIDI0:"`` onward,
-assigned in the order cables appear, up to four at a time. A simple
-keyboard is one cable (1X1); a multi-port interface is several. Open one
-like a file.
+MIDI instruments attached to the machine appear as devices, and the
+``status`` command lists them. :doc:`pico` firmware carries a USB MIDI
+host driver, so a USB instrument plugs right in. Each virtual cable is
+its own device — ``"MIDI0:"`` onward, assigned in the order cables
+appear, up to four at a time. A simple keyboard is one cable (1X1); a
+multi-port interface is several. Open one like a file.
 
 A cable opens in one of two modes, chosen by the open name. Bare
 ``"MIDI0:"`` is **raw** — reads and writes are plain wire MIDI, the same
@@ -944,10 +919,11 @@ reopens it after — everything arrives, just split into two
 Delta times measure from the previous event, so timing stays exact over
 any song length: events are anchored to an absolute tick count, and
 ticks are kept internally in nanoseconds, holding arithmetic rounding
-below one part per million. What remains is the hardware — the
-microsecond timer's crystal drifts single-digit milliseconds over a
-several-minute song, and USB full-speed framing sets the
-moment-to-moment jitter near one millisecond, the same pace as the
+below one part per million. What remains belongs to the machine's clock
+and transport. Where the RIA is paced by a crystal-driven microsecond
+timer and delivers over USB full speed, the crystal drifts single-digit
+milliseconds over a several-minute song and framing sets the
+moment-to-moment jitter near one millisecond — the same pace as the
 classic MIDI wire itself.
 
 If your program stops feeding the buffer and resumes, messages already
@@ -965,7 +941,7 @@ catch up between songs. Both follow the timeline, so a far-future delta
 still in the buffer makes them wait that long. If a sysex is still open
 when a timed cable closes, the RIA sends its ``F7`` so the instrument is
 not left waiting mid-dump. A raw cable has no schedule, so close and
-``sync`` simply flush what is buffered, and they inject no ``F7``.
+``sync`` flush what is buffered, and they inject no ``F7``.
 
 
 Near Field Communications (NFC)
@@ -980,7 +956,7 @@ stickers or direct printing. Grab a card, tap it on the reader, and the
 ROM you want loads instantly. Here's how it works.
 
 You'll need a PN532 card reader with a USB interface. It's the only
-reader supported, and it's cheap — around $10 USD. You'll also want a
+reader RIA firmware drives, and it's cheap — around $10 USD. You'll also want a
 card (or fob, or sticker) for each ROM you plan to support. New to NFC?
 Buy a pack of NTAG215 cards and a sharpie.
 
@@ -1122,95 +1098,3 @@ can also arm a write after reading and verifying a card. The state
 changes give you flexibility in how you sequence operations. The cached
 tag image is not refreshed by a write, so re-present the card before the
 next ``NFC_CMD_READ`` if you want to read back what you wrote.
-
-
-ROM File Format
-===============
-
-A ROM file begins with a shebang line, followed by any number of assets.
-Text lines end with ``\r``, ``\n``, or both, and numbers may be written
-in decimal (255), C-style hex (0xFF), or MOS-style hex ($FF).
-
-**Shebang** — first line of every ROM file:
-
-.. code-block:: text
-
-  #!RP6502
-
-**Null-named asset** — a group of memory chunks loaded directly into RAM:
-
-.. code-block:: text
-
-  #>len crc
-
-Followed by one or more memory chunks, each a header line plus ``len``
-bytes of raw binary data:
-
-.. code-block:: text
-
-  addr len crc
-
-.. list-table::
-   :widths: 1 20
-   :header-rows: 1
-
-   * - Field
-     - Description
-   * - ``addr``
-     - Destination address in 6502 RAM (0x0000-0xFEFF) or XRAM
-       (0x10000-0x1FFFF).
-   * - ``len``
-     - Number of raw binary bytes that immediately follow this line.
-   * - ``crc``
-     - CRC of the binary payload (checked).
-
-**Named asset** — a raw binary blob identified by name:
-
-.. code-block:: text
-
-  #>len crc name
-
-Followed immediately by ``len`` bytes of raw binary data. Assets repeat
-until end of file.
-
-.. list-table::
-   :widths: 1 20
-   :header-rows: 1
-
-   * - Field
-     - Description
-   * - ``len``
-     - Number of raw binary bytes that immediately follow this line.
-   * - ``crc``
-     - CRC of the binary payload (ignored by RIA).
-   * - ``name``
-     - Asset identifier string.
-
-The ``rp6502.py`` tool in a project's ``tools/`` directory handles these
-details and integrates with CMake, so adding assets is
-straightforward. In this example the image data is packed into the ROM
-as memory chunks that load into RAM or XRAM when the ROM loads:
-
-.. code-block:: cmake
-
-  rp6502_asset(your_project 0x10000 img/intro.bin)
-
-A ROM can also hold named assets of raw data, and some names are
-special — the ``help`` asset is shown by the HELP and INFO monitor
-commands.
-
-.. code-block:: cmake
-
-  rp6502_asset(your_project help src/help.txt)
-
-While a ROM runs, its assets become part of the filesystem. Prefix the
-asset name with "ROM:" and open it like any other file. ROM assets are
-read-only, but you can have several open at once.
-
-.. code-block:: C
-
-  open("ROM:help", O_RDONLY)
-
-There's no enforced limit on the number or size of named assets. Opening
-a file is a linear search; it skips over the data, but how many seeks and
-string compares your application can tolerate is up to you.
