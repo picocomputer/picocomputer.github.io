@@ -33,38 +33,16 @@ don't want.
    :class: diagram
 
    ┌───────────────────────────────────────────────────────────┐
-   │ .vscode/                                         optional │
-   │   launch configurations, tasks, recommended extensions    │
+   │ .vscode/                                                  │
+   │   Launch configurations, tasks, recommended extensions.   │
    ├───────────────────────────────────────────────────────────┤
-   │ CMakeLists.txt  CMakePresets.json                optional │
-   │   tools/rp6502.cmake — a preset per compiler and config,  │
-   │   rp6502_asset(), rp6502_executable()                     │
+   │ CMakeLists.txt  CMakePresets.json  tools/rp6502.cmake     │
+   │   The CMake build system works with many other editors.   │
    ├───────────────────────────────────────────────────────────┤
-   │ tools/rp6502.py                                  required │
-   │   packs the ROM, sends it to a machine, and attaches a    │
-   │   console. Requires Python 3 and nothing else.            │
+   │ tools/rp6502.py                                 Python 3  │
+   │   Packages the ROM with its assets and communicates with  |
+   |   :doc:`pico` and :doc:`emu` machines for debugging.      |
    └───────────────────────────────────────────────────────────┘
-
-**VS Code** is the top layer, and it is a single folder. It holds the
-launch configurations behind F5, the three tasks, and the list of
-extensions the project asks you to install. It is strongly recommended
-and the template is set up for it, but nothing below it depends on it —
-delete the folder and the project still builds.
-
-**CMake** is the middle layer, and most of this page describes it.
-``CMakePresets.json`` carries a preset per compiler and configuration,
-and ``tools/rp6502.cmake`` adds the commands your ``CMakeLists.txt``
-calls, finds a compiler, and packages the result. You can drive it from a
-command line with any editor you like. VS Code's CMake panel is a front
-end for the same presets, running the same builds into the same
-directories.
-
-**The Python tool** is the bottom layer and the only one you can't do
-without. ``tools/rp6502.py`` packs a ROM, sends it to a Picocomputer,
-uploads files, and attaches a console, and it needs Python 3 and nothing
-else. Every ROM the layer above builds is built by calling it, and you
-can call it yourself instead. The `ROM File Format`_ is documented too,
-if you would rather write one directly.
 
 
 Getting Started
@@ -85,40 +63,30 @@ for you. Clone it and open the folder in VS Code.
 Tools, the C/C++ pack, lldb-dap for debugging in the emulator, and
 debugpy for the Python tool that runs your ROM on hardware.
 
-**3. Choose a compiler.** The choice is a CMake preset, and there are
-four: a Debug and a Release of each compiler, each building into its own
-directory so you can switch back and forth without starting over. Pick
-one from the CMake side panel.
+**3. Choose a compiler.** You will be prompted the first time you open
+up a new project. You may change it later from the CMake side panel.
 
-**4. Let the first configure finish.** A new project starts with only a
-small script in ``tools/``, which downloads the latest tools and an
-emulator if one is available for your system.
-
-After that they are ordinary files in your repository, so commit them
-along with everything else. Updating ``tools/`` is a CMake script you run
-directly or as a VS Code task.
+**4. Press F5 to debug.** This will download the latest tools and
+emulator for your system then build hello world and run it in the emulator.
+It will also create the ``.rp6502`` settings file described in the next
+section. It is expected that you commit these tools to yout repository
+and update them manually as needed, either from a task or the command line.
+The emulator executable and settings file are ignored by git.
 
 .. code-block:: text
 
   cmake -P tools/rp6502.cmake
 
-**5. Press F7 to build.** That leaves a ROM at
-``build/<compiler>/<config>/hello.rp6502``.
-
-**6. Press F5 to debug.** The first time, this creates the ``.rp6502``
-settings file described next.
+Your debugger may take focus when the program stops so make sure to
+check if the emulator hides behind your debugger or editor window.
 
 
 The .rp6502 Settings File
 =========================
 
-Everything about *running* your program lives in one file in the project
-root. It is created the first time you Start Debugging and is ignored by
-git, because it describes your machine rather than your project.
-
-The settings file is a dotfile called ``.rp6502``. The Python tool reads
-it with ``-c``, and the settings are the same things it takes as
-command-line flags, so both layers above it can use one file.
+The settings file is a dotfile called ``.rp6502`` in your project root.
+Edit the first section with the correct communications port
+or IP address and key of a :doc:`pico` you want to test with.
 
 .. code-block:: text
 
@@ -137,14 +105,10 @@ command-line flags, so both layers above it can use one file.
    * - Setting
      - Description
    * - ``emulator``
-     - Path to the emulator, filled in with the one the tools fetched. A
-       bare ``rp6502-emu`` means the fetch had nothing for this machine,
-       so the name is searched on your PATH.
+     - Path to the emulator. A bare filename will search the PATH.
    * - ``device``
      - The serial port your Picocomputer appears on, or a hostname to
-       reach it over telnet. This is the setting you will edit. A Python
-       error about the communications device not being found means this
-       one is wrong.
+       reach it over telnet.
    * - ``key``
      - Passkey for telnet. See `Telnet Console
        <ria_w.html#telnet-console>`__.
