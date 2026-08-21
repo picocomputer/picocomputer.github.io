@@ -8,62 +8,40 @@ RP6502 - RP6502 Interface Adapter
 Introduction
 ============
 
-The RP6502 Interface Adapter (RIA) is a specification for an interface
-between a host CPU and the 6502. It provides every essential service a
-WDC W65C02S microprocessor needs to run, and it is designed to fit
-entirely on a Raspberry Pi Pico 2 as part of an :doc:`pico`.
+The RP6502 Interface Adapter (RIA) is a specification for the interface
+between a host CPU and a 6502. It provides every essential service a WDC
+W65C02S microprocessor needs to run: the clock, reset, memory beyond the
+6502's own 64 KB, an operating system, and every device the 6502 reaches.
 
 The RIA must live at $FFE0-$FFFF and must control RESB and PHI2. Those
-are the only hard requirements — everything else about your Picocomputer
-is yours to customize. Even the :doc:`vga` is optional.
-
-A fresh RIA boots into the RP6502 monitor. The easiest way to get started
-is the standard setup: a :doc:`vga` module for the display and a USB
-keyboard plugged into the RIA. The monitor runs on the console, which
-isn't tied to any single device — other terminals fan in through the
-`console manifold <term.html#console-manifold>`__, including USB serial,
-telnet, and the RIA's bare UART pins (115200 8N1). The monitor itself is
-documented here only by a few common commands — its built-in help is
-extensive and always current. Type ``help`` to get started, then dig into
-deep help like ``help set phi2``.
-
-The RP6502 monitor is not an operating-system shell; think of it more
-like a UEFI shell. Its main job is loading ROMs, with just enough
-hardware and locale configuration to get going — kept deliberately
-minimal.
-
-Use the ``load`` command to load ROMs in ``.rp6502`` format. These
-aren't ROMs in the traditional (obsolete) sense: a ROM here is a file
-holding a memory image that's loaded into RAM before the 6502 starts.
-The RIA has 1 MB of flash you can ``install`` ROMs into. Once installed,
-a ROM can be run directly, or you can ``set boot`` to load it whenever
-the RIA boots. The :doc:`sdk` builds these files and documents the
-`ROM File Format <sdk.html#rom-file-format>`__.
-
-A few monitor commands, such as ``upload`` and ``binary``, exist for
-developer tools rather than for people. See :doc:`sdk` for what drives
-them.
+are the only hard requirements. Everything else is yours to customize —
+even the :doc:`vga` is optional.
 
 
 Implementations
 ===============
 
-The specification is what matters; what runs it does not. RIA firmware
-runs on a Raspberry Pi Pico 2 in an :doc:`pico`. The :doc:`fpga` runs a
-trimmed build of the same firmware C on a Hazard3 RISC-V soft CPU, behind
-the same register window in fabric. The :doc:`emu` hands that window to a
-native host CPU. All three answer the same registers and map their errors
-onto the same errno values.
+The specification is what matters; what runs it does not.
 
-Nothing below says which one it is describing unless the hardware is the
-point, and those few passages say so.
+- :doc:`pico` — RIA firmware on a Raspberry Pi Pico 2. The RIA is
+  designed to fit entirely on one.
+- :doc:`fpga` — a trimmed build of the same firmware C on a Hazard3
+  RISC-V soft CPU, behind the same register window in fabric.
+- :doc:`emu` — that same register window handed to a native host CPU.
+
+The RP6502 monitor is RIA firmware, so every ``load``, ``install``,
+``set``, ``status``, and ``help`` command on this page belongs to an
+:doc:`pico`. The :doc:`emu` takes command-line arguments instead, and
+the :doc:`fpga` uses the Pocket's own menus.
 
 
 Reset
 =====
 
 Think of reset as two states rather than a pulse on RESB. While reset
-is low, the 6502 is stopped and the console talks to the RP6502 monitor.
+is low, the 6502 is stopped and the console belongs to the machine
+rather than to a running program — on an :doc:`pico` that is the RP6502
+monitor.
 While reset is high, the 6502 runs and the console manifold connects to both
 the :doc:`os` and the UART TX/RX registers described below.
 
@@ -71,22 +49,15 @@ To bring reset from low to high, either ``load`` a ROM that has a reset
 vector, or use the ``reset`` command if you've prepared RAM some other
 way.
 
+The :doc:`pico` is unique in that it hosts itself and therefore requires
+a way to terminate a halted or wedged 6502.
 To drop reset from high to low and return to the monitor — even from a
 crashed or halted 6502 — use any terminal on the `console manifold
 <term.html#console-manifold>`__:
 
-1. Press Alt-F4 or Ctrl-Alt-Del from a keyboard.
+1. Press Ctrl-Alt-Del from a USB keyboard.
 2. Send a break from a serial terminal.
 3. Send a break from a telnet terminal.
-
-.. caution::
-
-   Don't wire a physical button to RESB — the RIA must stay in control
-   of it. What you probably want is the reset driven by the RIA RUN pin,
-   called a ``reboot``. On the reference hardware the reboot button is
-   wired to that pin, and rebooting this way loads any configured boot
-   ROM, just like at power-on. Resetting the 6502 from a terminal only
-   returns you to the RP6502 monitor.
 
 
 Registers
@@ -210,8 +181,7 @@ The UART behind $FFE0-$FFE2 is reached directly through these registers,
 and the ready flags on bits 6-7 let you test with the BIT operator. Use
 these or the :doc:`os` stdio — but not both at once: driving the UART
 directly while a stdio OS function is in progress is undefined behavior.
-The line runs at 115200 bps, 8-bit words, no parity, 1 stop bit, and on
-an :doc:`pico` it comes out on the RIA's bare RX/TX pins.
+The line runs at 115200 bps, 8-bit words, no parity, 1 stop bit.
 
 Extended RAM (XRAM)
 -------------------
@@ -269,10 +239,10 @@ on it.
 Peripheral Information Exchange (PIX)
 =====================================
 
-A Raspberry Pi Pico has only so many GPIO pins, so high-bandwidth
-devices like video systems needed a bus of their own. PIX is that bus:
-an addressable broadcast system that any number of devices can listen
-to.
+High-bandwidth devices like video systems need a bus of their own. PIX
+is that bus: an addressable broadcast system that any number of devices
+can listen to, narrow enough to fit the GPIO budget of a Raspberry Pi
+Pico, wide enough to move data as fast as the 6502 writes.
 
 Physical layer
 --------------
@@ -412,9 +382,9 @@ Tablet
 
 The RIA can give applications an *absolute* pointer — a "tablet" — instead of
 the relative mouse. It reports a canvas pixel position directly: a plain mouse
-is integrated and clamped to the canvas, and an absolute USB or Bluetooth
-digitizer or touchscreen is scaled to it. Enable and disable it by mapping it
-to an address in XRAM.
+is integrated and clamped to the canvas, and an absolute digitizer or
+touchscreen is scaled to it. Enable and disable it by mapping it to an address
+in XRAM.
 
 .. code-block:: C
 
@@ -493,8 +463,8 @@ hardware.
 Gamepads
 ========
 
-The RIA supports up to four gamepads, with drivers for Generic HID,
-XInput, and PlayStation controllers.
+The RIA supports up to four gamepads. :doc:`pico` firmware carries drivers
+for Generic HID, XInput, and PlayStation controllers.
 
 Modern gamepads have all converged on the same layout: four face
 buttons, a d-pad, dual analog sticks, select, start, and four shoulders.
@@ -824,11 +794,11 @@ Timers, interrupts, and the status register are not supported. Those
 features existed mainly to cost-reduce consumer devices; computers of
 the era had their own timers and rarely used the chip's.
 
-Console Port
-============
+Console
+=======
 
-The RIA's main serial port is the system console, and the `UART`_
-registers above are its rawest form. The OS wraps that same port as
+The system console is the terminal the RIA and the 6502 talk to, and the
+`UART`_ registers above are its rawest form. The OS wraps that same port as
 ``stdin``, ``stdout``, ``stderr``, and the ``CON:`` and ``TTY:`` device
 names. See :doc:`term` for cooked and raw reads, the non-blocking
 variants, and the line editor behind them.
@@ -861,11 +831,12 @@ you asked for — resubmit any remaining bytes on a later call.
 MIDI
 ====
 
-USB MIDI instruments plug right in, and the ``status`` command lists
-them. Each virtual cable is its own device — ``"MIDI0:"`` onward,
-assigned in the order cables appear, up to four at a time. A simple
-keyboard is one cable (1X1); a multi-port interface is several. Open one
-like a file.
+MIDI instruments attached to the machine appear as devices, and the
+``status`` command lists them. :doc:`pico` firmware carries a USB MIDI
+host driver, so a USB instrument plugs right in. Each virtual cable is
+its own device — ``"MIDI0:"`` onward, assigned in the order cables
+appear, up to four at a time. A simple keyboard is one cable (1X1); a
+multi-port interface is several. Open one like a file.
 
 A cable opens in one of two modes, chosen by the open name. Bare
 ``"MIDI0:"`` is **raw** — reads and writes are plain wire MIDI, the same
@@ -948,10 +919,11 @@ reopens it after — everything arrives, just split into two
 Delta times measure from the previous event, so timing stays exact over
 any song length: events are anchored to an absolute tick count, and
 ticks are kept internally in nanoseconds, holding arithmetic rounding
-below one part per million. What remains is the hardware — the
-microsecond timer's crystal drifts single-digit milliseconds over a
-several-minute song, and USB full-speed framing sets the
-moment-to-moment jitter near one millisecond, the same pace as the
+below one part per million. What remains belongs to the machine's clock
+and transport. Where the RIA is paced by a crystal-driven microsecond
+timer and delivers over USB full speed, the crystal drifts single-digit
+milliseconds over a several-minute song and framing sets the
+moment-to-moment jitter near one millisecond — the same pace as the
 classic MIDI wire itself.
 
 If your program stops feeding the buffer and resumes, messages already

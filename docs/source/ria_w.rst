@@ -9,17 +9,18 @@ Introduction
 ============
 
 The **RP6502 Interface Adapter W** is the :doc:`ria` with a radio — the
-same specification and the same firmware, built for a Raspberry Pi Pico
-2 W. Everything on the RIA page applies here; this page is only the
-wireless part.
+same specification, extended for wireless. Everything on the RIA page
+applies here; this page is only the wireless part. See :doc:`pico` for
+the hardware that implements it; the ``SET`` commands below are monitor
+commands, so they are entered there.
 
 
 Wi-Fi Setup
 ===========
 
-The radio speaks Wi-Fi 4 (802.11n) and is configured from the monitor.
-Set the network name and the password and it connects, remembering both
-across reboots. The ``status`` command shows where it got to.
+The radio is configured from the monitor. Set the network name and the
+password and it connects, remembering both across reboots. The
+``status`` command shows where it got to.
 
 .. list-table::
    :widths: 25 75

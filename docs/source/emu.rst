@@ -33,7 +33,7 @@ Introduction
 The Picocomputer 6502 is a machine, and a **host** binds it to a thin
 wrapper that translates IO and OS services. There are eight hosts today:
 Linux on x86_64 and aarch64, macOS, Windows, the browser, Android, the
-:doc:`fpga`, and a pair of real Picos. Every one of them runs the same
+:doc:`fpga`, and a pair of Pi Picos. Every one of them runs the same
 machine.
 
 This page documents the software hosts. The :doc:`fpga` is the host made
@@ -119,8 +119,9 @@ Hand the emulator a ROM, or drag one onto the window.
   rp6502-emu game.rp6502
 
 ``--rom`` installs a ROM on the null drive instead of booting it, where it
-can be reached as ``:basename`` — the same way an installed ROM works on
-real hardware. It repeats up to sixteen times, and the first one boots if
+can be reached as ``:basename`` — the same way an :doc:`pico` reaches a
+ROM installed in its flash. It repeats up to sixteen times, and the
+first one boots if
 you didn't name a ROM to run.
 
 .. code-block:: text
@@ -220,7 +221,7 @@ work.
      - ``random``,
        or a byte
      - What RAM and XRAM hold before anything writes them. The default
-       is ``random``, which is what the hardware gives a program. Supply
+       is ``random``, which is what a machine gives a program. Supply
        a byte, as ``$00`` or ``0``, to start with known memory.
      - all
    * - ``--mute``
@@ -493,15 +494,10 @@ be decimal, C-style ``0xFF``, or MOS-style ``$FF``.
 A failed check names the script and the line it was on, then exits 1,
 which is all a test runner needs.
 
-Memory starts random, as it does on real hardware. The 6502's SRAM keeps
-whatever was last in it, and neither the RIA nor the VGA clears XRAM, so
-a program that reads a byte it never wrote fails here instead of only on
-hardware. ``--fill 00`` gives a test known memory when it needs it.
+Memory starts random, as it often does on real hardware. This will catch
+uninitialize memory usage... eventually. ``--fill 00`` gives a test
+known memory when it needs it. The seed will be reported on stderr, so a
+failure can be reproduced.
 
-``--seed`` fixes both the fill and the numbers ``lrand`` returns, and it
-fixes them independently — the same seed gives a program the same random
-sequence whatever ``--fill`` says. An unseeded run reports its seed on
-stderr, so a failure
-found by a random fill can be repeated. ``--mute`` removes the audio
-device, ``--tmpdrive`` isolates the filesystem, and ``--frames`` with
-``--screenshot`` renders without a window at all.
+``--seed`` sets both the fill and the numbers ``lrand`` returns. Both will
+start with the same seed so a ``--fill`` will not advance ``lrand``.

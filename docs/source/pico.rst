@@ -164,6 +164,70 @@ It is not possible to "brick" a Pi Pico from a failed flash. You can always
 recover with the BOOTSEL method.
 
 
+Step 6. First Steps
+===================
+
+Console
+-------
+
+The standard setup is a VGA monitor and a USB keyboard plugged into the RIA.
+5V Power is applied to the VGA module, enough for all your devices plus one
+watt for the Picocomputer itself. You may also connect the VGA module to a
+computer where it will present a serial port attached to the console — no
+driver needed. An :doc:`ria_w` adds telnet.
+
+Monitor
+-------
+
+A fresh RIA boots into the RP6502 monitor. It is not an operating-system
+shell; think of it more like a UEFI shell. Its main job is loading ROMs,
+with just enough hardware and locale configuration to get going — kept
+deliberately minimal.
+
+The monitor runs on the console, so it is reachable from any terminal on
+the `console manifold <term.html#console-manifold>`__.
+
+The monitor is documented here only by a few common commands — its
+built-in help is extensive and always current. Type ``help`` to get
+started, then dig into deep help like ``help set phi2``.
+
+Use the ``load`` command to load ROMs in ``.rp6502`` format. These
+aren't ROMs in the traditional (obsolete) sense: a ROM here is a file
+holding a memory image that's loaded into RAM before the 6502 starts.
+Use ``install`` to put a ROM in flash; from there it can be run
+directly, or ``set boot`` will load it whenever the RIA boots. The
+:doc:`sdk` builds these files and documents the
+`ROM File Format <sdk.html#rom-file-format>`__.
+
+A few monitor commands, such as ``upload`` and ``binary``, exist for
+developer tools rather than for people. See :doc:`sdk` for what drives
+them.
+
+Peripherals
+-----------
+
+The RIA is a USB host. It drives keyboards, mice, gamepads, hubs, UART serial
+adapters, MIDI instruments, NFC readers, and floppy and flash drives.
+
+A :doc:`ria_w` adds Bluetooth LE for keyboards, mice, and gamepads. Wi-Fi 4
+(802.11n) adds networking for modem emulation and NTP.
+
+Storage and ROMs
+----------------
+
+Files live on a USB flash drive. Any USB flash or floppy drive is read and
+written as FAT. 1 MB of flash holds the ROMs you ``install``, and
+``set boot`` picks one to load at power-on. ROMs do not need to be installed,
+they are intended to be loaded directly from mass storage devices.
+
+Reboot is not Reset
+-------------------
+
+The reboot button is wired to the RIA RUN pin. Rebooting restarts the RIA and
+loads any configured boot ROM, just like at power-on. Never wire a button to
+RESB; the RIA must stay in control of it.
+
+
 Acrylic Sandwich Case
 =====================
 

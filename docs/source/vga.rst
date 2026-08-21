@@ -8,12 +8,12 @@ Introduction
 =============
 
 The RP6502 Video Graphics Array is a specification for a video system
-connected by PIX and programmed with extended registers (XREGs). It is
-designed to fit entirely on a Raspberry Pi Pico 2 as part of an
-:doc:`pico`, where its data connection is to a :doc:`ria` over a 5-wire
-PIX bus. You can put more than one VGA module on a PIX bus, but note
-that all of them share the same 64 KB of XRAM, and only the first
-generates frame numbers and VSYNC interrupts.
+connected by PIX and programmed with extended registers (XREGs). Its
+data connection is to a :doc:`ria` over a 5-wire PIX bus.
+
+More than one VGA device can sit on a PIX bus, but all of them share the
+same 64 KB of XRAM, and only the first generates frame numbers and VSYNC
+interrupts.
 
 Two Implementations
 ===================
@@ -23,17 +23,15 @@ Everything on this page exists twice. There is a software renderer in C,
 a simplification of the other. They have the same registers, the same
 config structures at the same offsets, and they produce the same pixels.
 
-The C is the RP6502-VGA firmware, and the :doc:`emu` compiles the same
-files, so the Pico 2 module and every software host draw with one
-renderer. The RTL belongs to the :doc:`fpga`, where each mode is a
-scanline engine in fabric.
+The C is the RP6502-VGA firmware, which is designed to fit entirely on a
+Raspberry Pi Pico 2 as part of an :doc:`pico`, and the :doc:`emu`
+compiles the same files, so that module and every software host draw
+with one renderer. The RTL belongs to the :doc:`fpga`, where each mode
+is a scanline engine in fabric.
 
 The two are tested against each other. A generator writes a corpus of
 small ROMs covering every mode. Every fixture boots on both machines,
 settles, and the two framebuffers are compared word for word.
-
-Nothing below says which machine it is describing, because there is one
-video system here and you can have it in software or in gates.
 
 Video Programming
 ==================
@@ -54,8 +52,7 @@ application. At the broadest level there are three planes, and each
 plane has two layers: a fill layer and a sprite layer. Your application
 can assign different fill and sprite modes to specific planes and
 scanlines. There's enough fill rate to blow past any classic 8-bit
-system — but push too hard and you'll see a half-blue screen telling you
-that you went too far.
+system — but push too hard and you overrun the renderer.
 
 The built-in 8x8 and 8x16 fonts are available through the sentinel XRAM
 pointer $FFFF. Glyphs 0-127 are ASCII; glyphs 128-255 vary by code page.
@@ -647,8 +644,8 @@ Backchannel
 ===========
 
 The 6502 programmer never has to think about any of this; it happens
-automatically. What follows is for hardware explorers probing the UART
-Tx pin.
+automatically. What follows is the return path for machines where the
+RIA and the VGA are separate chips joined by a serial wire.
 
 Because the PIX bus is unidirectional, the VGA system can't send data
 straight back to the RIA. The UART Rx path won't do either — it would

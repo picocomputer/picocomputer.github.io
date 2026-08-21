@@ -24,14 +24,14 @@ Picocomputer 6502
 Pure 6502. No governor. No speed limits.
 
 The **Picocomputer 6502** is an open source, modern-retro gaming computer
-built around a real WDC 65C02. The design philosophy is simple: keep the
+built around a WDC 65C02. The design philosophy is simple: keep the
 soul of programming a 6502 and 6522, then rethink everything else. The
 hardware and the software are both open, and the whole design is friendly
 to DIY builds.
 
 .. image:: _static/ria-w-sandwich.jpg
    :width: 600
-   :alt: Picocomputer Photo
+   :alt: RP6502-PICO Photo
 
 
 Community
@@ -46,21 +46,21 @@ the YouTube channel and share the project around while you're at it.
 - **YouTube:** https://www.youtube.com/@rumbledethumps
 
 
-Specs
-=====
+Specs (:doc:`pico`)
+===================
 
 - **Core** — WDC 65C02 CPU and 65C22 VIA, variable from 0.1 to 8.0 MHz
 - **RAM** — 64 KB system plus 64 KB extended
 - **ROM** — 1 MB of onboard flash for installing and auto-booting
 - **Video** — VGA and HD output, 16-bit color tile and sprite engine
 - **Sound** — PSG (8 voices) or OPL2 FM (9 voices)
-- **Storage** — fast USB flash drive access, over 512 KB/sec read and write
+- **Storage** — Full Speed USB flash and 3.5" floppy drives
 - **Clock** — real-time clock with automatic Daylight Saving Time
 - **TRNG** — true random number generator
 
 
-Connections
-===========
+Connections (:doc:`pico`)
+=========================
 
 - **Console manifold** — reach the console over telnet, serial, or direct
   attach
@@ -79,7 +79,7 @@ the 6502 vectors. Nothing is burned into a chip — this file prepares RAM
 before the 6502 starts and delivers assets to the program.
 
 - **Protected OS** — 32-bit operating system that uses no 6502 RAM
-- **FAT filesystem** — read and write files on any USB flash or floppy drive
+- **FAT filesystem** — read and write files on the machine's drive
 - **POSIX-like API** — a familiar C library for portable code
 - **cc65 and llvm-mos** — :doc:`SDK <sdk>` for either 6502 compiler
 - **International** — keyboard layouts and OEM code pages
@@ -105,9 +105,16 @@ is which modern CPU, and how much of the machine it is asked to be.
   Analogue Pocket today and MiSTer next. Mostly RTL, with a RISC-V
   embedded to run the OS bridge to the host platform.
 
-None of the three is the sentinel. That moved from the RP6502-PICO to the
-tests as the first emulator was developed, so when two hosts disagree it
-is the test corpus that settles it, not whichever one is made of silicon.
+All machine types are treated equally. Our unit and functional CI testing
+framework runs all code against the same tests whether it's declarative
+RTL or imperative C. The guarantees all machine types support all sound
+systems and video modes equally.
+
+Things that matter, the 6502, 6522, and video timing, are cycle accurate
+on all machines. But some hosts may have unusual limitations or
+advantages. For example, the :doc:`emu` is often run on a machine with
+NVMe storage many orders of magnitude faster than a, :doc:`pico`'s 12 Mbps
+USB.
 
 
 Read the docs

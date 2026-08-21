@@ -10,8 +10,8 @@ Introduction
 
 The RP6502-FPGA is the Picocomputer 6502 in programmable logic. The
 65C02, the 65C22, the :doc:`ria`, and the :doc:`vga` video system are RTL,
-and the operating system runs on a Hazard3 RISC-V soft CPU executing a
-the same firmware C all other machines run. It keeps the same split between
+and the operating system runs on a Hazard3 RISC-V soft CPU executing
+the same C firmware all other machines run. It keeps the same split between
 a 6502 and a modern processor, which is what defines a Picocomputer.
 
 
@@ -90,9 +90,9 @@ Internals
    │ ┌─────────────────────────────────────────────────────────────────┐ │
    │ │ src/rtl — the machine, platform independent                     │ │
    │ │                                                                 │ │
-   │ │  ┌────────┐       ┌────────┐   the VIA at $FFD0-$FFDF and the   │ │
-   │ │  │ w65c02 ├───────┤ w65c22 │   RIA window at $FFE0-$FFFF, where │ │
-   │ │  └───┬────┘       └────────┘   they sit on a real board         │ │
+   │ │  ┌────────┐       ┌────────┐   w65c22 VIA at $FFD0-$FFDF        │ │
+   │ │  │ w65c02 ├───────┤ w65c22 │   RP6502-RIA at $FFE0-$FFFF        │ │
+   │ │  └───┬────┘       └────────┘                                    │ │
    │ │      │                                                          │ │
    │ │  ┌───┴────┐                                                     │ │
    │ │  │ria_regs│   phi2_div makes PHI2 — 0.1 to 8.0 MHz, exact       │ │
@@ -130,5 +130,5 @@ critical - it only needs to keep up with IO to the Pocket.
 MiSTer
 ======
 
-Planned. The project needs a significant amount of review and reorginzation
+Planned. The project needs a significant amount of review and reorganization
 before additional platforms get added.

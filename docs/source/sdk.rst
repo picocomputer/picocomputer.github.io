@@ -40,8 +40,8 @@ don't want.
    │   The CMake build system works with many other editors.   │
    ├───────────────────────────────────────────────────────────┤
    │ tools/rp6502.py                                 Python 3  │
-   │   Packages the ROM with its assets and communicates with  |
-   |   :doc:`pico` and :doc:`emu` machines for debugging.      |
+   │   Packages the ROM with its assets and communicates with  │
+   │   RP6502-PICO and RP6502-EMU machines for debugging.      │
    └───────────────────────────────────────────────────────────┘
 
 
@@ -69,7 +69,7 @@ up a new project. You may change it later from the CMake side panel.
 **4. Press F5 to debug.** This will download the latest tools and
 emulator for your system then build hello world and run it in the emulator.
 It will also create the ``.rp6502`` settings file described in the next
-section. It is expected that you commit these tools to yout repository
+section. It is expected that you commit these tools to your repository
 and update them manually as needed, either from a task or the command line.
 The emulator executable and settings file are ignored by git.
 
@@ -107,7 +107,7 @@ or IP address and key of a :doc:`pico` you want to test with.
    * - ``emulator``
      - Path to the emulator. A bare filename will search the PATH.
    * - ``device``
-     - The serial port your Picocomputer appears on, or a hostname to
+     - The serial port the machine appears on, or a hostname to
        reach it over telnet.
    * - ``key``
      - Passkey for telnet. See `Telnet Console
@@ -134,9 +134,8 @@ Running and Debugging
 **RP6502 (Emulator)** is the default. It builds your project and runs it
 with source-level debugging in the :doc:`emu`. No hardware needed.
 
-**RP6502 (Hardware)** builds your project and runs it on a real
-Picocomputer 6502. Connect with telnet, or with a USB cable plugged into
-the RP6502-VGA USB port.
+**RP6502 (Hardware)** builds your project and runs it on an :doc:`pico`.
+Connect with telnet, or with a USB cable to the VGA module's USB port.
 
 Breakpoints, stepping, the call stack, and watch expressions work only on
 the emulator. Debugging on hardware provides a terminal instead. What
@@ -168,8 +167,8 @@ other file. They're read-only, and you can have several open at once.
 
   open("ROM:help", O_RDONLY);
 
-Some names are special. The ``help`` asset is what the monitor's HELP and
-INFO commands display.
+Some names are special. The ``help`` asset is what an :doc:`pico`
+monitor's HELP and INFO commands display.
 
 Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
 
@@ -178,7 +177,7 @@ Linker Configuration
 ====================
 
 ``rp6502_executable()`` packages the linker output into a .rp6502 ROM file
-with all the assets you speficied.
+with all the assets you specified.
 
 .. code-block:: cmake
 
@@ -221,7 +220,7 @@ Multiple Compiler Artifacts
 A linker configuration can write more than one output file, and CMake's
 ``add_executable()`` models only one. In an ld65 config, every memory
 area with a ``file`` of its own is another file the linker writes. CMake
-knows only about about the ``%O`` file. ``rp6502_byproducts()`` tells
+knows only about the ``%O`` file. ``rp6502_byproducts()`` tells
 CMake that building ``<target>`` produces additional files.
 
 .. code-block:: cmake

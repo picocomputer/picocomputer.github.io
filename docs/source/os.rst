@@ -255,10 +255,11 @@ don't have to call ``f_lseek()`` from C. You can call the usual
 ``lseek()``, which keeps the traditional argument order.
 
 The OS is built around FAT filesystems, the de facto standard for
-unsecured USB storage. POSIX filesystems aren't fully compatible with
-FAT, but there's a solid core of basic I/O where the two agree
-completely. So you'll find familiar POSIX functions like ``open()``
-alongside others like ``f_stat()`` — close to their POSIX cousins, but
+unsecured removable storage such as USB drives and memory cards. POSIX
+filesystems aren't fully compatible with FAT, but there's a solid core of
+basic I/O where the two agree completely. So you'll find familiar POSIX
+functions like ``open()`` alongside others like ``f_stat()`` — close to
+their POSIX cousins, but
 tailored to FAT. If a true POSIX ``stat()`` is ever needed, it can be
 built in the C standard library or in an application by translating
 ``f_stat()`` data.
@@ -465,8 +466,8 @@ LOCALTIME
 .. c:function:: struct tm *localtime (const time_t *timep)
 
    Converts seconds since the Unix epoch to local broken-down time
-   using the configured time zone. Run ``help set tz`` on the monitor
-   to learn how to configure your time zone. Push the seconds as a
+   using the configured time zone. Run ``help set tz`` on an :doc:`pico`
+   monitor to learn how to configure your time zone. Push the seconds as a
    signed integer of up to 64 bits; short pushes are unsigned. A
    struct tm (see `GMTIME`_) is pushed back to the XSTACK.
 
@@ -510,8 +511,9 @@ STRFTIME
    C library strftime() compares the length to its buffer size and
    abandons an oversized result with `ZXSTACK`_.
 
-   ``%a %A %b %B %c %p %r %x %X`` follow the locale set with
-   ``SET LOC``. ``%z %Z`` follow the time zone set with ``SET TZ``.
+   ``%a %A %b %B %c %p %r %x %X`` follow the configured locale and
+   ``%z %Z`` the configured time zone — ``SET LOC`` and ``SET TZ`` on an
+   :doc:`pico`.
    The format and result are code page text. ``%E`` and ``%O``
    modifiers are ignored.
 
@@ -1044,7 +1046,8 @@ CHDRIVE
 
    Change the current drive.
    Valid names are ``MSC0:``–``MSC9:`` with shortcuts ``0:``–``9:``.
-   Each USB device (LUN) mounts as one drive.
+   Each attached storage volume mounts as one drive; on an :doc:`pico`
+   that is one USB mass-storage LUN.
 
    :Op code: RIA_OP_CHDRIVE 0x2A
    :C proto: rp6502.h
@@ -1205,12 +1208,12 @@ EXIT
 
 .. c:function:: void exit (int status)
 
-   Halt the 6502 and hand the console back to the RP6502 monitor. This is
+   Halt the 6502 and hand the console back to the machine. This is
    the only operation that never returns; the OS pulls RESB low before the
    next instruction can execute. The status value is kept for the next ROM
    and is readable via ``RIA_ATTR_EXIT_CODE``.
 
-   Dropping the user back to the monitor is generally discouraged, but
+   Dropping the user out of your program is generally discouraged, but
    calling exit() — or falling off the end of main() — beats locking up.
 
    :Op code: RIA_OP_EXIT 0xFF
@@ -1227,20 +1230,23 @@ act as a persistent host for all the others. A ROM registers as the launcher
 by setting ``RIA_ATTR_LAUNCHER`` to 1 via :c:func:`ria_attr_set`. From then
 on, the process manager automatically re-executes the launcher ROM whenever
 any ROM it launched stops. When the launcher ROM itself stops, the chain
-ends, the registration clears, and control returns to the monitor.
+ends, the registration clears, and control returns to the machine. Where
+the chain ends depends on which machine: an :doc:`pico` returns to its
+monitor, the :doc:`emu` exits unless debugging, and the :doc:`fpga` stops
+until you load a new ROM with the host menu.
 
 The launcher ROM decides what to run next by calling `EXEC`_, optionally
 passing arguments to the new ROM through argv. The launched ROM reads those
 arguments back with `ARGV`_.
 
 Two keystrokes stop a running ROM. Ctrl-Alt-Del stops it and clears the
-launcher registration at any time, always returning you to the monitor —
+launcher registration at any time, always returning you to the machine —
 handy for system maintenance. Alt-F4 stops the running ROM and returns to
-the launcher, or to the monitor if the ROM was run from there. Pressing
+the launcher, or to the machine if the ROM was run from there. Pressing
 Alt-F4 while the registered launcher ROM is itself running does nothing; it
 won't stop it. That makes Alt-F4 the keystroke for ending a ROM while
 staying inside your preferred launcher framework, and Ctrl-Alt-Del the one
-for breaking all the way back to the monitor.
+for breaking all the way back out.
 
 ROM Cartridge Menu
 ------------------
@@ -1315,9 +1321,9 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
    * - | 0x08
        | ``RIA_ATTR_SIGINT``
      - Read-only Ctrl-C latch. Returns 1 if a Ctrl-C has been seen on
-       any console input — UART, USB, or telnet (including the telnet
-       Interrupt Process command) — since the previous get; returns 0
-       otherwise. Reading clears the latch. Same as RIA IRQ SIGINT.
+       any terminal attached to the console manifold — including the
+       telnet Interrupt Process command — since the previous get;
+       returns 0 otherwise. Reading clears the latch. Same as RIA IRQ SIGINT.
    * - | 0x09
        | ``RIA_ATTR_RLN_CAPS``
      - Caps mode applied to keystrokes by the console line editor.
@@ -1370,12 +1376,10 @@ runtime, and ``errno`` in C maps directly to ``RIA_ERRNO``. Assembly
 programs must set ``RIA_ATTR_ERRNO_OPT`` themselves before any OS call that
 can fail.
 
-The OS maps FatFs errors onto errno, and every other RP6502 host — the
-:doc:`emu` and the :doc:`fpga` alike — maps its native errors the same
-way. The table below lists the FatFs mappings. Because FatFs is so central
-to the OS, each call is documented with its native FatFs errors to help
-when cross-referencing the `FatFs documentation
-<https://elm-chan.org/fsw/ff/>`__.
+Every RP6502 machine maps its filesystem errors onto the same errno
+values. The table below lists the FatFs mappings, and each call above is
+documented with its FatFs errors too, to help when cross-referencing the
+`FatFs documentation <https://elm-chan.org/fsw/ff/>`__.
 
 .. list-table::
    :header-rows: 1

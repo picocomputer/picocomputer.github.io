@@ -11,17 +11,17 @@ Console Manifold
 In the RP6502 vocabulary, a **terminal** is any device a user types into
 and reads from. The **console** is the main terminal — the one connected
 to ``stdin``, ``stdout``, ``stderr``, ``CON:``, and ``TTY:``. The
-**monitor** is the system program that runs on the console to assist
-with configuration and ROM loading.
+**monitor** is the system program an :doc:`pico` runs on the console to
+assist with configuration and ROM loading.
 
 The console is not tied to a single physical device. Multiple terminals
 can be attached at once and fanned in to one console; this is the
-**console manifold**. The physical hardware attaches a terminal three
-ways:
+**console manifold**. Each machine attaches terminals its own way. An
+:doc:`pico` attaches one three ways:
 
 * **VGA and USB keyboard.** In the standard configuration with a
   :doc:`vga` module, the console is accessed with a VGA monitor and a
-  USB keyboard plugged into the RIA module.
+  USB keyboard plugged into the RIA.
 * **USB CDC ACM.** Connect the USB port on the VGA module to a computer
   and access the console over the USB CDC ACM serial port that appears.
   No driver is needed.
@@ -84,7 +84,7 @@ device names instead.
 Reading ``stdin`` is cooked and blocks until the user presses Enter.
 ``stdout`` and ``stderr`` block too, inserting a carriage return before
 any newline that lacks one; all of the data is always sent, and a write
-blocks until it has fully drained into the hardware FIFOs. That is what a
+blocks until it has fully drained into the output FIFOs. That is what a
 C programmer expects, and a poor fit for a multitasking 6502 program.
 Two alternate file paths offer non-blocking variants of the same
 channels:
@@ -159,7 +159,7 @@ to restore its prior contents.
 Terminal
 ========
 
-The RP6502 :doc:`vga` module includes a color terminal that attaches to
+The :doc:`vga` specification includes a color terminal that attaches to
 the console manifold. It implements the Linux console subset of
 ECMA-48 / VT102 with xterm-color extensions. The terminal does not
 require flow control to keep up with 115200 bps.
