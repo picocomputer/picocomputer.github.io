@@ -445,7 +445,7 @@ MOS-style ``$FF``.
      - Run until that byte reads that value. The byte is read once a
        frame, at the boundary.
    * - ``type "text" [frames]``
-     - Type it. ``\n`` is Enter, ``\t`` is Tab. Waits for the keyboard
+     - Type it. ``\r`` is Enter, ``\t`` is Tab. Waits for the keyboard
        ring to take it all; default budget 600 frames.
    * - ``key <name>[+ctrl][+shift][+alt]``
      - Send a key's escape sequence.
