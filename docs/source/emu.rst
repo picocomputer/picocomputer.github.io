@@ -155,13 +155,18 @@ work.
      - Value
      - Description
      - Hosts
+   * - ``--help``
+     - \-
+     - Print the options and the script commands, then exit.
+     - all
    * - ``--screenshot``
      - ``file.png``
      - Run headlessly, render one frame to PNG, and exit.
      - all
    * - ``--frames``
      - number
-     - Frames to run before the screenshot. Default 120.
+     - Frames to run before the screenshot. Default 120. Only with
+       ``--screenshot``; a script's frames are its own, see ``run``.
      - all
    * - ``--scale``
      - number
@@ -188,10 +193,6 @@ work.
      - Drive input and check results. See `Scripting`_. Always headless,
        and the script controls all timing.
      - desktop
-   * - ``--tmpdrive``
-     - \-
-     - Make ``MSC0:`` a fresh throwaway instead of the current directory.
-     - all
    * - ``--rom``
      - ``file``
      - Install a ROM on the null drive, reached as ``:basename``.
@@ -407,17 +408,19 @@ a test that passes or fails.
   rp6502-emu --mute --seed 1 --script adventure.txt adventure.rp6502
 
 Given ``-`` instead of a filename it reads stdin a line at a time, so a
-driver written in any language can work the machine with no protocol to
-implement. The machine waits for each line, so the driver sets the pace.
+driver written in any language can work the machine. The machine waits
+for each line, so the driver sets the pace. See `Driving it from a
+program`_.
 
 A script always runs headless, and nothing paces
 it against the host's clock. Frames elapse only when the script asks for
 them, so ``run 600`` is six hundred frames and six hundred VSYNCs every
 time.
 
-One command per line. ``#`` starts a comment. Text is always in double
-quotes and takes ``\n``, ``\r``, ``\t``, ``\\``, and ``\"``. Numbers may
-be decimal, C-style ``0xFF``, or MOS-style ``$FF``.
+One command per line. ``#`` starts a comment anywhere outside quotes.
+Text is always in double quotes and takes ``\n``, ``\r``, ``\t``,
+``\\``, and ``\"``. Numbers may be decimal, C-style ``0xFF``, or
+MOS-style ``$FF``.
 
 .. code-block:: text
 
@@ -438,8 +441,12 @@ be decimal, C-style ``0xFF``, or MOS-style ``$FF``.
      - Let exactly that many frames elapse, one VSYNC each. Default 1.
    * - ``wait "text" [frames]``
      - Run until the console says it. Default budget 600 frames.
-   * - ``type "text"``
-     - Type it. ``\n`` is Enter, ``\t`` is Tab.
+   * - ``wait [xram:|ram:]<addr> <byte> [frames]``
+     - Run until that byte reads that value. The byte is read once a
+       frame, at the boundary.
+   * - ``type "text" [frames]``
+     - Type it. ``\n`` is Enter, ``\t`` is Tab. Waits for the keyboard
+       ring to take it all; default budget 600 frames.
    * - ``key <name>[+ctrl][+shift][+alt]``
      - Send a key's escape sequence.
    * - ``press <key>...``,
@@ -482,14 +489,14 @@ be decimal, C-style ``0xFF``, or MOS-style ``$FF``.
      - Print memory as hex.
    * - ``crc``
      - Print the screen as a CRC-32.
-   * - ``expect-crc <hash>``
-     - Compare the screen against a known one.
    * - ``mark``,
        ``expect-same``,
        ``expect-changed``
      - Remember the screen, then check it against what you remembered.
    * - ``shot "file.png"``
      - Write the screen.
+   * - ``reply [on|off]``
+     - Answer every command on stdout. See `Driving it from a program`_.
 
 A failed check names the script and the line it was on, then exits 1,
 which is all a test runner needs.
@@ -501,3 +508,38 @@ failure can be reproduced.
 
 ``--seed`` sets both the fill and the numbers ``lrand`` returns. Both will
 start with the same seed so a ``--fill`` will not advance ``lrand``.
+
+
+Driving it from a program
+-------------------------
+
+.. note::
+
+   Scripting is beta and may change.
+
+A script file is a list of commands that drive the emulator. ``--script -``
+is the other half: the machine reads one line at a time and waits, so a
+program on the other end of the pipe can test the machine.
+
+``reply`` turns on one line of answer per command — ``ok``, ``ok <values>``
+for ``dump`` and ``crc``, or ``fail <why>``. It is off until asked, so a
+driver writes its whole preamble without waiting for anything and reads the
+``ok`` for ``reply`` itself as the moment the machine starts answering.
+
+An answer comes when the command **finishes**, not when it parses. The
+``ok`` for ``run 600`` arrives six hundred frames later, and the one for
+``wait $0200 $07`` arrives when that byte reads 7.
+
+.. code-block:: text
+
+  reply                    -> ok
+  run 60                   -> ok            (sixty frames later)
+  pad 0 connect            -> ok
+  pad 0 press start        -> ok
+  run 10                   -> ok
+  dump xram:$FF00 4        -> ok 80 00 00 08
+  peek xram:$FF00 $99      -> fail $FF00+0 is $80, expected $99
+
+Any language that can write a pipe and read a line back can drive the emulator.
+The arithmetic and the assertions belong in your driver program, which is
+why you don't see any in this scripting lanugage.

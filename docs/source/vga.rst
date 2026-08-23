@@ -18,9 +18,9 @@ interrupts.
 Two Implementations
 ===================
 
-Everything on this page exists twice. There is a software renderer in C,
-``src/vga/modes``, and there is RTL, ``src/rtl/vid``, and neither one is
-a simplification of the other. They have the same registers, the same
+Everything on this page exists twice. There is a software renderer in C
+and there is Register Transfer Logic (RTL) in System Verilog. Neither one
+is a simplification of the other. They have the same registers, the same
 config structures at the same offsets, and they produce the same pixels.
 
 The C is the RP6502-VGA firmware, which is designed to fit entirely on a

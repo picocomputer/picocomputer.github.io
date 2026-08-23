@@ -394,6 +394,7 @@ bytes of raw binary data:
        (0x10000-0x1FFFF).
    * - ``len``
      - Number of raw binary bytes that immediately follow this line.
+       At most 1024, and a chunk may not cross a 64 KB boundary.
    * - ``crc``
      - CRC of the binary payload.
 

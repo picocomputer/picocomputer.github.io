@@ -88,7 +88,7 @@ Internals
    │ pocket_bars    pocket_pll: clk_sys ──> altclkctrl ──> clk_mach      │
    │                                                                     │
    │ ┌─────────────────────────────────────────────────────────────────┐ │
-   │ │ src/rtl — the machine, platform independent                     │ │
+   │ │ src/core — the machine, platform independent                    │ │
    │ │                                                                 │ │
    │ │  ┌────────┐       ┌────────┐   w65c22 VIA at $FFD0-$FFDF        │ │
    │ │  │ w65c02 ├───────┤ w65c22 │   RP6502-RIA at $FFE0-$FFFF        │ │
@@ -100,7 +100,7 @@ Internals
    │ │      │                                                          │ │
    │ │  ┌───┴─────────────────────────────────┐  clk_rv 25.2 MHz —     │ │
    │ │  │ rv_soc — Hazard3 RISC-V, 96 KB TCM  │  half clk_sys, off the │ │
-   │ │  │ a trimmed build of src/ria firmware │  PLL, rising with it   │ │
+   │ │  │ a trimmed build of the RIA firmware │  PLL, rising with it   │ │
    │ │  └───┬─────────────────────────────────┘                        │ │
    │ │      │ one system bus, one master                               │ │
    │ │  xram64k   vid_timing  vid_prog  vid_sched  vid_fill  vid_mode  │ │
