@@ -102,6 +102,13 @@ availability is rarely a constraint; every component has multiple vendors.
 
 Download `the BOM, notes, and photos <_static/rp6502-revb-assembly.zip>`_.
 
+.. warning::
+
+   This BOM is not a shopping list. It tells the factory how to build a board
+   of sockets, so it contains no active parts. Upload it to Mouser and you
+   will receive, with flawless accuracy, every part except the ones that make
+   a computer compute. That order comes later, in `Step 4. More Parts`_.
+
 Request assembly along with your PCB order and send the `BOM, notes, and photos
 <_static/rp6502-revb-assembly.zip>`_. There's no centroid file because there
 are no surface-mount parts. The default options work fine — let them source the
