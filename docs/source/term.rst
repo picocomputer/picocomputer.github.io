@@ -196,6 +196,16 @@ restores the cursor on exit.
 dashes, arrows) for borders and ASCII-art frames without UTF-8.
 See `Charset Designation`_.
 
+**Key encoding.** Keys that carry a character send it directly: Enter
+``CR``, Tab ``HT``, Escape ``ESC``, Backspace ``DEL`` — or ``BS`` when
+Ctrl is held, the one case where Ctrl selects a different byte. The
+other three are C0 controls already, so Ctrl has nothing to promote and
+they still type themselves. Alt is a prefix rather than a variant: it
+sends ``ESC`` followed by whatever the key would have sent without it,
+so it composes with Ctrl rather than replacing it. Keys with no
+character of their own — the function and navigation keys — carry their
+modifiers in the ANSI parameter instead, as ``ESC[1;5A`` for Ctrl+Up.
+
 C0 Control Codes
 ----------------
 

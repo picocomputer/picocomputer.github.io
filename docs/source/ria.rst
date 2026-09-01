@@ -982,6 +982,8 @@ partial success.
 Program each card with the filename and arguments of the ROM to launch.
 If you'd load the ROM with ``LOAD /jigsaw.rp6502``, put an NDEF TEXT
 record on the card holding just ``/jigsaw.rp6502`` — no load command. A
+card may also name an installed ROM, ``:NAME``, which skips the drive
+scan below — the machine either has it or the tap fails. A
 leading ``/`` is implied if you leave it off, and the current working
 directory is ignored.
 

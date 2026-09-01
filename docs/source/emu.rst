@@ -31,10 +31,10 @@ Introduction
 ============
 
 The Picocomputer 6502 is a machine, and a **host** binds it to a thin
-wrapper that translates IO and OS services. There are eight hosts today:
-Linux on x86_64 and aarch64, macOS, Windows, the browser, Android, the
-:doc:`fpga`, and a pair of Pi Picos. Every one of them runs the same
-machine.
+wrapper that translates IO and OS services. There are nine hosts today:
+Linux on x86_64 and aarch64, macOS, Windows, the browser, Android,
+RetroArch, the :doc:`fpga`, and a pair of Pi Picos. Every one of them
+runs the same machine.
 
 This page documents the software hosts. The :doc:`fpga` is the host made
 of gates, and the :doc:`pico` is a standalone machine you can build.
@@ -46,31 +46,37 @@ errors onto the same errno values every other host reports.
 What differs between the software hosts:
 
 .. list-table::
-   :widths: 30 25 25 20
+   :widths: 28 22 18 16 16
    :header-rows: 1
 
    * -
      - Linux, macOS, Windows
      - Browser
      - Android
+     - RetroArch
    * - On-screen debugger
      - yes
+     - no
      - no
      - no
    * - DAP debug adapter
      - yes
      - no
      - no
+     - no
    * - Scripting
      - yes
+     - no
      - no
      - no
    * - Arguments
      - command line
      - config block
      - none
+     - none
    * - Drop a ROM on the window
      - yes
+     - no
      - no
      - no
 
@@ -101,6 +107,10 @@ you may have it already.
   Requires  a GPU with Direct3D 11. It isn't code signed, so SmartScreen
   warns on first launch; choose "More info" then "Run anyway".
 - **Android** — the APK from the same release.
+- **RetroArch** — the core is in the Online Updater, under
+  "Picocomputer 6502". The release page carries one zip holding every
+  platform we build, for a frontend without an updater; see `RetroArch`_
+  below.
 
 6502 software is distributed as files ending in ``.rp6502``. Find them on
 Discord, which has a forum for ROMs, or on itch.io under the RP6502 tag:
@@ -331,6 +341,55 @@ something unique, such as ``yourname-yourgame``, to avoid this.
 
 The same behavior is useful deliberately. Give several of your pages the
 same ``db`` and their programs share one ``MSC0:`` drive.
+
+
+RetroArch
+=========
+
+The Picocomputer is also a libretro core, which is how it reaches
+RetroArch and the launchers built on it — including the handhelds that
+ship one. Install it from Online Updater > Core Downloader, under
+"Picocomputer 6502", then load a ``.rp6502`` as content the way you
+would a cartridge.
+
+To run a core you have downloaded yourself, take the folder for your
+machine out of the release zip — ``linux-x86_64``, ``linux-aarch64``,
+``windows-x86_64``, ``macos-arm64`` or ``android-arm64`` — and put the
+core in the directory
+your frontend keeps cores in, with ``rp6502_libretro.info`` beside it in
+the info directory. RetroArch prints both paths under Settings >
+Directory. You can also skip installing it:
+
+.. code-block:: text
+
+  retroarch -L rp6502_libretro.so game.rp6502
+
+The Picocomputer is a computer, so a program may want a keyboard as well
+as a gamepad, and the keyboard needs one setting before it works.
+RetroArch binds keys to its own controller and hotkeys — Enter is Start,
+``p`` pauses — so typing does not reach the program until you turn that
+off. Press Scroll Lock for Game Focus and the whole keyboard becomes the
+computer's; the core says as much on screen when a program loads. To have
+it on every time, set Settings > Input > Auto Enable Game Focus to
+"Detect", which looks for exactly what this core asks the frontend for.
+
+Gamepads are read as the modern pads the machine expects, as many as the
+frontend says it has.
+
+A program that asks for the mouse gets the frontend's mouse. One that
+asks for the absolute tablet gets the frontend's pointer, as touches:
+the contacts follow a finger, or a held mouse button on a desktop. The
+program draws its own pointer, because a libretro frontend has no cursor
+to lend one.
+
+A program's saves land in the save directory your frontend chose for it,
+and ``MSC0:`` reaches the filesystem from there.
+
+This host plays a program and stops when the program does. There is no
+monitor, no debugger, no scripting, and no save states — a core that
+offered save states would be promising rewind and netplay the machine
+cannot honor. Everything in that list is on the desktop emulator, and
+the same ROM runs there.
 
 
 Debugging
