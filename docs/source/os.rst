@@ -1049,10 +1049,14 @@ CHDRIVE
 
 .. c:function:: int f_chdrive (const char* name)
 
-   Change the current drive.
-   Valid names are ``MSC0:``–``MSC9:`` with shortcuts ``0:``–``9:``.
-   Each attached storage volume mounts as one drive; on an :doc:`pico`
-   that is one USB mass-storage LUN.
+   Change the current drive. What a drive is called is the machine's to
+   say, because the drives are its own. A :doc:`pico` mounts each attached
+   storage volume — one USB mass-storage LUN — as ``MSC0:``–``MSC9:``, with
+   shortcuts ``0:``–``9:``. A machine with a single filesystem calls it
+   ``FS:``. Windows uses its own drive letters, ``C:`` and the rest of
+   what is mounted. An empty name is the drive already in use, everywhere.
+
+   ``0:``–``9:`` is FatFs's own spelling and exists only where FatFs does.
 
    :Op code: RIA_OP_CHDRIVE 0x2A
    :C proto: rp6502.h
@@ -1069,6 +1073,12 @@ GETCWD
 
    Get the current working directory. Size is ignored by the OS but the C
    wrapper will use it.
+
+   The answer is in the machine's own spelling, so it carries a device
+   only where the machine's paths do: ``MSC0:/games`` on a
+   :doc:`pico`, ``C:/Users/me`` on Windows, and ``/home/me`` on a machine
+   whose paths name no device. ``FS:`` is a name such a drive answers to,
+   not one it hands out.
 
    :Op code: RIA_OP_GETCWD 0x2B
    :C proto: rp6502.h

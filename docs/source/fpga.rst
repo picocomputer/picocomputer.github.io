@@ -20,7 +20,8 @@ The Analogue Pocket Core
 
 The Pocket core is the entire machine on a handheld. It has every video
 mode, the PSG and the OPL2, the dock, the keyboard layouts, the mouse,
-sleep, the memories, and the microSD card as ``MSC0:``.
+sleep, the memories, and the microSD card, which is the filesystem and
+answers to ``FS:``.
 
 Install
 -------

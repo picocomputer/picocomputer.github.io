@@ -138,8 +138,10 @@ you didn't name a ROM to run.
 
   rp6502-emu --rom menu.rp6502 --rom game.rp6502
 
-``MSC0:`` is the directory you ran from, so a program's saves land in the
-same directory. Everything after a bare ``--`` becomes the ROM's
+The directory you ran from is the working directory, so a program's saves
+land in the same directory. Paths are the host's own: ``getcwd`` answers
+``/home/me`` here and ``C:/Users/me`` on Windows, and ``FS:`` is a name
+the drive answers to rather than one it puts in front of a path. Everything after a bare ``--`` becomes the ROM's
 ``argv[1..]``, reaching the program through `ARGV <os.html#argv>`__.
 
 .. code-block:: text
@@ -327,7 +329,7 @@ else at https://itch.io/games/tag-rp6502.
 Saves and browser storage
 -------------------------
 
-``MSC0:/db`` is the working directory. With ``persist: true``, anything
+``/db`` is the working directory. With ``persist: true``, anything
 your program writes there lands in an IndexedDB database in the player's
 browser, which is how players keep saved games and high scores. Without
 it, saves last until the player leaves the page and nothing touches
@@ -340,7 +342,7 @@ itch.io game the player runs. Two unrelated games that both ship
 something unique, such as ``yourname-yourgame``, to avoid this.
 
 The same behavior is useful deliberately. Give several of your pages the
-same ``db`` and their programs share one ``MSC0:`` drive.
+same ``db`` and their programs share one filesystem.
 
 
 RetroArch
@@ -383,7 +385,7 @@ program draws its own pointer, because a libretro frontend has no cursor
 to lend one.
 
 A program's saves land in the save directory your frontend chose for it,
-and ``MSC0:`` reaches the filesystem from there.
+and the whole host filesystem is reachable from there.
 
 This host plays a program and stops when the program does. There is no
 monitor, no debugger, no scripting, and no save states — a core that
