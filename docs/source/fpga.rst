@@ -103,7 +103,7 @@ Internals
    │ │  │ a trimmed build of the RIA firmware │  PLL, rising with it   │ │
    │ │  └───┬─────────────────────────────────┘                        │ │
    │ │      │ one system bus, one master                               │ │
-   │ │  xram64k   vid_timing  vid_prog  vid_sched  vid_fill  vid_mode  │ │
+   │ │  xram      vid_timing  vid_prog  vid_sched  vid_fill  vid_mode  │ │
    │ │  vid_mode0 vid_mode1 vid_mode2 vid_mode3 vid_mode4 vid_mode5    │ │
    │ │  vid_pixtail  vid_sprite  vid_sbuf  vid_palcache  vid_palram    │ │
    │ │  vid_font  vid_compose   aud_psg  aud_opl  aud_rsmp             │ │
