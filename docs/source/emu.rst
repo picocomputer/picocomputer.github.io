@@ -173,24 +173,22 @@ work.
      - all
    * - ``--screenshot``
      - ``file.png``
-     - Run headlessly, render one frame to PNG, and exit.
+     - Run headlessly, render the frames to PNG, and exit.
+     - all
+   * - ``--crc``
+     - \-
+     - Run headlessly, render the frames, print the canvas as a CRC-32
+       on stdout, and exit. Combines with ``--screenshot``.
      - all
    * - ``--frames``
      - number
-     - Frames to run before the screenshot. Default 120. Only with
-       ``--screenshot``; a script's frames are its own, see ``run``.
+     - Frames to run before the screenshot or the CRC. Default 120. Only
+       with ``--screenshot`` or ``--crc``; a script's frames are its own,
+       see ``run``.
      - all
    * - ``--scale``
      - number
      - Window scale, fractional allowed. Default 1.5.
-     - desktop
-   * - ``--vsync``
-     - \-
-     - Sync presentation to the display. The default.
-     - desktop
-   * - ``--no-vsync``
-     - \-
-     - Present uncapped, pacing the machine in software instead.
      - desktop
    * - ``--filter``
      - ``nearest``,
@@ -205,6 +203,20 @@ work.
      - Drive input and check results. See `Scripting`_. Always headless,
        and the script controls all timing.
      - desktop
+   * - ``--headless``
+     - \-
+     - No window and no picture. Host stdin, stdout, and stderr are the
+       program's, and the exit code is the program's. Implies ``--stdin``.
+       See `Standard Streams`_. Paced like a window; add ``--phi2 0`` for
+       a console program that should run flat out.
+     - desktop
+   * - ``--stdin``
+     - \-
+     - The host's stdin is the machine's console input. A terminal there
+       becomes the console itself. Implied by ``--headless``; give it by
+       name to hook a terminal up to a run that also has a window. See
+       `Standard Streams`_.
+     - desktop
    * - ``--rom``
      - ``file``
      - Install a ROM on the null drive, reached as ``:basename``.
@@ -216,7 +228,9 @@ work.
      - all
    * - ``--phi2``
      - kHz
-     - 6502 clock, 100 to 8000. Default 8000.
+     - 6502 clock, 100 to 8000. Default 8000. ``0`` runs unpaced: the
+       machine goes as fast as the host can take it, and every clock in
+       it warps with it.
      - all
    * - ``--cp``
      - number
@@ -270,7 +284,78 @@ work.
      - all
 
 ``--dap`` and ``--script`` both drive the machine and both may need
-stdin, so requesting both is an error.
+stdin, so requesting both is an error. ``--headless`` is the program
+alone on the host's streams, so it takes none of ``--script``,
+``--screenshot``, ``--crc``, ``--dap``, or ``--debug``. ``--stdin``
+wants the same stdin as ``--script`` and ``--dap``, and answers on the
+stdout that ``--crc`` prints its value to, so it takes none of those
+three either.
+
+Standard Streams
+----------------
+
+A program's ``stdout`` and ``stderr`` both show on the emulated
+terminal, so an error is never hidden from someone at the screen. On
+the desktop hosts they also reach the process: ``stdout`` goes to the
+host's stdout and ``stderr`` to the host's stderr, as UTF-8 with no
+newline translation, so a console program written for the Picocomputer
+runs in a shell pipeline. Host stdout stays the emulator's own under
+``--script`` (the replies), ``--dap`` (the wire), and ``--crc`` (the
+value).
+
+Host stdin is the machine's console input under ``--stdin``, which
+``--headless`` implies. It arrives where the hardware's serial console
+arrives, so all three ways of reading it work: the ``$FFE0`` and
+``$FFE2`` registers, ``stdin`` through the line editor, and ``TTY:``
+opened by name and read raw. A pipe's end of file is the program's:
+once the input is gone, a read of ``stdin`` answers 0 bytes.
+
+Nothing is translated on the way in. The wire carries what the far end
+sent, byte for byte, the way a serial console does: no code page
+conversion, and no rewriting of line endings. The line editor ends a
+line on either spelling, so a terminal sending a return for Enter and a
+file holding line feeds both work. What stdin *is* still matters. A
+terminal is typed at: its keys reach the machine as they are struck,
+whatever stdout is, and a Ctrl-C is both the byte and a SIGINT the
+program can catch. A pipe or a file is read only as fast as the program
+takes it, so nothing in it is lost, and a ``0x03`` in it is a byte and
+nothing more.
+
+.. code-block:: text
+
+  rp6502-emu --headless --phi2 0 tool.rp6502 < input.txt > output.txt
+
+Paste is the other direction and the other rule: a clipboard is the
+host's text, so ``Ctrl-V`` converts it to the machine's code page and
+spells its line ends the way the line editor reads them.
+
+When the host's stdin and stdout are the same terminal, that terminal
+*is* the console. Both ways, because a terminal on stdin with a file on
+stdout is a pipeline, and the machine's screen does not belong in the
+file: redirect either one and the program's output goes there instead,
+exactly as above. Keys reach the machine as they are struck, so Ctrl-C
+is a byte the program can catch rather than something that kills the
+emulator; the machine draws its screen on the terminal; and the terminal
+answers the queries a program makes about size and cursor, which the
+emulated one then stops answering so a program never hears two replies.
+The window, if there is one, goes on showing the same screen.
+
+Ctrl-\\ is the way out, and it is the only key held back from the
+machine: a program that has stopped listening can still be left. On
+Windows the same key is Ctrl-Break, which a console never gives a
+program. Either one breaks the machine, so every driver is stopped in
+order and the terminal is handed back, whatever a debugger was holding at
+the time. The emulator then leaves the way it was asked to, dying of the
+signal that asked, so a shell loop or a ``make`` sees a run that was
+interrupted rather than one that merely failed. Pressing it a second time
+leaves at once, for a machine too wedged to reach its own teardown.
+Closing the window breaks the machine the same way, and exits with a code
+because a window closing is not a signal.
+
+.. code-block:: text
+
+  rp6502-emu --headless adventure.rp6502
+  rp6502-emu --stdin game.rp6502           # a window, and the terminal too
 
 
 Web Builds
@@ -449,7 +534,9 @@ The launch request takes ``program``, ``args``, and optionally ``elf`` or
 ``dbg`` to name the debug information. ``stopOnEntry`` breaks
 before the first instruction. ``stopOnExit`` is on by default and keeps
 the session alive after the program ends, so the final screen remains on
-display.
+display. The program's ``stdout`` and ``stderr`` reach the Debug Console
+as output events of those two categories, so VS Code shows ``stderr`` in
+red; the emulated terminal in the window shows both.
 
 
 Scripting

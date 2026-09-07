@@ -82,10 +82,18 @@ for an 8-bit system, so the two modes worth having arrive as separate
 device names instead.
 
 Reading ``stdin`` is cooked and blocks until the user presses Enter.
+Enter is a carriage return from a terminal and a line feed in a file of
+text, and either one ends a line. A terminal that sends both for one
+Enter, as a telnet client does, still ends one line: the second half of
+the pair is not another line, though two of the same character are two
+lines and a blank line between them survives.
 ``stdout`` and ``stderr`` block too, inserting a carriage return before
 any newline that lacks one; all of the data is always sent, and a write
 blocks until it has fully drained into the output FIFOs. That is what a
 C programmer expects, and a poor fit for a multitasking 6502 program.
+Both streams reach the console. ``stderr`` is a stream of its own all
+the same: a host with a stderr of its own, the :doc:`emu` on a desktop,
+carries it there as well as to the screen.
 Two alternate file paths offer non-blocking variants of the same
 channels:
 
