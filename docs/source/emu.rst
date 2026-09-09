@@ -79,6 +79,11 @@ What differs between the software hosts:
      - no
      - no
      - no
+   * - Save states
+     - by script
+     - no
+     - no
+     - yes, with rewind and netplay
 
 The browser build is three files — ``index.html``, ``rp6502.js``, and
 ``rp6502.wasm`` — and they are **one matched set from a single build**.
@@ -455,28 +460,42 @@ The Picocomputer is a computer, so a program may want a keyboard as well
 as a gamepad, and the keyboard needs one setting before it works.
 RetroArch binds keys to its own controller and hotkeys — Enter is Start,
 ``p`` pauses — so typing does not reach the program until you turn that
-off. Press Scroll Lock for Game Focus and the whole keyboard becomes the
-computer's; the core says as much on screen when a program loads. To have
-it on every time, set Settings > Input > Auto Enable Game Focus to
-"Detect", which looks for exactly what this core asks the frontend for.
+off. Press Scroll Lock for Game Focus and the keyboard and the mouse
+become the computer's; the core says as much on screen the first time a
+program asks for the keyboard, the mouse or the console. To have it on
+every time, set Settings > Input > Auto Enable Game Focus to "Detect",
+which looks for exactly what this core asks the frontend for.
 
 Gamepads are read as the modern pads the machine expects, as many as the
 frontend says it has.
 
 A program that asks for the mouse gets the frontend's mouse. One that
-asks for the absolute tablet gets the frontend's pointer, as touches:
-the contacts follow a finger, or a held mouse button on a desktop. The
+asks for the absolute tablet gets the frontend's pointer: on a desktop
+the mouse hovers over the picture with its own buttons, and on a
+touchscreen each finger is a contact. Taking the pointer off the picture
+ends the contact, and nothing is pressed while it is out there. The
 program draws its own pointer, because a libretro frontend has no cursor
-to lend one.
+to lend one; RetroArch's own cursor stays over the window until Game
+Focus or Settings > Input > Auto Mouse Grab hides it.
 
 A program's saves land in the save directory your frontend chose for it,
 and the whole host filesystem is reachable from there.
 
+Save states work here, and so do rewind, runahead and rollback netplay.
+A state holds the whole machine, including the audio engines, and it is
+portable: write one on a desktop and read it back on a handheld.
+
+A state does not put back the filesystem. What a program wrote is on
+disk, so rewinding past a write leaves the write.
+
+Netplay does not replicate the keyboard. This machine receives keys as
+they are typed rather than through a controller port that gets polled,
+so two players typing will drift apart. Gamepads, the mouse and the
+tablet are polled, and they do replicate.
+
 This host plays a program and stops when the program does. There is no
-monitor, no debugger, no scripting, and no save states — a core that
-offered save states would be promising rewind and netplay the machine
-cannot honor. Everything in that list is on the desktop emulator, and
-the same ROM runs there.
+monitor, no debugger and no scripting — those are on the desktop
+emulator, and the same ROM runs there.
 
 
 Debugging
@@ -643,6 +662,23 @@ MOS-style ``$FF``.
      - Remember the screen, then check it against what you remembered.
    * - ``shot "file.png"``
      - Write the screen.
+   * - ``state save "file"``,
+       ``state load "file"``
+     - Save the whole machine to a file, and load it back. The file is
+       portable: one written here reads back on another computer, and in
+       RetroArch.
+   * - ``seed``
+     - Print the seed this run filled memory with.
+   * - ``install "path" [NAME]``,
+       ``remove <NAME>``
+     - Install a ROM on the null drive as ``:NAME``, and remove it again.
+       The default name is the file's own basename.
+   * - ``load "path"``
+     - Boot a program. The machine must be stopped, since loading writes
+       the memory a running program is using.
+   * - ``sys run|stop|break``
+     - Start the machine, stop it, or interrupt it the way a break at
+       the console would.
    * - ``reply [on|off]``
      - Answer every command on stdout. See `Driving it from a program`_.
 
