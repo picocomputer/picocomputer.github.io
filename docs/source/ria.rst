@@ -21,7 +21,8 @@ even the :doc:`vga` is optional.
 Implementations
 ===============
 
-The specification is what matters; what runs it does not.
+The specification below is what matters. These implementations all
+satisfy it.
 
 - :doc:`pico` — RIA firmware on a Raspberry Pi Pico 2. The RIA is
   designed to fit entirely on one.
@@ -39,8 +40,8 @@ Reset
 =====
 
 Think of reset as two states rather than a pulse on RESB. While reset
-is low, the 6502 is stopped and the console belongs to the machine
-rather than to a running program — on an :doc:`pico` that is the RP6502
+is low, the 6502 is stopped and the console is connected to the machine
+instead of to a running program — on an :doc:`pico` that is the RP6502
 monitor.
 While reset is high, the 6502 runs and the console manifold connects to both
 the :doc:`os` and the UART TX/RX registers described below.
@@ -919,8 +920,8 @@ reopens it after — everything arrives, just split into two
 Delta times measure from the previous event, so timing stays exact over
 any song length: events are anchored to an absolute tick count, and
 ticks are kept internally in nanoseconds, holding arithmetic rounding
-below one part per million. What remains belongs to the machine's clock
-and transport. Where the RIA is paced by a crystal-driven microsecond
+below one part per million. The error left over comes from the machine's
+clock and transport. Where the RIA is paced by a crystal-driven microsecond
 timer and delivers over USB full speed, the crystal drifts single-digit
 milliseconds over a several-minute song and framing sets the
 moment-to-moment jitter near one millisecond — the same pace as the

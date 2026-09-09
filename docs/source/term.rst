@@ -28,11 +28,6 @@ can be attached at once and fanned in to one console; this is the
 * **Telnet.** The :doc:`ria_w` exposes the console over the network. See
   `Telnet Console <ria_w.html#telnet-console>`__ for setup.
 
-Other hosts attach their own. The :doc:`emu` uses its window or the
-browser canvas, and the :doc:`fpga` uses the screen it was given. What a
-terminal is made of never reaches the 6502; everything below applies
-whatever is on the other end.
-
 Any terminal on the console manifold can be used for development and
 scripting. The limits show up when software needs the terminal to report
 information back.
@@ -82,18 +77,14 @@ for an 8-bit system, so the two modes worth having arrive as separate
 device names instead.
 
 Reading ``stdin`` is cooked and blocks until the user presses Enter.
-Enter is a carriage return from a terminal and a line feed in a file of
-text, and either one ends a line. A terminal that sends both for one
-Enter, as a telnet client does, still ends one line: the second half of
-the pair is not another line, though two of the same character are two
-lines and a blank line between them survives.
+Enter arrives as a carriage return from a terminal and as a line feed in
+a file of text, and either one ends a line. A terminal that sends both
+for one Enter, as a telnet client does, still ends only one line,
+because the second half of the pair is discarded.
 ``stdout`` and ``stderr`` block too, inserting a carriage return before
 any newline that lacks one; all of the data is always sent, and a write
 blocks until it has fully drained into the output FIFOs. That is what a
 C programmer expects, and a poor fit for a multitasking 6502 program.
-Both streams reach the console. ``stderr`` is a stream of its own all
-the same: a host with a stderr of its own, the :doc:`emu` on a desktop,
-carries it there as well as to the screen.
 Two alternate file paths offer non-blocking variants of the same
 channels:
 
@@ -204,15 +195,6 @@ restores the cursor on exit.
 dashes, arrows) for borders and ASCII-art frames without UTF-8.
 See `Charset Designation`_.
 
-**Key encoding.** Keys that carry a character send it directly: Enter
-``CR``, Tab ``HT``, Escape ``ESC``, Backspace ``DEL`` — or ``BS`` when
-Ctrl is held, the one case where Ctrl selects a different byte. The
-other three are C0 controls already, so Ctrl has nothing to promote and
-they still type themselves. Alt is a prefix rather than a variant: it
-sends ``ESC`` followed by whatever the key would have sent without it,
-so it composes with Ctrl rather than replacing it. Keys with no
-character of their own — the function and navigation keys — carry their
-modifiers in the ANSI parameter instead, as ``ESC[1;5A`` for Ctrl+Up.
 
 C0 Control Codes
 ----------------

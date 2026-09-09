@@ -1049,8 +1049,8 @@ CHDRIVE
 
 .. c:function:: int f_chdrive (const char* name)
 
-   Change the current drive. What a drive is called is the machine's to
-   say, because the drives are its own. A :doc:`pico` mounts each attached
+   Change the current drive. Each machine names its own drives. A
+   :doc:`pico` mounts each attached
    storage volume — one USB mass-storage LUN — as ``MSC0:``–``MSC9:``, with
    shortcuts ``0:``–``9:``. A machine with a single filesystem calls it
    ``FS:``. Windows uses its own drive letters, ``C:`` and the rest of
