@@ -40,8 +40,8 @@ This page documents the software hosts. The :doc:`fpga` is the host made
 of gates, and the :doc:`pico` is a standalone machine you can build.
 
 An emulator here is an RP6502 rather than something that resembles one.
-It runs the same 6502 code, answers the same registers, and maps its own
-errors onto the same errno values every other host reports.
+It runs the same 6502 code, responds at the same registers, and maps its
+own errors onto the same errno values every other host reports.
 
 What differs between the software hosts:
 
@@ -144,9 +144,9 @@ you didn't name a ROM to run.
   rp6502-emu --rom menu.rp6502 --rom game.rp6502
 
 The directory you ran from is the working directory, so a program's saves
-land in the same directory. Paths are the host's own: ``getcwd`` answers
+land in the same directory. Paths use the host's format: ``getcwd`` returns
 ``/home/me`` here and ``C:/Users/me`` on Windows, and ``FS:`` is a name
-you can use for the drive rather than a prefix it adds to a path.
+you can use for the drive rather than a prefix that appears in a path.
 Everything after a bare ``--`` becomes the ROM's
 ``argv[1..]``, reaching the program through `ARGV <os.html#argv>`__.
 
@@ -189,8 +189,8 @@ work.
    * - ``--frames``
      - number
      - Frames to run before the screenshot or the CRC. Default 120. Only
-       with ``--screenshot`` or ``--crc``; a script's frames are its own,
-       see ``run``.
+       with ``--screenshot`` or ``--crc``; a script sets its own frame
+       count with ``run``.
      - all
    * - ``--scale``
      - number
@@ -211,15 +211,16 @@ work.
      - desktop
    * - ``--headless``
      - \-
-     - No window and no picture. Host stdin, stdout, and stderr are the
-       program's, and the exit code is the program's. Implies ``--stdin``.
+     - No window and no picture. The program reads and writes the host's
+       stdin, stdout and stderr, and its exit code becomes the emulator's.
+       Implies ``--stdin``.
        See `Standard Streams`_. Paced like a window; add ``--phi2 0`` for
        a console program that should run flat out.
      - desktop
    * - ``--stdin``
      - \-
-     - The host's stdin is the machine's console input. A terminal there
-       becomes the console itself. Implied by ``--headless``; give it by
+     - The host's stdin becomes the machine's console input. A terminal
+       there becomes the console itself. Implied by ``--headless``; give it by
        name to hook a terminal up to a run that also has a window. See
        `Standard Streams`_.
      - desktop
@@ -290,12 +291,12 @@ work.
      - all
 
 ``--dap`` and ``--script`` both drive the machine and both may need
-stdin, so requesting both is an error. ``--headless`` is the program
-alone on the host's streams, so it takes none of ``--script``,
+stdin, so requesting both is an error. With ``--headless`` the program alone
+uses the host's streams, so it cannot be combined with ``--script``,
 ``--screenshot``, ``--crc``, ``--dap``, or ``--debug``. ``--stdin``
-wants the same stdin as ``--script`` and ``--dap``, and answers on the
-stdout that ``--crc`` prints its value to, so it takes none of those
-three either.
+needs the same stdin as ``--script`` and ``--dap``, and writes to the
+stdout that ``--crc`` prints its value to, so it cannot be combined with
+any of those three either.
 
 Standard Streams
 ----------------
@@ -307,19 +308,19 @@ the process: ``stdout`` goes to the host's stdout and ``stderr`` to
 the host's stderr, so a console program written for the Picocomputer
 runs in a shell pipeline.
 
-Host stdin is the machine's console input under ``--stdin``, which
+Host stdin becomes the machine's console input under ``--stdin``, which
 ``--headless`` implies. A pipe's end of file reaches the
 program. Once the input is gone, a read of ``stdin`` returns 0 bytes.
 
 Nothing is translated on the way in. The machine receives what the far
 end sent, byte for byte, the way a serial console does: no code page
 conversion, and no rewriting of line endings. The line editor ends a
-line on either spelling, so a terminal sending a return for Enter and a
-file holding line feeds both work.
+line on a carriage return or a line feed, so a terminal sending a return
+for Enter and a file holding line feeds both work.
 
-What stdin is connected to still matters. A terminal delivers keys as
-they are struck, whatever stdout is, so a Ctrl-C is both the byte and a
-SIGINT the program can catch. A pipe or a file is read only as fast as
+A terminal and a file still behave differently. A terminal delivers keys
+as they are struck, whatever stdout is, so a Ctrl-C is both the byte and
+a SIGINT the program can catch. A pipe or a file is read only as fast as
 the program takes it, so nothing in it is lost and a ``0x03`` in it is
 only a byte.
 
@@ -329,30 +330,30 @@ only a byte.
 
 Paste goes the other way and follows the opposite rule. A clipboard
 holds the host's text, so ``Ctrl-V`` converts it to the machine's code
-page and spells its line ends the way the line editor reads them.
+page and converts its line endings to the form the line editor reads.
 
 When the host's stdin and stdout are the same terminal, that terminal
 *is* the console. Both have to be the terminal, because a terminal on
-stdin with a file on stdout is a pipeline, and the machine's screen does
-not belong in the file. Redirect either one and the program's output
+stdin with a file on stdout is a pipeline, and the machine's screen
+would end up in the file. Redirect either one and the program's output
 goes there instead, exactly as above.
 
 The machine then draws its screen on the terminal, and the terminal
-answers the queries a program makes about size and cursor. The emulated
-terminal stops answering those so a program receives only one reply.
+replies to the queries a program makes about size and cursor. The VGA
+terminal stops replying so a program receives only one answer.
 Keys reach the machine as they are struck, so Ctrl-C is a byte the
 program can catch rather than something that kills the emulator. The
 window, if there is one, goes on showing the same screen.
 
-Ctrl-\\ is the way out. It is the only key the emulator keeps for
-itself, so you can leave a program that has stopped listening. On
+Ctrl-\\ is the way out. The emulator holds back this one key, so you
+can leave a program that has stopped listening. On
 Windows the same key is Ctrl-Break, which a console never gives a
 program. Either one breaks the machine: every driver is stopped in
 order and the terminal is restored, whatever a debugger was holding at
 the time. The emulator then exits by that same signal, so a shell loop
 or a ``make`` sees a run that was interrupted rather than one that
 merely failed. Press it a second time to exit immediately, for a machine
-too wedged to reach its own teardown. Closing the window breaks the
+too wedged to shut down cleanly. Closing the window breaks the
 machine the same way, but exits with a code, because a window closing is
 not a signal.
 
@@ -460,8 +461,8 @@ as a gamepad, and the keyboard needs one setting before it works.
 RetroArch binds keys to its own controller and hotkeys — Enter is Start,
 ``p`` pauses — so typing does not reach the program until you turn that
 off. Press Scroll Lock for Game Focus and the keyboard and the mouse
-become the computer's; the core says as much on screen the first time a
-program asks for the keyboard, the mouse or the console. To have it on
+go to the emulated computer; the core prints a message on screen the first
+time a program asks for the keyboard, the mouse or the console. To have it on
 every time, set Settings > Input > Auto Enable Game Focus to "Detect",
 which looks for exactly what this core asks the frontend for.
 
@@ -473,8 +474,8 @@ asks for the absolute tablet gets the frontend's pointer: on a desktop
 the mouse hovers over the picture with its own buttons, and on a
 touchscreen each finger is a contact. Taking the pointer off the picture
 ends the contact, and nothing is pressed while it is out there. The
-program draws its own pointer, because a libretro frontend has no cursor
-to lend one; RetroArch's own cursor stays over the window until Game
+program draws its own pointer, because a libretro frontend provides no
+cursor; RetroArch's own cursor stays over the window until Game
 Focus or Settings > Input > Auto Mouse Grab hides it.
 
 A program's saves land in the save directory your frontend chose for it,

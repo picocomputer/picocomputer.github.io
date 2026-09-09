@@ -779,7 +779,7 @@ OSC Sequences
 -------------
 
 Operating System Command sequences set dynamic terminal colors.
-The color argument must be ``#rrggbb``; other xterm spellings
+The color argument must be ``#rrggbb``; other xterm color formats
 (X11 names, ``rgb:``) are not accepted. Each sequence is
 terminated by BEL (``0x07``) or ST (``ESC \``).
 

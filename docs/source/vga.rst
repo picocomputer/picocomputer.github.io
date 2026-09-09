@@ -26,8 +26,8 @@ config structures at the same offsets, and they produce the same pixels.
 The C is the RP6502-VGA firmware, which is designed to fit entirely on a
 Raspberry Pi Pico 2 as part of an :doc:`pico`, and the :doc:`emu`
 compiles the same files, so that module and every software host draw
-with one renderer. The RTL belongs to the :doc:`fpga`, where each mode
-is a scanline engine in fabric.
+with one renderer. The RTL is in the :doc:`fpga`, where each mode is a
+scanline engine in fabric.
 
 The two are tested against each other. A generator writes a corpus of
 small ROMs covering every mode. Every fixture boots on both machines,

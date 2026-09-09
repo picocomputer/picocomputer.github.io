@@ -422,7 +422,7 @@ TIME_SET
    the XSTACK as a signed integer of up to 64 bits; short pushes are
    unsigned.
 
-   Only a machine that owns a real time-of-day clock will do this. The
+   Only a machine that has a real time-of-day clock will do this. The
    Picocomputer has one and sets it. An emulator will not move the clock of
    the computer it is running on, and a machine that was handed its time at
    boot has nowhere to write one back; both answer EACCES.
@@ -1056,7 +1056,7 @@ CHDRIVE
    ``FS:``. Windows uses its own drive letters, ``C:`` and the rest of
    what is mounted. An empty name is the drive already in use, everywhere.
 
-   ``0:``–``9:`` is FatFs's own spelling and exists only where FatFs does.
+   ``0:``–``9:`` is FatFs's own notation and exists only where FatFs does.
 
    :Op code: RIA_OP_CHDRIVE 0x2A
    :C proto: rp6502.h
@@ -1074,11 +1074,11 @@ GETCWD
    Get the current working directory. Size is ignored by the OS but the C
    wrapper will use it.
 
-   The answer is in the machine's own spelling, so it carries a device
-   only where the machine's paths do: ``MSC0:/games`` on a
+   The result uses the machine's own path format, so it includes a device
+   name only where the machine's paths do: ``MSC0:/games`` on a
    :doc:`pico`, ``C:/Users/me`` on Windows, and ``/home/me`` on a machine
-   whose paths name no device. ``FS:`` is a name such a drive answers to,
-   not one it hands out.
+   whose paths name no device. ``FS:`` is a name you can use for such a
+   drive, but it never appears in the result.
 
    :Op code: RIA_OP_GETCWD 0x2B
    :C proto: rp6502.h

@@ -31,8 +31,8 @@ satisfy it.
 - :doc:`emu` — that same register window handed to a native host CPU.
 
 The RP6502 monitor is RIA firmware, so every ``load``, ``install``,
-``set``, ``status``, and ``help`` command on this page belongs to an
-:doc:`pico`. The :doc:`emu` takes command-line arguments instead, and
+``set``, ``status``, and ``help`` command on this page applies only to
+an :doc:`pico`. The :doc:`emu` takes command-line arguments instead, and
 the :doc:`fpga` uses the Pocket's own menus.
 
 

@@ -163,7 +163,8 @@ Anything else is a name, and named assets become part of the filesystem
 while your ROM runs. Prefix the name with ``ROM:`` and open it like any
 other file. They're read-only, and you can have several open at once.
 Names are stored as UTF-8 and matched against the code page your program
-runs with, so a name beyond ASCII is opened by its code-page spelling.
+runs with, so a name beyond ASCII is opened using the code page's bytes
+rather than UTF-8.
 
 .. code-block:: C
 
