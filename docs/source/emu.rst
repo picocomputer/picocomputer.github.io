@@ -113,9 +113,7 @@ you may have it already.
   warns on first launch; choose "More info" then "Run anyway".
 - **Android** — the APK from the same release.
 - **RetroArch** — the core is in the Online Updater, under
-  "Picocomputer 6502". The release page carries one zip holding every
-  platform we build, for a frontend without an updater; see `RetroArch`_
-  below.
+  "Picocomputer 6502"; see `RetroArch`_ below.
 
 6502 software is distributed as files ending in ``.rp6502``. Find them on
 Discord, which has a forum for ROMs, or on itch.io under the RP6502 tag:
@@ -443,18 +441,6 @@ RetroArch and the launchers built on it — including the handhelds that
 ship one. Install it from Online Updater > Core Downloader, under
 "Picocomputer 6502", then load a ``.rp6502`` as content the way you
 would a cartridge.
-
-To run a core you have downloaded yourself, take the folder for your
-machine out of the release zip — ``linux-x86_64``, ``linux-aarch64``,
-``windows-x86_64``, ``macos-arm64`` or ``android-arm64`` — and put the
-core in the directory
-your frontend keeps cores in, with ``rp6502_libretro.info`` beside it in
-the info directory. RetroArch prints both paths under Settings >
-Directory. You can also skip installing it:
-
-.. code-block:: text
-
-  retroarch -L rp6502_libretro.so game.rp6502
 
 The Picocomputer is a computer, so a program may want a keyboard as well
 as a gamepad, and the keyboard needs one setting before it works.
