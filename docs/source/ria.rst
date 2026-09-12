@@ -21,8 +21,6 @@ even the :doc:`vga` is optional.
 Implementations
 ===============
 
-The specification is what matters; what runs it does not.
-
 - :doc:`pico` — RIA firmware on a Raspberry Pi Pico 2. The RIA is
   designed to fit entirely on one.
 - :doc:`fpga` — a trimmed build of the same firmware C on a Hazard3
@@ -30,8 +28,8 @@ The specification is what matters; what runs it does not.
 - :doc:`emu` — that same register window handed to a native host CPU.
 
 The RP6502 monitor is RIA firmware, so every ``load``, ``install``,
-``set``, ``status``, and ``help`` command on this page belongs to an
-:doc:`pico`. The :doc:`emu` takes command-line arguments instead, and
+``set``, ``status``, and ``help`` command on this page applies only to
+an :doc:`pico`. The :doc:`emu` takes command-line arguments instead, and
 the :doc:`fpga` uses the Pocket's own menus.
 
 
@@ -39,8 +37,8 @@ Reset
 =====
 
 Think of reset as two states rather than a pulse on RESB. While reset
-is low, the 6502 is stopped and the console belongs to the machine
-rather than to a running program — on an :doc:`pico` that is the RP6502
+is low, the 6502 is stopped and the console is connected to the machine
+instead of to a running program — on an :doc:`pico` that is the RP6502
 monitor.
 While reset is high, the 6502 runs and the console manifold connects to both
 the :doc:`os` and the UART TX/RX registers described below.
@@ -919,8 +917,8 @@ reopens it after — everything arrives, just split into two
 Delta times measure from the previous event, so timing stays exact over
 any song length: events are anchored to an absolute tick count, and
 ticks are kept internally in nanoseconds, holding arithmetic rounding
-below one part per million. What remains belongs to the machine's clock
-and transport. Where the RIA is paced by a crystal-driven microsecond
+below one part per million. The error left over comes from the machine's
+clock and transport. Where the RIA is paced by a crystal-driven microsecond
 timer and delivers over USB full speed, the crystal drifts single-digit
 milliseconds over a several-minute song and framing sets the
 moment-to-moment jitter near one millisecond — the same pace as the
@@ -982,6 +980,8 @@ partial success.
 Program each card with the filename and arguments of the ROM to launch.
 If you'd load the ROM with ``LOAD /jigsaw.rp6502``, put an NDEF TEXT
 record on the card holding just ``/jigsaw.rp6502`` — no load command. A
+card may also name an installed ROM, ``:NAME``, which skips the drive
+scan below — the machine either has it or the tap fails. A
 leading ``/`` is implied if you leave it off, and the current working
 directory is ignored.
 

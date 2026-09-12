@@ -89,8 +89,9 @@ Get a Machine
 =============
 
 The original idea — use a modern CPU to remove the friction of enjoying
-the best parts of the 6502 — carries forward on every host. What changes
-is which modern CPU, and how much of the machine it is asked to be.
+the best parts of the 6502 — carries forward on every host. The hosts
+differ in which modern CPU they use, and in how much of the machine that
+CPU provides.
 
 - :doc:`pico`: the one you build. 100% through-hole construction, no IC
   programmer required. Hundreds of people have built one, typically for

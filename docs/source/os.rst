@@ -422,12 +422,17 @@ TIME_SET
    the XSTACK as a signed integer of up to 64 bits; short pushes are
    unsigned.
 
+   Only a machine that has a real time-of-day clock will do this. The
+   Picocomputer has one and sets it. An emulator will not move the clock of
+   the computer it is running on, and a machine that was handed its time at
+   boot has nowhere to write one back; both answer EACCES.
+
    :Op code: RIA_OP_TIME_SET 0x3E
    :C proto: rp6502.h
    :param time: Seconds since 1970-01-01T00:00:00Z.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EINVAL, ERANGE
+   :errno: EACCES, EINVAL, ERANGE
 
 
 GMTIME
@@ -1044,10 +1049,14 @@ CHDRIVE
 
 .. c:function:: int f_chdrive (const char* name)
 
-   Change the current drive.
-   Valid names are ``MSC0:``–``MSC9:`` with shortcuts ``0:``–``9:``.
-   Each attached storage volume mounts as one drive; on an :doc:`pico`
-   that is one USB mass-storage LUN.
+   Change the current drive. Each machine names its own drives. A
+   :doc:`pico` mounts each attached
+   storage volume — one USB mass-storage LUN — as ``MSC0:``–``MSC9:``, with
+   shortcuts ``0:``–``9:``. A machine with a single filesystem calls it
+   ``FS:``. Windows uses its own drive letters, ``C:`` and the rest of
+   what is mounted.
+
+   ``0:``–``9:`` is FatFs's own notation and exists only where FatFs does.
 
    :Op code: RIA_OP_CHDRIVE 0x2A
    :C proto: rp6502.h
@@ -1064,6 +1073,10 @@ GETCWD
 
    Get the current working directory. Size is ignored by the OS but the C
    wrapper will use it.
+
+   The result alwasys includes a device name: ``MSC0:/games`` on a
+   :doc:`pico`, ``C:/Users/me`` on Windows, and ``FS:/home/me`` on hosts
+   like Linux where the filesystem has one root.
 
    :Op code: RIA_OP_GETCWD 0x2B
    :C proto: rp6502.h

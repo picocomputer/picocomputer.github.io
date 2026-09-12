@@ -28,11 +28,6 @@ can be attached at once and fanned in to one console; this is the
 * **Telnet.** The :doc:`ria_w` exposes the console over the network. See
   `Telnet Console <ria_w.html#telnet-console>`__ for setup.
 
-Other hosts attach their own. The :doc:`emu` uses its window or the
-browser canvas, and the :doc:`fpga` uses the screen it was given. What a
-terminal is made of never reaches the 6502; everything below applies
-whatever is on the other end.
-
 Any terminal on the console manifold can be used for development and
 scripting. The limits show up when software needs the terminal to report
 information back.
@@ -195,6 +190,7 @@ restores the cursor on exit.
 **DEC Special Graphics.** A built-in line-drawing font (boxes,
 dashes, arrows) for borders and ASCII-art frames without UTF-8.
 See `Charset Designation`_.
+
 
 C0 Control Codes
 ----------------
@@ -779,7 +775,7 @@ OSC Sequences
 -------------
 
 Operating System Command sequences set dynamic terminal colors.
-The color argument must be ``#rrggbb``; other xterm spellings
+The color argument must be ``#rrggbb``; other xterm color formats
 (X11 names, ``rgb:``) are not accepted. Each sequence is
 terminated by BEL (``0x07``) or ST (``ESC \``).
 

@@ -30,55 +30,54 @@ how to do that.
 Introduction
 ============
 
-The Picocomputer 6502 is a machine, and a **host** binds it to a thin
-wrapper that translates IO and OS services. There are eight hosts today:
-Linux on x86_64 and aarch64, macOS, Windows, the browser, Android, the
-:doc:`fpga`, and a pair of Pi Picos. Every one of them runs the same
-machine.
-
 This page documents the software hosts. The :doc:`fpga` is the host made
 of gates, and the :doc:`pico` is a standalone machine you can build.
 
-An emulator here is an RP6502 rather than something that resembles one.
-It runs the same 6502 code, answers the same registers, and maps its own
-errors onto the same errno values every other host reports.
+An emulator is a first-class Picocomputer rather than a facsimile.
+It runs the same 6502 code, responds to the same registers, and maps its
+own errors onto the same errno values every other host reports.
 
 What differs between the software hosts:
 
 .. list-table::
-   :widths: 30 25 25 20
+   :widths: 28 22 18 16 16
    :header-rows: 1
 
    * -
      - Linux, macOS, Windows
      - Browser
      - Android
+     - RetroArch
    * - On-screen debugger
      - yes
+     - no
      - no
      - no
    * - DAP debug adapter
      - yes
      - no
      - no
+     - no
    * - Scripting
      - yes
+     - no
      - no
      - no
    * - Arguments
      - command line
      - config block
      - none
+     - none
    * - Drop a ROM on the window
      - yes
      - no
      - no
-
-The browser build is three files — ``index.html``, ``rp6502.js``, and
-``rp6502.wasm`` — and they are **one matched set from a single build**.
-Everything you configure therefore lives in one block at the top of the
-page, so upgrading is a matter of copying three files and re-applying
-that block.
+     - no
+   * - Save states
+     - by script
+     - no
+     - no
+     - yes, with rewind and netplay
 
 
 Install
@@ -86,21 +85,27 @@ Install
 
 Pre-built emulators are on the `releases page
 <https://github.com/picocomputer/rp6502/releases/latest>`__. A project made from
-the :doc:`sdk` template already fetched the right one into ``tools/``, so
+the :doc:`sdk` template will fetch the right one into ``tools/``, so
 you may have it already.
 
-- **Linux** — a tarball. Built on Ubuntu 22.04, so it needs glibc 2.35 or
-  later plus the GL, X11, and ALSA runtime libraries.
-  The tarball preserves the execute bit; if something
-  along the way stripped it, ``chmod +x rp6502-emu``.
-- **macOS** — drag ``rp6502-emu.app`` to Applications. Apple silicon,
-  macOS 11 or later. It isn't signed or notarized, so Gatekeeper blocks
-  the first launch — allow it under System Settings > Privacy & Security >
-  "Open Anyway", or ``xattr -dr com.apple.quarantine rp6502-emu.app``.
 - **Windows** — ``rp6502-emu.exe`` is the program itself, not an installer.
   Requires  a GPU with Direct3D 11. It isn't code signed, so SmartScreen
   warns on first launch; choose "More info" then "Run anyway".
+- **macOS** — drag ``rp6502-emu.app`` to Applications.
+  It isn't signed or notarized, so Gatekeeper blocks
+  the first launch — allow it under System Settings > Privacy & Security >
+  "Open Anyway", or ``xattr -dr com.apple.quarantine rp6502-emu.app``.
+- **Linux** — built on Ubuntu 22.04, so it needs glibc 2.35 or
+  later plus the GL, X11, and ALSA runtime libraries.
+  The tarball preserves the execute bit; if something
+  along the way stripped it, ``chmod +x rp6502-emu``.
 - **Android** — the APK from the same release.
+- **RetroArch** — the core is in the Online Updater, under
+  "Picocomputer 6502"; see `RetroArch`_ below.
+
+
+Running Software
+================
 
 6502 software is distributed as files ending in ``.rp6502``. Find them on
 Discord, which has a forum for ROMs, or on itch.io under the RP6502 tag:
@@ -108,33 +113,11 @@ Discord, which has a forum for ROMs, or on itch.io under the RP6502 tag:
 - https://discord.gg/TC6X8kTr6d
 - https://itch.io/games/tag-rp6502
 
-
-Running Software
-================
-
-Hand the emulator a ROM, or drag one onto the window.
+Start the emulator with a ROM, or drag one onto the window.
 
 .. code-block:: text
 
   rp6502-emu game.rp6502
-
-``--rom`` installs a ROM on the null drive instead of booting it, where it
-can be reached as ``:basename`` — the same way an :doc:`pico` reaches a
-ROM installed in its flash. It repeats up to sixteen times, and the
-first one boots if
-you didn't name a ROM to run.
-
-.. code-block:: text
-
-  rp6502-emu --rom menu.rp6502 --rom game.rp6502
-
-``MSC0:`` is the directory you ran from, so a program's saves land in the
-same directory. Everything after a bare ``--`` becomes the ROM's
-``argv[1..]``, reaching the program through `ARGV <os.html#argv>`__.
-
-.. code-block:: text
-
-  rp6502-emu editor.rp6502 -- notes.txt
 
 
 Arguments
@@ -161,24 +144,20 @@ work.
      - all
    * - ``--screenshot``
      - ``file.png``
-     - Run headlessly, render one frame to PNG, and exit.
+     - Run headlessly, render the frames to PNG, and exit.
+     - all
+   * - ``--crc``
+     - \-
+     - Run headlessly, render the frames, print the canvas as a CRC-32
+       on stdout, and exit.
      - all
    * - ``--frames``
      - number
-     - Frames to run before the screenshot. Default 120. Only with
-       ``--screenshot``; a script's frames are its own, see ``run``.
+     - Frames to run before the screenshot or the CRC. Default 120.
      - all
    * - ``--scale``
      - number
      - Window scale, fractional allowed. Default 1.5.
-     - desktop
-   * - ``--vsync``
-     - \-
-     - Sync presentation to the display. The default.
-     - desktop
-   * - ``--no-vsync``
-     - \-
-     - Present uncapped, pacing the machine in software instead.
      - desktop
    * - ``--filter``
      - ``nearest``,
@@ -190,8 +169,19 @@ work.
    * - ``--script``
      - ``file``, or
        ``-``
-     - Drive input and check results. See `Scripting`_. Always headless,
-       and the script controls all timing.
+     - See `Scripting`_.
+     - desktop
+   * - ``--headless``
+     - \-
+     - No window and no picture. The program reads and writes the host's
+       stdin, stdout and stderr, and its exit code becomes the emulator's.
+       Implies ``--stdin``.
+     - desktop
+   * - ``--stdin``
+     - \-
+     - The host's stdin becomes the machine's console input. A terminal
+       there becomes the console itself. Implied by ``--headless``. See
+       `Standard Streams`_.
      - desktop
    * - ``--rom``
      - ``file``
@@ -204,7 +194,8 @@ work.
      - all
    * - ``--phi2``
      - kHz
-     - 6502 clock, 100 to 8000. Default 8000.
+     - 6502 clock, 100 to 8000. Default 8000. ``0`` runs unpaced: the
+       machine goes as fast as the host can take it.
      - all
    * - ``--cp``
      - number
@@ -214,16 +205,14 @@ work.
    * - ``--seed``
      - number
      - Fixed seed for the run, covering both the memory fill and the
-       random numbers a program draws, so a run repeats exactly. The
-       default is host entropy, and a run that uses it reports the seed
-       it chose.
+       random numbers a program draws, so a run repeats exactly.
      - all
    * - ``--fill``
      - ``random``,
        or a byte
      - What RAM and XRAM hold before anything writes them. The default
-       is ``random``, which is what a machine gives a program. Supply
-       a byte, as ``$00`` or ``0``, to start with known memory.
+       is ``random``. Supply a byte, as ``$00`` or ``0``, to start with
+       known memory.
      - all
    * - ``--mute``
      - \-
@@ -240,9 +229,7 @@ work.
      - desktop
    * - ``--ini``
      - ``file``
-     - Where the debugger keeps its window layout. Defaults to your
-       config directory; an :doc:`sdk` project points it at ``.rp6502``
-       in the project root.
+     - Where the debugger keeps its window layout.
      - desktop
    * - ``--credits``
      - \-
@@ -257,8 +244,26 @@ work.
      - Pass everything after this to the ROM as ``argv[1..]``.
      - all
 
-``--dap`` and ``--script`` both drive the machine and both may need
-stdin, so requesting both is an error.
+
+Standard Streams
+----------------
+
+A program's ``stdout`` and ``stderr`` both show on the VGA
+terminal, so someone at the screen sees an error even when the streams
+are redirected somewhere else. On the desktop hosts they also reach
+the process: ``stdout`` goes to the host's stdout and ``stderr`` to
+the host's stderr, so a console program written for the Picocomputer
+runs in a shell pipeline.
+
+Host stdin becomes the machine's console input under ``--stdin``, which
+``--headless`` implies. A pipe's end of file reaches the
+program. Once the input is gone, a read of ``stdin`` returns 0 bytes.
+
+.. code-block:: text
+
+  rp6502-emu --headless --phi2 0 tool.rp6502 < input.txt > output.txt
+  rp6502-emu --headless adventure.rp6502
+  rp6502-emu --stdin game.rp6502           # a window, and the terminal too
 
 
 Web Builds
@@ -266,9 +271,8 @@ Web Builds
 
 The itch.io package in the `releases
 <https://github.com/picocomputer/rp6502/releases/latest>`__ is a ready-to-publish
-HTML5 project that plays one Picocomputer ROM in a browser. The page
-is deliberately generic: it is the same for everyone, and the ROM is
-provided by you.
+HTML5 project that plays one Picocomputer ROM in a browser. The zip file
+is deliberately correct for itch.io but is generic enough to use anywhere.
 
 Unpack it to get the three matched files plus a sample program.
 Everything you change lives in one block near the top of ``index.html``:
@@ -276,18 +280,13 @@ Everything you change lives in one block near the top of ``index.html``:
 .. code-block:: text
 
   var CONFIG = {
-    rom:    'adventure.rp6502',          // your program, next to this file
+    rom:    'adventure.rp6502',          // change to your program
     title:  'Colossal Cave Adventure',   // browser tab title
     bg:     '000000',                    // letterbox fill, no '#'
     filter: 'sharp',                     // nearest | linear | sharp
     db:      '',    // save database name; blank = the rom filename
     persist: false, // true = saves are kept in the player's browser
   };
-
-These become the same arguments the command line takes, so ``bg`` and
-``filter`` mean exactly what ``--bgcolor`` and ``--filter`` mean. Drop
-your ``.rp6502`` next to ``index.html``, point ``rom`` at it, and delete
-the sample.
 
 Neither the package nor the tester works from a ``file://`` URL. The
 browser needs an HTTP origin to fetch a ROM or stream the WebAssembly.
@@ -296,9 +295,6 @@ Any local server will do.
 .. code-block:: text
 
   python3 -m http.server 8000
-
-Gamepads need no configuration. Neither does paste — Ctrl-V or Cmd-V
-types the clipboard into the emulated keyboard.
 
 Publishing to itch.io
 ---------------------
@@ -317,7 +313,7 @@ else at https://itch.io/games/tag-rp6502.
 Saves and browser storage
 -------------------------
 
-``MSC0:/db`` is the working directory. With ``persist: true``, anything
+``/db`` is the working directory. With ``persist: true``, anything
 your program writes there lands in an IndexedDB database in the player's
 browser, which is how players keep saved games and high scores. Without
 it, saves last until the player leaves the page and nothing touches
@@ -330,7 +326,16 @@ itch.io game the player runs. Two unrelated games that both ship
 something unique, such as ``yourname-yourgame``, to avoid this.
 
 The same behavior is useful deliberately. Give several of your pages the
-same ``db`` and their programs share one ``MSC0:`` drive.
+same ``db`` and their programs share one filesystem.
+
+
+RetroArch
+=========
+
+The Picocomputer is also a libretro core, which is how it reaches
+RetroArch and the launchers built on it. Install it from Online Updater >
+Core Downloader, under "Picocomputer 6502", then load a ``.rp6502`` ROM
+as content the way you would a cartridge.
 
 
 Debugging
@@ -388,7 +393,9 @@ The launch request takes ``program``, ``args``, and optionally ``elf`` or
 ``dbg`` to name the debug information. ``stopOnEntry`` breaks
 before the first instruction. ``stopOnExit`` is on by default and keeps
 the session alive after the program ends, so the final screen remains on
-display.
+display. The program's ``stdout`` and ``stderr`` reach the Debug Console
+as output events of those two categories, so VS Code shows ``stderr`` in
+red; the emulated terminal in the window shows both.
 
 
 Scripting
@@ -495,19 +502,30 @@ MOS-style ``$FF``.
      - Remember the screen, then check it against what you remembered.
    * - ``shot "file.png"``
      - Write the screen.
+   * - ``state save "file"``,
+       ``state load "file"``
+     - Save the whole machine to a file, and load it back.
+   * - ``seed``
+     - Print the seed this run filled memory with.
+   * - ``install "path" [NAME]``,
+       ``remove <NAME>``
+     - Install a ROM on the null drive as ``:NAME``, and remove it again.
+       The default name is the file's own basename.
+   * - ``load "path"``
+     - Boot a program. The machine must be stopped, since loading writes
+       the memory a running program is using.
+   * - ``sys run|stop|break``
+     - Start the machine, stop it, or interrupt it the way a break at
+       the console would.
    * - ``reply [on|off]``
      - Answer every command on stdout. See `Driving it from a program`_.
 
 A failed check names the script and the line it was on, then exits 1,
-which is all a test runner needs.
+which is what a test runner needs.
 
 Memory starts random, as it often does on real hardware. This will catch
 uninitialize memory usage... eventually. ``--fill 00`` gives a test
-known memory when it needs it. The seed will be reported on stderr, so a
-failure can be reproduced.
-
-``--seed`` sets both the fill and the numbers ``lrand`` returns. Both will
-start with the same seed so a ``--fill`` will not advance ``lrand``.
+known memory when it needs it.
 
 
 Driving it from a program
