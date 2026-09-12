@@ -77,10 +77,6 @@ for an 8-bit system, so the two modes worth having arrive as separate
 device names instead.
 
 Reading ``stdin`` is cooked and blocks until the user presses Enter.
-Enter arrives as a carriage return from a terminal and as a line feed in
-a file of text, and either one ends a line. A terminal that sends both
-for one Enter, as a telnet client does, still ends only one line,
-because the second half of the pair is discarded.
 ``stdout`` and ``stderr`` block too, inserting a carriage return before
 any newline that lacks one; all of the data is always sent, and a write
 blocks until it has fully drained into the output FIFOs. That is what a

@@ -1054,7 +1054,7 @@ CHDRIVE
    storage volume — one USB mass-storage LUN — as ``MSC0:``–``MSC9:``, with
    shortcuts ``0:``–``9:``. A machine with a single filesystem calls it
    ``FS:``. Windows uses its own drive letters, ``C:`` and the rest of
-   what is mounted. An empty name is the drive already in use, everywhere.
+   what is mounted.
 
    ``0:``–``9:`` is FatFs's own notation and exists only where FatFs does.
 
@@ -1074,11 +1074,9 @@ GETCWD
    Get the current working directory. Size is ignored by the OS but the C
    wrapper will use it.
 
-   The result uses the machine's own path format, so it includes a device
-   name only where the machine's paths do: ``MSC0:/games`` on a
-   :doc:`pico`, ``C:/Users/me`` on Windows, and ``/home/me`` on a machine
-   whose paths name no device. ``FS:`` is a name you can use for such a
-   drive, but it never appears in the result.
+   The result alwasys includes a device name: ``MSC0:/games`` on a
+   :doc:`pico`, ``C:/Users/me`` on Windows, and ``FS:/home/me`` on hosts
+   like Linux where the filesystem has one root.
 
    :Op code: RIA_OP_GETCWD 0x2B
    :C proto: rp6502.h

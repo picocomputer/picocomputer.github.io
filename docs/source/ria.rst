@@ -21,9 +21,6 @@ even the :doc:`vga` is optional.
 Implementations
 ===============
 
-The specification below is what matters. These implementations all
-satisfy it.
-
 - :doc:`pico` — RIA firmware on a Raspberry Pi Pico 2. The RIA is
   designed to fit entirely on one.
 - :doc:`fpga` — a trimmed build of the same firmware C on a Hazard3
