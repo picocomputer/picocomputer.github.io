@@ -30,17 +30,11 @@ how to do that.
 Introduction
 ============
 
-The Picocomputer 6502 is a machine, and a **host** binds it to a thin
-wrapper that translates IO and OS services. There are nine hosts today:
-Linux on x86_64 and aarch64, macOS, Windows, the browser, Android,
-RetroArch, the :doc:`fpga`, and a pair of Pi Picos. Every one of them
-runs the same machine.
-
 This page documents the software hosts. The :doc:`fpga` is the host made
 of gates, and the :doc:`pico` is a standalone machine you can build.
 
-An emulator here is an RP6502 rather than something that resembles one.
-It runs the same 6502 code, responds at the same registers, and maps its
+An emulator is a first-class Picocomputer rather than a facsimile.
+It runs the same 6502 code, responds to the same registers, and maps its
 own errors onto the same errno values every other host reports.
 
 What differs between the software hosts:
@@ -85,35 +79,33 @@ What differs between the software hosts:
      - no
      - yes, with rewind and netplay
 
-The browser build is three files — ``index.html``, ``rp6502.js``, and
-``rp6502.wasm`` — and they are **one matched set from a single build**.
-Everything you configure therefore lives in one block at the top of the
-page, so upgrading is a matter of copying three files and re-applying
-that block.
-
 
 Install
 =======
 
 Pre-built emulators are on the `releases page
 <https://github.com/picocomputer/rp6502/releases/latest>`__. A project made from
-the :doc:`sdk` template already fetched the right one into ``tools/``, so
+the :doc:`sdk` template will fetch the right one into ``tools/``, so
 you may have it already.
 
-- **Linux** — a tarball. Built on Ubuntu 22.04, so it needs glibc 2.35 or
-  later plus the GL, X11, and ALSA runtime libraries.
-  The tarball preserves the execute bit; if something
-  along the way stripped it, ``chmod +x rp6502-emu``.
-- **macOS** — drag ``rp6502-emu.app`` to Applications. Apple silicon,
-  macOS 11 or later. It isn't signed or notarized, so Gatekeeper blocks
-  the first launch — allow it under System Settings > Privacy & Security >
-  "Open Anyway", or ``xattr -dr com.apple.quarantine rp6502-emu.app``.
 - **Windows** — ``rp6502-emu.exe`` is the program itself, not an installer.
   Requires  a GPU with Direct3D 11. It isn't code signed, so SmartScreen
   warns on first launch; choose "More info" then "Run anyway".
+- **macOS** — drag ``rp6502-emu.app`` to Applications.
+  It isn't signed or notarized, so Gatekeeper blocks
+  the first launch — allow it under System Settings > Privacy & Security >
+  "Open Anyway", or ``xattr -dr com.apple.quarantine rp6502-emu.app``.
+- **Linux** — built on Ubuntu 22.04, so it needs glibc 2.35 or
+  later plus the GL, X11, and ALSA runtime libraries.
+  The tarball preserves the execute bit; if something
+  along the way stripped it, ``chmod +x rp6502-emu``.
 - **Android** — the APK from the same release.
 - **RetroArch** — the core is in the Online Updater, under
   "Picocomputer 6502"; see `RetroArch`_ below.
+
+
+Running Software
+================
 
 6502 software is distributed as files ending in ``.rp6502``. Find them on
 Discord, which has a forum for ROMs, or on itch.io under the RP6502 tag:
@@ -121,36 +113,11 @@ Discord, which has a forum for ROMs, or on itch.io under the RP6502 tag:
 - https://discord.gg/TC6X8kTr6d
 - https://itch.io/games/tag-rp6502
 
-
-Running Software
-================
-
-Hand the emulator a ROM, or drag one onto the window.
+Start the emulator with a ROM, or drag one onto the window.
 
 .. code-block:: text
 
   rp6502-emu game.rp6502
-
-``--rom`` installs a ROM on the null drive instead of booting it, where it
-can be reached as ``:basename`` — the same way an :doc:`pico` reaches a
-ROM installed in its flash. It repeats up to sixteen times, and the
-first one boots if
-you didn't name a ROM to run.
-
-.. code-block:: text
-
-  rp6502-emu --rom menu.rp6502 --rom game.rp6502
-
-The directory you ran from is the working directory, so a program's saves
-land in the same directory. Paths use the host's format: ``getcwd`` returns
-``/home/me`` here and ``C:/Users/me`` on Windows, and ``FS:`` is a name
-you can use for the drive rather than a prefix that appears in a path.
-Everything after a bare ``--`` becomes the ROM's
-``argv[1..]``, reaching the program through `ARGV <os.html#argv>`__.
-
-.. code-block:: text
-
-  rp6502-emu editor.rp6502 -- notes.txt
 
 
 Arguments
@@ -182,13 +149,11 @@ work.
    * - ``--crc``
      - \-
      - Run headlessly, render the frames, print the canvas as a CRC-32
-       on stdout, and exit. Combines with ``--screenshot``.
+       on stdout, and exit.
      - all
    * - ``--frames``
      - number
-     - Frames to run before the screenshot or the CRC. Default 120. Only
-       with ``--screenshot`` or ``--crc``; a script sets its own frame
-       count with ``run``.
+     - Frames to run before the screenshot or the CRC. Default 120.
      - all
    * - ``--scale``
      - number
@@ -204,22 +169,18 @@ work.
    * - ``--script``
      - ``file``, or
        ``-``
-     - Drive input and check results. See `Scripting`_. Always headless,
-       and the script controls all timing.
+     - See `Scripting`_.
      - desktop
    * - ``--headless``
      - \-
      - No window and no picture. The program reads and writes the host's
        stdin, stdout and stderr, and its exit code becomes the emulator's.
        Implies ``--stdin``.
-       See `Standard Streams`_. Paced like a window; add ``--phi2 0`` for
-       a console program that should run flat out.
      - desktop
    * - ``--stdin``
      - \-
      - The host's stdin becomes the machine's console input. A terminal
-       there becomes the console itself. Implied by ``--headless``; give it by
-       name to hook a terminal up to a run that also has a window. See
+       there becomes the console itself. Implied by ``--headless``. See
        `Standard Streams`_.
      - desktop
    * - ``--rom``
@@ -234,8 +195,7 @@ work.
    * - ``--phi2``
      - kHz
      - 6502 clock, 100 to 8000. Default 8000. ``0`` runs unpaced: the
-       machine goes as fast as the host can take it, and every clock in
-       it warps with it.
+       machine goes as fast as the host can take it.
      - all
    * - ``--cp``
      - number
@@ -245,16 +205,14 @@ work.
    * - ``--seed``
      - number
      - Fixed seed for the run, covering both the memory fill and the
-       random numbers a program draws, so a run repeats exactly. The
-       default is host entropy, and a run that uses it reports the seed
-       it chose.
+       random numbers a program draws, so a run repeats exactly.
      - all
    * - ``--fill``
      - ``random``,
        or a byte
      - What RAM and XRAM hold before anything writes them. The default
-       is ``random``, which is what a machine gives a program. Supply
-       a byte, as ``$00`` or ``0``, to start with known memory.
+       is ``random``. Supply a byte, as ``$00`` or ``0``, to start with
+       known memory.
      - all
    * - ``--mute``
      - \-
@@ -271,9 +229,7 @@ work.
      - desktop
    * - ``--ini``
      - ``file``
-     - Where the debugger keeps its window layout. Defaults to your
-       config directory; an :doc:`sdk` project points it at ``.rp6502``
-       in the project root.
+     - Where the debugger keeps its window layout.
      - desktop
    * - ``--credits``
      - \-
@@ -288,13 +244,6 @@ work.
      - Pass everything after this to the ROM as ``argv[1..]``.
      - all
 
-``--dap`` and ``--script`` both drive the machine and both may need
-stdin, so requesting both is an error. With ``--headless`` the program alone
-uses the host's streams, so it cannot be combined with ``--script``,
-``--screenshot``, ``--crc``, ``--dap``, or ``--debug``. ``--stdin``
-needs the same stdin as ``--script`` and ``--dap``, and writes to the
-stdout that ``--crc`` prints its value to, so it cannot be combined with
-any of those three either.
 
 Standard Streams
 ----------------
@@ -310,53 +259,9 @@ Host stdin becomes the machine's console input under ``--stdin``, which
 ``--headless`` implies. A pipe's end of file reaches the
 program. Once the input is gone, a read of ``stdin`` returns 0 bytes.
 
-Nothing is translated on the way in. The machine receives what the far
-end sent, byte for byte, the way a serial console does: no code page
-conversion, and no rewriting of line endings. The line editor ends a
-line on a carriage return or a line feed, so a terminal sending a return
-for Enter and a file holding line feeds both work.
-
-A terminal and a file still behave differently. A terminal delivers keys
-as they are struck, whatever stdout is, so a Ctrl-C is both the byte and
-a SIGINT the program can catch. A pipe or a file is read only as fast as
-the program takes it, so nothing in it is lost and a ``0x03`` in it is
-only a byte.
-
 .. code-block:: text
 
   rp6502-emu --headless --phi2 0 tool.rp6502 < input.txt > output.txt
-
-Paste goes the other way and follows the opposite rule. A clipboard
-holds the host's text, so ``Ctrl-V`` converts it to the machine's code
-page and converts its line endings to the form the line editor reads.
-
-When the host's stdin and stdout are the same terminal, that terminal
-*is* the console. Both have to be the terminal, because a terminal on
-stdin with a file on stdout is a pipeline, and the machine's screen
-would end up in the file. Redirect either one and the program's output
-goes there instead, exactly as above.
-
-The machine then draws its screen on the terminal, and the terminal
-replies to the queries a program makes about size and cursor. The VGA
-terminal stops replying so a program receives only one answer.
-Keys reach the machine as they are struck, so Ctrl-C is a byte the
-program can catch rather than something that kills the emulator. The
-window, if there is one, goes on showing the same screen.
-
-Ctrl-\\ is the way out. The emulator holds back this one key, so you
-can leave a program that has stopped listening. On
-Windows the same key is Ctrl-Break, which a console never gives a
-program. Either one breaks the machine: every driver is stopped in
-order and the terminal is restored, whatever a debugger was holding at
-the time. The emulator then exits by that same signal, so a shell loop
-or a ``make`` sees a run that was interrupted rather than one that
-merely failed. Press it a second time to exit immediately, for a machine
-too wedged to shut down cleanly. Closing the window breaks the
-machine the same way, but exits with a code, because a window closing is
-not a signal.
-
-.. code-block:: text
-
   rp6502-emu --headless adventure.rp6502
   rp6502-emu --stdin game.rp6502           # a window, and the terminal too
 
@@ -366,9 +271,8 @@ Web Builds
 
 The itch.io package in the `releases
 <https://github.com/picocomputer/rp6502/releases/latest>`__ is a ready-to-publish
-HTML5 project that plays one Picocomputer ROM in a browser. The page
-is deliberately generic: it is the same for everyone, and the ROM is
-provided by you.
+HTML5 project that plays one Picocomputer ROM in a browser. The zip file
+is deliberately correct for itch.io but is generic enough to use anywhere.
 
 Unpack it to get the three matched files plus a sample program.
 Everything you change lives in one block near the top of ``index.html``:
@@ -376,18 +280,13 @@ Everything you change lives in one block near the top of ``index.html``:
 .. code-block:: text
 
   var CONFIG = {
-    rom:    'adventure.rp6502',          // your program, next to this file
+    rom:    'adventure.rp6502',          // change to your program
     title:  'Colossal Cave Adventure',   // browser tab title
     bg:     '000000',                    // letterbox fill, no '#'
     filter: 'sharp',                     // nearest | linear | sharp
     db:      '',    // save database name; blank = the rom filename
     persist: false, // true = saves are kept in the player's browser
   };
-
-These become the same arguments the command line takes, so ``bg`` and
-``filter`` mean exactly what ``--bgcolor`` and ``--filter`` mean. Drop
-your ``.rp6502`` next to ``index.html``, point ``rom`` at it, and delete
-the sample.
 
 Neither the package nor the tester works from a ``file://`` URL. The
 browser needs an HTTP origin to fetch a ROM or stream the WebAssembly.
@@ -396,9 +295,6 @@ Any local server will do.
 .. code-block:: text
 
   python3 -m http.server 8000
-
-Gamepads need no configuration. Neither does paste — Ctrl-V or Cmd-V
-types the clipboard into the emulated keyboard.
 
 Publishing to itch.io
 ---------------------
@@ -437,51 +333,9 @@ RetroArch
 =========
 
 The Picocomputer is also a libretro core, which is how it reaches
-RetroArch and the launchers built on it — including the handhelds that
-ship one. Install it from Online Updater > Core Downloader, under
-"Picocomputer 6502", then load a ``.rp6502`` as content the way you
-would a cartridge.
-
-The Picocomputer is a computer, so a program may want a keyboard as well
-as a gamepad, and the keyboard needs one setting before it works.
-RetroArch binds keys to its own controller and hotkeys — Enter is Start,
-``p`` pauses — so typing does not reach the program until you turn that
-off. Press Scroll Lock for Game Focus and the keyboard and the mouse
-go to the emulated computer; the core prints a message on screen the first
-time a program asks for the keyboard, the mouse or the console. To have it on
-every time, set Settings > Input > Auto Enable Game Focus to "Detect",
-which looks for exactly what this core asks the frontend for.
-
-Gamepads are read as the modern pads the machine expects, as many as the
-frontend says it has.
-
-A program that asks for the mouse gets the frontend's mouse. One that
-asks for the absolute tablet gets the frontend's pointer: on a desktop
-the mouse hovers over the picture with its own buttons, and on a
-touchscreen each finger is a contact. Taking the pointer off the picture
-ends the contact, and nothing is pressed while it is out there. The
-program draws its own pointer, because a libretro frontend provides no
-cursor; RetroArch's own cursor stays over the window until Game
-Focus or Settings > Input > Auto Mouse Grab hides it.
-
-A program's saves land in the save directory your frontend chose for it,
-and the whole host filesystem is reachable from there.
-
-Save states work here, and so do rewind, runahead and rollback netplay.
-A state holds the whole machine, including the audio engines, and it is
-portable: write one on a desktop and read it back on a handheld.
-
-A state does not put back the filesystem. A program's writes are already
-on disk, so rewinding past a write leaves the write in place.
-
-Netplay does not replicate the keyboard. This machine receives keys as
-they are typed rather than through a controller port that gets polled,
-so two players typing will drift apart. Gamepads, the mouse and the
-tablet are polled, and they do replicate.
-
-This host plays a program and stops when the program does. There is no
-monitor, no debugger and no scripting — those are on the desktop
-emulator, and the same ROM runs there.
+RetroArch and the launchers built on it. Install it from Online Updater >
+Core Downloader, under "Picocomputer 6502", then load a ``.rp6502`` ROM
+as content the way you would a cartridge.
 
 
 Debugging
@@ -650,9 +504,7 @@ MOS-style ``$FF``.
      - Write the screen.
    * - ``state save "file"``,
        ``state load "file"``
-     - Save the whole machine to a file, and load it back. The file is
-       portable: one written here reads back on another computer, and in
-       RetroArch.
+     - Save the whole machine to a file, and load it back.
    * - ``seed``
      - Print the seed this run filled memory with.
    * - ``install "path" [NAME]``,
@@ -669,15 +521,11 @@ MOS-style ``$FF``.
      - Answer every command on stdout. See `Driving it from a program`_.
 
 A failed check names the script and the line it was on, then exits 1,
-which is all a test runner needs.
+which is what a test runner needs.
 
 Memory starts random, as it often does on real hardware. This will catch
 uninitialize memory usage... eventually. ``--fill 00`` gives a test
-known memory when it needs it. The seed will be reported on stderr, so a
-failure can be reproduced.
-
-``--seed`` sets both the fill and the numbers ``lrand`` returns. Both will
-start with the same seed so a ``--fill`` will not advance ``lrand``.
+known memory when it needs it.
 
 
 Driving it from a program
