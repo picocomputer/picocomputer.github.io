@@ -632,12 +632,13 @@ applications are denied access to them.
        * 0 - Disable
        * 1 - Enable
        * 2 - Request
-   * - $1:F:05
-     - FLASH_SECTOR
-     - Flash the contents of XRAM[0..4095] to the specified sector.
    * - $1:F:06
      - REBOOT_OR_LOCKUP
      - Called after flashing. Non-0 locks up to leave error message visible.
+   * - $1:F:07
+     - FLASH_PROGRAM
+     - Program XRAM[0..255] into the 256 byte page at this index. The page's
+       sector is erased first when the page does not already read as erased.
 
 
 Backchannel
