@@ -16,8 +16,8 @@ not depend on any one of these parts staying in production because
 the whole machine also runs in gates on the :doc:`fpga`.
 
 Building one takes money and a delay of shipping. Trying one takes
-neither — the :doc:`emu` runs in your browser, and everything you write
-for it runs here.
+neither — the emulator runs in your browser on the :doc:`home page
+<index>`, and everything you write for it runs here.
 
 Schematic
 =========
