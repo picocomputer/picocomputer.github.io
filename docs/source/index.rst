@@ -49,14 +49,15 @@ frameworks, layers of abstraction. AI makes that distance greater still:
 you can ask a machine to produce something impressive without
 necessarily understanding what happened.
 
-This one goes the other way. That game up there has sprites, music, and
-gamepad support, and it's running on a 6502. The board, the operating
-system, the SDK, the emulator, and these docs are a one-person project,
-and there's nothing in it you can't get to the bottom of.
+The Picocomputer goes the other way. It's simple enough to learn
+completely, and every layer under your program is documented on this site
+for you to take on one at a time.
 
-You don't have to. Plenty of people will just write games. But the day
-you want to know why something happened, you can follow a key press all
-the way to the pixel it changes.
+It's also powerful enough that you won't outgrow it. Your 6502 program
+drives a video system and a sound system modeled on the arcades and home
+computers of the 8-bit and 16-bit era, with far more headroom than those
+machines ever had. Your game can throw hundreds of sprites across the
+screen and pull in megabytes of art and music.
 
 
 Write a Game
@@ -111,9 +112,6 @@ You already have one. Games and applications are distributed as
   their sockets. Usually under $100 USD.
 - :doc:`fpga` — the whole machine in gates, on an Analogue Pocket today
   and MiSTer next.
-
-Building one takes money and a delay of shipping. Trying one takes
-neither.
 
 
 Community
