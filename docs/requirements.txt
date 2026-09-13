@@ -1,2 +1,4 @@
 Sphinx==8.2.3
-alabaster==1.0.0
+furo==2025.12.19
+sphinx-copybutton==0.5.2
+sphinxext-opengraph==0.13.0

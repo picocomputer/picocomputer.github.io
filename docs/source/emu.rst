@@ -5,28 +5,6 @@ RP6502-EMU
 RP6502 - Emulator
 
 
-Space Raiders
-=============
-
-.. raw:: html
-
-   <iframe class="emu-frame"
-           src="_static/emu/index.html"
-           title="Space Raiders on the Picocomputer 6502"
-           width="640" height="480"
-           allow="gamepad; fullscreen; autoplay"
-           allowfullscreen></iframe>
-
-- ``1`` one player, ``2`` two players, ``p`` pause,  ``r`` restart.
-- Arrows move. Space, up, or down fires.
-- Gamepads: left stick to move, any button to fire.
-
-That is a real Picocomputer 6502 running a real ROM. It is the same
-WebAssembly build you can put on your own page or share on `itch.io
-<https://itch.io/games/tag-rp6502>`__, and the rest of this page covers
-how to do that.
-
-
 Introduction
 ============
 
@@ -273,6 +251,7 @@ The itch.io package in the `releases
 <https://github.com/picocomputer/rp6502/releases/latest>`__ is a ready-to-publish
 HTML5 project that plays one Picocomputer ROM in a browser. The zip file
 is deliberately correct for itch.io but is generic enough to use anywhere.
+The game on the :doc:`home page <index>` is this package.
 
 Unpack it to get the three matched files plus a sample program.
 Everything you change lives in one block near the top of ``index.html``:

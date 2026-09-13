@@ -30,7 +30,6 @@ nothing is hidden, so you can read any layer and delete the ones you
 don't want.
 
 .. code-block:: text
-   :class: diagram
 
    ┌───────────────────────────────────────────────────────────┐
    │ .vscode/                                                  │
