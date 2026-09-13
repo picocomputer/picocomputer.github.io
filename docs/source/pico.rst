@@ -15,9 +15,10 @@ The design has already survived the Pico 1 to Pico 2 transition, and it does
 not depend on any one of these parts staying in production because
 the whole machine also runs in gates on the :doc:`fpga`.
 
-Building one takes money and a delay of shipping. Trying one takes
-neither — the emulator runs in your browser on the :doc:`home page
-<index>`, and everything you write for it runs here.
+.. image:: _static/ria-w-sandwich.jpg
+   :width: 600
+   :align: center
+   :alt: RP6502-PICO Photo
 
 Schematic
 =========

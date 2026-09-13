@@ -74,7 +74,6 @@ Internals
 =========
 
 .. code-block:: text
-   :class: diagram
 
    ┌─ the Pocket ─ APF shell, core_bridge_cmd ─── clk_74a 74.25 MHz ─────┐
    │ data slots · savestate · RTC · four controller slots · the scaler · │

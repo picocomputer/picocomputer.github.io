@@ -1,3 +1,5 @@
+:og:description: Write games for a real 6502 computer. Run them in your browser, or build the hardware for under $100.
+
 .. toctree::
    :hidden:
    :caption: Machine
@@ -23,12 +25,15 @@ Picocomputer 6502
 
 .. raw:: html
 
-   <iframe class="emu-frame"
-           src="_static/emu/index.html"
+   <iframe src="_static/emu/index.html"
            title="Space Raiders on the Picocomputer 6502"
-           width="640" height="480"
            allow="gamepad; fullscreen; autoplay"
-           allowfullscreen></iframe>
+           allowfullscreen
+           style="display: block; box-sizing: border-box;
+                  width: 100%; max-width: 640px;
+                  aspect-ratio: 4 / 3; max-height: 75vh;
+                  margin: 0 auto 1em; background: #000;
+                  border: 1px solid var(--color-background-border)"></iframe>
 
 - Arrows move. Space, up, or down fires. Gamepads work too.
 - ``1`` one player, ``2`` two players, ``p`` pause, ``r`` restart.
@@ -106,11 +111,6 @@ You already have one. Games and applications are distributed as
   their sockets. Usually under $100 USD.
 - :doc:`fpga` — the whole machine in gates, on an Analogue Pocket today
   and MiSTer next.
-
-.. image:: _static/ria-w-sandwich.jpg
-   :width: 600
-   :align: center
-   :alt: RP6502-PICO Photo
 
 Building one takes money and a delay of shipping. Trying one takes
 neither.
