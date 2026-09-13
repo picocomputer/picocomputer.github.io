@@ -65,3 +65,24 @@ div.sphinxsidebar p.caption {
 div.sphinxsidebar p.caption:first-of-type {
     margin-top: 0.6em;
 }
+
+/* Alabaster drops the sidebar's float below 876px, and the sidebar comes first
+   in the DOM, so a narrow screen gets a wall of RP6502-* acronyms before the
+   page title. Order the content first; navigation still follows it. The
+   sidebar's negative top margin is what pulls it flush under the header when
+   it's on top, and it has nothing to sit under down here. */
+@media screen and (max-width: 875px) {
+    div.document {
+        display: flex;
+        flex-direction: column;
+    }
+
+    div.documentwrapper {
+        order: 1;
+    }
+
+    div.sphinxsidebar {
+        order: 2;
+        margin-top: 0;
+    }
+}
