@@ -214,7 +214,7 @@ asset loads exactly where your program looks for it.
 
 .. code-block:: cmake
 
-  rp6502_xram(src/xram.h "XRAM_.*" "XRAM_.*_DATA")
+  rp6502_xram(src/xram.h "XRAM_.*")
   rp6502_asset(hello XRAM_CANVAS_DATA img/logo.bin)
 
 The regular expression chooses which names to take and has to match a whole
@@ -234,18 +234,19 @@ Alignment
 Neither compiler pads a structure, so a member starts wherever the members
 before it end. The hardware that reads XRAM in 16-bit values needs an even
 address, and quietly ignores or refuses an odd one: mode configurations,
-palettes, 16-bit color data, and the PSG. Every address is checked, and an
-odd one stops the build.
+palettes, and the PSG. Every address is checked, and an odd one stops the
+build.
 
 .. code-block:: text
 
   xram.h: XRAM_CANVAS_CONFIG is unaligned at $9A1D. To allow, use the
   [<unaligned_regex>] in rp6502_xram.
 
-Bitmaps, tiles, and the keyboard, mouse, gamepad and tablet blocks may start
-anywhere. Name those with the third argument, as the ``XRAM_.*_DATA`` above
-does, and they are left unchecked. Everything else you can fix by putting
-the odd-sized members last, or by giving one a padding byte.
+Pixel data, fonts, tiles, sprite images, and the keyboard, mouse, gamepad
+and tablet blocks draw the same picture at any address, so the check is
+advice there rather than a rule — take it anyway, and fix an odd one by
+putting the odd-sized members last or by giving one a padding byte. Name
+whatever has to stay odd with the third argument and it is left unchecked.
 
 
 Linker Configuration

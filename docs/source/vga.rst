@@ -76,14 +76,14 @@ built-in ANSI palette has the alpha bit set on every color except color
 
 A palette is just an array. The 8bpp, 4bpp, and 1bpp modes use one;
 16-bit-per-pixel modes aren't indexed and ignore the palette entirely.
-Palettes must be 16-bit aligned.
+Palettes must be 16-bit aligned; an odd one falls back to the built-in
+table.
 
 .. code-block:: C
 
   struct {
       uint16_t color;
   } palette[2^bits_per_pixel];
-
 
 You program the VGA device with `PIX extended registers
 <ria.html#pix-extended-registers-xreg>`__ (XREGs). VGA is PIX device
@@ -424,7 +424,6 @@ shifts move pixels the way you'd expect. The reverse-bits option flips
 the bit order of the 1- and 4-bit modes, which makes bit-level
 manipulation code slightly smaller and faster.
 
-Data for 16-bit color must be 16-bit aligned.
 
 .. code-block:: C
 
@@ -503,7 +502,9 @@ that's why there are just six transform values — and they're in signed
   } vga_mode4_asprite_t;
 
 
-Sprite image data is an array of 16-bit colors.
+Sprite image data is an array of 16-bit colors. A sprite is a square of
+2^log_size pixels a side, from 1x1 up to 128x128; a log_size above 7
+describes a square too large for XRAM and draws nothing.
 
 .. code-block:: C
 
