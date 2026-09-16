@@ -104,7 +104,9 @@ or IP address and key of a :doc:`pico` you want to test with.
    * - Setting
      - Description
    * - ``emulator``
-     - Path to the emulator. A bare filename will search the PATH.
+     - Path to the emulator. A relative path, like the ``tools/rp6502-emu``
+       written here for you, starts at this file, so the project folder
+       stays portable. A bare filename will search the PATH.
    * - ``device``
      - The serial port the machine appears on, or a hostname to
        reach it over telnet.
@@ -170,6 +172,80 @@ Some names are special. The ``help`` asset is what an :doc:`pico`
 monitor's HELP and INFO commands display.
 
 Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
+
+
+XRAM Layout
+===========
+
+Write your XRAM layout once, in a header, and use the same names in your
+program and in ``CMakeLists.txt``. A structure says what lives in XRAM, and
+an ``offsetof`` for each member names its address.
+
+.. code-block:: C
+
+  #include <rp6502.h>
+  #include <stddef.h>
+  #include <stdint.h>
+
+  typedef struct
+  {
+      uint8_t canvas[320UL * 240 / 2];
+      vga_mode3_config_t canvas_config;
+      uint8_t sprite[16 * 16];
+  } xram_layout_t;
+
+  #define XRAM_CANVAS_DATA   offsetof(xram_layout_t, canvas)
+  #define XRAM_CANVAS_CONFIG offsetof(xram_layout_t, canvas_config)
+  #define XRAM_SPRITE_DATA   offsetof(xram_layout_t, sprite)
+
+Your program uses those names wherever it needs an XRAM address.
+
+.. code-block:: C
+
+  RIA.addr0 = XRAM_CANVAS_DATA;
+  xreg_vga_mode(3, 2, XRAM_CANVAS_CONFIG, 0);
+
+``rp6502_xram()`` reads the header and gives CMake the same names, so an
+asset loads exactly where your program looks for it.
+
+.. code-block:: cmake
+
+  rp6502_xram(<header> <regex> [<unaligned_regex>])
+
+.. code-block:: cmake
+
+  rp6502_xram(src/xram.h "XRAM_.*" "XRAM_.*_DATA")
+  rp6502_asset(hello XRAM_CANVAS_DATA img/logo.bin)
+
+The regular expression chooses which names to take and has to match a whole
+name. Only ``#define`` lines whose value starts with ``offsetof`` are read,
+so the rest of the header is yours. A backslash continues a definition onto
+the next line, the structure can be called anything, and one header can hold
+several. Call ``rp6502_xram()`` before the ``rp6502_asset()`` calls that use
+its names. Each name is an ordinary CMake variable too, so
+``${XRAM_CANVAS_DATA}`` works anywhere else you need it.
+
+Editing the header configures your project again, so these addresses can
+never go stale. A layout too big for the 64K of XRAM stops the build.
+
+Alignment
+---------
+
+Neither compiler pads a structure, so a member starts wherever the members
+before it end. The hardware that reads XRAM in 16-bit values needs an even
+address, and quietly ignores or refuses an odd one: mode configurations,
+palettes, 16-bit color data, and the PSG. Every address is checked, and an
+odd one stops the build.
+
+.. code-block:: text
+
+  xram.h: XRAM_CANVAS_CONFIG is unaligned at $9A1D. To allow, use the
+  [<unaligned_regex>] in rp6502_xram.
+
+Bitmaps, tiles, and the keyboard, mouse, gamepad and tablet blocks may start
+anywhere. Name those with the third argument, as the ``XRAM_.*_DATA`` above
+does, and they are left unchecked. Everything else you can fix by putting
+the odd-sized members last, or by giving one a padding byte.
 
 
 Linker Configuration

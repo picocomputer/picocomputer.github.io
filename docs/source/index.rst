@@ -68,7 +68,7 @@ world builds and runs in the emulator, with breakpoints and a call
 stack. No hardware, and nothing to buy.
 
 When it's good, edit a couple of lines and upload it to itch.io, where
-anyone can play it in a browser.
+anyone can play it in a browser. For the ultimate flex, build a :doc:`pico`.
 
 :doc:`sdk` has the details, from installing a compiler to debugging on
 real hardware.
@@ -105,11 +105,11 @@ Get a Machine
 You already have one. Games and applications are distributed as
 ``.rp6502`` ROM files, and every machine runs all of them.
 
-- :doc:`emu` — the browser, Windows, macOS, Linux, Android, and
-  RetroArch. Free, and where you start.
 - :doc:`pico` — the one you build. 100% through-hole, no IC programmer,
   and you don't even have to solder — but you will plug eight ICs into
   their sockets. Usually under $100 USD.
+- :doc:`emu` — the browser, Windows, macOS, Linux, Android, and
+  RetroArch. Free, and where you start.
 - :doc:`fpga` — the whole machine in gates, on an Analogue Pocket today
   and MiSTer next.
 
