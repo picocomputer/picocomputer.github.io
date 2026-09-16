@@ -16,6 +16,7 @@ release = ''
 
 extensions = [
     'sphinx_copybutton',
+    'sphinx_inline_tabs',
     'sphinxext.opengraph',
 ]
 exclude_patterns = []

@@ -174,36 +174,168 @@ monitor's HELP and INFO commands display.
 Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
 
 
-XRAM Layout
-===========
+Memory Map
+==========
 
-Write your XRAM layout once, in a header, and use the same names in your
-program and in ``CMakeLists.txt``. A structure says what lives in XRAM, and
-an ``offsetof`` for each member names its address.
+Your project maps its own memory: RAM in a linker script, and XRAM in a
+header.
 
-.. code-block:: C
+RAM
+---
 
-  #include <rp6502.h>
-  #include <stddef.h>
-  #include <stdint.h>
+The compilers come with a linker script for the Picocomputer, cc65's
+``cfg/rp6502.cfg`` and llvm-mos's ``mos-platform/rp6502/link.ld``. When you
+outgrow it, copy it into your project and give the linker your own.
 
-  typedef struct
-  {
-      uint8_t canvas[320UL * 240 / 2];
-      vga_mode3_config_t canvas_config;
-      uint8_t sprite[16 * 16];
-  } xram_layout_t;
+.. code-block:: cmake
 
-  #define XRAM_CANVAS_DATA   offsetof(xram_layout_t, canvas)
-  #define XRAM_CANVAS_CONFIG offsetof(xram_layout_t, canvas_config)
-  #define XRAM_SPRITE_DATA   offsetof(xram_layout_t, sprite)
+  # cc65:
+  target_link_options(hello PRIVATE -C ${CMAKE_SOURCE_DIR}/src/hello.cfg)
+  # llvm-mos:
+  target_link_options(hello PRIVATE -T ${CMAKE_SOURCE_DIR}/src/hello.ld)
+
+The script formats are documented with the linkers: `ld65
+<https://cc65.github.io/doc/ld65.html>`__ for cc65 and `lld
+<https://lld.llvm.org/ELF/linker_script.html>`__ for llvm-mos.
+
+XRAM
+----
+
+``rp6502.h`` and ``rp6502.inc`` contain the operating system interface.
+The structures and macros for the devices in XRAM are in the :doc:`ria`
+and :doc:`vga` datasheets, as groups you copy into your own ``xram.h`` or
+``xram.inc``. Copy each group whole, since a structure's constants and
+macros are written for it. This small amount of copy and paste lets the
+docs change without breaking your build. The ABI is stable: registers,
+offsets, and sizes stay the same. The naming is not, and you can rename
+anything in your copy.
+
+Write your XRAM layout once, in the same file, and use the same names in
+your program and in ``CMakeLists.txt``. The layout says what lives in XRAM,
+and each address is named from it.
+
+.. tab:: C
+
+   .. code-block:: C
+
+      #ifndef XRAM_H
+      #define XRAM_H
+
+      #include <rp6502.h>
+      #include <stdbool.h>
+      #include <stddef.h>
+      #include <stdint.h>
+
+      /* The mode 3 and VGA registers groups from RP6502-VGA go here. */
+      /* The mouse group from RP6502-RIA goes here. */
+
+      typedef struct
+      {
+          uint8_t canvas[320UL * 240 / 2];
+          mode3_config_t canvas_config;
+          mouse_t mouse;
+      } xram_layout_t;
+
+      #define XRAM_CANVAS_DATA offsetof(xram_layout_t, canvas)
+      #define XRAM_CANVAS_CONFIG offsetof(xram_layout_t, canvas_config)
+      #define XRAM_MOUSE offsetof(xram_layout_t, mouse)
+
+      #endif
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+      .ifndef XRAM_INC
+      XRAM_INC = 1
+
+      ; The XRAM portal and XREG call groups from RP6502-RIA go here.
+      ; The mode 3 and VGA registers groups from RP6502-VGA go here.
+      ; The mouse group from RP6502-RIA goes here.
+
+      .struct xram_layout_t
+          canvas        .res 320 * 240 / 2
+          canvas_config .tag mode3_config_t
+          mouse         .tag mouse_t
+      .endstruct
+
+      XRAM_CANVAS_DATA   = xram_layout_t::canvas
+      XRAM_CANVAS_CONFIG = xram_layout_t::canvas_config
+      XRAM_MOUSE         = xram_layout_t::mouse
+
+      .assert .sizeof(xram_layout_t) <= $10000, error, "XRAM layout is too large"
+      .assert (XRAM_CANVAS_CONFIG & 1) = 0, error, "XRAM_CANVAS_CONFIG is odd"
+
+      .endif
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      .ifndef XRAM_INC
+      XRAM_INC = 1
+
+      ; The XRAM portal and XREG call groups from RP6502-RIA go here.
+      ; The mode 3 and VGA registers groups from RP6502-VGA go here.
+      ; The mouse group from RP6502-RIA goes here.
+
+      XRAM_CANVAS_DATA   = 0
+      XRAM_CANVAS_CONFIG = XRAM_CANVAS_DATA + 320 * 240 / 2
+      XRAM_MOUSE         = XRAM_CANVAS_CONFIG + MODE3_CONFIG_SIZE
+      XRAM_END           = XRAM_MOUSE + MOUSE_SIZE
+
+      .if XRAM_END > $10000
+      .error "XRAM layout is too large"
+      .endif
+      .if XRAM_CANVAS_CONFIG & 1
+      .error "XRAM_CANVAS_CONFIG is odd"
+      .endif
+
+      .endif
 
 Your program uses those names wherever it needs an XRAM address.
 
-.. code-block:: C
+.. tab:: C
+   :new-set:
 
-  RIA.addr0 = XRAM_CANVAS_DATA;
-  xreg_vga_mode(3, 2, XRAM_CANVAS_CONFIG, 0);
+   .. code-block:: C
+
+      xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, width_px, 320);
+      xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, height_px, 240);
+      xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, xram_data_ptr, XRAM_CANVAS_DATA);
+      xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, xram_palette_ptr, 0xFFFF);
+      xreg_vga_canvas(1);
+      xreg_vga_mode(3, 2, XRAM_CANVAS_CONFIG);
+      xreg_ria_mouse(XRAM_MOUSE);
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+          xram0_struct_set XRAM_CANVAS_CONFIG, mode3_config_t, width_px, 320
+          xram0_struct_set XRAM_CANVAS_CONFIG, mode3_config_t, height_px, 240
+          xram0_struct_set XRAM_CANVAS_CONFIG, mode3_config_t, xram_data_ptr, XRAM_CANVAS_DATA
+          xram0_struct_set XRAM_CANVAS_CONFIG, mode3_config_t, xram_palette_ptr, $FFFF
+          xreg_vga_canvas 1
+          xreg_vga_mode 3, 2, XRAM_CANVAS_CONFIG
+          xreg_ria_mouse XRAM_MOUSE
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+          xram0_set16 XRAM_CANVAS_CONFIG + MODE3_CONFIG_WIDTH_PX, 320
+          xram0_set16 XRAM_CANVAS_CONFIG + MODE3_CONFIG_HEIGHT_PX, 240
+          xram0_set16 XRAM_CANVAS_CONFIG + MODE3_CONFIG_XRAM_DATA_PTR, XRAM_CANVAS_DATA
+          xram0_set16 XRAM_CANVAS_CONFIG + MODE3_CONFIG_XRAM_PALETTE_PTR, $FFFF
+          xreg_vga_canvas 1
+          xreg_vga_mode 3, 2, XRAM_CANVAS_CONFIG
+          xreg_ria_mouse XRAM_MOUSE
+
+Addresses in CMake
+------------------
 
 ``rp6502_xram()`` reads the header and gives CMake the same names, so an
 asset loads exactly where your program looks for it.
@@ -228,6 +360,12 @@ its names. Each name is an ordinary CMake variable too, so
 Editing the header configures your project again, so these addresses can
 never go stale. A layout too big for the 64K of XRAM stops the build.
 
+``rp6502_xram()`` reads C only. An assembly project gives ``rp6502_asset()``
+the address as a number, such as ``0x10000`` plus the offset, or sets a
+CMake variable to it. llvm-mos does not search the directory of the including
+file for ``.include``, so add that directory with
+``target_include_directories``.
+
 Alignment
 ---------
 
@@ -247,6 +385,24 @@ and tablet blocks draw the same picture at any address, so the check is
 advice there rather than a rule — take it anyway, and fix an odd one by
 putting the odd-sized members last or by giving one a padding byte. Name
 whatever has to stay odd with the third argument and it is left unchecked.
+
+The 64 bytes of the PSG must also stay within one page, and the OPL2
+registers must start on a page. In assembly, the checks are yours to write,
+as in the layout above.
+
+Loading at Run Time
+-------------------
+
+An asset can also be read into XRAM while your program runs, from a named
+asset or any other file.
+
+.. code-block:: C
+
+  int fd = open("ROM:logo", O_RDONLY);
+  read_xram(XRAM_CANVAS_DATA, 320U * 240 / 2, fd);
+  close(fd);
+
+See `READ_XRAM <os.html#read-xram>`__.
 
 
 Linker Configuration
@@ -278,16 +434,6 @@ with all the assets you specified.
 Each takes an address, which may be a literal like ``0x200``, the word
 ``file`` to read it out of the linker output, or the word ``default`` to
 take whatever convention your compiler uses.
-
-When you outgrow the stock layout, give the linker a configuration of
-your own.
-
-.. code-block:: cmake
-
-  # cc65:
-  target_link_options(hello PRIVATE -C ${CMAKE_SOURCE_DIR}/src/hello.cfg)
-  # llvm-mos:
-  target_link_options(hello PRIVATE -T ${CMAKE_SOURCE_DIR}/src/hello.cfg)
 
 
 Multiple Compiler Artifacts

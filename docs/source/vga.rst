@@ -68,22 +68,61 @@ the name, alpha here is a binary flag, not a blending factor. The
 built-in ANSI palette has the alpha bit set on every color except color
 0 (black), which is transparent.
 
-.. code-block:: C
+.. tab:: C
 
-  #define COLOR_FROM_RGB8(r,g,b) (((b>>3)<<11)|((g>>3)<<6)|(r>>3))
-  #define COLOR_FROM_RGB5(r,g,b) ((b<<11)|(g<<6)|(r))
-  #define COLOR_ALPHA_MASK (1u<<5)
+   .. code-block:: C
 
-A palette is just an array. The 8bpp, 4bpp, and 1bpp modes use one;
+      #define COLOR_FROM_RGB8(r, g, b) \
+          ((((unsigned)(b) >> 3) << 11) | (((unsigned)(g) >> 3) << 6) | ((unsigned)(r) >> 3))
+      #define COLOR_FROM_RGB5(r, g, b) \
+          (((unsigned)(b) << 11) | ((unsigned)(g) << 6) | (unsigned)(r))
+      #define COLOR_ALPHA_MASK (1u << 5)
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+      COLOR_ALPHA_MASK = 1 << 5
+
+      .macro COLOR_FROM_RGB8 r, g, b, alpha
+        .ifblank alpha
+          .word (((b) >> 3) << 11) | (((g) >> 3) << 6) | ((r) >> 3)
+        .else
+          .word (((b) >> 3) << 11) | (((g) >> 3) << 6) | ((r) >> 3) | (alpha)
+        .endif
+      .endmacro
+
+      .macro COLOR_FROM_RGB5 r, g, b, alpha
+        .ifblank alpha
+          .word ((b) << 11) | ((g) << 6) | (r)
+        .else
+          .word ((b) << 11) | ((g) << 6) | (r) | (alpha)
+        .endif
+      .endmacro
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      COLOR_ALPHA_MASK = 1 << 5
+
+      .macro COLOR_FROM_RGB8 r, g, b, alpha=0
+          .word ((((\b) >> 3) << 11) | (((\g) >> 3) << 6) | ((\r) >> 3) | (\alpha))
+      .endm
+
+      .macro COLOR_FROM_RGB5 r, g, b, alpha=0
+          .word (((\b) << 11) | ((\g) << 6) | (\r) | (\alpha))
+      .endm
+
+A palette is just an array. The 8bpp, 4bpp, 2bpp, and 1bpp modes use one;
 16-bit-per-pixel modes aren't indexed and ignore the palette entirely.
 Palettes must be 16-bit aligned; an odd one falls back to the built-in
 table.
 
 .. code-block:: C
 
-  struct {
-      uint16_t color;
-  } palette[2^bits_per_pixel];
+  uint16_t palette[1 << bits_per_pixel];
 
 You program the VGA device with `PIX extended registers
 <ria.html#pix-extended-registers-xreg>`__ (XREGs). VGA is PIX device
@@ -99,6 +138,41 @@ ID 1. Registers are 16-bit values addressed as $device:$channel:register
     // its config registers at XRAM $FF00.
     result = xreg(1, 0, 1, 3, 2, 0xFF00); // or
     result = xreg_vga_mode(3, 2, 0xFF00);
+
+The shortcut macros go in your ``xram.h`` or ``xram.inc``.
+
+.. tab:: C
+   :new-set:
+
+   .. code-block:: C
+
+      #define xreg_vga_canvas(...) xreg(1, 0, 0, __VA_ARGS__)
+      #define xreg_vga_mode(...) xreg(1, 0, 1, __VA_ARGS__)
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+      .macro xreg_vga_canvas canvas
+          xreg_call 1, 0, 0, canvas
+      .endmacro
+
+      .macro xreg_vga_mode w0, w1, w2, w3, w4, w5, w6, w7
+          xreg_call 1, 0, 1, w0, w1, w2, w3, w4, w5, w6, w7
+      .endmacro
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      .macro xreg_vga_canvas canvas
+          xreg_call 1, 0, 0, \canvas
+      .endm
+
+      .macro xreg_vga_mode words:vararg
+          xreg_call 1, 0, 1, \words
+      .endm
 
 Key Registers
 -------------
@@ -196,7 +270,7 @@ glyphs change color.
        | bit 3 - font size 0=8x8, 1=8x16
    * - $1:0:03
      - CONFIG
-     - Address of config structure in XRAM.
+     - Address of config structure in XRAM. Must be even.
    * - $1:0:04
      - PLANE
      - 0-2 to select which fill plane of scanlines to program.
@@ -210,63 +284,158 @@ glyphs change color.
 
 Config structure may be updated without reprogramming scanlines.
 
-.. code-block:: C
+.. tab:: C
 
-  typedef struct {
-      bool x_wrap;
-      bool y_wrap;
-      int16_t x_px;
-      int16_t y_px;
-      int16_t width_chars;
-      int16_t height_chars;
-      uint16_t data_ptr;
-      uint16_t palette_ptr;
-      uint16_t font_ptr;
-  } vga_mode1_config_t;
+   .. code-block:: C
 
-Data is encoded based on the color bit depth selected.
+      typedef struct
+      {
+          bool x_wrap;
+          bool y_wrap;
+          int16_t x_pos_px;
+          int16_t y_pos_px;
+          int16_t width_chars;
+          int16_t height_chars;
+          uint16_t xram_data_ptr;
+          uint16_t xram_palette_ptr;
+          uint16_t xram_font_ptr;
+      } mode1_config_t;
 
-.. code-block:: C
+      typedef struct
+      {
+          uint8_t glyph_code;
+      } mode1_1bpp_data_t;
 
-  // 2-color, 1-bit
-  struct {
-      uint8_t glyph_code;
-  } data[width_chars * height_chars];
+      typedef struct
+      {
+          uint8_t glyph_code;
+          uint8_t fg_bg_index;
+      } mode1_4bppr_data_t;
 
-.. code-block:: C
+      typedef struct
+      {
+          uint8_t glyph_code;
+          uint8_t bg_fg_index;
+      } mode1_4bpp_data_t;
 
-  // 16-color reversed index, 4-bit
-  struct {
-      uint8_t glyph_code;
-      uint8_t fg_bg_index;
-  } data[width_chars * height_chars];
+      typedef struct
+      {
+          uint8_t glyph_code;
+          uint8_t fg_index;
+          uint8_t bg_index;
+      } mode1_8bpp_data_t;
 
-.. code-block:: C
+      typedef struct
+      {
+          uint8_t glyph_code;
+          uint8_t attributes;
+          uint16_t fg_color;
+          uint16_t bg_color;
+      } mode1_16bpp_data_t;
 
-  // 16-color, 4-bit
-  struct {
-      uint8_t glyph_code;
-      uint8_t bg_fg_index;
-  } data[width_chars * height_chars];
+      #define MODE1_FG_BG(fg, bg) ((uint8_t)(((fg) << 4) | (bg)))
+      #define MODE1_BG_FG(bg, fg) ((uint8_t)(((bg) << 4) | (fg)))
 
-.. code-block:: C
+.. tab:: ca65
 
-  // 256-color, 8-bit
-  struct {
-      uint8_t glyph_code;
-      uint8_t fg_index;
-      uint8_t bg_index;
-  } data[width_chars * height_chars];
+   .. code-block:: ca65
 
-.. code-block:: C
+      .struct mode1_config_t
+          x_wrap           .byte
+          y_wrap           .byte
+          x_pos_px         .word
+          y_pos_px         .word
+          width_chars      .word
+          height_chars     .word
+          xram_data_ptr    .word
+          xram_palette_ptr .word
+          xram_font_ptr    .word
+      .endstruct
 
-  // 32768-color, 16-bit (no palette)
-  struct {
-      uint8_t glyph_code;
-      uint8_t attributes; // user defined, ignored by VGA
-      uint16_t fg_color;
-      uint16_t bg_color;
-  } data[width_chars * height_chars];
+      .struct mode1_1bpp_data_t
+          glyph_code .byte
+      .endstruct
+
+      .struct mode1_4bppr_data_t
+          glyph_code  .byte
+          fg_bg_index .byte
+      .endstruct
+
+      .struct mode1_4bpp_data_t
+          glyph_code  .byte
+          bg_fg_index .byte
+      .endstruct
+
+      .struct mode1_8bpp_data_t
+          glyph_code .byte
+          fg_index   .byte
+          bg_index   .byte
+      .endstruct
+
+      .struct mode1_16bpp_data_t
+          glyph_code .byte
+          attributes .byte
+          fg_color   .word
+          bg_color   .word
+      .endstruct
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      MODE1_CONFIG_X_WRAP           = 0
+      MODE1_CONFIG_Y_WRAP           = 1
+      MODE1_CONFIG_X_POS_PX         = 2
+      MODE1_CONFIG_Y_POS_PX         = 4
+      MODE1_CONFIG_WIDTH_CHARS      = 6
+      MODE1_CONFIG_HEIGHT_CHARS     = 8
+      MODE1_CONFIG_XRAM_DATA_PTR    = 10
+      MODE1_CONFIG_XRAM_PALETTE_PTR = 12
+      MODE1_CONFIG_XRAM_FONT_PTR    = 14
+      MODE1_CONFIG_SIZE             = 16
+
+      MODE1_1BPP_DATA_GLYPH_CODE = 0
+      MODE1_1BPP_DATA_SIZE       = 1
+
+      MODE1_4BPPR_DATA_GLYPH_CODE  = 0
+      MODE1_4BPPR_DATA_FG_BG_INDEX = 1
+      MODE1_4BPPR_DATA_SIZE        = 2
+
+      MODE1_4BPP_DATA_GLYPH_CODE  = 0
+      MODE1_4BPP_DATA_BG_FG_INDEX = 1
+      MODE1_4BPP_DATA_SIZE        = 2
+
+      MODE1_8BPP_DATA_GLYPH_CODE = 0
+      MODE1_8BPP_DATA_FG_INDEX   = 1
+      MODE1_8BPP_DATA_BG_INDEX   = 2
+      MODE1_8BPP_DATA_SIZE       = 3
+
+      MODE1_16BPP_DATA_GLYPH_CODE = 0
+      MODE1_16BPP_DATA_ATTRIBUTES = 1
+      MODE1_16BPP_DATA_FG_COLOR   = 2
+      MODE1_16BPP_DATA_BG_COLOR   = 4
+      MODE1_16BPP_DATA_SIZE       = 6
+
+Data is an array of cells, width_chars * height_chars long, encoded based
+on the color bit depth selected.
+
+.. list-table::
+   :widths: 30 70
+   :header-rows: 1
+
+   * - Colors
+     - Cell
+   * - 2-color, 1-bit
+     - ``mode1_1bpp_data_t``
+   * - 16-color reversed index, 4-bit
+     - ``mode1_4bppr_data_t``
+   * - 16-color, 4-bit
+     - ``mode1_4bpp_data_t``
+   * - 256-color, 8-bit
+     - ``mode1_8bpp_data_t``
+   * - 32768-color, 16-bit (no palette)
+     - ``mode1_16bpp_data_t``, attributes are user defined and ignored by VGA
 
 Fonts are encoded in a wide format: the first 256 bytes hold the first
 row of all 256 glyphs, the next 256 bytes the second row, and so on.
@@ -305,7 +474,7 @@ is repeated across a large map.
        | bit 8:11 - Y trim, rows dropped off the tile bottom (0-15)
    * - $1:0:03
      - CONFIG
-     - Address of config structure in XRAM.
+     - Address of config structure in XRAM. Must be even.
    * - $1:0:04
      - PLANE
      - 0-2 to select which fill plane of scanlines to program.
@@ -319,19 +488,54 @@ is repeated across a large map.
 
 Config structure may be updated without reprogramming scanlines.
 
-.. code-block:: C
+.. tab:: C
 
-  typedef struct {
-      bool x_wrap;
-      bool y_wrap;
-      int16_t x_px;
-      int16_t y_px;
-      int16_t width_tiles;
-      int16_t height_tiles;
-      uint16_t data_ptr;
-      uint16_t palette_ptr;
-      uint16_t tile_ptr;
-  } vga_mode2_config_t;
+   .. code-block:: C
+
+      typedef struct
+      {
+          bool x_wrap;
+          bool y_wrap;
+          int16_t x_pos_px;
+          int16_t y_pos_px;
+          int16_t width_tiles;
+          int16_t height_tiles;
+          uint16_t xram_data_ptr;
+          uint16_t xram_palette_ptr;
+          uint16_t xram_tile_ptr;
+      } mode2_config_t;
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+      .struct mode2_config_t
+          x_wrap           .byte
+          y_wrap           .byte
+          x_pos_px         .word
+          y_pos_px         .word
+          width_tiles      .word
+          height_tiles     .word
+          xram_data_ptr    .word
+          xram_palette_ptr .word
+          xram_tile_ptr    .word
+      .endstruct
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      MODE2_CONFIG_X_WRAP           = 0
+      MODE2_CONFIG_Y_WRAP           = 1
+      MODE2_CONFIG_X_POS_PX         = 2
+      MODE2_CONFIG_Y_POS_PX         = 4
+      MODE2_CONFIG_WIDTH_TILES      = 6
+      MODE2_CONFIG_HEIGHT_TILES     = 8
+      MODE2_CONFIG_XRAM_DATA_PTR    = 10
+      MODE2_CONFIG_XRAM_PALETTE_PTR = 12
+      MODE2_CONFIG_XRAM_TILE_PTR    = 14
+      MODE2_CONFIG_SIZE             = 16
 
 The data is a matrix of tile IDs, with 0,0 at the top left.
 
@@ -388,7 +592,7 @@ or 256 colors at 320x180 (16:9).
        | bit 3 - reverse bit order
    * - $1:0:03
      - CONFIG
-     - Address of config structure in XRAM.
+     - Address of config structure in XRAM. Must be even.
    * - $1:0:04
      - PLANE
      - 0-2 to select which fill plane of scanlines to program.
@@ -402,26 +606,59 @@ or 256 colors at 320x180 (16:9).
 
 Config structure may be updated without reprogramming scanlines.
 
-.. code-block:: C
+.. tab:: C
 
-  typedef struct {
-      bool x_wrap;
-      bool y_wrap;
-      int16_t x_px;
-      int16_t y_px;
-      int16_t width_px;
-      int16_t height_px;
-      uint16_t data_ptr;
-      uint16_t palette_ptr;
-  } vga_mode3_config_t;
+   .. code-block:: C
+
+      typedef struct
+      {
+          bool x_wrap;
+          bool y_wrap;
+          int16_t x_pos_px;
+          int16_t y_pos_px;
+          int16_t width_px;
+          int16_t height_px;
+          uint16_t xram_data_ptr;
+          uint16_t xram_palette_ptr;
+      } mode3_config_t;
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+      .struct mode3_config_t
+          x_wrap           .byte
+          y_wrap           .byte
+          x_pos_px         .word
+          y_pos_px         .word
+          width_px         .word
+          height_px        .word
+          xram_data_ptr    .word
+          xram_palette_ptr .word
+      .endstruct
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      MODE3_CONFIG_X_WRAP           = 0
+      MODE3_CONFIG_Y_WRAP           = 1
+      MODE3_CONFIG_X_POS_PX         = 2
+      MODE3_CONFIG_Y_POS_PX         = 4
+      MODE3_CONFIG_WIDTH_PX         = 6
+      MODE3_CONFIG_HEIGHT_PX        = 8
+      MODE3_CONFIG_XRAM_DATA_PTR    = 10
+      MODE3_CONFIG_XRAM_PALETTE_PTR = 12
+      MODE3_CONFIG_SIZE             = 14
 
 The data is color information packed down to the bit level. 16-bit color
-encodes the color directly; 1-, 4-, and 8-bit color encode a palette
+encodes the color directly; 1-, 2-, 4-, and 8-bit color encode a palette
 index instead.
 
 Bit order traditionally follows the screen, so that left and right bit
 shifts move pixels the way you'd expect. The reverse-bits option flips
-the bit order of the 1- and 4-bit modes, which makes bit-level
+the bit order of the 1-, 2- and 4-bit modes, which makes bit-level
 manipulation code slightly smaller and faster.
 
 
@@ -457,7 +694,7 @@ affine transforms.
      - | bit 0 - affine
    * - $1:0:03
      - CONFIG
-     - | Address of config array in XRAM.
+     - | Address of config array in XRAM. Must be even.
    * - $1:0:04
      - LENGTH
      - Length of config array in XRAM.
@@ -472,34 +709,114 @@ affine transforms.
      - End of scanlines to program. 0 means use canvas height
        (180-480).
 
-Move unused sprites off screen. Non-affine sprites use this config
-structure:
+Move unused sprites off screen. Non-affine sprites use
+``mode4_sprite_t`` and affine sprites use ``mode4_asprite_t``.
 
-.. code-block:: C
+.. tab:: C
 
-  typedef struct {
-    int16_t x_pos_px;
-    int16_t y_pos_px;
-    uint16_t xram_sprite_ptr;
-    uint8_t log_size;
-    bool has_opacity_metadata;
-  } vga_mode4_sprite_t;
+   .. code-block:: C
+
+      typedef struct
+      {
+          int16_t x_pos_px;
+          int16_t y_pos_px;
+          uint16_t xram_sprite_ptr;
+          uint8_t log_size;
+          bool has_opacity_metadata;
+      } mode4_sprite_t;
+
+      typedef struct
+      {
+          int16_t transform[6];
+          int16_t x_pos_px;
+          int16_t y_pos_px;
+          uint16_t xram_sprite_ptr;
+          uint8_t log_size;
+          bool has_opacity_metadata;
+      } mode4_asprite_t;
+
+      #define MODE4_AFFINE_A00 0
+      #define MODE4_AFFINE_A01 1
+      #define MODE4_AFFINE_B0 2
+      #define MODE4_AFFINE_A10 3
+      #define MODE4_AFFINE_A11 4
+      #define MODE4_AFFINE_B1 5
+      #define MODE4_AFFINE_ONE 0x0100
+
+      #define MODE4_SPAN(start, end, solid)            \
+          (((solid) ? 0x80000000ul : 0ul) |            \
+           ((unsigned long)(start) << 16) | (unsigned)(end))
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+      .struct mode4_sprite_t
+          x_pos_px             .word
+          y_pos_px             .word
+          xram_sprite_ptr      .word
+          log_size             .byte
+          has_opacity_metadata .byte
+      .endstruct
+
+      .struct mode4_asprite_t
+          transform            .word 6
+          x_pos_px             .word
+          y_pos_px             .word
+          xram_sprite_ptr      .word
+          log_size             .byte
+          has_opacity_metadata .byte
+      .endstruct
+
+      MODE4_AFFINE_A00 = 0
+      MODE4_AFFINE_A01 = 1
+      MODE4_AFFINE_B0  = 2
+      MODE4_AFFINE_A10 = 3
+      MODE4_AFFINE_A11 = 4
+      MODE4_AFFINE_B1  = 5
+      MODE4_AFFINE_ONE = $0100
+
+      .macro MODE4_SPAN start, end, solid
+          .dword ((solid) << 31) | ((start) << 16) | (end)
+      .endmacro
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      MODE4_SPRITE_X_POS_PX             = 0
+      MODE4_SPRITE_Y_POS_PX             = 2
+      MODE4_SPRITE_XRAM_SPRITE_PTR      = 4
+      MODE4_SPRITE_LOG_SIZE             = 6
+      MODE4_SPRITE_HAS_OPACITY_METADATA = 7
+      MODE4_SPRITE_SIZE                 = 8
+
+      MODE4_ASPRITE_TRANSFORM            = 0
+      MODE4_ASPRITE_X_POS_PX             = 12
+      MODE4_ASPRITE_Y_POS_PX             = 14
+      MODE4_ASPRITE_XRAM_SPRITE_PTR      = 16
+      MODE4_ASPRITE_LOG_SIZE             = 18
+      MODE4_ASPRITE_HAS_OPACITY_METADATA = 19
+      MODE4_ASPRITE_SIZE                 = 20
+
+      MODE4_AFFINE_A00 = 0
+      MODE4_AFFINE_A01 = 1
+      MODE4_AFFINE_B0  = 2
+      MODE4_AFFINE_A10 = 3
+      MODE4_AFFINE_A11 = 4
+      MODE4_AFFINE_B1  = 5
+      MODE4_AFFINE_ONE = $0100
+
+      .macro MODE4_SPAN start, end, solid
+          .4byte (((\solid) << 31) | ((\start) << 16) | (\end))
+      .endm
 
 Affine sprites apply a 3x3 matrix transform, which makes them slower
 than plain sprites. Only the first two rows of the matrix matter —
 that's why there are just six transform values — and they're in signed
-8.8 fixed-point format.
-
-.. code-block:: C
-
-  typedef struct {
-    int16_t transform[6];
-    int16_t x_pos_px;
-    int16_t y_pos_px;
-    uint16_t xram_sprite_ptr;
-    uint8_t log_size;
-    bool has_opacity_metadata;
-  } vga_mode4_asprite_t;
+8.8 fixed-point format, in the order {a00, a01, b0, a10, a11, b1}. The
+matrix maps a screen position in the sprite to a position in the image.
 
 
 Sprite image data is an array of 16-bit colors. A sprite is a square of
@@ -510,9 +827,16 @@ describes a square too large for XRAM and draws nothing.
 
   struct {
     struct {
-        uint16_t color[2^log_size];
-    } rows[2^log_size];
+        uint16_t color[1 << log_size];
+    } rows[1 << log_size];
   } data;
+
+When ``has_opacity_metadata`` is set, the image is followed by one
+little-endian 32-bit value per row. Bits 15-0 are the end of the row's
+opaque span (exclusive) and bits 30-16 are its start. Bit 31 marks the span
+as solid, which draws it without checking each color's alpha bit.
+``MODE4_SPAN`` builds a value. Affine sprites do not use the metadata, but
+its bytes still count toward the size of the sprite.
 
 
 Mode 5: Sprite 1,2,4,8-bit
@@ -542,7 +866,7 @@ bullets on the third.
        | 512x512 only supports 1-bit and 2-bit color.
    * - $1:0:03
      - CONFIG
-     - | Address of config array in XRAM.
+     - | Address of config array in XRAM. Must be even.
    * - $1:0:04
      - LENGTH
      - Length of config array in XRAM.
@@ -559,14 +883,39 @@ bullets on the third.
 
 Disable unused sprites by moving them off screen.
 
-.. code-block:: C
+.. tab:: C
 
-  typedef struct {
-    int16_t x_pos_px;
-    int16_t y_pos_px;
-    uint16_t xram_sprite_ptr;
-    uint16_t palette_ptr;
-  } vga_mode5_sprite_t;
+   .. code-block:: C
+
+      typedef struct
+      {
+          int16_t x_pos_px;
+          int16_t y_pos_px;
+          uint16_t xram_sprite_ptr;
+          uint16_t palette_ptr;
+      } mode5_sprite_t;
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+      .struct mode5_sprite_t
+          x_pos_px        .word
+          y_pos_px        .word
+          xram_sprite_ptr .word
+          palette_ptr     .word
+      .endstruct
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      MODE5_SPRITE_X_POS_PX        = 0
+      MODE5_SPRITE_Y_POS_PX        = 2
+      MODE5_SPRITE_XRAM_SPRITE_PTR = 4
+      MODE5_SPRITE_PALETTE_PTR     = 6
+      MODE5_SPRITE_SIZE            = 8
 
 Sprite image data uses the same format as individual mode 2 tiles.
 

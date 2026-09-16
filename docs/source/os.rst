@@ -56,6 +56,9 @@ chip-select logic to use it: add more VIAs downward and other hardware
 upward — for example, VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and
 SID1 at $FF20.
 
+Your program's own layout of RAM and XRAM is set up in the SDK's `Memory
+Map <sdk.html#memory-map>`__.
+
 
 Application Binary Interface
 ============================
