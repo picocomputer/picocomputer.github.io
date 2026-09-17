@@ -79,8 +79,8 @@ treat it like any other telnet session.
      - The passkey required to connect. ``-`` clears it.
 
 The telnet console starts listening once ``KEY`` is set and ``PORT`` is
-non-zero — both, because a console on the open network with no passkey
-is not a feature.
+non-zero. Both are required, because a console on the open network with
+no passkey is not a feature.
 
 
 Modem Emulation
@@ -126,7 +126,7 @@ lists supported country codes). Lists word-wrap to 80 columns.
 
 The modem is available as a set of special device names:
 
-- ``AT:`` is transient — it starts from factory defaults, has no
+- ``AT:`` is transient. It starts from factory defaults, has no
   phonebook, and ``AT&W`` has nothing to save.
 - ``AT0:`` through ``AT9:`` are ten independent profiles, each with its
   own flash-backed settings and four-slot phonebook (``AT&Z0``-``AT&Z3``).
@@ -150,11 +150,11 @@ Bluetooth
 The RP6502-RIA-W supports Bluetooth LE (BLE) keyboards, mice, and
 gamepads. Bluetooth Classic (BR/EDR) is not supported. BLE has been
 everywhere since Bluetooth 4.0 (June 2010), so compatible devices are
-easy to find — though the occasional oddball still turns up.
+easy to find, though the occasional oddball still turns up.
 
 To add a device, run the monitor command ``set ble 2`` to enter pairing
 mode; the LED on the RP6502-RIA-W blinks while it's pairing. Put your
-device into its own pairing mode too — check its manual, but it's
+device into its own pairing mode too. Check its manual, but it's
 probably a button and some more blinking. When the blinking stops, the
 device is connected and bonded, so it reconnects automatically from then
 on.

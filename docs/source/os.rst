@@ -28,7 +28,7 @@ filesystems.
 Memory Map
 ==========
 
-There is no ROM, and nothing in zero page is used or reserved — the
+There is no ROM, and nothing in zero page is used or reserved. The
 Picocomputer starts every project as a clean slate. VGA, audio, storage,
 keyboards, mice, gamepads, the RTC, and networking are all reached
 through just the 32 registers of the RIA.
@@ -52,8 +52,8 @@ through just the 32 registers of the RIA.
      - XRAM, 64 KB for :doc:`ria` and :doc:`vga`
 
 The unassigned space is open for hardware experimenters. Design your own
-chip-select logic to use it: add more VIAs downward and other hardware
-upward — for example, VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and
+chip-select logic to use it. Add more VIAs downward and other hardware
+upward, for example VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and
 SID1 at $FF20.
 
 Your program's own layout of RAM and XRAM is set up in the SDK's
@@ -71,7 +71,7 @@ Application Binary Interface
 The ABI for calling the operating system is based on fastcall from the
 `cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The OS
 itself uses nothing from cc65, so assembly reaches it the same way C
-does — the compiler is a convenience here, not a dependency.
+does. The compiler is a convenience here, not a dependency.
 
 At its core, the ABI is four rules:
 
@@ -96,9 +96,9 @@ pushes them. It's a top-down stack, so push each argument left to right,
 keeping little-endian byte order.
 
 To execute the call, store the operation ID in ``RIA_OP``; the operation
-begins immediately. You can keep the 6502 busy with other work — a
-loading animation, say — by polling ``RIA_BUSY``, or just JSR to
-``RIA_SPIN`` to block until it's done.
+begins immediately. You can keep the 6502 busy with other work, such as a
+loading animation, by polling ``RIA_BUSY``, or just JSR to ``RIA_SPIN``
+to block until it's done.
 
 ``JSR RIA_SPIN`` can unblock within 3 clock cycles and loads A and X for
 you. Sequential operations run fastest this way. Under the hood, you're
@@ -131,7 +131,7 @@ return values. ``RIA_SREG`` is updated only for 32-bit returns, and
 Some operations return strings or structures on the stack. Pull the
 entire stack before the next call or use
 ``zxstack()`` to abandon the stack in O(1) time without a loop.
-Tail-call optimizations are still possible, though — you can chain
+Tail-call optimizations are still possible, though. You can chain
 `read_xstack() <READ_XSTACK_>`_ and `write_xstack() <WRITE_XSTACK_>`_ to
 copy a file without touching any RAM or XRAM.
 
@@ -173,7 +173,7 @@ Bulk Data
 
 Functions that move bulk data come in two flavors, depending on where
 the data lives. A RAM pointer means nothing to the RIA, since it can't
-touch 6502 RAM — so bulk data moves through the XSTACK or XRAM instead.
+touch 6502 RAM, so bulk data moves through the XSTACK or XRAM instead.
 
 Bulk XSTACK Operations
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -231,7 +231,7 @@ XRAM memory through ``RIA_RW0`` or ``RIA_RW1``.
 
 These operations stand out for their speed and for running in the
 background while the 6502 does other work. Depending on the request size,
-expect up to 800 KB/sec — a full 64 KB of XRAM loads or saves multiple times
+expect up to 800 KB/sec. A full 64 KB of XRAM loads or saves multiple times
 per second with no wait states or 6502 work.
 
 Bulk XRAM operations are why the Picocomputer 6502 has no paged memory.
@@ -253,7 +253,7 @@ clear once you're in assembly, fine-tuning short stacking and integer
 demotion — shrinking a return value to fit in fewer registers. In C you
 may never notice, because the standard library wraps these calls in
 familiar prototypes. The ``f_lseek()`` below, for instance, reorders its
-arguments to put the long one in position for short stacking — but you
+arguments to put the long one in position for short stacking, but you
 don't have to call ``f_lseek()`` from C. You can call the usual
 ``lseek()``, which keeps the traditional argument order.
 
@@ -525,8 +525,8 @@ STRFTIME
    abandons an oversized result with `ZXSTACK`_.
 
    ``%a %A %b %B %c %p %r %x %X`` follow the configured locale and
-   ``%z %Z`` the configured time zone — ``SET LOC`` and ``SET TZ`` on an
-   :doc:`pico`.
+   ``%z %Z`` the configured time zone. Set both with ``SET LOC`` and
+   ``SET TZ`` on an :doc:`pico`.
    The format and result are code page text. ``%E`` and ``%O``
    modifiers are ignored.
 
@@ -1243,7 +1243,7 @@ EXIT
    and is readable via ``RIA_ATTR_EXIT_CODE``.
 
    Dropping the user out of your program is generally discouraged, but
-   calling exit() — or falling off the end of main() — beats locking up.
+   calling exit() beats locking up, as does falling off the end of main().
 
    :Op code: RIA_OP_EXIT 0xFF
    :C proto: stdlib.h
@@ -1269,13 +1269,13 @@ passing arguments to the new ROM through argv. The launched ROM reads those
 arguments back with `ARGV`_.
 
 Two keystrokes stop a running ROM. Ctrl-Alt-Del stops it and clears the
-launcher registration at any time, always returning you to the machine —
-handy for system maintenance. Alt-F4 stops the running ROM and returns to
-the launcher, or to the machine if the ROM was run from there. Pressing
-Alt-F4 while the registered launcher ROM is itself running does nothing; it
-won't stop it. That makes Alt-F4 the keystroke for ending a ROM while
-staying inside your preferred launcher framework, and Ctrl-Alt-Del the one
-for breaking all the way back out.
+launcher registration at any time, always returning you to the machine,
+which is handy for system maintenance. Alt-F4 stops the running ROM and
+returns to the launcher, or to the machine if the ROM was run from there.
+Pressing Alt-F4 while the registered launcher ROM is itself running does
+nothing; it won't stop it. That makes Alt-F4 the keystroke for ending a
+ROM while staying inside your preferred launcher framework, and
+Ctrl-Alt-Del the one for breaking all the way back out.
 
 ROM Cartridge Menu
 ------------------
@@ -1289,7 +1289,7 @@ lands back on the menu.
 
 No manual reset is needed between runs. Each ROM is a self-contained binary
 that knows nothing about the menu. The launcher can supply context through
-argv — a save-file path or difficulty setting, say — and the ROM just calls
+argv, such as a save-file path or difficulty setting, and the ROM just calls
 `EXIT`_ when it's done.
 
 
@@ -1351,10 +1351,10 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
      - The exit code of the last ROM to exit.
    * - | 0x08
        | ``RIA_ATTR_SIGINT``
-     - Read-only Ctrl-C latch. Returns 1 if a Ctrl-C has been seen on
-       any terminal attached to the console manifold — including the
-       telnet Interrupt Process command — since the previous get;
-       returns 0 otherwise. Reading clears the latch. Same as RIA IRQ SIGINT.
+     - Read-only Ctrl-C latch. Returns 1 if a Ctrl-C has been seen since
+       the previous get on any terminal attached to the console manifold,
+       including the telnet Interrupt Process command; returns 0 otherwise.
+       Reading clears the latch. Same as RIA IRQ SIGINT.
    * - | 0x09
        | ``RIA_ATTR_RLN_CAPS``
      - Caps mode applied to keystrokes by the console line editor.

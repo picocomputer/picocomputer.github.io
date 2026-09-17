@@ -9,9 +9,9 @@ Introduction
 ============
 
 Picocomputer software is distributed as a ROM, one file ending in
-``.rp6502`` — the program, its assets, and the 6502 vectors in a single
-package — and the SDK builds one of those, puts it on a machine, and
-debugs it while it runs.
+``.rp6502`` that holds the program, its assets, and the 6502 vectors.
+The SDK builds one of those, puts it on a machine, and debugs it while
+it runs.
 
 The `RP6502 project template <https://github.com/picocomputer/rp6502-sdk>`__
 is scaffolding for a new Picocomputer 6502 program. It builds with either
@@ -183,7 +183,7 @@ device goes, and your program sets the device's XREG to that address.
 You keep that map in one file, ``xram.h`` for C or ``xram.inc`` for
 assembly. It holds the structure for each device you use and a layout that
 places them in XRAM, with a name for each address. The file changes as your
-program does: add a device's structure when you start using the device, and
+program does. Add a device's structure when you start using the device, and
 rearrange the layout as your data grows.
 
 The structures are in the :doc:`ria` and :doc:`vga` datasheets. Each one is
@@ -194,8 +194,8 @@ file.
 
 The structures are not part of ``rp6502.h`` or ``rp6502.inc``. Your program
 builds from your own copy, so a name that changes in the docs does not break
-your build. The ABI is stable: registers, offsets, and sizes stay the same.
-Only the names can change, and you can rename anything in your copy.
+your build. The ABI is stable, because registers, offsets, and sizes stay the
+same. Only the names can change, and you can rename anything in your copy.
 
 This example is for a program that uses only the keyboard. The keyboard
 definitions are the :ref:`Keyboard <ria-keyboard>` block from the
@@ -435,9 +435,9 @@ Alignment
 ---------
 
 Neither compiler pads a structure, so a member starts wherever the members
-before it end. The hardware that reads XRAM in 16-bit values needs an even
-address, and quietly ignores or refuses an odd one: mode configurations,
-palettes, and the PSG. Every address is checked, and an odd one stops the
+before it end. Mode configurations, palettes, and the PSG are read in 16-bit
+values, so they need an even address, and the hardware quietly ignores or
+refuses an odd one. Every address is checked, and an odd one stops the
 build.
 
 .. code-block:: text
@@ -447,7 +447,7 @@ build.
 
 Pixel data, fonts, tiles, sprite images, and the keyboard, mouse, gamepad
 and tablet blocks work the same at any address, so the check is advice
-there rather than a rule — take it anyway, and fix an odd one by putting
+there rather than a rule. Take it anyway, and fix an odd one by putting
 the odd-sized members last or by giving one a padding byte. Name whatever
 has to stay odd with the third argument and it is left unchecked.
 
@@ -515,8 +515,8 @@ CMake that building ``<target>`` produces additional files.
   rp6502_byproducts(<target> <file>...)
 
 Microsoft BASIC is a working example. Its image is three loads at three
-addresses with nothing contiguous between them — the ``CHRGET`` routine
-in zero page, the init code, and the interpreter — so its linker
+addresses with nothing contiguous between them. The ``CHRGET`` routine sits
+in zero page, then the init code, then the interpreter, so its linker
 configuration writes three files, each named off ``%O``.
 
 .. code-block:: text
@@ -639,9 +639,9 @@ Here is a whole program: an assembler's linked binary that loads at
   python3 tools/rp6502.py -a 0x0400 -r 0x0400 -o plvm.rp6502 \
       create plvm.bin help.rp6502 level1.rp6502 splash.rp6502
 
-That writes one ``plvm.rp6502`` holding three memory chunks — the code at
-``$0400``, the reset vector at ``$FFFC``, and the splash at ``$10000`` —
-and two named assets, ``help`` and ``level1``.
+That writes one ``plvm.rp6502`` holding three memory chunks and two named
+assets. The chunks are the code at ``$0400``, the reset vector at ``$FFFC``,
+and the splash at ``$10000``, and the assets are ``help`` and ``level1``.
 
 
 .. _sdk-rom-file-format:

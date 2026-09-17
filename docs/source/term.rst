@@ -37,7 +37,7 @@ information back.
 Size and Feature Detection
 --------------------------
 
-The monitor — and some ROMs, like MS-BASIC — send ANSI commands that
+The monitor and some ROMs, like MS-BASIC, send ANSI commands that
 terminals reply to, which is how they detect screen size and features.
 At the start of every cooked stdin read, the active terminal is queried
 with a Cursor Position Report (CPR) sequence.
@@ -110,10 +110,10 @@ possible. The hooks are :ref:`RLN_LASTKEY <os-rln-lastkey>`,
 The basic pattern:
 
 #. **Open the channel.** ``open("CON:", 0)`` returns a file descriptor.
-#. **Set the input cap** (optional): write ``RIA_ATTR_RLN_LENGTH``.
-   Different prompts — or different fields in a form — can use
+#. **Set the input cap** (optional). Write ``RIA_ATTR_RLN_LENGTH``.
+   Different prompts, or different fields in a form, can use
    different caps. The default is 254.
-#. **Pin the terminal size** (optional): write ``RIA_ATTR_RLN_WIDTH``
+#. **Pin the terminal size** (optional). Write ``RIA_ATTR_RLN_WIDTH``
    and ``RIA_ATTR_RLN_HEIGHT`` when the layout is built for a fixed
    canvas. See `Locking the Size`_.
 #. **Loop on ``read()``** until the line flushes.
@@ -129,11 +129,11 @@ The basic pattern:
      are echoed by the editor as if the user had typed them.
    * Optionally check for Ctrl-C via ``RIA_ATTR_SIGINT`` or the RIA SIGINT IRQ.
      To leave cooked input cleanly, poke ``\x03`` to print a visible
-     ``^C``, or poke ``\r`` or ``\n`` to flush silently — then wait for
+     ``^C``, or poke ``\r`` or ``\n`` to flush silently. Then wait for
      ``read()`` to return the line.
    * ``ria_rln_lastkey()`` reports the last keystroke and whether the
      editor consumed it as an editing action. When ``action == 0`` the
-     editor passed the key through — that is the application's chance
+     editor passed the key through. That is the application's chance
      to handle Tab, function keys, arrow keys for history or form
      navigation, and any other keys it wants to claim. Call ``ria_rln_peek()``
      to get the current input text and cursor position. Respond by
@@ -143,12 +143,12 @@ The basic pattern:
 #. **Read ``RIA_ATTR_RLN_WIDTH`` and ``RIA_ATTR_RLN_HEIGHT``** to obtain
    the dynamic size after the read line completes.
 
-Anything you can do by typing, you can do by poking. To pull the buffer
-out without the user pressing Enter — for example, when Tab should jump
-to the next field of a form — poke ``\r`` or ``\n``. The editor flushes through
-``read()`` like any other line, and the application can move on,
-entering the next field with a fresh ``read()`` and ``ria_rln_poke()``
-to restore its prior contents.
+Anything you can do by typing, you can do by poking. Poke ``\r`` or
+``\n`` to pull the buffer out without the user pressing Enter, for
+example when Tab should jump to the next field of a form. The editor
+flushes through ``read()`` like any other line, and the application can
+move on, entering the next field with a fresh ``read()`` and
+``ria_rln_poke()`` to restore its prior contents.
 
 
 Terminal
@@ -176,15 +176,15 @@ Behavior Notes
 
 **Blink and iCE colors.** SGR 5 / 6 (blink) sets the blink
 attribute and the renderer pulses the cell foreground at a fixed
-rate. The legacy ANSI.SYS / IBM-VGA behavior — where SGR 5 / 6
-brightens the background instead of blinking — is preserved as
+rate. The legacy ANSI.SYS / IBM-VGA behavior, where SGR 5 / 6
+brightens the background instead of blinking, is preserved as
 opt-in via ``CSI ?33h`` (iCE colors). This is the standard
 ANSI-art compatibility mode; off by default. Toggle off with
 ``CSI ?33l``.
 
 **Alternate screen buffer.** ``?47`` swaps only. ``?1047`` swaps
 and clears the alt buffer on exit. ``?1049`` is the modern app
-default — saves the cursor on entry, swaps, clears on entry, and
+default. It saves the cursor on entry, swaps, clears on entry, and
 restores the cursor on exit.
 
 **DEC Special Graphics.** A built-in line-drawing font (boxes,
@@ -336,7 +336,7 @@ The terminal keeps two character-set slots, named **G0** and
 **G1**. You load a font into each slot independently, then switch
 which slot is active at any time. This lets you mix regular text
 with the DEC line-drawing characters (boxes, dashes, arrows)
-without an escape sequence per character — load the line-drawing
+without an escape sequence per character. Load the line-drawing
 font into G1 once, then toggle between G0 and G1 as you go.
 
 **Load a font into a slot.** The byte after the sequence selects

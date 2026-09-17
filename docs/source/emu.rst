@@ -70,8 +70,8 @@ you may have it already.
   Requires a GPU with Direct3D 11. It isn't code signed, so SmartScreen
   warns on first launch; choose "More info" then "Run anyway".
 - **macOS** — drag ``rp6502-emu.app`` to Applications.
-  It isn't signed or notarized, so Gatekeeper blocks
-  the first launch — allow it under System Settings > Privacy & Security >
+  It isn't signed or notarized, so Gatekeeper blocks the first launch.
+  Allow it under System Settings > Privacy & Security >
   "Open Anyway", or ``xattr -dr com.apple.quarantine rp6502-emu.app``.
 - **Linux** — built on Ubuntu 22.04, so it needs glibc 2.35 or
   later plus the GL, X11, and ALSA runtime libraries.
@@ -229,7 +229,7 @@ Standard Streams
 A program's ``stdout`` and ``stderr`` both show on the VGA
 terminal, so someone at the screen sees an error even when the streams
 are redirected somewhere else. On the desktop hosts they also reach
-the process: ``stdout`` goes to the host's stdout and ``stderr`` to
+the process. ``stdout`` goes to the host's stdout and ``stderr`` to
 the host's stderr, so a console program written for the Picocomputer
 runs in a shell pipeline.
 

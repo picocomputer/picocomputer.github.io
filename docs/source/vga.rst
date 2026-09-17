@@ -237,8 +237,8 @@ The console can be rendered on any plane of a graphics canvas. ANSI color 0
 shows the image through it. The console can cover part of the canvas, but
 its scanline count must be a multiple of the font height. 640-pixel-wide
 canvases use an 8x16 font for 80 columns; 320-pixel-wide canvases use an
-8x8 font for 40 columns. Only one console can be visible at a time —
-programming another removes the previous one.
+8x8 font for 40 columns. Only one console can be visible at a time.
+Programming another removes the previous one.
 
 See :doc:`term` for the terminal protocol and escape sequences.
 
@@ -838,11 +838,10 @@ Program the mode by setting MODE and the registers after it in one call.
 Move unused sprites off the canvas.
 
 Affine sprites apply a 3x3 matrix transform, which makes them slower
-than plain sprites. Only the first two rows of the matrix matter —
-that's why there are just six transform values — and they're in signed
-8.8 fixed-point format, in the order {a00, a01, b0, a10, a11, b1}. The
-matrix maps a position within the sprite on the canvas to a position in
-the image.
+than plain sprites. Only the first two rows of the matrix matter, which is
+why there are just six transform values. They're in signed 8.8 fixed-point
+format, in the order {a00, a01, b0, a10, a11, b1}. The matrix maps a
+position within the sprite on the canvas to a position in the image.
 
 
 Sprite image data is an array of 16-bit colors. A sprite is a square of

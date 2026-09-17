@@ -5,7 +5,7 @@ RP6502-PICO
 RP6502 - Picocomputer 6502
 
 The Picocomputer 6502 is a homebrew computer you build yourself. You don't
-need to understand the electronics, and you don't even need to solder — but
+need to understand the electronics, and you don't even need to solder, but
 you will need to plug the eight ICs into their sockets.
 
 Every part is currently in production, and the Raspberry Pi Pico 2 is slated
@@ -98,7 +98,7 @@ Step 3. Order Assembly
 Skip this step if you want to solder it yourself.
 
 PCBWay assembles in quantities as low as one, using the boards from step 2.
-The result is a "board of sockets" — you install the ICs yourself later. Parts
+The result is a "board of sockets". You install the ICs yourself later. Parts
 availability is rarely a constraint; every component has multiple vendors.
 
 Download `the BOM, notes, and photos <_static/rp6502-revb-assembly.zip>`_.
@@ -112,7 +112,7 @@ Download `the BOM, notes, and photos <_static/rp6502-revb-assembly.zip>`_.
 
 Request assembly along with your PCB order and send the `BOM, notes, and photos
 <_static/rp6502-revb-assembly.zip>`_. There's no centroid file because there
-are no surface-mount parts. The default options work fine — let them source the
+are no surface-mount parts. The default options work fine. Let them source the
 parts and make substitutions.
 
 Expect a short delay while they quote the bill of materials, then pay and wait.
@@ -151,8 +151,8 @@ Download the `pico zip
 inside it.
 
 Every Picocomputer needs both Picos flashed with two different files. The VGA
-file is the same for everyone. The RIA file depends on which Pi Pico you have —
-use the "-w" if you have a Pi Pico 2 W.
+file is the same for everyone. The RIA file depends on which Pi Pico you have.
+Use the "-w" if you have a Pi Pico 2 W.
 
 To flash a Pi Pico, hold its BOOTSEL button while plugging it into a computer.
 The Pico 2 mounts as a storage device. Copy the RIA-W UF2 file to make a
@@ -195,7 +195,7 @@ deliberately minimal.
 The monitor runs on the console, so it is reachable from any terminal on
 the :ref:`console manifold <term-console-manifold>`.
 
-The monitor is documented here only by a few common commands — its
+The monitor is documented here only by a few common commands. Its
 built-in help is extensive and always current. Type ``help`` to get
 started, then dig into deep help like ``help set phi2``.
 
@@ -289,7 +289,7 @@ radial (disc) capacitors work just as well if you prefer them. Leads must fit
 0.8 mm plated holes spaced 10 mm apart. Any rating of 10 V or higher is fine;
 tolerance and temperature coefficient don't matter.
 
-Yes, 47 μF ceramic capacitors are pricey — but you only need two, and they
+Yes, 47 μF ceramic capacitors are pricey, but you only need two, and they
 never leak. Leads must fit 0.8 mm plated holes spaced 5 mm apart. Any rating of
 10 V or higher is fine; tolerance and temperature coefficient don't matter.
 

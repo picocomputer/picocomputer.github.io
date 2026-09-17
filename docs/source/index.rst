@@ -44,10 +44,10 @@ Why a Picocomputer
 
 Modern computers are astonishingly powerful, and that power creates
 distance. Write a few lines of code and you're immediately standing on
-top of millions of lines of software — enormous APIs, operating systems,
-frameworks, layers of abstraction. AI makes that distance greater still:
-you can ask a machine to produce something impressive without
-necessarily understanding what happened.
+top of millions of lines of software, from enormous APIs and operating
+systems to frameworks and layers of abstraction. AI makes that distance
+greater still. You can ask a machine to produce something impressive
+without necessarily understanding what happened.
 
 The Picocomputer goes the other way. It's simple enough to learn
 completely, and every layer under your program is documented on this site
@@ -106,7 +106,7 @@ You already have one. Games and applications are distributed as
 ``.rp6502`` ROM files, and every machine runs all of them.
 
 - :doc:`pico` — the one you build. 100% through-hole, no IC programmer,
-  and you don't even have to solder — but you will plug eight ICs into
+  and you don't even have to solder, but you will plug eight ICs into
   their sockets. Usually under $100 USD.
 - :doc:`emu` — the browser, Windows, macOS, Linux, Android, and
   RetroArch. Free, and where you start.
@@ -130,7 +130,7 @@ Read the Docs
 =============
 
 - :doc:`sdk`: writing software, from a new project to a running program.
-- :doc:`ria`: the register map and every device reached through it — the
+- :doc:`ria`: the register map and every device reached through it. The
   interface adapter, in the spirit of the classic CIA, VIA, and ACIA
   chips.
 - :doc:`ria_w`: setting up Wi-Fi, Bluetooth, telnet, and the Hayes modem.

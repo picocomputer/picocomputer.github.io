@@ -49,8 +49,8 @@ way.
 
 The :doc:`pico` is unique in that it hosts itself and therefore requires
 a way to terminate a halted or wedged 6502.
-To drop reset from high to low and return to the monitor — even from a
-crashed or halted 6502 — use any terminal on the
+To drop reset from high to low and return to the monitor, even from a
+crashed or halted 6502, use any terminal on the
 :ref:`console manifold <term-console-manifold>`:
 
 1. Press Ctrl-Alt-Del from a USB keyboard.
@@ -134,7 +134,7 @@ The 6502 sees the RIA as 32 bytes at $FFE0-$FFFF. The last six are the
    * - $FFF1
      - SPIN
      - Always $80 (the BRA opcode). JSR here (``RIA_SPIN``) to spin-wait
-       for an OS call: the CPU loops on this BRA until BUSY clears, then
+       for an OS call. The CPU loops on this BRA until BUSY clears, then
        falls through to LDA and LDX below.
    * - $FFF2
      - BUSY
@@ -181,7 +181,7 @@ UART
 
 The UART behind $FFE0-$FFE2 is reached directly through these registers,
 and the ready flags on bits 6-7 let you test with the BIT operator. Use
-these or the :doc:`os` stdio — but not both at once: driving the UART
+these or the :doc:`os` stdio, but not both at once. Driving the UART
 directly while a stdio OS function is in progress is undefined behavior.
 The line runs at 115200 bps, 8-bit words, no parity, 1 stop bit.
 
@@ -269,7 +269,7 @@ Pico, wide enough to move data as fast as the 6502 writes.
 Physical layer
 --------------
 
-The signals are PHI2 and PIX0-3. This is a double-data-rate bus: it
+The signals are PHI2 and PIX0-3. This is a double-data-rate bus. It
 shifts PIX0-3 left on both transitions of PHI2, so a 32-bit frame travels
 in just 4 PHI2 cycles. On an :doc:`pico` a PIO block decodes it, since
 PIO is essentially a shift register.
@@ -341,9 +341,9 @@ in XRAM.
   xreg_ria_keyboard(xaddr); // macro shortcut
 
 The RIA continuously updates XRAM with a bit array of USB HID keyboard
-keycodes — note these are HID keycodes, not PS/2 scancodes. Each keycode
-is one bit in the array: bit N is 1 while the key with HID keycode N is
-pressed. The first four keycodes are special:
+keycodes, which are not PS/2 scancodes. Each keycode is one bit in the
+array: bit N is 1 while the key with HID keycode N is pressed. The first
+four keycodes are special:
 
 - 0 - No key pressed
 - 1 - Num Lock on
@@ -566,15 +566,16 @@ Contact flags are a bitfield:
 - 4 - FORWARD
 - 7 - HOVER
 
-HOVER is set when the contact tracks a position without a press — always for a
-mouse, and for a pen while it is in range — and clear for a touchscreen.
+HOVER is set when the contact tracks a position without a press. It is
+always set for a mouse, set for a pen while the pen is in range, and clear
+for a touchscreen.
 
 The application and the RIA exchange pointer preferences through the header.
-``status`` bit 0 (host cursor) is set only when the host can draw a cursor for
-the application — the :doc:`emu` with a mouse, in a window or a browser — and
-is always clear on real hardware and for touch input. ``control`` selects
-the host cursor shape the application wants, or hides it so the
-application can draw its own.
+``status`` bit 0 (host cursor) is set only when the host can draw a cursor
+for the application, which is the :doc:`emu` with a mouse, in a window or a
+browser. The bit is always clear on real hardware and for touch input.
+``control`` selects the host cursor shape the application wants, or hides
+it so the application can draw its own.
 
 - 0 - OFF (host cursor hidden; the application draws its own pointer)
 - 1 - ARROW
@@ -752,7 +753,7 @@ The upper bits of the DPAD register report readiness and type. The
 connected bit is high when a gamepad occupies that player slot.
 
 The button type says where the face button labels sit, so an application
-can print the right one. The buttons themselves never move: BTN0 bit 0 is
+can print the right one. The buttons themselves never move. BTN0 bit 0 is
 the button labeled A or Cross, wherever that label happens to be
 printed. A type is only reported when the RIA is certain.
 
@@ -1416,7 +1417,7 @@ Standard MIDI Files, prefixing every message with a variable length
 quantity delta time measured in ticks. The rest of this section is the
 timed format.
 
-In timed mode, time starts at the open — the first byte in either
+In timed mode, time starts at the open. The first byte in either
 direction is a delta measuring from the open itself, and a delta of zero
 means right now. Writes are scheduled — the RIA holds each message and
 sends it to the instrument exactly on time, so your program only needs to
@@ -1424,15 +1425,15 @@ keep the buffer fed. Reads are a recording — incoming messages arrive
 with delta times measuring when they actually happened, ready to store in
 a file or play back later.
 
-The division — ticks per quarter note, what an SMF carries in its header —
-accepts 1 to 32767 and is fixed while open; reopen between songs to change
-it. The open flags are ignored. A cable can be input, output, or both;
+The division is ticks per quarter note, the value an SMF carries in its
+header. It accepts 1 to 32767 and is fixed while open; reopen between songs
+to change it. The open flags are ignored. A cable can be input, output, or both;
 reading an output-only cable or writing an input-only one returns an
 error.
 
 Tempo changes on the fly with the standard SMF Set Tempo meta event,
-which the RIA consumes locally and never forwards to the instrument —
-``FF``, a type, a length, then that many data bytes:
+which the RIA consumes locally and never forwards to the instrument. The
+event is ``FF``, a type, a length, then that many data bytes:
 
 .. list-table::
    :widths: 32 68
@@ -1444,8 +1445,8 @@ which the RIA consumes locally and never forwards to the instrument —
      - Set tempo in microseconds per quarter note — the standard SMF
        event. The tick rate becomes tempo × 1000 ÷ division.
    * - ``FF FF``
-     - A wire System Reset. The doubled escape is the whole event — no
-       length byte — and unlike the others it is sent to the instrument.
+     - A wire System Reset. The doubled escape is the whole event, with no
+       length byte. Unlike the others, it is sent to the instrument.
 
 Tempo defaults to 500000 µs per quarter note — 120 BPM, a 1041667 ns
 tick at 480 PPQN. Every other ``FF`` event, including the rest of the
@@ -1460,10 +1461,10 @@ events straight from the track:
   // then delta-timed events; the RIA paces them and tracks tempo changes
 
 The RIA echoes every tempo event onto the read stream at the moment it
-takes effect, so a recording is self-describing. A rejected event —
-malformed, or a value of zero or out of range — is echoed with its value
-zeroed and the tempo unchanged; zero is never a valid tempo, so it
-unambiguously marks an event that didn't apply. Your read parser must
+takes effect, so a recording is self-describing. A rejected event is
+malformed, or carries a value of zero or out of range. The RIA echoes it
+with its value zeroed and the tempo unchanged; zero is never a valid tempo,
+so it unambiguously marks an event that didn't apply. Your read parser must
 handle ``FF``: a second ``FF`` is a System Reset, and anything else is
 a meta type and length to skip.
 
@@ -1474,7 +1475,7 @@ single-byte real-time messages F8-FE. System Reset travels as the
 send one, and a reset from the instrument is recorded the same way. The
 undefined bytes F4 and F5 are quietly dropped.
 
-System Exclusive — sysex — is how instruments move the big stuff, like
+System Exclusive, or sysex, is how instruments move the big stuff, like
 patch banks and sample dumps, in one long message: ``F0``, any number of
 data bytes, then ``F7`` to finish. Only the opening ``F0`` takes a delta
 time; the data bytes flow without timing until the ``F7``, on writes and
@@ -1486,7 +1487,7 @@ reopens it after — everything arrives, just split into two
 ``F0`` ... ``F7`` fragments.
 
 Delta times measure from the previous event, so timing stays exact over
-any song length: events are anchored to an absolute tick count, and
+any song length. Events are anchored to an absolute tick count, and
 ticks are kept internally in nanoseconds, holding arithmetic rounding
 below one part per million. The error left over comes from the machine's
 clock and transport. Where the RIA is paced by a crystal-driven microsecond
@@ -1503,10 +1504,10 @@ are non-blocking with the same short read/write rules as other
 non-blocking devices.
 
 Closing a timed output cable blocks until its buffered tail has played
-out on schedule, so the final notes — and the note-offs that end them —
-reach the instrument before close returns, and nothing is left ringing.
-``sync`` does the same without closing: a way to wait for the schedule to
-catch up between songs. Both follow the timeline, so a far-future delta
+out on schedule. The final notes reach the instrument before close returns,
+along with the note-offs that end them, and nothing is left ringing.
+``sync`` does the same without closing. It waits for the schedule to catch
+up between songs. Both follow the timeline, so a far-future delta
 still in the buffer makes them wait that long. If a sysex is still open
 when a timed cable closes, the RIA sends its ``F7`` so the instrument is
 not left waiting mid-dump. A raw cable has no schedule, so close and
@@ -1552,9 +1553,9 @@ Program each card with the filename and arguments of the ROM to launch.
 If you'd load the ROM with ``LOAD /jigsaw.rp6502``, put an NDEF TEXT
 record on the card holding just ``/jigsaw.rp6502`` — no load command. A
 card may also name an installed ROM, ``:NAME``, which skips the drive
-scan below — the machine either has it or the tap fails. A
-leading ``/`` is implied if you leave it off, and the current working
-directory is ignored.
+scan below. The machine either has it or the tap fails. A leading ``/``
+is implied if you leave it off, and the current working directory is
+ignored.
 
 Paths with spaces need quotes, and you can include arguments:
 ``"/My Games/jigsaw.rp6502" cat.bmp``
@@ -1656,8 +1657,8 @@ by ``NFC_RESP_CARD_READY``) may be coalesced to the later state if you don't
      - State: card present, tag data ready
 
 The ``NFC_RESP_READ`` payload is a two-byte length followed by raw tag
-data starting at page 0, and it may span multiple ``read()`` calls. The
-page layout is: pages 0-2 are UID/lock bytes, page 3 is the Capability
+data starting at page 0, and it may span multiple ``read()`` calls.
+In the page layout, pages 0-2 are UID/lock bytes, page 3 is the Capability
 Container (CC[2] * 8 = max NDEF bytes), and pages 4+ are user data
 (TLV-wrapped NDEF records terminated with ``0xFE``).
 
