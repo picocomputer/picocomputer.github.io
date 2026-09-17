@@ -154,10 +154,9 @@ same ``db`` and their programs share one filesystem.
 RetroArch
 =========
 
-The Picocomputer is also a libretro core, which is how it reaches
-RetroArch and the launchers built on it. Install it from Online Updater >
+The Picocomputer is also a libretro core. Install it from Online Updater >
 Core Downloader, under "Picocomputer 6502", then load a ``.rp6502`` ROM
-as content the way you would a cartridge.
+the way you would a cartridge.
 
 
 Arguments
@@ -223,7 +222,7 @@ work.
        there becomes the console itself. Implied by ``--headless``. See
        `Standard Streams`_.
      - desktop
-   * - ``--rom``
+   * - ``--install``
      - ``file``
      - Install a ROM on the null drive, reached as ``:basename``.
        Repeatable to sixteen; the first one boots.
