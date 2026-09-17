@@ -303,6 +303,9 @@ XREG
    build your own hardware for the PIX bus and configure it with this same
    call.
 
+   Assembly programs use the ``xreg`` macro in rp6502.inc, which takes the
+   same arguments: ``xreg 1, 0, 1, 3, 2, $FF00``.
+
    :Op code: RIA_OP_XREG 0x01
    :C proto: rp6502.h
    :param device: PIX device ID. 0:RIA, 1:VGA, 2-6:unassigned

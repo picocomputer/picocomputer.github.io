@@ -194,111 +194,18 @@ values walk XRAM in reverse. These auto-increment adders make sequential
 access very fast — more than enough to offset the slightly slower random
 access compared to 6502 system RAM.
 
+.. code-block:: C
+
+  RIA.addr0 = 0x1000;
+  RIA.step0 = 1;
+  RIA.rw0 = 0x12; /* $1000 */
+  RIA.rw0 = 0x34; /* $1001 */
+
 The C macros ``xram0_struct_set`` and ``xram1_struct_set`` come with
 rp6502.h. Each sets one member of a structure in XRAM, given the structure's
 address, its type and the member's name. They are convenient but not
-efficient, because every call sets the address again. The assembly versions
-go in your ``xram.inc``.
-
-.. tab:: C
-
-   .. code-block:: C
-
-      RIA.addr0 = 0x1000;
-      RIA.step0 = 1;
-      RIA.rw0 = 0x12; /* $1000 */
-      RIA.rw0 = 0x34; /* $1001 */
-
-      xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, x_pos_px, 10);
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-
-      .macro xram0_struct_set addr, type, member, val
-          lda #<(addr + type::member)
-          sta RIA_ADDR0
-          lda #>(addr + type::member)
-          sta RIA_ADDR0+1
-        .if .sizeof(type::member) = 1
-          lda #<(val)
-          sta RIA_RW0
-        .else
-          lda #1
-          sta RIA_STEP0
-          lda #<(val)
-          sta RIA_RW0
-          lda #>(val)
-          sta RIA_RW0
-        .endif
-      .endmacro
-
-      .macro xram1_struct_set addr, type, member, val
-          lda #<(addr + type::member)
-          sta RIA_ADDR1
-          lda #>(addr + type::member)
-          sta RIA_ADDR1+1
-        .if .sizeof(type::member) = 1
-          lda #<(val)
-          sta RIA_RW1
-        .else
-          lda #1
-          sta RIA_STEP1
-          lda #<(val)
-          sta RIA_RW1
-          lda #>(val)
-          sta RIA_RW1
-        .endif
-      .endmacro
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :force:
-
-      .macro xram0_set8 addr, val
-          lda #((\addr) & $FF)
-          sta RIA_ADDR0
-          lda #(((\addr) >> 8) & $FF)
-          sta RIA_ADDR0+1
-          lda #((\val) & $FF)
-          sta RIA_RW0
-      .endm
-
-      .macro xram0_set16 addr, val
-          lda #((\addr) & $FF)
-          sta RIA_ADDR0
-          lda #(((\addr) >> 8) & $FF)
-          sta RIA_ADDR0+1
-          lda #1
-          sta RIA_STEP0
-          lda #((\val) & $FF)
-          sta RIA_RW0
-          lda #(((\val) >> 8) & $FF)
-          sta RIA_RW0
-      .endm
-
-      .macro xram1_set8 addr, val
-          lda #((\addr) & $FF)
-          sta RIA_ADDR1
-          lda #(((\addr) >> 8) & $FF)
-          sta RIA_ADDR1+1
-          lda #((\val) & $FF)
-          sta RIA_RW1
-      .endm
-
-      .macro xram1_set16 addr, val
-          lda #((\addr) & $FF)
-          sta RIA_ADDR1
-          lda #(((\addr) >> 8) & $FF)
-          sta RIA_ADDR1+1
-          lda #1
-          sta RIA_STEP1
-          lda #((\val) & $FF)
-          sta RIA_RW1
-          lda #(((\val) >> 8) & $FF)
-          sta RIA_RW1
-      .endm
+efficient, because every call sets the address again. The SDK's `XRAM
+<sdk.html#xram>`__ section shows them in use.
 
 
 Extended Stack (XSTACK)
@@ -316,67 +223,6 @@ on it.
 
 A register that maps a device holds the XRAM address of the device's
 structure. $FFFF, or any other invalid address, disables the device.
-
-An assembly program calls XREG by pushing the device, channel and address
-onto the XSTACK as single bytes, followed by each 16-bit value high byte
-first. The number of values is not sent. The ``xreg_call`` macro does this
-for you.
-
-.. tab:: C
-
-   .. code-block:: C
-
-      xreg(1, 0, 1, 3, 2, XRAM_CANVAS_CONFIG);
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-
-      .macro xreg_push w0, w1, w2, w3, w4, w5, w6, w7
-        .ifnblank w0
-          lda #>(w0)
-          sta RIA_XSTACK
-          lda #<(w0)
-          sta RIA_XSTACK
-          xreg_push w1, w2, w3, w4, w5, w6, w7
-        .endif
-      .endmacro
-
-      .macro xreg_call device, channel, address, w0, w1, w2, w3, w4, w5, w6, w7
-          lda #device
-          sta RIA_XSTACK
-          lda #channel
-          sta RIA_XSTACK
-          lda #address
-          sta RIA_XSTACK
-          xreg_push w0, w1, w2, w3, w4, w5, w6, w7
-          lda #RIA_OP_XREG
-          sta RIA_OP
-          jsr RIA_SPIN
-      .endmacro
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :force:
-
-      .macro xreg_call device, channel, address, words:vararg
-          lda #(\device)
-          sta RIA_XSTACK
-          lda #(\channel)
-          sta RIA_XSTACK
-          lda #(\address)
-          sta RIA_XSTACK
-      .irp w, \words
-          lda #(((\w) >> 8) & $FF)
-          sta RIA_XSTACK
-          lda #((\w) & $FF)
-          sta RIA_XSTACK
-      .endr
-          lda #RIA_OP_XREG
-          sta RIA_OP
-          jsr RIA_SPIN
-      .endm
 
 
 .. list-table::
@@ -497,11 +343,7 @@ pressed. The first four keycodes are special:
 .. tab:: C
 
    .. code-block:: C
-
-      typedef struct
-      {
-          uint8_t keys[32];
-      } keyboard_t;
+      :caption: xram.h
 
       #define KEYBOARD_NO_KEY 0
       #define KEYBOARD_NUM_LOCK 1
@@ -512,63 +354,57 @@ pressed. The first four keycodes are special:
 
       #define xreg_ria_keyboard(...) xreg(0, 0, 0, __VA_ARGS__)
 
+      typedef struct
+      {
+          uint8_t keys[32];
+      } keyboard_t;
+
 .. tab:: ca65
 
    .. code-block:: ca65
+      :caption: xram.inc
+
+      KEYBOARD_NO_KEY      = 0
+      KEYBOARD_NUM_LOCK    = 1
+      KEYBOARD_CAPS_LOCK   = 2
+      KEYBOARD_SCROLL_LOCK = 3
+
+      .macro xreg_ria_keyboard addr
+          xreg 0, 0, 0, addr
+      .endmacro
 
       .struct keyboard_t
           keys .res 32
       .endstruct
 
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :caption: xram.inc
+      :force:
+
       KEYBOARD_NO_KEY      = 0
       KEYBOARD_NUM_LOCK    = 1
       KEYBOARD_CAPS_LOCK   = 2
       KEYBOARD_SCROLL_LOCK = 3
 
-      ; Z is clear when the key is pressed.
-      .macro KEYBOARD_PRESSED addr, code
-          lda #<(addr + keyboard_t::keys + ((code) >> 3))
-          sta RIA_ADDR0
-          lda #>(addr + keyboard_t::keys + ((code) >> 3))
-          sta RIA_ADDR0+1
-          lda RIA_RW0
-          and #1 << ((code) & 7)
-      .endmacro
-
       .macro xreg_ria_keyboard addr
-          xreg_call 0, 0, 0, addr
-      .endmacro
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :force:
+          xreg 0, 0, 0, \addr
+      .endm
 
       KEYBOARD_KEYS = 0
       KEYBOARD_SIZE = 32
 
-      KEYBOARD_NO_KEY      = 0
-      KEYBOARD_NUM_LOCK    = 1
-      KEYBOARD_CAPS_LOCK   = 2
-      KEYBOARD_SCROLL_LOCK = 3
-
-      ; Z is clear when the key is pressed.
-      .macro KEYBOARD_PRESSED addr, code
-          lda #(((\addr) + KEYBOARD_KEYS + ((\code) >> 3)) & $FF)
-          sta RIA_ADDR0
-          lda #((((\addr) + KEYBOARD_KEYS + ((\code) >> 3)) >> 8) & $FF)
-          sta RIA_ADDR0+1
-          lda RIA_RW0
-          and #(1 << ((\code) & 7))
-      .endm
-
-      .macro xreg_ria_keyboard addr
-          xreg_call 0, 0, 0, \addr
-      .endm
-
 
 Mouse
 =====
+
+.. note::
+
+   The `Tablet`_ interface is almost always the better choice. It gives a
+   canvas pixel position for a mouse, pen, or touchscreen, so a program has
+   no movement to accumulate or scale. Raw mouse input is still useful for
+   devices that act like a mouse but are not a pointer, such as spinners.
 
 The RIA can give applications direct access to mouse data. Enable and
 disable it by mapping it to an address in XRAM.
@@ -580,74 +416,6 @@ disable it by mapping it to an address in XRAM.
   xreg_ria_mouse(xaddr);    // macro shortcut
 
 This sets the XRAM address of a structure holding the live mouse input.
-
-.. tab:: C
-
-   .. code-block:: C
-
-      typedef struct
-      {
-          uint8_t buttons;
-          uint8_t x;
-          uint8_t y;
-          uint8_t wheel;
-          uint8_t pan;
-          uint8_t pad;
-      } mouse_t;
-
-      #define MOUSE_BUTTON_LEFT 0x01
-      #define MOUSE_BUTTON_RIGHT 0x02
-      #define MOUSE_BUTTON_MIDDLE 0x04
-      #define MOUSE_BUTTON_BACKWARD 0x08
-      #define MOUSE_BUTTON_FORWARD 0x10
-
-      #define xreg_ria_mouse(...) xreg(0, 0, 1, __VA_ARGS__)
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-
-      .struct mouse_t
-          buttons .byte
-          x_pos   .byte
-          y_pos   .byte
-          wheel   .byte
-          pan     .byte
-          pad     .byte
-      .endstruct
-
-      MOUSE_BUTTON_LEFT     = $01
-      MOUSE_BUTTON_RIGHT    = $02
-      MOUSE_BUTTON_MIDDLE   = $04
-      MOUSE_BUTTON_BACKWARD = $08
-      MOUSE_BUTTON_FORWARD  = $10
-
-      .macro xreg_ria_mouse addr
-          xreg_call 0, 0, 1, addr
-      .endmacro
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :force:
-
-      MOUSE_BUTTONS = 0
-      MOUSE_X       = 1
-      MOUSE_Y       = 2
-      MOUSE_WHEEL   = 3
-      MOUSE_PAN     = 4
-      MOUSE_PAD     = 5
-      MOUSE_SIZE    = 6
-
-      MOUSE_BUTTON_LEFT     = $01
-      MOUSE_BUTTON_RIGHT    = $02
-      MOUSE_BUTTON_MIDDLE   = $04
-      MOUSE_BUTTON_BACKWARD = $08
-      MOUSE_BUTTON_FORWARD  = $10
-
-      .macro xreg_ria_mouse addr
-          xreg_call 0, 0, 1, \addr
-      .endm
 
 Compute movement by subtracting the previous value from the current one.
 VSYNC timing (60 Hz) is period-correct but slow by modern standards. For
@@ -670,6 +438,77 @@ Mouse buttons are a bitfield:
 - 3 - BACKWARD
 - 4 - FORWARD
 
+.. tab:: C
+
+   .. code-block:: C
+      :caption: xram.h
+
+      #define MOUSE_BUTTON_LEFT 0x01
+      #define MOUSE_BUTTON_RIGHT 0x02
+      #define MOUSE_BUTTON_MIDDLE 0x04
+      #define MOUSE_BUTTON_BACKWARD 0x08
+      #define MOUSE_BUTTON_FORWARD 0x10
+
+      #define xreg_ria_mouse(...) xreg(0, 0, 1, __VA_ARGS__)
+
+      typedef struct
+      {
+          uint8_t buttons;
+          uint8_t x;
+          uint8_t y;
+          uint8_t wheel;
+          uint8_t pan;
+          uint8_t pad;
+      } mouse_t;
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+      :caption: xram.inc
+
+      MOUSE_BUTTON_LEFT     = $01
+      MOUSE_BUTTON_RIGHT    = $02
+      MOUSE_BUTTON_MIDDLE   = $04
+      MOUSE_BUTTON_BACKWARD = $08
+      MOUSE_BUTTON_FORWARD  = $10
+
+      .macro xreg_ria_mouse addr
+          xreg 0, 0, 1, addr
+      .endmacro
+
+      .struct mouse_t
+          buttons .byte
+          x_pos   .byte
+          y_pos   .byte
+          wheel   .byte
+          pan     .byte
+          pad     .byte
+      .endstruct
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :caption: xram.inc
+      :force:
+
+      MOUSE_BUTTON_LEFT     = $01
+      MOUSE_BUTTON_RIGHT    = $02
+      MOUSE_BUTTON_MIDDLE   = $04
+      MOUSE_BUTTON_BACKWARD = $08
+      MOUSE_BUTTON_FORWARD  = $10
+
+      .macro xreg_ria_mouse addr
+          xreg 0, 0, 1, \addr
+      .endm
+
+      MOUSE_BUTTONS = 0
+      MOUSE_X       = 1
+      MOUSE_Y       = 2
+      MOUSE_WHEEL   = 3
+      MOUSE_PAN     = 4
+      MOUSE_PAD     = 5
+      MOUSE_SIZE    = 6
+
 
 Tablet
 ======
@@ -688,281 +527,6 @@ in XRAM.
 
 The block is a four-byte header followed by eight contact records for
 multi-touch; a mouse or pen uses only the first.
-
-.. tab:: C
-
-   .. code-block:: C
-
-      typedef struct
-      {
-          uint8_t flags;
-          uint8_t x0, x1, x2;
-          uint8_t y0, y1;
-      } tablet_contact_t;
-
-      typedef struct
-      {
-          uint8_t control;
-          uint8_t status;
-          uint8_t wheel;
-          uint8_t pan;
-          tablet_contact_t contact[8];
-      } tablet_t;
-
-      #define TABLET_CONTACTS 8
-
-      #define TABLET_STATUS_HOST_CURSOR 0x01
-
-      #define TABLET_FLAG_LEFT 0x01
-      #define TABLET_FLAG_RIGHT 0x02
-      #define TABLET_FLAG_MIDDLE 0x04
-      #define TABLET_FLAG_BACKWARD 0x08
-      #define TABLET_FLAG_FORWARD 0x10
-      #define TABLET_FLAG_HOVER 0x80
-
-      #define TABLET_CURSOR_OFF 0
-      #define TABLET_CURSOR_ARROW 1
-      #define TABLET_CURSOR_CROSSHAIR 2
-      #define TABLET_CURSOR_IBEAM 3
-      #define TABLET_CURSOR_HAND 4
-      #define TABLET_CURSOR_RESIZE_EW 5
-      #define TABLET_CURSOR_RESIZE_NS 6
-
-      /* -1 when no window is set */
-      #define TABLET_CONTACT_X(c) ((c).x0 ? (c).x0 - 1   \
-                                   : (c).x1 ? (c).x1 + 254 \
-                                   : (c).x2 ? (c).x2 + 509 \
-                                            : -1)
-      #define TABLET_CONTACT_Y(c) ((c).y0 ? (c).y0 - 1   \
-                                   : (c).y1 ? (c).y1 + 254 \
-                                            : -1)
-
-      #define xreg_ria_tablet(...) xreg(0, 0, 3, __VA_ARGS__)
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-
-      .struct tablet_contact_t
-          flags .byte
-          x0    .byte
-          x1    .byte
-          x2    .byte
-          y0    .byte
-          y1    .byte
-      .endstruct
-
-      .struct tablet_t
-          control .byte
-          status  .byte
-          wheel   .byte
-          pan     .byte
-          contact .tag tablet_contact_t 8
-      .endstruct
-
-      TABLET_CONTACTS = 8
-
-      TABLET_STATUS_HOST_CURSOR = $01
-
-      TABLET_FLAG_LEFT     = $01
-      TABLET_FLAG_RIGHT    = $02
-      TABLET_FLAG_MIDDLE   = $04
-      TABLET_FLAG_BACKWARD = $08
-      TABLET_FLAG_FORWARD  = $10
-      TABLET_FLAG_HOVER    = $80
-
-      TABLET_CURSOR_OFF       = 0
-      TABLET_CURSOR_ARROW     = 1
-      TABLET_CURSOR_CROSSHAIR = 2
-      TABLET_CURSOR_IBEAM     = 3
-      TABLET_CURSOR_HAND      = 4
-      TABLET_CURSOR_RESIZE_EW = 5
-      TABLET_CURSOR_RESIZE_NS = 6
-
-      .macro xreg_ria_tablet addr
-          xreg_call 0, 0, 3, addr
-      .endmacro
-
-      ; RIA_ADDR0 points at a contact's x0, and RIA_STEP0 is 1.
-      ; Returns the coordinate in A (low) and X (high), and leaves RIA_ADDR0
-      ; at y0. Carry is set when no window is set.
-      .proc TABLET_CONTACT_X
-          lda RIA_RW0
-          ldx RIA_RW0
-          ldy RIA_RW0
-          cmp #0
-          beq @not_x0
-          sec
-          sbc #1
-          ldx #0
-          clc
-          rts
-      @not_x0:
-          txa
-          beq @not_x1
-          ldx #0
-          clc
-          adc #254
-          bcc @x1_done
-          inx
-      @x1_done:
-          clc
-          rts
-      @not_x1:
-          tya
-          beq @none
-          ldx #1
-          clc
-          adc #253
-          bcc @x2_done
-          inx
-      @x2_done:
-          clc
-          rts
-      @none:
-          sec
-          rts
-      .endproc
-
-      ; RIA_ADDR0 points at a contact's y0, and RIA_STEP0 is 1.
-      ; Returns the coordinate in A (low) and X (high).
-      ; Carry is set when no window is set.
-      .proc TABLET_CONTACT_Y
-          lda RIA_RW0
-          ldx RIA_RW0
-          cmp #0
-          beq @not_y0
-          sec
-          sbc #1
-          ldx #0
-          clc
-          rts
-      @not_y0:
-          txa
-          beq @none
-          ldx #0
-          clc
-          adc #254
-          bcc @done
-          inx
-      @done:
-          clc
-          rts
-      @none:
-          sec
-          rts
-      .endproc
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :force:
-
-      TABLET_CONTACT_FLAGS = 0
-      TABLET_CONTACT_X0    = 1
-      TABLET_CONTACT_X1    = 2
-      TABLET_CONTACT_X2    = 3
-      TABLET_CONTACT_Y0    = 4
-      TABLET_CONTACT_Y1    = 5
-      TABLET_CONTACT_SIZE  = 6
-
-      TABLET_CONTROL = 0
-      TABLET_STATUS  = 1
-      TABLET_WHEEL   = 2
-      TABLET_PAN     = 3
-      TABLET_CONTACT = 4
-      TABLET_SIZE    = 52
-
-      TABLET_CONTACTS = 8
-
-      TABLET_STATUS_HOST_CURSOR = $01
-
-      TABLET_FLAG_LEFT     = $01
-      TABLET_FLAG_RIGHT    = $02
-      TABLET_FLAG_MIDDLE   = $04
-      TABLET_FLAG_BACKWARD = $08
-      TABLET_FLAG_FORWARD  = $10
-      TABLET_FLAG_HOVER    = $80
-
-      TABLET_CURSOR_OFF       = 0
-      TABLET_CURSOR_ARROW     = 1
-      TABLET_CURSOR_CROSSHAIR = 2
-      TABLET_CURSOR_IBEAM     = 3
-      TABLET_CURSOR_HAND      = 4
-      TABLET_CURSOR_RESIZE_EW = 5
-      TABLET_CURSOR_RESIZE_NS = 6
-
-      .macro xreg_ria_tablet addr
-          xreg_call 0, 0, 3, \addr
-      .endm
-
-      ; RIA_ADDR0 points at a contact's x0, and RIA_STEP0 is 1.
-      ; Returns the coordinate in A (low) and X (high), and leaves RIA_ADDR0
-      ; at y0. Carry is set when no window is set.
-      TABLET_CONTACT_X:
-          lda RIA_RW0
-          ldx RIA_RW0
-          ldy RIA_RW0
-          cmp #0
-          beq 1f
-          sec
-          sbc #1
-          ldx #0
-          clc
-          rts
-      1:
-          txa
-          beq 2f
-          ldx #0
-          clc
-          adc #254
-          bcc 3f
-          inx
-      3:
-          clc
-          rts
-      2:
-          tya
-          beq 4f
-          ldx #1
-          clc
-          adc #253
-          bcc 5f
-          inx
-      5:
-          clc
-          rts
-      4:
-          sec
-          rts
-
-      ; RIA_ADDR0 points at a contact's y0, and RIA_STEP0 is 1.
-      ; Returns the coordinate in A (low) and X (high).
-      ; Carry is set when no window is set.
-      TABLET_CONTACT_Y:
-          lda RIA_RW0
-          ldx RIA_RW0
-          cmp #0
-          beq 1f
-          sec
-          sbc #1
-          ldx #0
-          clc
-          rts
-      1:
-          txa
-          beq 2f
-          ldx #0
-          clc
-          adc #254
-          bcc 3f
-          inx
-      3:
-          clc
-          rts
-      2:
-          sec
-          rts
 
 ``wheel`` and ``pan`` are scroll counters in the same format as the mouse: read
 them by subtracting the previous value. They advance only while a mouse drives
@@ -1014,6 +578,135 @@ When the host cursor bit is clear the application must draw its own
 pointer, and ``control`` has no effect. This is always the case on real
 hardware.
 
+.. tab:: C
+
+   .. code-block:: C
+      :caption: xram.h
+
+      #define TABLET_CONTACTS 8
+
+      #define TABLET_STATUS_HOST_CURSOR 0x01
+
+      #define TABLET_FLAG_LEFT 0x01
+      #define TABLET_FLAG_RIGHT 0x02
+      #define TABLET_FLAG_MIDDLE 0x04
+      #define TABLET_FLAG_BACKWARD 0x08
+      #define TABLET_FLAG_FORWARD 0x10
+      #define TABLET_FLAG_HOVER 0x80
+
+      #define TABLET_CURSOR_OFF 0
+      #define TABLET_CURSOR_ARROW 1
+      #define TABLET_CURSOR_CROSSHAIR 2
+      #define TABLET_CURSOR_IBEAM 3
+      #define TABLET_CURSOR_HAND 4
+      #define TABLET_CURSOR_RESIZE_EW 5
+      #define TABLET_CURSOR_RESIZE_NS 6
+
+      #define xreg_ria_tablet(...) xreg(0, 0, 3, __VA_ARGS__)
+
+      typedef struct
+      {
+          uint8_t control;
+          uint8_t status;
+          uint8_t wheel;
+          uint8_t pan;
+          struct
+          {
+              uint8_t flags;
+              uint8_t x0, x1, x2;
+              uint8_t y0, y1;
+          } contact[TABLET_CONTACTS];
+      } tablet_t;
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+      :caption: xram.inc
+
+      TABLET_CONTACTS = 8
+
+      TABLET_STATUS_HOST_CURSOR = $01
+
+      TABLET_FLAG_LEFT     = $01
+      TABLET_FLAG_RIGHT    = $02
+      TABLET_FLAG_MIDDLE   = $04
+      TABLET_FLAG_BACKWARD = $08
+      TABLET_FLAG_FORWARD  = $10
+      TABLET_FLAG_HOVER    = $80
+
+      TABLET_CURSOR_OFF       = 0
+      TABLET_CURSOR_ARROW     = 1
+      TABLET_CURSOR_CROSSHAIR = 2
+      TABLET_CURSOR_IBEAM     = 3
+      TABLET_CURSOR_HAND      = 4
+      TABLET_CURSOR_RESIZE_EW = 5
+      TABLET_CURSOR_RESIZE_NS = 6
+
+      .macro xreg_ria_tablet addr
+          xreg 0, 0, 3, addr
+      .endmacro
+
+      .struct tablet_t
+          control .byte
+          status  .byte
+          wheel   .byte
+          pan     .byte
+          contact .struct
+              flags .byte
+              x0    .byte
+              x1    .byte
+              x2    .byte
+              y0    .byte
+              y1    .byte
+          .endstruct
+          .res (::TABLET_CONTACTS - 1) * .sizeof(contact)
+      .endstruct
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :caption: xram.inc
+      :force:
+
+      TABLET_CONTACTS = 8
+
+      TABLET_STATUS_HOST_CURSOR = $01
+
+      TABLET_FLAG_LEFT     = $01
+      TABLET_FLAG_RIGHT    = $02
+      TABLET_FLAG_MIDDLE   = $04
+      TABLET_FLAG_BACKWARD = $08
+      TABLET_FLAG_FORWARD  = $10
+      TABLET_FLAG_HOVER    = $80
+
+      TABLET_CURSOR_OFF       = 0
+      TABLET_CURSOR_ARROW     = 1
+      TABLET_CURSOR_CROSSHAIR = 2
+      TABLET_CURSOR_IBEAM     = 3
+      TABLET_CURSOR_HAND      = 4
+      TABLET_CURSOR_RESIZE_EW = 5
+      TABLET_CURSOR_RESIZE_NS = 6
+
+      .macro xreg_ria_tablet addr
+          xreg 0, 0, 3, \addr
+      .endm
+
+      TABLET_CONTROL = 0
+      TABLET_STATUS  = 1
+      TABLET_WHEEL   = 2
+      TABLET_PAN     = 3
+      TABLET_CONTACT = 4
+
+      TABLET_CONTACT_FLAGS = 0
+      TABLET_CONTACT_X0    = 1
+      TABLET_CONTACT_X1    = 2
+      TABLET_CONTACT_X2    = 3
+      TABLET_CONTACT_Y0    = 4
+      TABLET_CONTACT_Y1    = 5
+      TABLET_CONTACT_SIZE  = 6
+
+      TABLET_SIZE = TABLET_CONTACT + TABLET_CONTACTS * TABLET_CONTACT_SIZE
+
 
 Gamepads
 ========
@@ -1032,18 +725,6 @@ when the RIA can be sure of it. You're free to do your own thing, of
 course — ask players to use a specific gamepad, or offer an "AB or BA"
 option.
 
-.. note::
-   **The RP6502 expects modern gamepads.**
-
-   The RP6502 is not a platform for emulating other retro consoles. Sega,
-   NES, SNES, TG16, Atari, and other retro-style gamepads are **not
-   supported**.
-
-   Retro-style gamepads are wired with button mappings meant for console
-   emulators, and those in turn expect the layout of a modern gamepad. The
-   two don't cancel out — you just end up with wonky mappings that don't
-   follow the de facto modern standard.
-
 Enable and disable the RIA gamepad data by setting its extended
 register. The register value is the XRAM start address of the gamepad
 data; any invalid address disables the gamepads.
@@ -1057,192 +738,6 @@ data; any invalid address disables the gamepads.
 The RIA continuously updates extended memory with gamepad state. The
 10-byte structure below repeats four times — 40 bytes total, one block
 per gamepad.
-
-.. tab:: C
-
-   .. code-block:: C
-
-      typedef struct
-      {
-          uint8_t dpad;
-          uint8_t sticks;
-          uint8_t btn0;
-          uint8_t btn1;
-          int8_t lx;
-          int8_t ly;
-          int8_t rx;
-          int8_t ry;
-          uint8_t l2;
-          uint8_t r2;
-      } gamepad_t;
-
-      #define GAMEPAD_COUNT 4
-
-      #define GAMEPAD_DPAD_UP 0x01
-      #define GAMEPAD_DPAD_DOWN 0x02
-      #define GAMEPAD_DPAD_LEFT 0x04
-      #define GAMEPAD_DPAD_RIGHT 0x08
-
-      #define GAMEPAD_FEAT_TYPE_MASK 0x30
-      #define GAMEPAD_TYPE_UNKNOWN 0x00
-      #define GAMEPAD_TYPE_WESTERN 0x10
-      #define GAMEPAD_TYPE_EASTERN 0x20
-      #define GAMEPAD_TYPE_PLAYSTATION 0x30
-      #define GAMEPAD_FEAT_STICKS 0x40
-      #define GAMEPAD_FEAT_CONNECTED 0x80
-
-      #define GAMEPAD_LSTICK_UP 0x01
-      #define GAMEPAD_LSTICK_DOWN 0x02
-      #define GAMEPAD_LSTICK_LEFT 0x04
-      #define GAMEPAD_LSTICK_RIGHT 0x08
-      #define GAMEPAD_RSTICK_UP 0x10
-      #define GAMEPAD_RSTICK_DOWN 0x20
-      #define GAMEPAD_RSTICK_LEFT 0x40
-      #define GAMEPAD_RSTICK_RIGHT 0x80
-
-      #define GAMEPAD_BTN0_A 0x01
-      #define GAMEPAD_BTN0_B 0x02
-      #define GAMEPAD_BTN0_C 0x04
-      #define GAMEPAD_BTN0_X 0x08
-      #define GAMEPAD_BTN0_Y 0x10
-      #define GAMEPAD_BTN0_Z 0x20
-      #define GAMEPAD_BTN0_L1 0x40
-      #define GAMEPAD_BTN0_R1 0x80
-
-      #define GAMEPAD_BTN1_L2 0x01
-      #define GAMEPAD_BTN1_R2 0x02
-      #define GAMEPAD_BTN1_SELECT 0x04
-      #define GAMEPAD_BTN1_START 0x08
-      #define GAMEPAD_BTN1_HOME 0x10
-      #define GAMEPAD_BTN1_L3 0x20
-      #define GAMEPAD_BTN1_R3 0x40
-
-      #define xreg_ria_gamepad(...) xreg(0, 0, 2, __VA_ARGS__)
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-
-      .struct gamepad_t
-          dpad   .byte
-          sticks .byte
-          btn0   .byte
-          btn1   .byte
-          lx     .byte
-          ly     .byte
-          rx     .byte
-          ry     .byte
-          l2     .byte
-          r2     .byte
-      .endstruct
-
-      GAMEPAD_COUNT = 4
-
-      GAMEPAD_DPAD_UP    = $01
-      GAMEPAD_DPAD_DOWN  = $02
-      GAMEPAD_DPAD_LEFT  = $04
-      GAMEPAD_DPAD_RIGHT = $08
-
-      GAMEPAD_FEAT_TYPE_MASK   = $30
-      GAMEPAD_TYPE_UNKNOWN     = $00
-      GAMEPAD_TYPE_WESTERN     = $10
-      GAMEPAD_TYPE_EASTERN     = $20
-      GAMEPAD_TYPE_PLAYSTATION = $30
-      GAMEPAD_FEAT_STICKS      = $40
-      GAMEPAD_FEAT_CONNECTED   = $80
-
-      GAMEPAD_LSTICK_UP    = $01
-      GAMEPAD_LSTICK_DOWN  = $02
-      GAMEPAD_LSTICK_LEFT  = $04
-      GAMEPAD_LSTICK_RIGHT = $08
-      GAMEPAD_RSTICK_UP    = $10
-      GAMEPAD_RSTICK_DOWN  = $20
-      GAMEPAD_RSTICK_LEFT  = $40
-      GAMEPAD_RSTICK_RIGHT = $80
-
-      GAMEPAD_BTN0_A  = $01
-      GAMEPAD_BTN0_B  = $02
-      GAMEPAD_BTN0_C  = $04
-      GAMEPAD_BTN0_X  = $08
-      GAMEPAD_BTN0_Y  = $10
-      GAMEPAD_BTN0_Z  = $20
-      GAMEPAD_BTN0_L1 = $40
-      GAMEPAD_BTN0_R1 = $80
-
-      GAMEPAD_BTN1_L2     = $01
-      GAMEPAD_BTN1_R2     = $02
-      GAMEPAD_BTN1_SELECT = $04
-      GAMEPAD_BTN1_START  = $08
-      GAMEPAD_BTN1_HOME   = $10
-      GAMEPAD_BTN1_L3     = $20
-      GAMEPAD_BTN1_R3     = $40
-
-      .macro xreg_ria_gamepad addr
-          xreg_call 0, 0, 2, addr
-      .endmacro
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :force:
-
-      GAMEPAD_DPAD   = 0
-      GAMEPAD_STICKS = 1
-      GAMEPAD_BTN0   = 2
-      GAMEPAD_BTN1   = 3
-      GAMEPAD_LX     = 4
-      GAMEPAD_LY     = 5
-      GAMEPAD_RX     = 6
-      GAMEPAD_RY     = 7
-      GAMEPAD_L2     = 8
-      GAMEPAD_R2     = 9
-      GAMEPAD_SIZE   = 10
-
-      GAMEPAD_COUNT = 4
-
-      GAMEPAD_DPAD_UP    = $01
-      GAMEPAD_DPAD_DOWN  = $02
-      GAMEPAD_DPAD_LEFT  = $04
-      GAMEPAD_DPAD_RIGHT = $08
-
-      GAMEPAD_FEAT_TYPE_MASK   = $30
-      GAMEPAD_TYPE_UNKNOWN     = $00
-      GAMEPAD_TYPE_WESTERN     = $10
-      GAMEPAD_TYPE_EASTERN     = $20
-      GAMEPAD_TYPE_PLAYSTATION = $30
-      GAMEPAD_FEAT_STICKS      = $40
-      GAMEPAD_FEAT_CONNECTED   = $80
-
-      GAMEPAD_LSTICK_UP    = $01
-      GAMEPAD_LSTICK_DOWN  = $02
-      GAMEPAD_LSTICK_LEFT  = $04
-      GAMEPAD_LSTICK_RIGHT = $08
-      GAMEPAD_RSTICK_UP    = $10
-      GAMEPAD_RSTICK_DOWN  = $20
-      GAMEPAD_RSTICK_LEFT  = $40
-      GAMEPAD_RSTICK_RIGHT = $80
-
-      GAMEPAD_BTN0_A  = $01
-      GAMEPAD_BTN0_B  = $02
-      GAMEPAD_BTN0_C  = $04
-      GAMEPAD_BTN0_X  = $08
-      GAMEPAD_BTN0_Y  = $10
-      GAMEPAD_BTN0_Z  = $20
-      GAMEPAD_BTN0_L1 = $40
-      GAMEPAD_BTN0_R1 = $80
-
-      GAMEPAD_BTN1_L2     = $01
-      GAMEPAD_BTN1_R2     = $02
-      GAMEPAD_BTN1_SELECT = $04
-      GAMEPAD_BTN1_START  = $08
-      GAMEPAD_BTN1_HOME   = $10
-      GAMEPAD_BTN1_L3     = $20
-      GAMEPAD_BTN1_R3     = $40
-
-      .macro xreg_ria_gamepad addr
-          xreg_call 0, 0, 2, \addr
-      .endm
-
 
 The upper bits of the DPAD register report readiness and type. The
 connected bit is high when a gamepad occupies that player slot.
@@ -1356,6 +851,204 @@ merge the d-pad and left stick into a single input.
      - R2
      - Right analog trigger position. 0-255
 
+.. tab:: C
+
+   .. code-block:: C
+      :caption: xram.h
+
+      #define GAMEPAD_PLAYERS 4
+
+      #define GAMEPAD_DPAD_UP 0x01
+      #define GAMEPAD_DPAD_DOWN 0x02
+      #define GAMEPAD_DPAD_LEFT 0x04
+      #define GAMEPAD_DPAD_RIGHT 0x08
+
+      #define GAMEPAD_FEAT_TYPE_MASK 0x30
+      #define GAMEPAD_TYPE_UNKNOWN 0x00
+      #define GAMEPAD_TYPE_WESTERN 0x10
+      #define GAMEPAD_TYPE_EASTERN 0x20
+      #define GAMEPAD_TYPE_PLAYSTATION 0x30
+      #define GAMEPAD_FEAT_STICKS 0x40
+      #define GAMEPAD_FEAT_CONNECTED 0x80
+
+      #define GAMEPAD_LSTICK_UP 0x01
+      #define GAMEPAD_LSTICK_DOWN 0x02
+      #define GAMEPAD_LSTICK_LEFT 0x04
+      #define GAMEPAD_LSTICK_RIGHT 0x08
+      #define GAMEPAD_RSTICK_UP 0x10
+      #define GAMEPAD_RSTICK_DOWN 0x20
+      #define GAMEPAD_RSTICK_LEFT 0x40
+      #define GAMEPAD_RSTICK_RIGHT 0x80
+
+      #define GAMEPAD_BTN0_A 0x01
+      #define GAMEPAD_BTN0_B 0x02
+      #define GAMEPAD_BTN0_C 0x04
+      #define GAMEPAD_BTN0_X 0x08
+      #define GAMEPAD_BTN0_Y 0x10
+      #define GAMEPAD_BTN0_Z 0x20
+      #define GAMEPAD_BTN0_L1 0x40
+      #define GAMEPAD_BTN0_R1 0x80
+
+      #define GAMEPAD_BTN1_L2 0x01
+      #define GAMEPAD_BTN1_R2 0x02
+      #define GAMEPAD_BTN1_SELECT 0x04
+      #define GAMEPAD_BTN1_START 0x08
+      #define GAMEPAD_BTN1_HOME 0x10
+      #define GAMEPAD_BTN1_L3 0x20
+      #define GAMEPAD_BTN1_R3 0x40
+
+      #define xreg_ria_gamepad(...) xreg(0, 0, 2, __VA_ARGS__)
+
+      typedef struct
+      {
+          struct
+          {
+              uint8_t dpad;
+              uint8_t sticks;
+              uint8_t btn0;
+              uint8_t btn1;
+              int8_t lx;
+              int8_t ly;
+              int8_t rx;
+              int8_t ry;
+              uint8_t l2;
+              uint8_t r2;
+          } player[GAMEPAD_PLAYERS];
+      } gamepad_t;
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+      :caption: xram.inc
+
+      GAMEPAD_PLAYERS = 4
+
+      GAMEPAD_DPAD_UP    = $01
+      GAMEPAD_DPAD_DOWN  = $02
+      GAMEPAD_DPAD_LEFT  = $04
+      GAMEPAD_DPAD_RIGHT = $08
+
+      GAMEPAD_FEAT_TYPE_MASK   = $30
+      GAMEPAD_TYPE_UNKNOWN     = $00
+      GAMEPAD_TYPE_WESTERN     = $10
+      GAMEPAD_TYPE_EASTERN     = $20
+      GAMEPAD_TYPE_PLAYSTATION = $30
+      GAMEPAD_FEAT_STICKS      = $40
+      GAMEPAD_FEAT_CONNECTED   = $80
+
+      GAMEPAD_LSTICK_UP    = $01
+      GAMEPAD_LSTICK_DOWN  = $02
+      GAMEPAD_LSTICK_LEFT  = $04
+      GAMEPAD_LSTICK_RIGHT = $08
+      GAMEPAD_RSTICK_UP    = $10
+      GAMEPAD_RSTICK_DOWN  = $20
+      GAMEPAD_RSTICK_LEFT  = $40
+      GAMEPAD_RSTICK_RIGHT = $80
+
+      GAMEPAD_BTN0_A  = $01
+      GAMEPAD_BTN0_B  = $02
+      GAMEPAD_BTN0_C  = $04
+      GAMEPAD_BTN0_X  = $08
+      GAMEPAD_BTN0_Y  = $10
+      GAMEPAD_BTN0_Z  = $20
+      GAMEPAD_BTN0_L1 = $40
+      GAMEPAD_BTN0_R1 = $80
+
+      GAMEPAD_BTN1_L2     = $01
+      GAMEPAD_BTN1_R2     = $02
+      GAMEPAD_BTN1_SELECT = $04
+      GAMEPAD_BTN1_START  = $08
+      GAMEPAD_BTN1_HOME   = $10
+      GAMEPAD_BTN1_L3     = $20
+      GAMEPAD_BTN1_R3     = $40
+
+      .macro xreg_ria_gamepad addr
+          xreg 0, 0, 2, addr
+      .endmacro
+
+      .struct gamepad_t
+          player .struct
+              dpad   .byte
+              sticks .byte
+              btn0   .byte
+              btn1   .byte
+              lx     .byte
+              ly     .byte
+              rx     .byte
+              ry     .byte
+              l2     .byte
+              r2     .byte
+          .endstruct
+          .res (::GAMEPAD_PLAYERS - 1) * .sizeof(player)
+      .endstruct
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :caption: xram.inc
+      :force:
+
+      GAMEPAD_PLAYERS = 4
+
+      GAMEPAD_DPAD_UP    = $01
+      GAMEPAD_DPAD_DOWN  = $02
+      GAMEPAD_DPAD_LEFT  = $04
+      GAMEPAD_DPAD_RIGHT = $08
+
+      GAMEPAD_FEAT_TYPE_MASK   = $30
+      GAMEPAD_TYPE_UNKNOWN     = $00
+      GAMEPAD_TYPE_WESTERN     = $10
+      GAMEPAD_TYPE_EASTERN     = $20
+      GAMEPAD_TYPE_PLAYSTATION = $30
+      GAMEPAD_FEAT_STICKS      = $40
+      GAMEPAD_FEAT_CONNECTED   = $80
+
+      GAMEPAD_LSTICK_UP    = $01
+      GAMEPAD_LSTICK_DOWN  = $02
+      GAMEPAD_LSTICK_LEFT  = $04
+      GAMEPAD_LSTICK_RIGHT = $08
+      GAMEPAD_RSTICK_UP    = $10
+      GAMEPAD_RSTICK_DOWN  = $20
+      GAMEPAD_RSTICK_LEFT  = $40
+      GAMEPAD_RSTICK_RIGHT = $80
+
+      GAMEPAD_BTN0_A  = $01
+      GAMEPAD_BTN0_B  = $02
+      GAMEPAD_BTN0_C  = $04
+      GAMEPAD_BTN0_X  = $08
+      GAMEPAD_BTN0_Y  = $10
+      GAMEPAD_BTN0_Z  = $20
+      GAMEPAD_BTN0_L1 = $40
+      GAMEPAD_BTN0_R1 = $80
+
+      GAMEPAD_BTN1_L2     = $01
+      GAMEPAD_BTN1_R2     = $02
+      GAMEPAD_BTN1_SELECT = $04
+      GAMEPAD_BTN1_START  = $08
+      GAMEPAD_BTN1_HOME   = $10
+      GAMEPAD_BTN1_L3     = $20
+      GAMEPAD_BTN1_R3     = $40
+
+      .macro xreg_ria_gamepad addr
+          xreg 0, 0, 2, \addr
+      .endm
+
+      GAMEPAD_PLAYER = 0
+
+      GAMEPAD_PLAYER_DPAD   = 0
+      GAMEPAD_PLAYER_STICKS = 1
+      GAMEPAD_PLAYER_BTN0   = 2
+      GAMEPAD_PLAYER_BTN1   = 3
+      GAMEPAD_PLAYER_LX     = 4
+      GAMEPAD_PLAYER_LY     = 5
+      GAMEPAD_PLAYER_RX     = 6
+      GAMEPAD_PLAYER_RY     = 7
+      GAMEPAD_PLAYER_L2     = 8
+      GAMEPAD_PLAYER_R2     = 9
+      GAMEPAD_PLAYER_SIZE   = 10
+
+      GAMEPAD_SIZE = GAMEPAD_PLAYER + GAMEPAD_PLAYERS * GAMEPAD_PLAYER_SIZE
+
 
 Programmable Sound Generator
 =============================
@@ -1373,82 +1066,6 @@ Each of the eight oscillators uses eight bytes of XRAM for
 configuration. The structure size is a power of two, so indexing into
 the oscillator array is a bit shift.
 
-.. tab:: C
-
-   .. code-block:: C
-
-      typedef struct
-      {
-          uint16_t freq;
-          uint8_t duty;
-          uint8_t vol_attack;
-          uint8_t vol_decay;
-          uint8_t wave_release;
-          uint8_t pan_gate;
-          uint8_t unused;
-      } psg_t;
-
-      #define PSG_CHANNELS 8
-
-      #define PSG_WAVE_SINE 0x00
-      #define PSG_WAVE_SQUARE 0x10
-      #define PSG_WAVE_SAWTOOTH 0x20
-      #define PSG_WAVE_TRIANGLE 0x30
-      #define PSG_WAVE_NOISE 0x40
-
-      #define PSG_GATE 0x01
-
-      #define PSG_FREQ_HZ(hz) ((hz) * 3u)
-      #define PSG_PAN(pan) ((uint8_t)((pan) * 2))
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-
-      .struct psg_t
-          freq         .word
-          duty         .byte
-          vol_attack   .byte
-          vol_decay    .byte
-          wave_release .byte
-          pan_gate     .byte
-          unused       .byte
-      .endstruct
-
-      PSG_CHANNELS = 8
-
-      PSG_WAVE_SINE     = $00
-      PSG_WAVE_SQUARE   = $10
-      PSG_WAVE_SAWTOOTH = $20
-      PSG_WAVE_TRIANGLE = $30
-      PSG_WAVE_NOISE    = $40
-
-      PSG_GATE = $01
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :force:
-
-      PSG_FREQ         = 0
-      PSG_DUTY         = 2
-      PSG_VOL_ATTACK   = 3
-      PSG_VOL_DECAY    = 4
-      PSG_WAVE_RELEASE = 5
-      PSG_PAN_GATE     = 6
-      PSG_UNUSED       = 7
-      PSG_SIZE         = 8
-
-      PSG_CHANNELS = 8
-
-      PSG_WAVE_SINE     = $00
-      PSG_WAVE_SQUARE   = $10
-      PSG_WAVE_SAWTOOTH = $20
-      PSG_WAVE_TRIANGLE = $30
-      PSG_WAVE_NOISE    = $40
-
-      PSG_GATE = $01
-
 Enable and disable the PSG by setting its extended register. The value
 is the XRAM start address for the 64 bytes of config; it must be
 int-aligned and must not cross a page boundary. Any invalid address
@@ -1456,8 +1073,9 @@ disables the PSG.
 
 .. code-block:: C
 
-  xreg(0, 1, 0x00, xaddr); // enable
+  xreg(0, 1, 0x00, xaddr);  // enable
   xreg(0, 1, 0x00, 0xFFFF); // disable
+  xreg_ria_psg(xaddr);      // macro shortcut
 
 Configuration changes take effect immediately, which opens the door to
 panning, slide instruments, and other CPU-driven shenanigans.
@@ -1575,6 +1193,105 @@ Volume attenuation is logarithmic.
      - 24s
      - 0/256 (silent)
 
+.. tab:: C
+
+   .. code-block:: C
+      :caption: xram.h
+
+      #define PSG_CHANNELS 8
+
+      #define PSG_WAVE_SINE 0x00
+      #define PSG_WAVE_SQUARE 0x10
+      #define PSG_WAVE_SAWTOOTH 0x20
+      #define PSG_WAVE_TRIANGLE 0x30
+      #define PSG_WAVE_NOISE 0x40
+
+      #define PSG_GATE 0x01
+
+      #define PSG_FREQ_HZ(hz) ((hz) * 3u)
+      #define PSG_PAN(pan) ((uint8_t)((pan) * 2))
+
+      #define xreg_ria_psg(...) xreg(0, 1, 0, __VA_ARGS__)
+
+      typedef struct
+      {
+          struct
+          {
+              uint16_t freq;
+              uint8_t duty;
+              uint8_t vol_attack;
+              uint8_t vol_decay;
+              uint8_t wave_release;
+              uint8_t pan_gate;
+              uint8_t reserved;
+          } channel[PSG_CHANNELS];
+      } psg_t;
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+      :caption: xram.inc
+
+      PSG_CHANNELS = 8
+
+      PSG_WAVE_SINE     = $00
+      PSG_WAVE_SQUARE   = $10
+      PSG_WAVE_SAWTOOTH = $20
+      PSG_WAVE_TRIANGLE = $30
+      PSG_WAVE_NOISE    = $40
+
+      PSG_GATE = $01
+
+      .macro xreg_ria_psg addr
+          xreg 0, 1, 0, addr
+      .endmacro
+
+      .struct psg_t
+          channel .struct
+              freq         .word
+              duty         .byte
+              vol_attack   .byte
+              vol_decay    .byte
+              wave_release .byte
+              pan_gate     .byte
+              reserved     .byte
+          .endstruct
+          .res (::PSG_CHANNELS - 1) * .sizeof(channel)
+      .endstruct
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :caption: xram.inc
+      :force:
+
+      PSG_CHANNELS = 8
+
+      PSG_WAVE_SINE     = $00
+      PSG_WAVE_SQUARE   = $10
+      PSG_WAVE_SAWTOOTH = $20
+      PSG_WAVE_TRIANGLE = $30
+      PSG_WAVE_NOISE    = $40
+
+      PSG_GATE = $01
+
+      .macro xreg_ria_psg addr
+          xreg 0, 1, 0, \addr
+      .endm
+
+      PSG_CHANNEL = 0
+
+      PSG_CHANNEL_FREQ         = 0
+      PSG_CHANNEL_DUTY         = 2
+      PSG_CHANNEL_VOL_ATTACK   = 3
+      PSG_CHANNEL_VOL_DECAY    = 4
+      PSG_CHANNEL_WAVE_RELEASE = 5
+      PSG_CHANNEL_PAN_GATE     = 6
+      PSG_CHANNEL_RESERVED     = 7
+      PSG_CHANNEL_SIZE         = 8
+
+      PSG_SIZE = PSG_CHANNEL + PSG_CHANNELS * PSG_CHANNEL_SIZE
+
 
 Yamaha OPL2 FM Sound Generator
 ==============================
@@ -1588,15 +1305,23 @@ on a page boundary.
 
 .. code-block:: C
 
-  xreg(0, 1, 0x01, xaddr); // enable
+  xreg(0, 1, 0x01, xaddr);  // enable
   xreg(0, 1, 0x01, 0xFFFF); // disable
+  xreg_ria_opl(xaddr);      // macro shortcut
 
 So if xaddr is 0x4200, the 256 OPL2 registers map into XRAM from 0x4200
 to 0x42FF. Any invalid address disables the OPL2.
 
+Timers, interrupts, and the status register are not supported. Those
+features existed mainly to cost-reduce consumer devices; computers of
+the era had their own timers and rarely used the chip's.
+
 .. tab:: C
 
    .. code-block:: C
+      :caption: xram.h
+
+      #define xreg_ria_opl(...) xreg(0, 1, 1, __VA_ARGS__)
 
       typedef struct
       {
@@ -1606,6 +1331,11 @@ to 0x42FF. Any invalid address disables the OPL2.
 .. tab:: ca65
 
    .. code-block:: ca65
+      :caption: xram.inc
+
+      .macro xreg_ria_opl addr
+          xreg 0, 1, 1, addr
+      .endmacro
 
       .struct opl_t
           reg .res 256
@@ -1614,15 +1344,16 @@ to 0x42FF. Any invalid address disables the OPL2.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
+      :caption: xram.inc
       :force:
+
+      .macro xreg_ria_opl addr
+          xreg 0, 1, 1, \addr
+      .endm
 
       OPL_REG  = 0
       OPL_SIZE = 256
 
-
-Timers, interrupts, and the status register are not supported. Those
-features existed mainly to cost-reduce consumer devices; computers of
-the era had their own timers and rarely used the chip's.
 
 Console
 =======

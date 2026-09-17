@@ -204,19 +204,25 @@ XRAM
 ``rp6502.h`` and ``rp6502.inc`` contain the operating system interface.
 The structures and macros for the devices in XRAM are in the :doc:`ria`
 and :doc:`vga` datasheets, as groups you copy into your own ``xram.h`` or
-``xram.inc``. Copy each group whole, since a structure's constants and
-macros are written for it. This small amount of copy and paste lets the
-docs change without breaking your build. The ABI is stable: registers,
-offsets, and sizes stay the same. The naming is not, and you can rename
-anything in your copy.
+``xram.inc``. Each group is a code block labeled ``xram.h`` or
+``xram.inc``. Choose the C, ca65 or llvm-mc tab, then use the copy button
+in the corner of the block to copy the whole group. Copy each group whole,
+since a structure's constants and macros are written for it. This small
+amount of copy and paste lets the docs change without breaking your build.
+The ABI is stable: registers, offsets, and sizes stay the same. The naming
+is not, and you can rename anything in your copy.
 
 Write your XRAM layout once, in the same file, and use the same names in
 your program and in ``CMakeLists.txt``. The layout says what lives in XRAM,
-and each address is named from it.
+and each address is named from it. This example uses the groups from `Key Registers
+<vga.html#key-registers>`__ and `Mode 3 <vga.html#mode-3-bitmap>`__ in the
+:doc:`vga` datasheet, and from `Mouse <ria.html#mouse>`__ in the :doc:`ria`
+datasheet.
 
 .. tab:: C
 
    .. code-block:: C
+      :caption: xram.h
 
       #ifndef XRAM_H
       #define XRAM_H
@@ -226,7 +232,7 @@ and each address is named from it.
       #include <stddef.h>
       #include <stdint.h>
 
-      /* The mode 3 and VGA registers groups from RP6502-VGA go here. */
+      /* The Key Registers and Mode 3 groups from RP6502-VGA go here. */
       /* The mouse group from RP6502-RIA goes here. */
 
       typedef struct
@@ -245,12 +251,12 @@ and each address is named from it.
 .. tab:: ca65
 
    .. code-block:: ca65
+      :caption: xram.inc
 
       .ifndef XRAM_INC
       XRAM_INC = 1
 
-      ; The XRAM portal and XREG call groups from RP6502-RIA go here.
-      ; The mode 3 and VGA registers groups from RP6502-VGA go here.
+      ; The Key Registers and Mode 3 groups from RP6502-VGA go here.
       ; The mouse group from RP6502-RIA goes here.
 
       .struct xram_layout_t
@@ -271,13 +277,13 @@ and each address is named from it.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
+      :caption: xram.inc
       :force:
 
       .ifndef XRAM_INC
       XRAM_INC = 1
 
-      ; The XRAM portal and XREG call groups from RP6502-RIA go here.
-      ; The mode 3 and VGA registers groups from RP6502-VGA go here.
+      ; The Key Registers and Mode 3 groups from RP6502-VGA go here.
       ; The mouse group from RP6502-RIA goes here.
 
       XRAM_CANVAS_DATA   = 0
@@ -306,19 +312,25 @@ Your program uses those names wherever it needs an XRAM address.
       xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, xram_data_ptr, XRAM_CANVAS_DATA);
       xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, xram_palette_ptr, 0xFFFF);
       xreg_vga_canvas(1);
-      xreg_vga_mode(3, 2, XRAM_CANVAS_CONFIG);
+      xreg_vga_mode3(2, XRAM_CANVAS_CONFIG);
       xreg_ria_mouse(XRAM_MOUSE);
 
 .. tab:: ca65
 
    .. code-block:: ca65
 
-          xram0_struct_set XRAM_CANVAS_CONFIG, mode3_config_t, width_px, 320
-          xram0_struct_set XRAM_CANVAS_CONFIG, mode3_config_t, height_px, 240
-          xram0_struct_set XRAM_CANVAS_CONFIG, mode3_config_t, xram_data_ptr, XRAM_CANVAS_DATA
-          xram0_struct_set XRAM_CANVAS_CONFIG, mode3_config_t, xram_palette_ptr, $FFFF
+          lda #<(XRAM_CANVAS_CONFIG + mode3_config_t::width_px)
+          sta RIA_ADDR0
+          lda #>(XRAM_CANVAS_CONFIG + mode3_config_t::width_px)
+          sta RIA_ADDR0+1
+          lda #1
+          sta RIA_STEP0
+          lda #<320
+          sta RIA_RW0
+          lda #>320
+          sta RIA_RW0
           xreg_vga_canvas 1
-          xreg_vga_mode 3, 2, XRAM_CANVAS_CONFIG
+          xreg_vga_mode3 2, XRAM_CANVAS_CONFIG
           xreg_ria_mouse XRAM_MOUSE
 
 .. tab:: llvm-mc
@@ -326,12 +338,18 @@ Your program uses those names wherever it needs an XRAM address.
    .. code-block:: ca65
       :force:
 
-          xram0_set16 XRAM_CANVAS_CONFIG + MODE3_CONFIG_WIDTH_PX, 320
-          xram0_set16 XRAM_CANVAS_CONFIG + MODE3_CONFIG_HEIGHT_PX, 240
-          xram0_set16 XRAM_CANVAS_CONFIG + MODE3_CONFIG_XRAM_DATA_PTR, XRAM_CANVAS_DATA
-          xram0_set16 XRAM_CANVAS_CONFIG + MODE3_CONFIG_XRAM_PALETTE_PTR, $FFFF
+          lda #((XRAM_CANVAS_CONFIG + MODE3_CONFIG_WIDTH_PX) & $FF)
+          sta RIA_ADDR0
+          lda #(((XRAM_CANVAS_CONFIG + MODE3_CONFIG_WIDTH_PX) >> 8) & $FF)
+          sta RIA_ADDR0+1
+          lda #1
+          sta RIA_STEP0
+          lda #(320 & $FF)
+          sta RIA_RW0
+          lda #((320 >> 8) & $FF)
+          sta RIA_RW0
           xreg_vga_canvas 1
-          xreg_vga_mode 3, 2, XRAM_CANVAS_CONFIG
+          xreg_vga_mode3 2, XRAM_CANVAS_CONFIG
           xreg_ria_mouse XRAM_MOUSE
 
 Addresses in CMake
