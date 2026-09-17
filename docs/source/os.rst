@@ -81,8 +81,7 @@ At its core, the ABI is four rules:
 
 A and X are the 6502 registers. The pseudo-register AX combines them
 into 16 bits, and AXSREG extends that to 32 bits with the 16 SREG bits.
-Here's how to make an OS call through the RIA registers. Every OS call is
-specified as a C declaration, like so:
+Every OS call is specified as a C declaration, like so:
 
 .. c:function:: int doit(int arg0, int arg1);
 
@@ -189,8 +188,8 @@ direction (to or from the OS) of the data. A few examples:
 Send ``oflag`` in ``RIA_A``; per the `OPEN`_ docs, ``RIA_X`` doesn't need
 to be set. Send the path on the XSTACK by pushing the string from its
 last character backward. You can skip the terminating zero, but strings
-are capped at 255 bytes. From the C SDK this just works — the
-implementation pushes the string for you.
+are capped at 255 bytes. From the C SDK, the implementation pushes the
+string for you.
 
 .. code-block:: C
 
@@ -1080,7 +1079,7 @@ GETCWD
    Get the current working directory. Size is ignored by the OS but the C
    wrapper will use it.
 
-   The result alwasys includes a device name: ``MSC0:/games`` on a
+   The result always includes a device name: ``MSC0:/games`` on a
    :doc:`pico`, ``C:/Users/me`` on Windows, and ``FS:/home/me`` on hosts
    like Linux where the filesystem has one root.
 

@@ -8,40 +8,16 @@ RP6502 - Software Development Kit
 Introduction
 ============
 
-The SDK turns your source into a ROM. Picocomputer software is
-distributed as one file ending in ``.rp6502`` — the program, its assets,
-and the 6502 vectors in a single package — and the SDK builds one of
-those, puts it on a machine, and debugs it while it runs.
+Picocomputer software is distributed as a ROM, one file ending in
+``.rp6502`` — the program, its assets, and the 6502 vectors in a single
+package — and the SDK builds one of those, puts it on a machine, and
+debugs it while it runs.
 
 The `RP6502 project template <https://github.com/picocomputer/rp6502-sdk>`__
 is scaffolding for a new Picocomputer 6502 program. It builds with either
-6502 compiler, cc65 or llvm-mos, and switching between them is one
-setting. Three "Hello, world!" examples are included to start from — one
-in C that builds with either compiler, and the same program in each
-assembler's syntax.
-
-
-Three Layers
-============
-
-The SDK has three layers, and only the bottom one is required. The
-layers are ordinary files in your repository. Nothing is installed and
-nothing is hidden, so you can read any layer and delete the ones you
-don't want.
-
-.. code-block:: text
-
-   ┌───────────────────────────────────────────────────────────┐
-   │ .vscode/                                                  │
-   │   Launch configurations, tasks, recommended extensions.   │
-   ├───────────────────────────────────────────────────────────┤
-   │ CMakeLists.txt  CMakePresets.json  tools/rp6502.cmake     │
-   │   The CMake build system works with many other editors.   │
-   ├───────────────────────────────────────────────────────────┤
-   │ tools/rp6502.py                                 Python 3  │
-   │   Packages the ROM with its assets and communicates with  │
-   │   RP6502-PICO and RP6502-EMU machines for debugging.      │
-   └───────────────────────────────────────────────────────────┘
+6502 compiler, cc65 or llvm-mos. Three "Hello, world!" examples are included
+to start from — one in C that builds with either compiler, and the same
+program in each assembler's syntax.
 
 
 Getting Started
@@ -71,10 +47,6 @@ It will also create the ``.rp6502`` settings file described in the next
 section. It is expected that you commit these tools to your repository
 and update them manually as needed, either from a task or the command line.
 The emulator executable and settings file are ignored by git.
-
-.. code-block:: text
-
-  cmake -P tools/rp6502.cmake
 
 Your debugger may take focus when the program stops so make sure to
 check if the emulator hides behind your debugger or editor window.
@@ -122,9 +94,8 @@ or IP address and key of a :doc:`pico` you want to test with.
    * - ``term``
      - Attach a console terminal when running on hardware.
 
-The file holds more than these settings. The emulator keeps its debugger
-window layout here too, so each project remembers where you left its
-windows.
+The emulator keeps its debugger window layout here too, so each project
+remembers where you left its windows.
 
 
 Running and Debugging
@@ -133,45 +104,14 @@ Running and Debugging
 "Start Debugging" (F5) offers two configurations.
 
 **RP6502 (Emulator)** is the default. It builds your project and runs it
-with source-level debugging in the :doc:`emu`. No hardware needed.
+with source-level debugging in the :doc:`emu`.
 
 **RP6502 (Hardware)** builds your project and runs it on an :doc:`pico`.
 Connect with telnet, or with a USB cable to the VGA module's USB port.
 
 Breakpoints, stepping, the call stack, and watch expressions work only on
-the emulator. Debugging on hardware provides a terminal instead. What
-a debugger can see depends on which compiler you chose. llvm-mos provides
-type information and cc65 does not; the :doc:`emu` has the details.
-
-
-Adding Assets
-=============
-
-Your program is rarely just code. Graphics, level data, help text, and
-anything else you want to ship travel inside the same ``.rp6502`` file,
-added in ``CMakeLists.txt``.
-
-.. code-block:: cmake
-
-  rp6502_asset(hello 0x10000 img/intro.bin)
-  rp6502_asset(hello help src/help.txt)
-
-A numeric address is a memory chunk. The file is loaded straight into RAM
-(``$0000-$FEFF``) or XRAM (``$10000-$1FFFF``) when the ROM loads, before
-the 6502 starts, so it is already in place when your program runs.
-
-Anything else is a name, and named assets become part of the filesystem
-while your ROM runs. Prefix the name with ``ROM:`` and open it like any
-other file. They're read-only, and you can have several open at once.
-
-.. code-block:: C
-
-  open("ROM:help", O_RDONLY);
-
-Some names are special. The ``help`` asset is what an :doc:`pico`
-monitor's HELP and INFO commands display.
-
-Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
+the emulator. Debugging on hardware provides a terminal instead. llvm-mos
+provides type information and cc65 does not; the :doc:`emu` has the details.
 
 
 Memory Map
@@ -206,18 +146,17 @@ The structures and macros for the devices in XRAM are in the :doc:`ria`
 and :doc:`vga` datasheets, as groups you copy into your own ``xram.h`` or
 ``xram.inc``. Each group is a code block labeled ``xram.h`` or
 ``xram.inc``. Choose the C, ca65 or llvm-mc tab, then use the copy button
-in the corner of the block to copy the whole group. Copy each group whole,
+in the corner of the block. Copy each group whole,
 since a structure's constants and macros are written for it. This small
 amount of copy and paste lets the docs change without breaking your build.
 The ABI is stable: registers, offsets, and sizes stay the same. The naming
 is not, and you can rename anything in your copy.
 
 Write your XRAM layout once, in the same file, and use the same names in
-your program and in ``CMakeLists.txt``. The layout says what lives in XRAM,
-and each address is named from it. This example uses the groups from `Key Registers
-<vga.html#key-registers>`__ and `Mode 3 <vga.html#mode-3-bitmap>`__ in the
-:doc:`vga` datasheet, and from `Mouse <ria.html#mouse>`__ in the :doc:`ria`
-datasheet.
+your program and in ``CMakeLists.txt``. This example uses the groups from
+`Key Registers <vga.html#key-registers>`__ and `Mode 3
+<vga.html#mode-3-bitmap>`__ in the :doc:`vga` datasheet, and from `Mouse
+<ria.html#mouse>`__ in the :doc:`ria` datasheet.
 
 .. tab:: C
 
@@ -421,6 +360,36 @@ asset or any other file.
   close(fd);
 
 See `READ_XRAM <os.html#read-xram>`__.
+
+
+Adding Assets
+=============
+
+Your program is rarely just code. Graphics, level data, help text, and
+anything else you want to ship travel inside the same ``.rp6502`` file,
+added in ``CMakeLists.txt``.
+
+.. code-block:: cmake
+
+  rp6502_asset(hello 0x10000 img/intro.bin)
+  rp6502_asset(hello help src/help.txt)
+
+A numeric address is a memory chunk. The file is loaded straight into RAM
+(``$0000-$FEFF``) or XRAM (``$10000-$1FFFF``) when the ROM loads, before
+the 6502 starts.
+
+Anything else is a name, and named assets become part of the filesystem
+while your ROM runs. Prefix the name with ``ROM:`` and open it like any
+other file. They're read-only, and you can have several open at once.
+
+.. code-block:: C
+
+  open("ROM:help", O_RDONLY);
+
+Some names are special. The ``help`` asset is what an :doc:`pico`
+monitor's HELP and INFO commands display.
+
+Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
 
 
 Linker Configuration

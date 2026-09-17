@@ -67,7 +67,7 @@ the :doc:`sdk` template will fetch the right one into ``tools/``, so
 you may have it already.
 
 - **Windows** — ``rp6502-emu.exe`` is the program itself, not an installer.
-  Requires  a GPU with Direct3D 11. It isn't code signed, so SmartScreen
+  Requires a GPU with Direct3D 11. It isn't code signed, so SmartScreen
   warns on first launch; choose "More info" then "Run anyway".
 - **macOS** — drag ``rp6502-emu.app`` to Applications.
   It isn't signed or notarized, so Gatekeeper blocks
@@ -234,8 +234,8 @@ the host's stderr, so a console program written for the Picocomputer
 runs in a shell pipeline.
 
 Host stdin becomes the machine's console input under ``--stdin``, which
-``--headless`` implies. A pipe's end of file reaches the
-program. Once the input is gone, a read of ``stdin`` returns 0 bytes.
+``--headless`` implies. Once the input is gone, a read of ``stdin``
+returns 0 bytes.
 
 .. code-block:: text
 
@@ -374,7 +374,7 @@ before the first instruction. ``stopOnExit`` is on by default and keeps
 the session alive after the program ends, so the final screen remains on
 display. The program's ``stdout`` and ``stderr`` reach the Debug Console
 as output events of those two categories, so VS Code shows ``stderr`` in
-red; the emulated terminal in the window shows both.
+red.
 
 
 Scripting
@@ -499,11 +499,10 @@ MOS-style ``$FF``.
    * - ``reply [on|off]``
      - Answer every command on stdout. See `Driving it from a program`_.
 
-A failed check names the script and the line it was on, then exits 1,
-which is what a test runner needs.
+A failed check names the script and the line it was on, then exits 1.
 
 Memory starts random, as it often does on real hardware. This will catch
-uninitialize memory usage... eventually. ``--fill 00`` gives a test
+uninitialized memory usage... eventually. ``--fill 00`` gives a test
 known memory when it needs it.
 
 
@@ -513,10 +512,6 @@ Driving it from a program
 .. note::
 
    Scripting is beta and may change.
-
-A script file is a list of commands that drive the emulator. ``--script -``
-is the other half: the machine reads one line at a time and waits, so a
-program on the other end of the pipe can test the machine.
 
 ``reply`` turns on one line of answer per command — ``ok``, ``ok <values>``
 for ``dump`` and ``crc``, or ``fail <why>``. It is off until asked, so a
@@ -537,6 +532,5 @@ An answer comes when the command **finishes**, not when it parses. The
   dump xram:$FF00 4        -> ok 80 00 00 08
   peek xram:$FF00 $99      -> fail $FF00+0 is $80, expected $99
 
-Any language that can write a pipe and read a line back can drive the emulator.
 The arithmetic and the assertions belong in your driver program, which is
-why you don't see any in this scripting lanugage.
+why you don't see any in this scripting language.

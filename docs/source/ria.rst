@@ -575,8 +575,7 @@ application can draw its own.
 - 6 - RESIZE_NS
 
 When the host cursor bit is clear the application must draw its own
-pointer, and ``control`` has no effect. This is always the case on real
-hardware.
+pointer, and ``control`` has no effect.
 
 .. tab:: C
 
@@ -772,8 +771,7 @@ printed. A type is only reported when the RIA is certain.
      - Square, west
      - Triangle, north
 
-The sticks bit is high when the gamepad has both analog sticks. One
-stick is not enough to set it.
+The sticks bit is high when the gamepad has both analog sticks.
 
 Both digital and analog values are available for the sticks and the
 L2/R2 triggers, so applications can ignore the analog values entirely if
@@ -1406,7 +1404,7 @@ removed. Give a division instead, ``"MIDI0:480"``, and the cable is
 **timed**: the RIA handles timing for you using the event format from
 Standard MIDI Files, prefixing every message with a variable length
 quantity delta time measured in ticks. The rest of this section is the
-timed format; raw mode is just the wire bytes.
+timed format.
 
 In timed mode, time starts at the open — the first byte in either
 direction is a delta measuring from the open itself, and a delta of zero
@@ -1514,7 +1512,7 @@ place of "ROM cartridges". In 1983 you might have grabbed a cartridge
 with colorful stickers to home in on the exact dopamine hit you were
 after. NFC cards are cheap and just as easy to decorate, whether with
 stickers or direct printing. Grab a card, tap it on the reader, and the
-ROM you want loads instantly. Here's how it works.
+ROM you want loads instantly.
 
 You'll need a PN532 card reader with a USB interface. It's the only
 reader RIA firmware drives, and it's cheap — around $10 USD. You'll also want a
@@ -1607,8 +1605,7 @@ length, then the tag data. ``page`` is the NTAG page to begin writing at
 (page 4 is the start of user data). Data is written in 4-byte pages, and
 the final page is zero-padded if the payload isn't a multiple of 4. The
 write arms once the full payload arrives and runs on the current card or
-the next one presented. A second ``NFC_CMD_WRITE`` overwrites the first —
-last write wins.
+the next one presented. A second ``NFC_CMD_WRITE`` overwrites the first.
 
 The payload may be at most 888 bytes; a longer length is rejected with the
 error tone and never armed. A write also fails (error tone) if it would run
@@ -1657,7 +1654,6 @@ Container (CC[2] * 8 = max NDEF bytes), and pages 4+ are user data
 After ``NFC_RESP_READ`` or ``NFC_RESP_WRITE``, send one or more tone
 commands or play your own sounds. Typically you request reads on
 ``NFC_RESP_CARD_READY`` and arm writes on ``NFC_RESP_NO_CARD``, but you
-can also arm a write after reading and verifying a card. The state
-changes give you flexibility in how you sequence operations. The cached
+can also arm a write after reading and verifying a card. The cached
 tag image is not refreshed by a write, so re-present the card before the
 next ``NFC_CMD_READ`` if you want to read back what you wrote.

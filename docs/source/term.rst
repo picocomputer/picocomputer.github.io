@@ -41,7 +41,7 @@ At the start of every cooked stdin read, the active terminal is queried
 with a Cursor Position Report (CPR) sequence.
 
 The built-in VGA terminal stops responding to these queries if a telnet
-or USB terminal is connected, so the external terminal wins. **If both
+or USB terminal is connected. **If both
 USB and telnet terminals are connected at the same time and both reply,
 the system may get confused.** If pagination or word-wrap seem wrong,
 check what terminals are attached to the console manifold.
@@ -99,8 +99,7 @@ as the first, and a close succeeds as a no-op.
 Non-blocking Read Line
 ----------------------
 
-A non-blocking cooked read is more than just a prompt that doesn't
-stall. Between the activating read and the line flush, the application
+Between the activating read and the line flush, the application
 can inspect and modify the editor's state. That is what makes features
 like history recall, tab completion, and multi-field form navigation
 possible. The hooks are `RLN_LASTKEY <os.html#rln-lastkey>`__,
@@ -137,8 +136,7 @@ The basic pattern:
      navigation, and any other keys it wants to claim. Call ``ria_rln_peek()``
      to get the current input text and cursor position. Respond by
      poking literal characters or ANSI sequences (``CUF``, ``CUB``,
-     ``ICH``, ``DCH``) back into the editor as if the user had typed
-     them.
+     ``ICH``, ``DCH``) back into the editor.
 
 #. **Read ``RIA_ATTR_RLN_WIDTH`` and ``RIA_ATTR_RLN_HEIGHT``** to obtain
    the dynamic size after the read line completes.

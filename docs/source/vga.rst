@@ -57,8 +57,8 @@ system — but push too hard and you overrun the renderer.
 The built-in 8x8 and 8x16 fonts are available through the sentinel XRAM
 pointer $FFFF. Glyphs 0-127 are ASCII; glyphs 128-255 vary by code page.
 
-The built-in color palettes are reached the same way, through the
-sentinel XRAM pointer $FFFF. 1-bit is black and white. 4-bit and 8-bit
+The built-in color palettes are also reached through the sentinel XRAM
+pointer $FFFF. 1-bit is black and white. 4-bit and 8-bit
 modes start with an ANSI palette of 16 colors, followed by 216 colors
 (6x6x6), then 24 grays.
 
@@ -1133,9 +1133,9 @@ applications are denied access to them.
 Backchannel
 ===========
 
-The 6502 programmer never has to think about any of this; it happens
-automatically. What follows is the return path for machines where the
-RIA and the VGA are separate chips joined by a serial wire.
+The 6502 programmer never has to think about any of this. What follows is
+the return path for machines where the RIA and the VGA are separate chips
+joined by a serial wire.
 
 Because the PIX bus is unidirectional, the VGA system can't send data
 straight back to the RIA. The UART Rx path won't do either — it would

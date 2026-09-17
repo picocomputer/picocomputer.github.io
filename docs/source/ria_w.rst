@@ -46,8 +46,7 @@ Network Time Protocol (NTP)
 ===========================
 
 The real-time clock synchronizes with internet time servers whenever
-Wi-Fi is connected, so it is right without being asked. The ``status``
-command reports what NTP is doing.
+Wi-Fi is connected. The ``status`` command reports what NTP is doing.
 
 The clock keeps UTC. For local time, set your time zone with ``SET TZ``
 and run ``HELP SET TZ`` for guidance; Daylight Saving adjustments are
