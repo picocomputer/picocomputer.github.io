@@ -70,9 +70,9 @@ Application Binary Interface
 
    :doc:`ria` — the hardware register map referenced throughout this section.
 
-A C program never has to do any of this, because the compiler's library
-is already the implementation. What follows is for assembly programs and
-for anyone bringing another compiler to the Picocomputer.
+A C program does none of this, because the compiler's library is the
+implementation. What follows is for assembly programs and for anyone
+bringing another compiler to the Picocomputer.
 
 The ABI for calling the operating system is based on fastcall from the
 `cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The OS

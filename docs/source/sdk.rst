@@ -118,8 +118,8 @@ Building a ROM
 ==============
 
 ``rp6502_executable()`` packages the linker output into a ``.rp6502`` ROM
-file, together with any assets the target carries. Every project calls it
-once for each ROM it builds.
+file, together with the assets added to the target. There is one call for
+each ROM.
 
 .. code-block:: cmake
 
@@ -181,8 +181,8 @@ Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
 RAM Memory Map
 ==============
 
-A program has the RAM from $0000 to $FEFF. What sits above it is in the
-:doc:`os` :ref:`memory map <os-memory-map>`.
+The RAM from $0000 to $FEFF holds the program. The devices above it are
+in the :doc:`os` :ref:`memory map <os-memory-map>`.
 
 Each compiler includes a linker script for the Picocomputer:
 ``cfg/rp6502.cfg`` for cc65 and ``mos-platform/rp6502/link.ld`` for

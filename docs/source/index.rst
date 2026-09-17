@@ -133,8 +133,7 @@ Read the Docs
 =============
 
 Start with the :doc:`sdk`. The rest are datasheets for the parts of the
-machine, and each one is worth reading when your program reaches for what
-it describes.
+machine. Read each one when a program uses the part it describes.
 
 - :doc:`sdk`: writing software, from a new project to a running program.
 - :doc:`ria`: the register map and every device reached through it. The

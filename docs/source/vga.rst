@@ -34,31 +34,30 @@ in canvas pixels. A bitmap or tilemap can be a different size than the
 canvas. One that is smaller covers part of the canvas, and one that is larger
 can be scrolled by changing its position.
 
-The canvas is drawn by three planes, and each plane has two layers, a
-fill layer and a sprite layer. Plane 0 is the back and plane 2 is the
-front, and a transparent pixel shows whatever the plane behind it drew.
-A plane's sprite layer draws over its own fill layer. There's enough fill
-rate to blow past any classic 8-bit system — but push too hard and you
-overrun the renderer.
+The canvas is drawn from three planes, each with two layers, a fill layer
+and a sprite layer. Plane 0 is the back and plane 2 is the front, and a
+transparent pixel shows the plane behind it. A plane's sprite layer is
+drawn over its fill layer. There's enough fill rate to blow past any
+classic 8-bit system — but push too hard and you overrun the renderer.
 
 Every mode is programmed into one plane over a range of scanlines, which
 is what the PLANE, BEGIN and END registers do in the mode sections below.
 BEGIN is the first scanline and END is one past the last, so a mode that
 covers the whole canvas is programmed with both of them 0. Different
-ranges of the same plane can run different modes, which is how a status
-bar of characters sits above a bitmap.
+ranges of the same plane take different modes, which is how a status bar
+of characters sits above a bitmap.
 
 Putting a picture on the canvas takes four steps. Select a canvas, load
 the data into XRAM, write the mode's configuration structure into XRAM,
-then program the mode. The configuration structure says where the data
-is, how big it is, and where it goes on the canvas, and each mode below
-documents its own.
+then program the mode. The configuration structure holds the address of
+the data, its size, and its position on the canvas. Each mode has its
+own, given in its section below.
 
 You program the VGA device with :ref:`PIX extended registers <ria-xreg>`
 (XREGs). VGA is PIX device ID 1. Registers are 16-bit values addressed as
-$device:$channel:register — for example, $1:0:0F. Where an example below
-writes ``xaddr``, the register takes the XRAM address of that mode's
-configuration structure.
+$device:$channel:register — for example, $1:0:0F. ``xaddr`` in the
+examples below is the XRAM address of that mode's configuration
+structure.
 
 .. code-block:: C
 

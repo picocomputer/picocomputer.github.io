@@ -231,12 +231,12 @@ in the table below begins with $0.
 A register that maps a device holds the XRAM address of the device's
 structure. $FFFF, or any other invalid address, disables the device.
 Setting the register installs the device at that address. From then on
-the RIA and the program share that block of XRAM, which the program
-reaches through the RW0 and RW1 portals above.
+the RIA and the program both use that block of XRAM, which is read and
+written through the RW0 and RW1 portals above.
 
-C sets an extended register with :ref:`xreg() <os-xreg>`, and assembly
-with the ``xreg`` macro in ``rp6502.inc``. Both take the device, the
-channel, the address, and then one or more 16-bit values.
+A C program sets an extended register with :ref:`xreg() <os-xreg>`, and an
+assembly program with the ``xreg`` macro in ``rp6502.inc``. Both take the
+device, the channel, the address, and then one or more 16-bit values.
 
 
 .. list-table::
@@ -1617,8 +1617,8 @@ next ``NFC_CMD_READ`` if you want to read back what you wrote.
 Peripheral Information Exchange (PIX)
 =====================================
 
-A 6502 program never has to think about the bus. What follows is for
-anyone building a device to put on it.
+None of this is needed to program the machine. What follows is the bus
+itself, for anyone building a device to put on it.
 
 High-bandwidth devices like video systems need a bus of their own. PIX
 is that bus: an addressable broadcast system that any number of devices
