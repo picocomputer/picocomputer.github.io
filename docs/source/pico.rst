@@ -268,7 +268,8 @@ Active Parts List (ICs Only)
 Pi Picos Parts List
 ===================
 
-Alternative part numbers for the Pi Picos.
+Alternative part numbers for the Pi Picos. These require soldering the
+headers youself.
 
 `Pi Picos CSV <_static/rp6502-revb-picos.csv>`_
 
@@ -279,6 +280,13 @@ Alternative part numbers for the Pi Picos.
 
 Parts Substitution
 ==================
+
+The WDC W65C02S and W65C22S must not be substituted. Don't try NMOS chips (the
+ones without the C in the part number). Some older CMOS designs may work, but
+there are no plans to support out-of-production ICs.
+
+Only Raspberry Pi's own Pico 2 has been tested. Both the original and the "H"
+(header) versions work great. Pin-compatible alternatives usually work too.
 
 All resistors are 1% tolerance or better, any power rating. Leads must fit
 0.8 mm plated holes spaced 10 mm apart. A size of roughly 0.1" x 0.25"
@@ -311,10 +319,3 @@ you find one, prefer it over the 74HC30.
 
 The RAM IC is 128K because two 32K chips cost more. Speed must be 70 ns or
 faster to reach 8 MHz.
-
-The WDC W65C02S and W65C22S must not be substituted. Don't try NMOS chips (the
-ones without the C in the part number). Some older CMOS designs may work, but
-there are no plans to support out-of-production ICs.
-
-Only Raspberry Pi's own Pico 2 has been tested. Both the original and the "H"
-(header) versions work great. Pin-compatible alternatives usually work too.
