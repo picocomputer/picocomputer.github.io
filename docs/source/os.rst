@@ -56,9 +56,9 @@ chip-select logic to use it: add more VIAs downward and other hardware
 upward — for example, VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and
 SID1 at $FF20.
 
-Your program's own layout of RAM and XRAM is set up in the SDK's :ref:`RAM
-Memory Map <sdk:RAM Memory Map>` and :ref:`XRAM Memory Map
-<sdk:XRAM Memory Map>`.
+Your program's own layout of RAM and XRAM is set up in the SDK's
+:ref:`RAM Memory Map <sdk-ram-memory-map>` and
+:ref:`XRAM Memory Map <sdk-xram-memory-map>`.
 
 
 Application Binary Interface
@@ -315,6 +315,8 @@ XREG
    :a regs: return
    :errno: EINVAL, EIO
 
+
+.. _os-argv:
 
 ARGV
 ----
@@ -626,6 +628,8 @@ READ_XSTACK
    :a regs: fildes
    :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
       FR_TIMEOUT
+
+.. _os-read-xram:
 
 READ_XRAM
 ---------
@@ -1151,6 +1155,8 @@ GETFREE
       FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
 
 
+.. _os-rln-lastkey:
+
 RLN_LASTKEY
 -----------
 
@@ -1176,6 +1182,8 @@ RLN_LASTKEY
    :errno: EINVAL
 
 
+.. _os-rln-peek:
+
 RLN_PEEK
 --------
 
@@ -1196,6 +1204,8 @@ RLN_PEEK
    :a regs: return
    :errno: EINVAL
 
+
+.. _os-rln-poke:
 
 RLN_POKE
 --------
@@ -1282,6 +1292,8 @@ that knows nothing about the menu. The launcher can supply context through
 argv — a save-file path or difficulty setting, say — and the ROM just calls
 `EXIT`_ when it's done.
 
+
+.. _os-ria-attributes:
 
 RIA Attributes
 ==============

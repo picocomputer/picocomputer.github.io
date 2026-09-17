@@ -83,13 +83,12 @@ or IP address and key of a :doc:`pico` you want to test with.
      - The serial port the machine appears on, or a hostname to
        reach it over telnet.
    * - ``key``
-     - Passkey for telnet. See :ref:`Telnet Console
-       <ria_w:Telnet Console>`.
+     - Passkey for telnet. See :ref:`Telnet Console <ria-w-telnet-console>`.
    * - ``workdir``
      - Remote directory to work in.
    * - ``args``
-     - Arguments passed to your ROM, reaching it through :ref:`ARGV
-       <os:ARGV>`. A launch configuration that carries its own
+     - Arguments passed to your ROM, reaching it through
+       :ref:`ARGV <os-argv>`. A launch configuration that carries its own
        arguments overrides these.
    * - ``term``
      - Attach a console terminal when running on hardware.
@@ -145,6 +144,8 @@ monitor's HELP and INFO commands display.
 Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
 
 
+.. _sdk-ram-memory-map:
+
 RAM Memory Map
 ==============
 
@@ -167,11 +168,13 @@ describes the cc65 script format, and the llvm-mos wiki page `Linker Script
 <https://llvm-mos.org/wiki/Linker_Script>`__ describes the llvm-mos format.
 
 
+.. _sdk-xram-memory-map:
+
 XRAM Memory Map
 ===============
 
 XRAM is 64 KB of memory outside the 6502's address space, reached through
-the RIA's :ref:`XRAM portals <ria:Extended RAM (XRAM)>`. It holds the data
+the RIA's :ref:`XRAM portals <ria-extended-ram>`. It holds the data
 for the virtual devices: keyboard, mouse, tablet and gamepad input, the PSG
 and OPL2 sound generators, VGA mode configurations, and the pixels, tiles
 and sprites the modes draw. XRAM has no fixed map. You decide where each
@@ -195,7 +198,7 @@ your build. The ABI is stable: registers, offsets, and sizes stay the same.
 Only the names can change, and you can rename anything in your copy.
 
 This example is for a program that uses only the keyboard. The keyboard
-definitions are the :ref:`Keyboard <ria:Keyboard>` block from the
+definitions are the :ref:`Keyboard <ria-keyboard>` block from the
 :doc:`ria` datasheet, and the layout after them places the keyboard at
 address 0.
 
@@ -335,8 +338,8 @@ the keyboard to its address and waits for a key to be pressed.
           and #(1 << KEYBOARD_NO_KEY)
           bne 1b
 
-To add a 320x240 bitmap, copy the :ref:`Key Registers <vga:Key Registers>`
-and :ref:`Mode 3 <vga:Mode 3: Bitmap>` blocks from the :doc:`vga` datasheet
+To add a 320x240 bitmap, copy the :ref:`Key Registers <vga-key-registers>`
+and :ref:`Mode 3 <vga-mode-3>` blocks from the :doc:`vga` datasheet
 into the file above the layout, then change the layout to hold the bitmap's
 pixels and its mode 3 configuration.
 
@@ -464,7 +467,7 @@ asset or any other file.
   read_xram(XRAM_BITMAP_DATA, 320U * 240 / 2, fd);
   close(fd);
 
-See :ref:`READ_XRAM <os:READ_XRAM>`.
+See :ref:`READ_XRAM <os-read-xram>`.
 
 
 Linker Configuration
@@ -640,6 +643,8 @@ That writes one ``plvm.rp6502`` holding three memory chunks — the code at
 ``$0400``, the reset vector at ``$FFFC``, and the splash at ``$10000`` —
 and two named assets, ``help`` and ``level1``.
 
+
+.. _sdk-rom-file-format:
 
 ROM File Format
 ===============

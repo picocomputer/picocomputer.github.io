@@ -138,10 +138,9 @@ table.
 
   uint16_t palette[1 << bits_per_pixel];
 
-You program the VGA device with :ref:`PIX extended registers
-<ria:PIX Extended Registers (XREG)>` (XREGs). VGA is PIX device
-ID 1. Registers are 16-bit values addressed as $device:$channel:register
-— for example, $1:0:0F.
+You program the VGA device with :ref:`PIX extended registers <ria-xreg>`
+(XREGs). VGA is PIX device ID 1. Registers are 16-bit values addressed as
+$device:$channel:register — for example, $1:0:0F.
 
 .. code-block:: C
 
@@ -153,6 +152,8 @@ ID 1. Registers are 16-bit values addressed as $device:$channel:register
     result = xreg(1, 0, 1, 3, 2, 0xFF00); // or
     result = xreg_vga_mode3(2, 0xFF00);
 
+
+.. _vga-key-registers:
 
 Key Registers
 -------------
@@ -184,12 +185,12 @@ Setting a key register may fail, returning -1 with errno EINVAL.
        $1:0:02-$1:0:FF cleared after programming. Each mode has a
        section of this document for its own registers.
 
-       * 0 - :ref:`Console <vga:Mode 0: Console>`
-       * 1 - :ref:`Character <vga:Mode 1: Character>`
-       * 2 - :ref:`Tile <vga:Mode 2: Tile>`
-       * 3 - :ref:`Bitmap <vga:Mode 3: Bitmap>`
-       * 4 - :ref:`Sprite 16-bit <vga:Mode 4: Sprite 16-bit>`
-       * 5 - :ref:`Sprite 1,2,4,8-bit <vga:Mode 5: Sprite 1,2,4,8-bit>`
+       * 0 - :ref:`Console <vga-mode-0>`
+       * 1 - :ref:`Character <vga-mode-1>`
+       * 2 - :ref:`Tile <vga-mode-2>`
+       * 3 - :ref:`Bitmap <vga-mode-3>`
+       * 4 - :ref:`Sprite 16-bit <vga-mode-4>`
+       * 5 - :ref:`Sprite 1,2,4,8-bit <vga-mode-5>`
 
 Select a canvas by setting CANVAS. Set it before programming any modes,
 because setting CANVAS clears all scanline programming.
@@ -225,6 +226,8 @@ because setting CANVAS clears all scanline programming.
           xreg 1, 0, 0, \canvas
       .endm
 
+
+.. _vga-mode-0:
 
 Mode 0: Console
 ---------------
@@ -292,6 +295,8 @@ Program the mode by setting MODE and the registers after it in one call.
           xreg 1, 0, 1, 0, \values
       .endm
 
+
+.. _vga-mode-1:
 
 Mode 1: Character
 -----------------
@@ -517,6 +522,8 @@ row of all 256 glyphs, the next 256 bytes the second row, and so on.
       MODE1_16BPP_DATA_SIZE       = 6
 
 
+.. _vga-mode-2:
+
 Mode 2: Tile
 ------------
 
@@ -657,6 +664,8 @@ cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
       MODE2_CONFIG_SIZE             = 16
 
 
+.. _vga-mode-3:
+
 Mode 3: Bitmap
 --------------
 
@@ -778,6 +787,8 @@ manipulation code slightly smaller and faster.
       MODE3_CONFIG_XRAM_PALETTE_PTR = 12
       MODE3_CONFIG_SIZE             = 14
 
+
+.. _vga-mode-4:
 
 Mode 4: Sprite 16-bit
 ---------------------
@@ -970,6 +981,8 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
       MODE4_ASPRITE_SIZE                 = 20
 
 
+.. _vga-mode-5:
+
 Mode 5: Sprite 1,2,4,8-bit
 --------------------------
 
@@ -1120,7 +1133,7 @@ applications are denied access to them.
    * - $1:F:01
      - CODE_PAGE
      - Set code page for built-in font. Matches
-       :ref:`RIA_ATTR_CODE_PAGE <os:RIA Attributes>`.
+       :ref:`RIA_ATTR_CODE_PAGE <os-ria-attributes>`.
    * - $1:F:02
      - SUPPRESS_TERM_REPLY
      - Used by the telnet server to suppress term responses.
@@ -1165,7 +1178,7 @@ When bit 0x80 is set, the 0x70 bits give the command type and the 0x0F
 bits give a scalar for that command.
 
 0x80 VSYNC - The scalar will increment and be used for the LSB of the
-:ref:`RIA VSYNC <ria:Registers>` register.
+:ref:`RIA VSYNC <ria-registers>` register.
 
 0x90 OP_ACK - Some XREG locations are triggers for remote calls which
 may fail or take time to complete. This acknowledges a successful

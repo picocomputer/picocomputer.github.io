@@ -5,6 +5,8 @@ RP6502-TERM
 RP6502 - Terminal
 
 
+.. _term-console-manifold:
+
 Console Manifold
 ================
 
@@ -26,7 +28,7 @@ can be attached at once and fanned in to one console; this is the
   and access the console over the USB CDC ACM serial port that appears.
   No driver is needed.
 * **Telnet.** The :doc:`ria_w` exposes the console over the network. See
-  :ref:`Telnet Console <ria_w:Telnet Console>` for setup.
+  :ref:`Telnet Console <ria-w-telnet-console>` for setup.
 
 Any terminal on the console manifold can be used for development and
 scripting. The limits show up when software needs the terminal to report
@@ -55,7 +57,7 @@ Locking the Size
 ----------------
 
 A ROM can pin a fixed terminal size by writing non-zero values to
-:ref:`RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT <os:RIA Attributes>`.
+:ref:`RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT <os-ria-attributes>`.
 With both axes pinned, the auto-detect handshake is skipped entirely.
 Writing 0 returns the channel to auto-detect, and both attributes revert
 to 0 when the ROM stops.
@@ -89,7 +91,7 @@ channels:
   once the editor flushes. Writes may send less than you asked for.
 * ``TTY:`` — non-blocking raw input, with no canonical input and no
   newline translation. ``read()`` returns whatever bytes are queued.
-  This is what the :ref:`RIA TX and RX registers <ria:UART>` provide,
+  This is what the :ref:`RIA TX and RX registers <ria-uart>` provide,
   packaged as stdio.
 
 ``CON:`` and ``TTY:`` are each locked to their own file descriptor,
@@ -102,8 +104,8 @@ Non-blocking Read Line
 Between the activating read and the line flush, the application
 can inspect and modify the editor's state. That is what makes features
 like history recall, tab completion, and multi-field form navigation
-possible. The hooks are :ref:`RLN_LASTKEY <os:RLN_LASTKEY>`,
-:ref:`RLN_PEEK <os:RLN_PEEK>`, and :ref:`RLN_POKE <os:RLN_POKE>`.
+possible. The hooks are :ref:`RLN_LASTKEY <os-rln-lastkey>`,
+:ref:`RLN_PEEK <os-rln-peek>`, and :ref:`RLN_POKE <os-rln-poke>`.
 
 The basic pattern:
 

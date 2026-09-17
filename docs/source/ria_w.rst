@@ -57,6 +57,8 @@ Once Wi-Fi and the time zone are configured, timekeeping takes care of
 itself.
 
 
+.. _ria-w-telnet-console:
+
 Telnet Console
 ==============
 

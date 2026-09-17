@@ -50,13 +50,15 @@ way.
 The :doc:`pico` is unique in that it hosts itself and therefore requires
 a way to terminate a halted or wedged 6502.
 To drop reset from high to low and return to the monitor — even from a
-crashed or halted 6502 — use any terminal on the :ref:`console manifold
-<term:Console Manifold>`:
+crashed or halted 6502 — use any terminal on the
+:ref:`console manifold <term-console-manifold>`:
 
 1. Press Ctrl-Alt-Del from a USB keyboard.
 2. Send a break from a serial terminal.
 3. Send a break from a telnet terminal.
 
+
+.. _ria-registers:
 
 Registers
 =========
@@ -172,6 +174,8 @@ The 6502 sees the RIA as 32 bytes at $FFE0-$FFFF. The last six are the
      - BRK/IRQB
      - 6502 vector.
 
+.. _ria-uart:
+
 UART
 ----
 
@@ -180,6 +184,8 @@ and the ready flags on bits 6-7 let you test with the BIT operator. Use
 these or the :doc:`os` stdio — but not both at once: driving the UART
 directly while a stdio OS function is in progress is undefined behavior.
 The line runs at 115200 bps, 8-bit words, no parity, 1 stop bit.
+
+.. _ria-extended-ram:
 
 Extended RAM (XRAM)
 -------------------
@@ -205,7 +211,7 @@ The C macros ``xram0_struct_set`` and ``xram1_struct_set`` come with
 rp6502.h. Each sets one member of a structure in XRAM, given the structure's
 address, its type and the member's name. They are convenient but not
 efficient, because every call sets the address again. The SDK's
-:ref:`XRAM Memory Map <sdk:XRAM Memory Map>` section shows them in use.
+:ref:`XRAM Memory Map <sdk-xram-memory-map>` section shows them in use.
 
 
 Extended Stack (XSTACK)
@@ -298,6 +304,8 @@ Each PIX device keeps a local replica of the XRAM it uses. Typically all
 64 KB is replicated, and an XREG set by a 6502 application installs
 virtual hardware at some location in XRAM.
 
+.. _ria-xreg:
+
 PIX Extended Registers (XREG)
 -----------------------------
 
@@ -313,6 +321,8 @@ That gives seven PIX devices, each with 16 channels of 256 16-bit
 registers. The idea is to use these extended registers to configure
 virtual hardware and map it into extended memory.
 
+
+.. _ria-keyboard:
 
 Keyboard
 ========

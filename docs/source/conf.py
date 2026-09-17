@@ -15,12 +15,10 @@ release = ''
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autosectionlabel',
     'sphinx_copybutton',
     'sphinx_inline_tabs',
     'sphinxext.opengraph',
 ]
-autosectionlabel_prefix_document = True
 exclude_patterns = []
 
 # -- Options for HTML output -------------------------------------------------
