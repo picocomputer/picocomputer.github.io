@@ -8,9 +8,6 @@ RP6502 - Emulator
 Introduction
 ============
 
-This page documents the software hosts. The :doc:`fpga` is the host made
-of gates, and the :doc:`pico` is a standalone machine you can build.
-
 An emulator is a first-class Picocomputer rather than a facsimile.
 It runs the same 6502 code, responds to the same registers, and maps its
 own errors onto the same errno values every other host reports.
@@ -18,42 +15,35 @@ own errors onto the same errno values every other host reports.
 What differs between the software hosts:
 
 .. list-table::
-   :widths: 28 22 18 16 16
+   :widths: 28 22 18 16
    :header-rows: 1
 
    * -
      - Linux, macOS, Windows
      - Browser
-     - Android
      - RetroArch
    * - On-screen debugger
      - yes
-     - no
      - no
      - no
    * - DAP debug adapter
      - yes
      - no
      - no
-     - no
    * - Scripting
      - yes
-     - no
      - no
      - no
    * - Arguments
      - command line
      - config block
      - none
-     - none
    * - Drop a ROM on the window
      - yes
      - no
      - no
-     - no
    * - Save states
      - by script
-     - no
      - no
      - yes, with rewind and netplay
 
@@ -77,7 +67,6 @@ you may have it already.
   later plus the GL, X11, and ALSA runtime libraries.
   The tarball preserves the execute bit; if something
   along the way stripped it, ``chmod +x rp6502-emu``.
-- **Android** — the APK from the same release.
 - **RetroArch** — the core is in the Online Updater, under
   "Picocomputer 6502"; see `RetroArch`_ below.
 
