@@ -15,24 +15,6 @@ More than one VGA device can sit on a PIX bus, but all of them share the
 same 64 KB of XRAM, and only the first generates frame numbers and VSYNC
 interrupts.
 
-Two Implementations
-===================
-
-Everything on this page exists twice. There is a software renderer in C
-and there is Register Transfer Logic (RTL) in System Verilog. Neither one
-is a simplification of the other. They have the same registers, the same
-config structures at the same offsets, and they produce the same pixels.
-
-The C is the RP6502-VGA firmware, which is designed to fit entirely on a
-Raspberry Pi Pico 2 as part of an :doc:`pico`, and the :doc:`emu`
-compiles the same files, so that module and every software host draw
-with one renderer. The RTL is in the :doc:`fpga`, where each mode is a
-scanline engine in fabric.
-
-The two are tested against each other. A generator writes a corpus of
-small ROMs covering every mode. Every fixture boots on both machines,
-settles, and the two framebuffers are compared word for word.
-
 Video Programming
 ==================
 
@@ -41,106 +23,42 @@ computers and arcades of the 8-bit and early-16-bit era. Applications mix
 and match the existing modes freely, and a new mode is one more scanline
 engine alongside the ones already here.
 
-Under the hood, it's built around a modified scanvideo library from Pi
-Pico Extras. All three planes run RGB555 color plus transparency. The
-mode 4 sprite system comes from Pi Pico Playground; the scanline
-programming system and every other mode are original work for the
-RP6502.
-
 Everything the VGA system draws is on the canvas, a grid of pixels such as
 320x240. Scanlines are the rows of the canvas, numbered from 0 at the top.
 The canvas does not set the resolution of the video output. It is scaled to
 fit the display, so 320x240 and 640x480 canvases cover the same area, and a
 pixel on the 320x240 canvas is twice as wide and twice as tall.
 
-The VGA system exposes per-scanline configuration to your 6502
-application. At the broadest level there are three planes, and each
-plane has two layers: a fill layer and a sprite layer. Your application
-can assign different fill and sprite modes to specific planes and
-scanlines. There's enough fill rate to blow past any classic 8-bit
-system — but push too hard and you overrun the renderer.
-
 Bitmaps, tilemaps and sprites are placed on the canvas at an x and y position
 in canvas pixels. A bitmap or tilemap can be a different size than the
 canvas. One that is smaller covers part of the canvas, and one that is larger
 can be scrolled by changing its position.
 
-The built-in 8x8 and 8x16 fonts are available through the sentinel XRAM
-pointer $FFFF. Glyphs 0-127 are ASCII; glyphs 128-255 vary by code page.
+The canvas is drawn by three planes, and each plane has two layers, a
+fill layer and a sprite layer. Plane 0 is the back and plane 2 is the
+front, and a transparent pixel shows whatever the plane behind it drew.
+A plane's sprite layer draws over its own fill layer. There's enough fill
+rate to blow past any classic 8-bit system — but push too hard and you
+overrun the renderer.
 
-The built-in color palettes are also reached through the sentinel XRAM
-pointer $FFFF. 1-bit is black and white. 4-bit and 8-bit
-modes start with an ANSI palette of 16 colors, followed by 216 colors
-(6x6x6), then 24 grays.
+Every mode is programmed into one plane over a range of scanlines, which
+is what the PLANE, BEGIN and END registers do in the mode sections below.
+BEGIN is the first scanline and END is one past the last, so a mode that
+covers the whole canvas is programmed with both of them 0. Different
+ranges of the same plane can run different modes, which is how a status
+bar of characters sits above a bitmap.
 
-16-bit colors are built with the bit logic below. Setting the alpha bit
-makes a color opaque; clearing it makes the color transparent. Despite
-the name, alpha here is a binary flag, not a blending factor. The
-built-in ANSI palette has the alpha bit set on every color except color
-0 (black), which is transparent.
-
-.. tab:: C
-
-   .. code-block:: C
-      :caption: xram.h
-
-      #define COLOR_FROM_RGB8(r, g, b) \
-          ((((unsigned)(b) >> 3) << 11) | (((unsigned)(g) >> 3) << 6) | ((unsigned)(r) >> 3))
-      #define COLOR_FROM_RGB5(r, g, b) \
-          (((unsigned)(b) << 11) | ((unsigned)(g) << 6) | (unsigned)(r))
-      #define COLOR_ALPHA_MASK (1u << 5)
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-      :caption: xram.inc
-
-      COLOR_ALPHA_MASK = 1 << 5
-
-      .macro COLOR_FROM_RGB8 r, g, b, alpha
-        .ifblank alpha
-          .word (((b) >> 3) << 11) | (((g) >> 3) << 6) | ((r) >> 3)
-        .else
-          .word (((b) >> 3) << 11) | (((g) >> 3) << 6) | ((r) >> 3) | (alpha)
-        .endif
-      .endmacro
-
-      .macro COLOR_FROM_RGB5 r, g, b, alpha
-        .ifblank alpha
-          .word ((b) << 11) | ((g) << 6) | (r)
-        .else
-          .word ((b) << 11) | ((g) << 6) | (r) | (alpha)
-        .endif
-      .endmacro
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :caption: xram.inc
-      :force:
-
-      COLOR_ALPHA_MASK = 1 << 5
-
-      .macro COLOR_FROM_RGB8 r, g, b, alpha=0
-          .word ((((\b) >> 3) << 11) | (((\g) >> 3) << 6) | ((\r) >> 3) | (\alpha))
-      .endm
-
-      .macro COLOR_FROM_RGB5 r, g, b, alpha=0
-          .word (((\b) << 11) | ((\g) << 6) | (\r) | (\alpha))
-      .endm
-
-A palette is just an array. The 8bpp, 4bpp, 2bpp, and 1bpp modes use one;
-16-bit-per-pixel modes aren't indexed and ignore the palette entirely.
-Palettes must be 16-bit aligned; an odd one falls back to the built-in
-table.
-
-.. code-block:: C
-
-  uint16_t palette[1 << bits_per_pixel];
+Putting a picture on the canvas takes four steps. Select a canvas, load
+the data into XRAM, write the mode's configuration structure into XRAM,
+then program the mode. The configuration structure says where the data
+is, how big it is, and where it goes on the canvas, and each mode below
+documents its own.
 
 You program the VGA device with :ref:`PIX extended registers <ria-xreg>`
 (XREGs). VGA is PIX device ID 1. Registers are 16-bit values addressed as
-$device:$channel:register — for example, $1:0:0F.
+$device:$channel:register — for example, $1:0:0F. Where an example below
+writes ``xaddr``, the register takes the XRAM address of that mode's
+configuration structure.
 
 .. code-block:: C
 
@@ -225,6 +143,85 @@ because setting CANVAS clears all scanline programming.
       .macro xreg_vga_canvas canvas
           xreg 1, 0, 0, \canvas
       .endm
+
+
+Colors, Palettes and Fonts
+--------------------------
+
+All three planes run RGB555 color plus transparency.
+
+16-bit colors are built with the bit logic below. Setting the alpha bit
+makes a color opaque; clearing it makes the color transparent. Despite
+the name, alpha here is a binary flag, not a blending factor. The
+built-in ANSI palette has the alpha bit set on every color except color
+0 (black), which is transparent.
+
+.. tab:: C
+
+   .. code-block:: C
+      :caption: xram.h
+
+      #define COLOR_FROM_RGB8(r, g, b) \
+          ((((unsigned)(b) >> 3) << 11) | (((unsigned)(g) >> 3) << 6) | ((unsigned)(r) >> 3))
+      #define COLOR_FROM_RGB5(r, g, b) \
+          (((unsigned)(b) << 11) | ((unsigned)(g) << 6) | (unsigned)(r))
+      #define COLOR_ALPHA_MASK (1u << 5)
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+      :caption: xram.inc
+
+      COLOR_ALPHA_MASK = 1 << 5
+
+      .macro COLOR_FROM_RGB8 r, g, b, alpha
+        .ifblank alpha
+          .word (((b) >> 3) << 11) | (((g) >> 3) << 6) | ((r) >> 3)
+        .else
+          .word (((b) >> 3) << 11) | (((g) >> 3) << 6) | ((r) >> 3) | (alpha)
+        .endif
+      .endmacro
+
+      .macro COLOR_FROM_RGB5 r, g, b, alpha
+        .ifblank alpha
+          .word ((b) << 11) | ((g) << 6) | (r)
+        .else
+          .word ((b) << 11) | ((g) << 6) | (r) | (alpha)
+        .endif
+      .endmacro
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :caption: xram.inc
+      :force:
+
+      COLOR_ALPHA_MASK = 1 << 5
+
+      .macro COLOR_FROM_RGB8 r, g, b, alpha=0
+          .word ((((\b) >> 3) << 11) | (((\g) >> 3) << 6) | ((\r) >> 3) | (\alpha))
+      .endm
+
+      .macro COLOR_FROM_RGB5 r, g, b, alpha=0
+          .word (((\b) << 11) | ((\g) << 6) | (\r) | (\alpha))
+      .endm
+
+A palette is just an array. The 8bpp, 4bpp, 2bpp, and 1bpp modes use one;
+16-bit-per-pixel modes aren't indexed and ignore the palette entirely.
+Palettes must be 16-bit aligned; an odd one falls back to the built-in
+table.
+
+.. code-block:: C
+
+  uint16_t palette[1 << bits_per_pixel];
+
+The built-in color palettes are reached through the sentinel XRAM pointer
+$FFFF. 1-bit is black and white. 4-bit and 8-bit modes start with an ANSI
+palette of 16 colors, followed by 216 colors (6x6x6), then 24 grays.
+
+The built-in 8x8 and 8x16 fonts are available through the same sentinel
+XRAM pointer $FFFF. Glyphs 0-127 are ASCII; glyphs 128-255 vary by code
+page.
 
 
 .. _vga-mode-0:
@@ -1184,3 +1181,27 @@ may fail or take time to complete. This acknowledges a successful
 completion.
 
 0xA0 OP_NAK - This acknowledges a failure.
+
+
+Two Implementations
+===================
+
+Everything on this page exists twice. There is a software renderer in C
+and there is Register Transfer Logic (RTL) in System Verilog. Neither one
+is a simplification of the other. They have the same registers, the same
+config structures at the same offsets, and they produce the same pixels.
+
+The C is the RP6502-VGA firmware, which is designed to fit entirely on a
+Raspberry Pi Pico 2 as part of an :doc:`pico`, and the :doc:`emu`
+compiles the same files, so that module and every software host draw
+with one renderer. The RTL is in the :doc:`fpga`, where each mode is a
+scanline engine in fabric.
+
+The C renderer is built around a modified scanvideo library from Pi Pico
+Extras. The mode 4 sprite system comes from Pi Pico Playground, and the
+scanline programming system and every other mode are original work for
+the RP6502.
+
+The two are tested against each other. A generator writes a corpus of
+small ROMs covering every mode. Every fixture boots on both machines,
+settles, and the two framebuffers are compared word for word.

@@ -25,6 +25,8 @@ filesystems.
    ExFAT is ready to go and will be enabled when the patents expire.
 
 
+.. _os-memory-map:
+
 Memory Map
 ==========
 
@@ -67,6 +69,10 @@ Application Binary Interface
 .. seealso::
 
    :doc:`ria` — the hardware register map referenced throughout this section.
+
+A C program never has to do any of this, because the compiler's library
+is already the implementation. What follows is for assembly programs and
+for anyone bringing another compiler to the Picocomputer.
 
 The ABI for calling the operating system is based on fastcall from the
 `cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The OS
@@ -267,6 +273,14 @@ tailored to FAT. If a true POSIX ``stat()`` is ever needed, it can be
 built in the C standard library or in an application by translating
 ``f_stat()`` data.
 
+Each operation below is a C declaration followed by a short list of
+details. ``Op code`` is the value a program writes to ``RIA_OP`` to start
+the operation, and ``None`` marks one the C library builds out of other
+operations. ``C proto`` names the header the declaration comes from.
+``a regs`` names the arguments and the return value that fit in ``RIA_A``
+alone, so a program can leave ``RIA_X`` unset. ``errno`` lists what can
+go wrong.
+
 
 ZXSTACK
 -------
@@ -281,6 +295,8 @@ ZXSTACK
    :Op code: RIA_OP_ZXSTACK 0x00
    :C proto: rp6502.h
 
+
+.. _os-xreg:
 
 XREG
 ----

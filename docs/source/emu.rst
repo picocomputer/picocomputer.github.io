@@ -98,6 +98,79 @@ Start the emulator with a ROM, or drag one onto the window.
   rp6502-emu game.rp6502
 
 
+Web Builds
+==========
+
+The itch.io package in the `releases
+<https://github.com/picocomputer/rp6502/releases/latest>`__ is a ready-to-publish
+HTML5 project that plays one Picocomputer ROM in a browser. The zip file
+is deliberately correct for itch.io but is generic enough to use anywhere.
+The game on the :doc:`home page <index>` is this package.
+
+Unpack it to get the three matched files plus a sample program.
+Everything you change lives in one block near the top of ``index.html``:
+
+.. code-block:: text
+
+  var CONFIG = {
+    rom:    'adventure.rp6502',          // change to your program
+    title:  'Colossal Cave Adventure',   // browser tab title
+    bg:     '000000',                    // letterbox fill, no '#'
+    filter: 'sharp',                     // nearest | linear | sharp
+    db:      '',    // save database name; blank = the rom filename
+    persist: false, // true = saves are kept in the player's browser
+  };
+
+Neither the package nor the tester works from a ``file://`` URL. The
+browser needs an HTTP origin to fetch a ROM or stream the WebAssembly.
+Any local server will do.
+
+.. code-block:: text
+
+  python3 -m http.server 8000
+
+Publishing to itch.io
+---------------------
+
+Zip the *contents* of the folder so ``index.html`` sits at the root of the
+archive, not inside a subfolder. Create a project, set the kind to HTML,
+upload the zip, and tick "This file will be played in the browser".
+
+For the embed settings, set the size manually to 640x480 or 640x360 — 320
+wide programs scale up. Leave scrollbars off and leave SharedArrayBuffer
+off.
+
+Please tag your project **RP6502** so it turns up alongside everything
+else at https://itch.io/games/tag-rp6502.
+
+Saves and browser storage
+-------------------------
+
+``/db`` is the working directory. With ``persist: true``, anything
+your program writes there lands in an IndexedDB database in the player's
+browser, which is how players keep saved games and high scores. Without
+it, saves last until the player leaves the page and nothing touches
+browser storage at all.
+
+itch.io serves every HTML game from one shared origin, and IndexedDB is
+per-origin, so your database name shares a namespace with every other
+itch.io game the player runs. Two unrelated games that both ship
+``game.rp6502`` will read and write each other's saves. Set ``db`` to
+something unique, such as ``yourname-yourgame``, to avoid this.
+
+The same behavior is useful deliberately. Give several of your pages the
+same ``db`` and their programs share one filesystem.
+
+
+RetroArch
+=========
+
+The Picocomputer is also a libretro core, which is how it reaches
+RetroArch and the launchers built on it. Install it from Online Updater >
+Core Downloader, under "Picocomputer 6502", then load a ``.rp6502`` ROM
+as content the way you would a cartridge.
+
+
 Arguments
 =========
 
@@ -242,79 +315,6 @@ returns 0 bytes.
   rp6502-emu --headless --phi2 0 tool.rp6502 < input.txt > output.txt
   rp6502-emu --headless adventure.rp6502
   rp6502-emu --stdin game.rp6502           # a window, and the terminal too
-
-
-Web Builds
-==========
-
-The itch.io package in the `releases
-<https://github.com/picocomputer/rp6502/releases/latest>`__ is a ready-to-publish
-HTML5 project that plays one Picocomputer ROM in a browser. The zip file
-is deliberately correct for itch.io but is generic enough to use anywhere.
-The game on the :doc:`home page <index>` is this package.
-
-Unpack it to get the three matched files plus a sample program.
-Everything you change lives in one block near the top of ``index.html``:
-
-.. code-block:: text
-
-  var CONFIG = {
-    rom:    'adventure.rp6502',          // change to your program
-    title:  'Colossal Cave Adventure',   // browser tab title
-    bg:     '000000',                    // letterbox fill, no '#'
-    filter: 'sharp',                     // nearest | linear | sharp
-    db:      '',    // save database name; blank = the rom filename
-    persist: false, // true = saves are kept in the player's browser
-  };
-
-Neither the package nor the tester works from a ``file://`` URL. The
-browser needs an HTTP origin to fetch a ROM or stream the WebAssembly.
-Any local server will do.
-
-.. code-block:: text
-
-  python3 -m http.server 8000
-
-Publishing to itch.io
----------------------
-
-Zip the *contents* of the folder so ``index.html`` sits at the root of the
-archive, not inside a subfolder. Create a project, set the kind to HTML,
-upload the zip, and tick "This file will be played in the browser".
-
-For the embed settings, set the size manually to 640x480 or 640x360 — 320
-wide programs scale up. Leave scrollbars off and leave SharedArrayBuffer
-off.
-
-Please tag your project **RP6502** so it turns up alongside everything
-else at https://itch.io/games/tag-rp6502.
-
-Saves and browser storage
--------------------------
-
-``/db`` is the working directory. With ``persist: true``, anything
-your program writes there lands in an IndexedDB database in the player's
-browser, which is how players keep saved games and high scores. Without
-it, saves last until the player leaves the page and nothing touches
-browser storage at all.
-
-itch.io serves every HTML game from one shared origin, and IndexedDB is
-per-origin, so your database name shares a namespace with every other
-itch.io game the player runs. Two unrelated games that both ship
-``game.rp6502`` will read and write each other's saves. Set ``db`` to
-something unique, such as ``yourname-yourgame``, to avoid this.
-
-The same behavior is useful deliberately. Give several of your pages the
-same ``db`` and their programs share one filesystem.
-
-
-RetroArch
-=========
-
-The Picocomputer is also a libretro core, which is how it reaches
-RetroArch and the launchers built on it. Install it from Online Updater >
-Core Downloader, under "Picocomputer 6502", then load a ``.rp6502`` ROM
-as content the way you would a cartridge.
 
 
 Debugging

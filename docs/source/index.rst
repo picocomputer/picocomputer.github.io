@@ -67,6 +67,9 @@ Start from the project template, open it in VS Code, and press F5. Hello
 world builds and runs in the emulator, with breakpoints and a call
 stack. No hardware, and nothing to buy.
 
+You write in C or 6502 assembly, with either compiler, cc65 or llvm-mos.
+The template comes with a hello world in each.
+
 When it's good, edit a couple of lines and upload it to itch.io, where
 anyone can play it in a browser. For the ultimate flex, build a :doc:`pico`.
 
@@ -74,8 +77,8 @@ anyone can play it in a browser. For the ultimate flex, build a :doc:`pico`.
 real hardware.
 
 
-The Whole Machine
-=================
+The Machine
+===========
 
 - **CPU** — WDC 65C02 and a 65C22 VIA, 0.1 to 8.0 MHz, cycle accurate on
   every host
@@ -103,13 +106,13 @@ Get a Machine
 =============
 
 You already have one. Games and applications are distributed as
-``.rp6502`` ROM files, and every machine runs all of them.
+``.rp6502`` ROM files, and every machine runs them.
 
 - :doc:`pico` — the one you build. 100% through-hole, no IC programmer,
   and you don't even have to solder, but you will plug eight ICs into
   their sockets. Usually under $100 USD.
 - :doc:`emu` — the browser, Windows, macOS, Linux, Android, and
-  RetroArch. Free, and where you start.
+  RetroArch.
 - :doc:`fpga` — the whole machine in gates, on an Analogue Pocket today
   and MiSTer next.
 
@@ -118,16 +121,20 @@ Community
 =========
 
 Most of the action is on Discord, where you can also grab ROMs. Subscribe
-to the YouTube channel and share the project around while you're at it.
+to the YouTube channel and share the project on social media.
 
+- **YouTube:** https://www.youtube.com/@rumbledethumps
 - **Discord:** https://discord.gg/TC6X8kTr6d
 - **Wiki:** https://github.com/picocomputer/community/wiki
 - **GitHub Q&A:** https://github.com/picocomputer/community/discussions
-- **YouTube:** https://www.youtube.com/@rumbledethumps
 
 
 Read the Docs
 =============
+
+Start with the :doc:`sdk`. The rest are datasheets for the parts of the
+machine, and each one is worth reading when your program reaches for what
+it describes.
 
 - :doc:`sdk`: writing software, from a new project to a running program.
 - :doc:`ria`: the register map and every device reached through it. The

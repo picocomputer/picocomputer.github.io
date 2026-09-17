@@ -42,14 +42,31 @@ debugpy for the Python tool that runs your ROM on hardware.
 up a new project. You may change it later from the CMake side panel.
 
 **4. Press F5 to debug.** This will download the latest tools and
-emulator for your system then build hello world and run it in the emulator.
-It will also create the ``.rp6502`` settings file described in the next
-section. It is expected that you commit these tools to your repository
-and update them manually as needed, either from a task or the command line.
+emulator for your system then build hello world and run it in the
+emulator. It will also create the ``.rp6502`` settings file described
+below. It is expected that you commit these tools to your repository and
+update them manually as needed, either from a task or the command line.
 The emulator executable and settings file are ignored by git.
 
 Your debugger may take focus when the program stops so make sure to
 check if the emulator hides behind your debugger or editor window.
+
+
+Running and Debugging
+=====================
+
+"Start Debugging" (F5) offers two configurations. Use the "Run and Debug"
+side panel to select which.
+
+**RP6502 (Emulator)** is the default. It builds your project and runs it
+with source-level debugging in the :doc:`emu`.
+
+**RP6502 (Hardware)** builds your project and runs it on an :doc:`pico`.
+Connect with telnet, or with a USB cable to the VGA module's USB port.
+
+Breakpoints, stepping, the call stack, and watch expressions work only on
+the emulator. Debugging on hardware provides a terminal instead. llvm-mos
+provides type information and cc65 does not; the :doc:`emu` has the details.
 
 
 The .rp6502 Settings File
@@ -97,21 +114,36 @@ The emulator keeps its debugger window layout here too, so each project
 remembers where you left its windows.
 
 
-Running and Debugging
-=====================
+Building a ROM
+==============
 
-"Start Debugging" (F5) offers two configurations. Use the "Run and Debug"
-side panel to select which.
+``rp6502_executable()`` packages the linker output into a ``.rp6502`` ROM
+file, together with any assets the target carries. Every project calls it
+once for each ROM it builds.
 
-**RP6502 (Emulator)** is the default. It builds your project and runs it
-with source-level debugging in the :doc:`emu`.
+.. code-block:: cmake
 
-**RP6502 (Hardware)** builds your project and runs it on an :doc:`pico`.
-Connect with telnet, or with a USB cable to the VGA module's USB port.
+  rp6502_executable(hello DATA default RESET default)
 
-Breakpoints, stepping, the call stack, and watch expressions work only on
-the emulator. Debugging on hardware provides a terminal instead. llvm-mos
-provides type information and cc65 does not; the :doc:`emu` has the details.
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Keyword
+     - Description
+   * - ``DATA``
+     - Where the linker output loads. Omit it and the linker output
+       isn't included at all, which builds a ROM of only assets.
+   * - ``RESET``
+     - Stored at ``$FFFC-$FFFD``. Required.
+   * - ``IRQ``
+     - Stored at ``$FFFE-$FFFF``. Optional.
+   * - ``NMI``
+     - Stored at ``$FFFA-$FFFB``. Optional.
+
+Each takes an address, which may be a literal like ``0x200``, the word
+``file`` to read it out of the linker output, or the word ``default`` to
+take whatever convention your compiler uses.
 
 
 Adding Assets
@@ -148,6 +180,9 @@ Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
 
 RAM Memory Map
 ==============
+
+A program has the RAM from $0000 to $FEFF. What sits above it is in the
+:doc:`os` :ref:`memory map <os-memory-map>`.
 
 Each compiler includes a linker script for the Picocomputer:
 ``cfg/rp6502.cfg`` for cc65 and ``mos-platform/rp6502/link.ld`` for
@@ -189,8 +224,8 @@ rearrange the layout as your data grows.
 The structures are in the :doc:`ria` and :doc:`vga` datasheets. Each one is
 in a code block labeled ``xram.h`` or ``xram.inc``, together with its
 constants and XREG macros. Choose the C, ca65 or llvm-mc tab, then use the
-"Copy to clipboard" button in the corner of the block to copy the whole block into your
-file.
+"Copy to clipboard" button in the corner of the block to copy the whole
+block into your file.
 
 The structures are not part of ``rp6502.h`` or ``rp6502.inc``. Your program
 builds from your own copy, so a name that changes in the docs does not break
@@ -468,37 +503,6 @@ asset or any other file.
   close(fd);
 
 See :ref:`READ_XRAM <os-read-xram>`.
-
-
-Linker Configuration
-====================
-
-``rp6502_executable()`` packages the linker output into a .rp6502 ROM file
-with all the assets you specified.
-
-.. code-block:: cmake
-
-  rp6502_executable(hello DATA default RESET default)
-
-.. list-table::
-   :widths: 20 80
-   :header-rows: 1
-
-   * - Keyword
-     - Description
-   * - ``DATA``
-     - Where the linker output loads. Omit it and the linker output
-       isn't included at all, which builds a ROM of only assets.
-   * - ``RESET``
-     - Stored at ``$FFFC-$FFFD``. Required.
-   * - ``IRQ``
-     - Stored at ``$FFFE-$FFFF``. Optional.
-   * - ``NMI``
-     - Stored at ``$FFFA-$FFFB``. Optional.
-
-Each takes an address, which may be a literal like ``0x200``, the word
-``file`` to read it out of the linker output, or the word ``default`` to
-take whatever convention your compiler uses.
 
 
 Multiple Compiler Artifacts
