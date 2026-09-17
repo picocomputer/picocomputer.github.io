@@ -101,7 +101,8 @@ remembers where you left its windows.
 Running and Debugging
 =====================
 
-"Start Debugging" (F5) offers two configurations.
+"Start Debugging" (F5) offers two configurations. Use the "Run and Debug"
+side panel to select which.
 
 **RP6502 (Emulator)** is the default. It builds your project and runs it
 with source-level debugging in the :doc:`emu`.
@@ -117,15 +118,15 @@ provides type information and cc65 does not; the :doc:`emu` has the details.
 Memory Map
 ==========
 
-Your project maps its own memory: RAM in a linker script, and XRAM in a
-header.
+RAM is laid out in a linker script, and XRAM is laid out in a header.
 
 RAM
 ---
 
-The compilers come with a linker script for the Picocomputer, cc65's
-``cfg/rp6502.cfg`` and llvm-mos's ``mos-platform/rp6502/link.ld``. When you
-outgrow it, copy it into your project and give the linker your own.
+Each compiler includes a linker script for the Picocomputer:
+``cfg/rp6502.cfg`` for cc65 and ``mos-platform/rp6502/link.ld`` for
+llvm-mos. For a different layout, copy the script into your project, change
+the copy, and pass it to the linker with ``target_link_options``.
 
 .. code-block:: cmake
 
@@ -134,23 +135,23 @@ outgrow it, copy it into your project and give the linker your own.
   # llvm-mos:
   target_link_options(hello PRIVATE -T ${CMAKE_SOURCE_DIR}/src/hello.ld)
 
-The script formats are documented with the linkers: `ld65
-<https://cc65.github.io/doc/ld65.html>`__ for cc65 and `lld
-<https://lld.llvm.org/ELF/linker_script.html>`__ for llvm-mos.
+The `ld65 documentation <https://cc65.github.io/doc/ld65.html>`__
+describes the cc65 script format, and the llvm-mos wiki page `Linker Script
+<https://llvm-mos.org/wiki/Linker_Script>`__ describes the llvm-mos format.
 
 XRAM
 ----
 
-``rp6502.h`` and ``rp6502.inc`` contain the operating system interface.
-The structures and macros for the devices in XRAM are in the :doc:`ria`
-and :doc:`vga` datasheets, as groups you copy into your own ``xram.h`` or
-``xram.inc``. Each group is a code block labeled ``xram.h`` or
-``xram.inc``. Choose the C, ca65 or llvm-mc tab, then use the copy button
-in the corner of the block. Copy each group whole,
-since a structure's constants and macros are written for it. This small
-amount of copy and paste lets the docs change without breaking your build.
-The ABI is stable: registers, offsets, and sizes stay the same. The naming
-is not, and you can rename anything in your copy.
+``rp6502.h`` and ``rp6502.inc`` contain the operating system interface. The
+structures and macros for the devices in XRAM are in the :doc:`ria` and
+:doc:`vga` datasheets, as groups you copy into your own ``xram.h`` or
+``xram.inc``. Each group is a code block labeled ``xram.h`` or ``xram.inc``.
+Choose the C, ca65 or llvm-mc tab, then use the copy button in the corner of
+the block. Copy each group whole, since a structure's constants and macros
+are written for it. Because your program builds from its own copy, a change
+to the docs does not break your build. The ABI is stable: registers,
+offsets, and sizes stay the same. The naming is not, and you can rename
+anything in your copy.
 
 Write your XRAM layout once, in the same file, and use the same names in
 your program and in ``CMakeLists.txt``. This example uses the groups from
@@ -317,11 +318,11 @@ its names. Each name is an ordinary CMake variable too, so
 Editing the header configures your project again, so these addresses can
 never go stale. A layout too big for the 64K of XRAM stops the build.
 
-``rp6502_xram()`` reads C only. An assembly project gives ``rp6502_asset()``
-the address as a number, such as ``0x10000`` plus the offset, or sets a
-CMake variable to it. llvm-mos does not search the directory of the including
-file for ``.include``, so add that directory with
-``target_include_directories``.
+``rp6502_xram()`` reads C only. For an assembly project, pass
+``rp6502_asset()`` the address as a number, such as ``0x10000`` plus the
+offset, or set a CMake variable to it. The llvm-mos assembler does not search
+the directory of the including file for ``.include``, so add that directory
+with ``target_include_directories``.
 
 Alignment
 ---------
@@ -344,8 +345,8 @@ putting the odd-sized members last or by giving one a padding byte. Name
 whatever has to stay odd with the third argument and it is left unchecked.
 
 The 64 bytes of the PSG must also stay within one page, and the OPL2
-registers must start on a page. In assembly, the checks are yours to write,
-as in the layout above.
+registers must start on a page. In assembly, write these checks yourself, as
+in the layout above.
 
 Loading at Run Time
 -------------------
