@@ -47,12 +47,23 @@ mode 4 sprite system comes from Pi Pico Playground; the scanline
 programming system and every other mode are original work for the
 RP6502.
 
+Everything the VGA system draws is on the canvas, a grid of pixels such as
+320x240. Scanlines are the rows of the canvas, numbered from 0 at the top.
+The canvas does not set the resolution of the video output. It is scaled to
+fit the display, so 320x240 and 640x480 canvases cover the same area, and a
+pixel on the 320x240 canvas is twice as wide and twice as tall.
+
 The VGA system exposes per-scanline configuration to your 6502
 application. At the broadest level there are three planes, and each
 plane has two layers: a fill layer and a sprite layer. Your application
 can assign different fill and sprite modes to specific planes and
 scanlines. There's enough fill rate to blow past any classic 8-bit
 system — but push too hard and you overrun the renderer.
+
+Bitmaps, tilemaps and sprites are placed on the canvas at an x and y position
+in canvas pixels. A bitmap or tilemap can be a different size than the
+canvas. One that is smaller covers part of the canvas, and one that is larger
+can be scrolled by changing its position.
 
 The built-in 8x8 and 8x16 fonts are available through the sentinel XRAM
 pointer $FFFF. Glyphs 0-127 are ASCII; glyphs 128-255 vary by code page.
@@ -138,7 +149,7 @@ ID 1. Registers are 16-bit values addressed as $device:$channel:register
     result = xreg(1, 0, 0, 1); // or
     result = xreg_vga_canvas(1);
     // Program mode 3 for 4 bit color with
-    // its config registers at XRAM $FF00.
+    // its config structure at XRAM $FF00.
     result = xreg(1, 0, 1, 3, 2, 0xFF00); // or
     result = xreg_vga_mode3(2, 0xFF00);
 
@@ -173,14 +184,15 @@ Setting a key register may fail, returning -1 with errno EINVAL.
        $1:0:02-$1:0:FF cleared after programming. Each mode has a
        section of this document for its own registers.
 
-       * 0 - `Console <#mode-0-console>`__
-       * 1 - `Character <#mode-1-character>`__
-       * 2 - `Tile <#mode-2-tile>`__
-       * 3 - `Bitmap <#mode-3-bitmap>`__
-       * 4 - `Sprite 16-bit <#mode-4-sprite-16-bit>`__
-       * 5 - `Sprite 1,2,4,8-bit <#mode-5-sprite-1-2-4-8-bit>`__
+       * 0 - :ref:`Console <vga:Mode 0: Console>`
+       * 1 - :ref:`Character <vga:Mode 1: Character>`
+       * 2 - :ref:`Tile <vga:Mode 2: Tile>`
+       * 3 - :ref:`Bitmap <vga:Mode 3: Bitmap>`
+       * 4 - :ref:`Sprite 16-bit <vga:Mode 4: Sprite 16-bit>`
+       * 5 - :ref:`Sprite 1,2,4,8-bit <vga:Mode 5: Sprite 1,2,4,8-bit>`
 
-Select a canvas by setting CANVAS.
+Select a canvas by setting CANVAS. Set it before programming any modes,
+because setting CANVAS clears all scanline programming.
 
 .. code-block:: C
 
@@ -217,9 +229,9 @@ Select a canvas by setting CANVAS.
 Mode 0: Console
 ---------------
 
-The console can be rendered on any canvas plane. ANSI color 0 (black)
-is transparent, so text laid over a background image on another plane
-shows the image through it. The console can occupy a partial screen, but
+The console can be rendered on any plane of a graphics canvas. ANSI color 0
+(black) is transparent, so text laid over a background image on another plane
+shows the image through it. The console can cover part of the canvas, but
 its scanline count must be a multiple of the font height. 640-pixel-wide
 canvases use an 8x16 font for 80 columns; 320-pixel-wide canvases use an
 8x8 font for 40 columns. Only one console can be visible at a time —
@@ -284,8 +296,8 @@ Program the mode by setting MODE and the registers after it in one call.
 Mode 1: Character
 -----------------
 
-Character modes carry color information for every cell on the screen, so
-each character can have its own foreground and background. This is the
+Character modes carry color information for every cell, so each character
+can have its own foreground and background. This is the
 mode you want for colorful text — menus, status bars, anything where the
 glyphs change color.
 
@@ -648,9 +660,9 @@ cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
 Mode 3: Bitmap
 --------------
 
-Every pixel can be its own color. The 64 KB of XRAM caps how deep a
-full-screen image can go: monochrome at 640x480, 16 colors at 320x240,
-or 256 colors at 320x180 (16:9).
+Every pixel can be its own color. The 64 KB of XRAM caps the color depth
+of an image that fills the canvas: monochrome at 640x480, 16 colors at
+320x240, or 256 colors at 320x180 (16:9).
 
 .. list-table::
    :widths: 5 5 90
@@ -693,7 +705,7 @@ The data is color information packed down to the bit level. 16-bit color
 encodes the color directly; 1-, 2-, 4-, and 8-bit color encode a palette
 index instead.
 
-Bit order traditionally follows the screen, so that left and right bit
+Bit order traditionally follows the canvas, so that left and right bit
 shifts move pixels the way you'd expect. The reverse-bits option flips
 the bit order of the 1-, 2- and 4-bit modes, which makes bit-level
 manipulation code slightly smaller and faster.
@@ -812,13 +824,14 @@ Program the mode by setting MODE and the registers after it in one call.
   xreg(1, 0, 1, 4, 0, xaddr, length, 1); // sprites on plane 1
   xreg_vga_mode4(0, xaddr, length, 1);   // macro shortcut
 
-Move unused sprites off screen.
+Move unused sprites off the canvas.
 
 Affine sprites apply a 3x3 matrix transform, which makes them slower
 than plain sprites. Only the first two rows of the matrix matter —
 that's why there are just six transform values — and they're in signed
 8.8 fixed-point format, in the order {a00, a01, b0, a10, a11, b1}. The
-matrix maps a screen position in the sprite to a position in the image.
+matrix maps a position within the sprite on the canvas to a position in
+the image.
 
 
 Sprite image data is an array of 16-bit colors. A sprite is a square of
@@ -1006,7 +1019,7 @@ Program the mode by setting MODE and the registers after it in one call.
   xreg(1, 0, 1, 5, 0x0A, xaddr, length, 1); // 16x16 4-bit sprites on plane 1
   xreg_vga_mode5(0x0A, xaddr, length, 1);   // macro shortcut
 
-Disable unused sprites by moving them off screen.
+Disable unused sprites by moving them off the canvas.
 
 Sprite image data uses the same format as individual mode 2 tiles.
 

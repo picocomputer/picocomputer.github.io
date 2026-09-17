@@ -115,6 +115,36 @@ the emulator. Debugging on hardware provides a terminal instead. llvm-mos
 provides type information and cc65 does not; the :doc:`emu` has the details.
 
 
+Adding Assets
+=============
+
+Your program is rarely just code. Graphics, level data, help text, and
+anything else you want to ship travel inside the same ``.rp6502`` file,
+added in ``CMakeLists.txt``.
+
+.. code-block:: cmake
+
+  rp6502_asset(hello 0x10000 img/intro.bin)
+  rp6502_asset(hello help src/help.txt)
+
+A numeric address is a memory chunk. The file is loaded straight into RAM
+(``$0000-$FEFF``) or XRAM (``$10000-$1FFFF``) when the ROM loads, before
+the 6502 starts.
+
+Anything else is a name, and named assets become part of the filesystem
+while your ROM runs. Prefix the name with ``ROM:`` and open it like any
+other file. They're read-only, and you can have several open at once.
+
+.. code-block:: C
+
+  open("ROM:help", O_RDONLY);
+
+Some names are special. The ``help`` asset is what an :doc:`pico`
+monitor's HELP and INFO commands display.
+
+Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
+
+
 RAM Memory Map
 ==============
 
@@ -305,9 +335,9 @@ the keyboard to its address and waits for a key to be pressed.
           and #(1 << KEYBOARD_NO_KEY)
           bne 1b
 
-To add a 320x240 canvas, copy the :ref:`Key Registers <vga:Key Registers>`
+To add a 320x240 bitmap, copy the :ref:`Key Registers <vga:Key Registers>`
 and :ref:`Mode 3 <vga:Mode 3: Bitmap>` blocks from the :doc:`vga` datasheet
-into the file above the layout, then change the layout to hold the canvas
+into the file above the layout, then change the layout to hold the bitmap's
 pixels and its mode 3 configuration.
 
 .. tab:: C
@@ -318,13 +348,13 @@ pixels and its mode 3 configuration.
 
       typedef struct
       {
-          uint8_t canvas[320UL * 240 / 2];
-          mode3_config_t canvas_config;
+          uint8_t bitmap[320UL * 240 / 2];
+          mode3_config_t bitmap_config;
           keyboard_t keyboard;
       } xram_layout_t;
 
-      #define XRAM_CANVAS_DATA offsetof(xram_layout_t, canvas)
-      #define XRAM_CANVAS_CONFIG offsetof(xram_layout_t, canvas_config)
+      #define XRAM_BITMAP_DATA offsetof(xram_layout_t, bitmap)
+      #define XRAM_BITMAP_CONFIG offsetof(xram_layout_t, bitmap_config)
       #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
 
 .. tab:: ca65
@@ -333,17 +363,17 @@ pixels and its mode 3 configuration.
       :caption: xram.inc
 
       .struct xram_layout_t
-          canvas        .res 320 * 240 / 2
-          canvas_config .tag mode3_config_t
+          bitmap        .res 320 * 240 / 2
+          bitmap_config .tag mode3_config_t
           keyboard      .tag keyboard_t
       .endstruct
 
-      XRAM_CANVAS_DATA   = xram_layout_t::canvas
-      XRAM_CANVAS_CONFIG = xram_layout_t::canvas_config
+      XRAM_BITMAP_DATA   = xram_layout_t::bitmap
+      XRAM_BITMAP_CONFIG = xram_layout_t::bitmap_config
       XRAM_KEYBOARD      = xram_layout_t::keyboard
 
       .assert .sizeof(xram_layout_t) <= $10000, error, "XRAM layout is too large"
-      .assert (XRAM_CANVAS_CONFIG & 1) = 0, error, "XRAM_CANVAS_CONFIG is odd"
+      .assert (XRAM_BITMAP_CONFIG & 1) = 0, error, "XRAM_BITMAP_CONFIG is odd"
 
 .. tab:: llvm-mc
 
@@ -351,90 +381,20 @@ pixels and its mode 3 configuration.
       :caption: xram.inc
       :force:
 
-      XRAM_CANVAS_DATA   = 0
-      XRAM_CANVAS_CONFIG = XRAM_CANVAS_DATA + 320 * 240 / 2
-      XRAM_KEYBOARD      = XRAM_CANVAS_CONFIG + MODE3_CONFIG_SIZE
+      XRAM_BITMAP_DATA   = 0
+      XRAM_BITMAP_CONFIG = XRAM_BITMAP_DATA + 320 * 240 / 2
+      XRAM_KEYBOARD      = XRAM_BITMAP_CONFIG + MODE3_CONFIG_SIZE
       XRAM_END           = XRAM_KEYBOARD + KEYBOARD_SIZE
 
       .if XRAM_END > $10000
       .error "XRAM layout is too large"
       .endif
-      .if XRAM_CANVAS_CONFIG & 1
-      .error "XRAM_CANVAS_CONFIG is odd"
+      .if XRAM_BITMAP_CONFIG & 1
+      .error "XRAM_BITMAP_CONFIG is odd"
       .endif
 
-The keyboard now comes after the canvas, at a different address. The code
-that waits for a key does not change, because it uses ``XRAM_KEYBOARD``. This
-code sets up the canvas with the new names.
-
-.. tab:: C
-   :new-set:
-
-   .. code-block:: C
-
-      xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, width_px, 320);
-      xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, height_px, 240);
-      xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, xram_data_ptr, XRAM_CANVAS_DATA);
-      xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, xram_palette_ptr, 0xFFFF);
-      xreg_vga_canvas(1);
-      xreg_vga_mode3(2, XRAM_CANVAS_CONFIG);
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-
-          lda #<(XRAM_CANVAS_CONFIG + mode3_config_t::width_px)
-          sta RIA_ADDR0
-          lda #>(XRAM_CANVAS_CONFIG + mode3_config_t::width_px)
-          sta RIA_ADDR0+1
-          lda #1
-          sta RIA_STEP0
-          lda #<320
-          sta RIA_RW0
-          lda #>320
-          sta RIA_RW0
-          lda #<240
-          sta RIA_RW0
-          lda #>240
-          sta RIA_RW0
-          lda #<XRAM_CANVAS_DATA
-          sta RIA_RW0
-          lda #>XRAM_CANVAS_DATA
-          sta RIA_RW0
-          lda #$FF
-          sta RIA_RW0
-          sta RIA_RW0
-          xreg_vga_canvas 1
-          xreg_vga_mode3 2, XRAM_CANVAS_CONFIG
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :force:
-
-          lda #((XRAM_CANVAS_CONFIG + MODE3_CONFIG_WIDTH_PX) & $FF)
-          sta RIA_ADDR0
-          lda #(((XRAM_CANVAS_CONFIG + MODE3_CONFIG_WIDTH_PX) >> 8) & $FF)
-          sta RIA_ADDR0+1
-          lda #1
-          sta RIA_STEP0
-          lda #(320 & $FF)
-          sta RIA_RW0
-          lda #((320 >> 8) & $FF)
-          sta RIA_RW0
-          lda #(240 & $FF)
-          sta RIA_RW0
-          lda #((240 >> 8) & $FF)
-          sta RIA_RW0
-          lda #(XRAM_CANVAS_DATA & $FF)
-          sta RIA_RW0
-          lda #((XRAM_CANVAS_DATA >> 8) & $FF)
-          sta RIA_RW0
-          lda #$FF
-          sta RIA_RW0
-          sta RIA_RW0
-          xreg_vga_canvas 1
-          xreg_vga_mode3 2, XRAM_CANVAS_CONFIG
+The keyboard now comes after the bitmap, at a different address. The code
+that waits for a key does not change, because it uses ``XRAM_KEYBOARD``.
 
 Addresses in CMake
 ------------------
@@ -449,7 +409,7 @@ asset loads exactly where your program looks for it.
 .. code-block:: cmake
 
   rp6502_xram(src/xram.h "XRAM_.*")
-  rp6502_asset(hello XRAM_CANVAS_DATA img/logo.bin)
+  rp6502_asset(hello XRAM_BITMAP_DATA img/logo.bin)
 
 The regular expression chooses which names to take and has to match a whole
 name. Only ``#define`` lines whose value starts with ``offsetof`` are read,
@@ -457,7 +417,7 @@ so the rest of the header is yours. A backslash continues a definition onto
 the next line, the structure can be called anything, and one header can hold
 several. Call ``rp6502_xram()`` before the ``rp6502_asset()`` calls that use
 its names. Each name is an ordinary CMake variable too, so
-``${XRAM_CANVAS_DATA}`` works anywhere else you need it.
+``${XRAM_BITMAP_DATA}`` works anywhere else you need it.
 
 Editing the header configures your project again, so these addresses can
 never go stale. A layout too big for the 64K of XRAM stops the build.
@@ -479,14 +439,14 @@ build.
 
 .. code-block:: text
 
-  xram.h: XRAM_CANVAS_CONFIG is unaligned at $9A1D. To allow, use the
+  xram.h: XRAM_BITMAP_CONFIG is unaligned at $9A1D. To allow, use the
   [<unaligned_regex>] in rp6502_xram.
 
 Pixel data, fonts, tiles, sprite images, and the keyboard, mouse, gamepad
-and tablet blocks draw the same picture at any address, so the check is
-advice there rather than a rule — take it anyway, and fix an odd one by
-putting the odd-sized members last or by giving one a padding byte. Name
-whatever has to stay odd with the third argument and it is left unchecked.
+and tablet blocks work the same at any address, so the check is advice
+there rather than a rule — take it anyway, and fix an odd one by putting
+the odd-sized members last or by giving one a padding byte. Name whatever
+has to stay odd with the third argument and it is left unchecked.
 
 The 64 bytes of the PSG must also stay within one page, and the OPL2
 registers must start on a page. In assembly, write these checks yourself, as
@@ -495,46 +455,16 @@ in the layout above.
 Loading at Run Time
 -------------------
 
-An asset can also be read into XRAM while your program runs, from a named
+Data can also be read into XRAM while your program runs, from a named
 asset or any other file.
 
 .. code-block:: C
 
   int fd = open("ROM:logo", O_RDONLY);
-  read_xram(XRAM_CANVAS_DATA, 320U * 240 / 2, fd);
+  read_xram(XRAM_BITMAP_DATA, 320U * 240 / 2, fd);
   close(fd);
 
 See :ref:`READ_XRAM <os:READ_XRAM>`.
-
-
-Adding Assets
-=============
-
-Your program is rarely just code. Graphics, level data, help text, and
-anything else you want to ship travel inside the same ``.rp6502`` file,
-added in ``CMakeLists.txt``.
-
-.. code-block:: cmake
-
-  rp6502_asset(hello 0x10000 img/intro.bin)
-  rp6502_asset(hello help src/help.txt)
-
-A numeric address is a memory chunk. The file is loaded straight into RAM
-(``$0000-$FEFF``) or XRAM (``$10000-$1FFFF``) when the ROM loads, before
-the 6502 starts.
-
-Anything else is a name, and named assets become part of the filesystem
-while your ROM runs. Prefix the name with ``ROM:`` and open it like any
-other file. They're read-only, and you can have several open at once.
-
-.. code-block:: C
-
-  open("ROM:help", O_RDONLY);
-
-Some names are special. The ``help`` asset is what an :doc:`pico`
-monitor's HELP and INFO commands display.
-
-Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
 
 
 Linker Configuration
