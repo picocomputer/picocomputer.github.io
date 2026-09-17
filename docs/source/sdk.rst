@@ -115,18 +115,15 @@ the emulator. Debugging on hardware provides a terminal instead. llvm-mos
 provides type information and cc65 does not; the :doc:`emu` has the details.
 
 
-Memory Map
-==========
-
-RAM is laid out in a linker script, and XRAM is laid out in a header.
-
-RAM
----
+RAM Memory Map
+==============
 
 Each compiler includes a linker script for the Picocomputer:
 ``cfg/rp6502.cfg`` for cc65 and ``mos-platform/rp6502/link.ld`` for
 llvm-mos. For a different layout, copy the script into your project, change
 the copy, and pass it to the linker with ``target_link_options``.
+The default linker script gives the full 63.75K of RAM over to the linker to
+manage automatically. Most projects will not need a custom script.
 
 .. code-block:: cmake
 
@@ -139,25 +136,38 @@ The `ld65 documentation <https://cc65.github.io/doc/ld65.html>`__
 describes the cc65 script format, and the llvm-mos wiki page `Linker Script
 <https://llvm-mos.org/wiki/Linker_Script>`__ describes the llvm-mos format.
 
-XRAM
-----
 
-``rp6502.h`` and ``rp6502.inc`` contain the operating system interface. The
-structures and macros for the devices in XRAM are in the :doc:`ria` and
-:doc:`vga` datasheets, as groups you copy into your own ``xram.h`` or
-``xram.inc``. Each group is a code block labeled ``xram.h`` or ``xram.inc``.
-Choose the C, ca65 or llvm-mc tab, then use the copy button in the corner of
-the block. Copy each group whole, since a structure's constants and macros
-are written for it. Because your program builds from its own copy, a change
-to the docs does not break your build. The ABI is stable: registers,
-offsets, and sizes stay the same. The naming is not, and you can rename
-anything in your copy.
+XRAM Memory Map
+===============
 
-Write your XRAM layout once, in the same file, and use the same names in
-your program and in ``CMakeLists.txt``. This example uses the groups from
-`Key Registers <vga.html#key-registers>`__ and `Mode 3
-<vga.html#mode-3-bitmap>`__ in the :doc:`vga` datasheet, and from `Mouse
-<ria.html#mouse>`__ in the :doc:`ria` datasheet.
+XRAM is 64 KB of memory outside the 6502's address space, reached through
+the RIA's `XRAM portals <ria.html#extended-ram-xram>`__. It holds the data
+for the virtual devices: keyboard, mouse, tablet and gamepad input, the PSG
+and OPL2 sound generators, VGA mode configurations, and the pixels, tiles
+and sprites the modes draw. XRAM has no fixed map. You decide where each
+device goes, and your program sets the device's XREG to that address.
+
+You keep that map in one file, ``xram.h`` for C or ``xram.inc`` for
+assembly. It holds the structure for each device you use and a layout that
+places them in XRAM, with a name for each address. The file changes as your
+program does: add a device's structure when you start using the device, and
+rearrange the layout as your data grows.
+
+The structures are in the :doc:`ria` and :doc:`vga` datasheets. Each one is
+in a code block labeled ``xram.h`` or ``xram.inc``, together with its
+constants and XREG macros. Choose the C, ca65 or llvm-mc tab, then use the
+"Copy to clipboard" button in the corner of the block to copy the whole block into your
+file.
+
+The structures are not part of ``rp6502.h`` or ``rp6502.inc``. Your program
+builds from your own copy, so a name that changes in the docs does not break
+your build. The ABI is stable: registers, offsets, and sizes stay the same.
+Only the names can change, and you can rename anything in your copy.
+
+This example places a 320x240 canvas, its mode 3 configuration, and the
+mouse. It uses the blocks from `Key Registers <vga.html#key-registers>`__ and
+`Mode 3 <vga.html#mode-3-bitmap>`__ in the :doc:`vga` datasheet, and from
+`Mouse <ria.html#mouse>`__ in the :doc:`ria` datasheet.
 
 .. tab:: C
 
@@ -171,9 +181,6 @@ your program and in ``CMakeLists.txt``. This example uses the groups from
       #include <stdbool.h>
       #include <stddef.h>
       #include <stdint.h>
-
-      /* The Key Registers and Mode 3 groups from RP6502-VGA go here. */
-      /* The mouse group from RP6502-RIA goes here. */
 
       typedef struct
       {
@@ -195,9 +202,6 @@ your program and in ``CMakeLists.txt``. This example uses the groups from
 
       .ifndef XRAM_INC
       XRAM_INC = 1
-
-      ; The Key Registers and Mode 3 groups from RP6502-VGA go here.
-      ; The mouse group from RP6502-RIA goes here.
 
       .struct xram_layout_t
           canvas        .res 320 * 240 / 2
@@ -223,9 +227,6 @@ your program and in ``CMakeLists.txt``. This example uses the groups from
       .ifndef XRAM_INC
       XRAM_INC = 1
 
-      ; The Key Registers and Mode 3 groups from RP6502-VGA go here.
-      ; The mouse group from RP6502-RIA goes here.
-
       XRAM_CANVAS_DATA   = 0
       XRAM_CANVAS_CONFIG = XRAM_CANVAS_DATA + 320 * 240 / 2
       XRAM_MOUSE         = XRAM_CANVAS_CONFIG + MODE3_CONFIG_SIZE
@@ -240,7 +241,8 @@ your program and in ``CMakeLists.txt``. This example uses the groups from
 
       .endif
 
-Your program uses those names wherever it needs an XRAM address.
+Each ``XRAM_`` name is the address of one part of the layout, and your
+program uses those names wherever it needs an XRAM address.
 
 .. tab:: C
    :new-set:
