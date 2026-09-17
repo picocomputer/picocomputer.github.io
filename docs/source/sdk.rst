@@ -83,13 +83,13 @@ or IP address and key of a :doc:`pico` you want to test with.
      - The serial port the machine appears on, or a hostname to
        reach it over telnet.
    * - ``key``
-     - Passkey for telnet. See `Telnet Console
-       <ria_w.html#telnet-console>`__.
+     - Passkey for telnet. See :ref:`Telnet Console
+       <ria_w:Telnet Console>`.
    * - ``workdir``
      - Remote directory to work in.
    * - ``args``
-     - Arguments passed to your ROM, reaching it through `ARGV
-       <os.html#argv>`__. A launch configuration that carries its own
+     - Arguments passed to your ROM, reaching it through :ref:`ARGV
+       <os:ARGV>`. A launch configuration that carries its own
        arguments overrides these.
    * - ``term``
      - Attach a console terminal when running on hardware.
@@ -141,7 +141,7 @@ XRAM Memory Map
 ===============
 
 XRAM is 64 KB of memory outside the 6502's address space, reached through
-the RIA's `XRAM portals <ria.html#extended-ram-xram>`__. It holds the data
+the RIA's :ref:`XRAM portals <ria:Extended RAM (XRAM)>`. It holds the data
 for the virtual devices: keyboard, mouse, tablet and gamepad input, the PSG
 and OPL2 sound generators, VGA mode configurations, and the pixels, tiles
 and sprites the modes draw. XRAM has no fixed map. You decide where each
@@ -164,10 +164,10 @@ builds from your own copy, so a name that changes in the docs does not break
 your build. The ABI is stable: registers, offsets, and sizes stay the same.
 Only the names can change, and you can rename anything in your copy.
 
-This example places a 320x240 canvas, its mode 3 configuration, and the
-mouse. It uses the blocks from `Key Registers <vga.html#key-registers>`__ and
-`Mode 3 <vga.html#mode-3-bitmap>`__ in the :doc:`vga` datasheet, and from
-`Mouse <ria.html#mouse>`__ in the :doc:`ria` datasheet.
+This example is for a program that uses only the keyboard. The keyboard
+definitions are the :ref:`Keyboard <ria:Keyboard>` block from the
+:doc:`ria` datasheet, and the layout after them places the keyboard at
+address 0.
 
 .. tab:: C
 
@@ -182,16 +182,26 @@ mouse. It uses the blocks from `Key Registers <vga.html#key-registers>`__ and
       #include <stddef.h>
       #include <stdint.h>
 
+      #define KEYBOARD_NO_KEY 0
+      #define KEYBOARD_NUM_LOCK 1
+      #define KEYBOARD_CAPS_LOCK 2
+      #define KEYBOARD_SCROLL_LOCK 3
+
+      #define KEYBOARD_PRESSED(keys, code) ((keys)[(code) >> 3] & (1 << ((code) & 7)))
+
+      #define xreg_ria_keyboard(...) xreg(0, 0, 0, __VA_ARGS__)
+
       typedef struct
       {
-          uint8_t canvas[320UL * 240 / 2];
-          mode3_config_t canvas_config;
-          mouse_t mouse;
+          uint8_t keys[32];
+      } keyboard_t;
+
+      typedef struct
+      {
+          keyboard_t keyboard;
       } xram_layout_t;
 
-      #define XRAM_CANVAS_DATA offsetof(xram_layout_t, canvas)
-      #define XRAM_CANVAS_CONFIG offsetof(xram_layout_t, canvas_config)
-      #define XRAM_MOUSE offsetof(xram_layout_t, mouse)
+      #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
 
       #endif
 
@@ -203,18 +213,24 @@ mouse. It uses the blocks from `Key Registers <vga.html#key-registers>`__ and
       .ifndef XRAM_INC
       XRAM_INC = 1
 
-      .struct xram_layout_t
-          canvas        .res 320 * 240 / 2
-          canvas_config .tag mode3_config_t
-          mouse         .tag mouse_t
+      KEYBOARD_NO_KEY      = 0
+      KEYBOARD_NUM_LOCK    = 1
+      KEYBOARD_CAPS_LOCK   = 2
+      KEYBOARD_SCROLL_LOCK = 3
+
+      .macro xreg_ria_keyboard addr
+          xreg 0, 0, 0, addr
+      .endmacro
+
+      .struct keyboard_t
+          keys .res 32
       .endstruct
 
-      XRAM_CANVAS_DATA   = xram_layout_t::canvas
-      XRAM_CANVAS_CONFIG = xram_layout_t::canvas_config
-      XRAM_MOUSE         = xram_layout_t::mouse
+      .struct xram_layout_t
+          keyboard .tag keyboard_t
+      .endstruct
 
-      .assert .sizeof(xram_layout_t) <= $10000, error, "XRAM layout is too large"
-      .assert (XRAM_CANVAS_CONFIG & 1) = 0, error, "XRAM_CANVAS_CONFIG is odd"
+      XRAM_KEYBOARD = xram_layout_t::keyboard
 
       .endif
 
@@ -227,10 +243,118 @@ mouse. It uses the blocks from `Key Registers <vga.html#key-registers>`__ and
       .ifndef XRAM_INC
       XRAM_INC = 1
 
+      KEYBOARD_NO_KEY      = 0
+      KEYBOARD_NUM_LOCK    = 1
+      KEYBOARD_CAPS_LOCK   = 2
+      KEYBOARD_SCROLL_LOCK = 3
+
+      .macro xreg_ria_keyboard addr
+          xreg 0, 0, 0, \addr
+      .endm
+
+      KEYBOARD_KEYS = 0
+      KEYBOARD_SIZE = 32
+
+      XRAM_KEYBOARD = 0
+
+      .endif
+
+Each ``XRAM_`` name is the address of one part of the layout, and your
+program uses those names wherever it needs an XRAM address. This code maps
+the keyboard to its address and waits for a key to be pressed.
+
+.. tab:: C
+   :new-set:
+
+   .. code-block:: C
+
+      xreg_ria_keyboard(XRAM_KEYBOARD);
+      RIA.addr0 = XRAM_KEYBOARD;
+      RIA.step0 = 0;
+      while (RIA.rw0 & (1 << KEYBOARD_NO_KEY))
+          ;
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+          xreg_ria_keyboard XRAM_KEYBOARD
+          lda #<XRAM_KEYBOARD
+          sta RIA_ADDR0
+          lda #>XRAM_KEYBOARD
+          sta RIA_ADDR0+1
+          lda #0
+          sta RIA_STEP0
+      :   lda RIA_RW0
+          and #1 << KEYBOARD_NO_KEY
+          bne :-
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+          xreg_ria_keyboard XRAM_KEYBOARD
+          lda #(XRAM_KEYBOARD & $FF)
+          sta RIA_ADDR0
+          lda #((XRAM_KEYBOARD >> 8) & $FF)
+          sta RIA_ADDR0+1
+          lda #0
+          sta RIA_STEP0
+      1:  lda RIA_RW0
+          and #(1 << KEYBOARD_NO_KEY)
+          bne 1b
+
+To add a 320x240 canvas, copy the :ref:`Key Registers <vga:Key Registers>`
+and :ref:`Mode 3 <vga:Mode 3: Bitmap>` blocks from the :doc:`vga` datasheet
+into the file above the layout, then change the layout to hold the canvas
+pixels and its mode 3 configuration.
+
+.. tab:: C
+   :new-set:
+
+   .. code-block:: C
+      :caption: xram.h
+
+      typedef struct
+      {
+          uint8_t canvas[320UL * 240 / 2];
+          mode3_config_t canvas_config;
+          keyboard_t keyboard;
+      } xram_layout_t;
+
+      #define XRAM_CANVAS_DATA offsetof(xram_layout_t, canvas)
+      #define XRAM_CANVAS_CONFIG offsetof(xram_layout_t, canvas_config)
+      #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+      :caption: xram.inc
+
+      .struct xram_layout_t
+          canvas        .res 320 * 240 / 2
+          canvas_config .tag mode3_config_t
+          keyboard      .tag keyboard_t
+      .endstruct
+
+      XRAM_CANVAS_DATA   = xram_layout_t::canvas
+      XRAM_CANVAS_CONFIG = xram_layout_t::canvas_config
+      XRAM_KEYBOARD      = xram_layout_t::keyboard
+
+      .assert .sizeof(xram_layout_t) <= $10000, error, "XRAM layout is too large"
+      .assert (XRAM_CANVAS_CONFIG & 1) = 0, error, "XRAM_CANVAS_CONFIG is odd"
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :caption: xram.inc
+      :force:
+
       XRAM_CANVAS_DATA   = 0
       XRAM_CANVAS_CONFIG = XRAM_CANVAS_DATA + 320 * 240 / 2
-      XRAM_MOUSE         = XRAM_CANVAS_CONFIG + MODE3_CONFIG_SIZE
-      XRAM_END           = XRAM_MOUSE + MOUSE_SIZE
+      XRAM_KEYBOARD      = XRAM_CANVAS_CONFIG + MODE3_CONFIG_SIZE
+      XRAM_END           = XRAM_KEYBOARD + KEYBOARD_SIZE
 
       .if XRAM_END > $10000
       .error "XRAM layout is too large"
@@ -239,10 +363,9 @@ mouse. It uses the blocks from `Key Registers <vga.html#key-registers>`__ and
       .error "XRAM_CANVAS_CONFIG is odd"
       .endif
 
-      .endif
-
-Each ``XRAM_`` name is the address of one part of the layout, and your
-program uses those names wherever it needs an XRAM address.
+The keyboard now comes after the canvas, at a different address. The code
+that waits for a key does not change, because it uses ``XRAM_KEYBOARD``. This
+code sets up the canvas with the new names.
 
 .. tab:: C
    :new-set:
@@ -255,7 +378,6 @@ program uses those names wherever it needs an XRAM address.
       xram0_struct_set(XRAM_CANVAS_CONFIG, mode3_config_t, xram_palette_ptr, 0xFFFF);
       xreg_vga_canvas(1);
       xreg_vga_mode3(2, XRAM_CANVAS_CONFIG);
-      xreg_ria_mouse(XRAM_MOUSE);
 
 .. tab:: ca65
 
@@ -271,9 +393,19 @@ program uses those names wherever it needs an XRAM address.
           sta RIA_RW0
           lda #>320
           sta RIA_RW0
+          lda #<240
+          sta RIA_RW0
+          lda #>240
+          sta RIA_RW0
+          lda #<XRAM_CANVAS_DATA
+          sta RIA_RW0
+          lda #>XRAM_CANVAS_DATA
+          sta RIA_RW0
+          lda #$FF
+          sta RIA_RW0
+          sta RIA_RW0
           xreg_vga_canvas 1
           xreg_vga_mode3 2, XRAM_CANVAS_CONFIG
-          xreg_ria_mouse XRAM_MOUSE
 
 .. tab:: llvm-mc
 
@@ -290,9 +422,19 @@ program uses those names wherever it needs an XRAM address.
           sta RIA_RW0
           lda #((320 >> 8) & $FF)
           sta RIA_RW0
+          lda #(240 & $FF)
+          sta RIA_RW0
+          lda #((240 >> 8) & $FF)
+          sta RIA_RW0
+          lda #(XRAM_CANVAS_DATA & $FF)
+          sta RIA_RW0
+          lda #((XRAM_CANVAS_DATA >> 8) & $FF)
+          sta RIA_RW0
+          lda #$FF
+          sta RIA_RW0
+          sta RIA_RW0
           xreg_vga_canvas 1
           xreg_vga_mode3 2, XRAM_CANVAS_CONFIG
-          xreg_ria_mouse XRAM_MOUSE
 
 Addresses in CMake
 ------------------
@@ -362,7 +504,7 @@ asset or any other file.
   read_xram(XRAM_CANVAS_DATA, 320U * 240 / 2, fd);
   close(fd);
 
-See `READ_XRAM <os.html#read-xram>`__.
+See :ref:`READ_XRAM <os:READ_XRAM>`.
 
 
 Adding Assets

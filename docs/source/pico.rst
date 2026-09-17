@@ -193,7 +193,7 @@ with just enough hardware and locale configuration to get going — kept
 deliberately minimal.
 
 The monitor runs on the console, so it is reachable from any terminal on
-the `console manifold <term.html#console-manifold>`__.
+the :ref:`console manifold <term:Console Manifold>`.
 
 The monitor is documented here only by a few common commands — its
 built-in help is extensive and always current. Type ``help`` to get
@@ -205,7 +205,7 @@ holding a memory image that's loaded into RAM before the 6502 starts.
 Use ``install`` to put a ROM in flash; from there it can be run
 directly, or ``set boot`` will load it whenever the RIA boots. The
 :doc:`sdk` builds these files and documents the
-`ROM File Format <sdk.html#rom-file-format>`__.
+:ref:`ROM File Format <sdk:ROM File Format>`.
 
 A few monitor commands, such as ``upload`` and ``binary``, exist for
 developer tools rather than for people. See :doc:`sdk` for what drives

@@ -127,8 +127,8 @@ table.
 
   uint16_t palette[1 << bits_per_pixel];
 
-You program the VGA device with `PIX extended registers
-<ria.html#pix-extended-registers-xreg>`__ (XREGs). VGA is PIX device
+You program the VGA device with :ref:`PIX extended registers
+<ria:PIX Extended Registers (XREG)>` (XREGs). VGA is PIX device
 ID 1. Registers are 16-bit values addressed as $device:$channel:register
 — for example, $1:0:0F.
 
@@ -1107,7 +1107,7 @@ applications are denied access to them.
    * - $1:F:01
      - CODE_PAGE
      - Set code page for built-in font. Matches
-       `RIA_ATTR_CODE_PAGE <os.html#ria-attributes>`__.
+       :ref:`RIA_ATTR_CODE_PAGE <os:RIA Attributes>`.
    * - $1:F:02
      - SUPPRESS_TERM_REPLY
      - Used by the telnet server to suppress term responses.
@@ -1152,7 +1152,7 @@ When bit 0x80 is set, the 0x70 bits give the command type and the 0x0F
 bits give a scalar for that command.
 
 0x80 VSYNC - The scalar will increment and be used for the LSB of the
-`RIA VSYNC <ria.html#registers>`__ register.
+:ref:`RIA VSYNC <ria:Registers>` register.
 
 0x90 OP_ACK - Some XREG locations are triggers for remote calls which
 may fail or take time to complete. This acknowledges a successful

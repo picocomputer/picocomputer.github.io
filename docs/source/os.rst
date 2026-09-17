@@ -56,8 +56,9 @@ chip-select logic to use it: add more VIAs downward and other hardware
 upward — for example, VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and
 SID1 at $FF20.
 
-Your program's own layout of RAM and XRAM is set up in the SDK's `Memory
-Map <sdk.html#memory-map>`__.
+Your program's own layout of RAM and XRAM is set up in the SDK's :ref:`RAM
+Memory Map <sdk:RAM Memory Map>` and :ref:`XRAM Memory Map
+<sdk:XRAM Memory Map>`.
 
 
 Application Binary Interface
@@ -131,7 +132,7 @@ Some operations return strings or structures on the stack. Pull the
 entire stack before the next call or use
 ``zxstack()`` to abandon the stack in O(1) time without a loop.
 Tail-call optimizations are still possible, though — you can chain
-`read_xstack() <READ_XSTACK>`_ and `write_xstack() <WRITE_XSTACK>`_ to
+`read_xstack() <READ_XSTACK_>`_ and `write_xstack() <WRITE_XSTACK_>`_ to
 copy a file without touching any RAM or XRAM.
 
 The time operations chain the same way, without cycling the XSTACK:

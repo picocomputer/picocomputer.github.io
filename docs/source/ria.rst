@@ -50,8 +50,8 @@ way.
 The :doc:`pico` is unique in that it hosts itself and therefore requires
 a way to terminate a halted or wedged 6502.
 To drop reset from high to low and return to the monitor — even from a
-crashed or halted 6502 — use any terminal on the `console manifold
-<term.html#console-manifold>`__:
+crashed or halted 6502 — use any terminal on the :ref:`console manifold
+<term:Console Manifold>`:
 
 1. Press Ctrl-Alt-Del from a USB keyboard.
 2. Send a break from a serial terminal.
@@ -204,8 +204,8 @@ access compared to 6502 system RAM.
 The C macros ``xram0_struct_set`` and ``xram1_struct_set`` come with
 rp6502.h. Each sets one member of a structure in XRAM, given the structure's
 address, its type and the member's name. They are convenient but not
-efficient, because every call sets the address again. The SDK's `XRAM
-<sdk.html#xram>`__ section shows them in use.
+efficient, because every call sets the address again. The SDK's
+:ref:`XRAM Memory Map <sdk:XRAM Memory Map>` section shows them in use.
 
 
 Extended Stack (XSTACK)
