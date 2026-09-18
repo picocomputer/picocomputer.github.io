@@ -392,8 +392,10 @@ them, so ``run 600`` is six hundred frames and six hundred VSYNCs every
 time.
 
 One command per line. ``#`` starts a comment anywhere outside quotes.
-Text is always in double quotes and takes ``\n``, ``\r``, ``\t``,
-``\\``, and ``\"``. Numbers may be decimal, C-style ``0xFF``, or
+Text is always in double quotes and takes the C escapes, so ``\n`` is a
+newline, ``\\`` and ``\"`` are themselves, and ``\x03`` or ``\3`` is a
+control byte. Hex takes up to two digits and octal up to three, and a
+string cannot hold ``\0``. Numbers may be decimal, C-style ``0xFF``, or
 MOS-style ``$FF``.
 
 .. code-block:: text
@@ -419,13 +421,16 @@ MOS-style ``$FF``.
      - Run until that byte reads that value. The byte is read once a
        frame, at the boundary.
    * - ``type "text" [frames]``
-     - Type it. ``\r`` is Enter, ``\t`` is Tab. Waits for the keyboard
-       ring to take it all; default budget 600 frames.
-   * - ``key <name>[+ctrl][+shift][+alt]``
-     - Send a key's escape sequence.
+     - Type it. ``\r`` is Enter, ``\t`` is Tab. The text is UTF-8 and
+       reaches the machine in its code page, so a byte that is not UTF-8
+       arrives as ``?``. Waits for the keyboard ring to take it all;
+       default budget 600 frames.
+   * - ``key <key>[+ctrl][+shift][+alt]``
+     - Send the bytes a terminal sends for that key. See `Key Names`_.
    * - ``press <key>...``,
        ``release <key>...``
-     - The direct HID bitmap, by name or usage ID.
+     - Set and clear bits in the HID bitmap a program reads. Each key is a
+       name or a keycode. See `Key Names`_.
    * - ``lock num|caps|scroll``
      - Toggle a lock LED.
    * - ``pad <n> connect [western|eastern|playstation] [sticks]``,
@@ -442,12 +447,15 @@ MOS-style ``$FF``.
    * - ``mouse move <dx> <dy>``,
        ``mouse wheel <n> [pan]``,
        ``mouse buttons <mask>``
-     - Work the mouse.
+     - Work the mouse. The mask is 0 to 255, holding the mouse button bits
+       from :doc:`ria`.
    * - ``tablet at <x> <y> [buttons]``,
        ``tablet touch <x>,<y>...``,
        ``tablet wheel <n> [pan]``,
        ``tablet clear``
-     - Work the absolute pointer, including multi-touch.
+     - Work the absolute pointer, including multi-touch up to eight
+       contacts. The buttons are 0 to 255, holding the contact flags from
+       :doc:`ria`.
    * - ``expect "text"``,
        ``expect-not "text"``
      - Check the console since the last check. A match consumes up to and
@@ -492,6 +500,60 @@ A failed check names the script and the line it was on, then exits 1.
 Memory starts random, as it often does on real hardware. This will catch
 uninitialized memory usage... eventually. ``--fill 00`` gives a test
 known memory when it needs it.
+
+
+Key Names
+---------
+
+A ``<key>`` is one name out of one list, whichever command reads it.
+Letters are ``a`` to ``z``, digits are ``0`` to ``9``, function keys are
+``f1`` to ``f12``, and keypad digits are ``kp0`` to ``kp9``. The rest have
+a name of their own, because only letters and digits are written as
+themselves. Case does not matter.
+
+.. list-table::
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Group
+     - Names
+   * - Typing
+     - ``enter`` ``escape`` ``backspace`` ``tab`` ``space``
+   * - Navigation
+     - ``insert`` ``delete`` ``home`` ``end`` ``pageup`` ``pagedown``
+       ``up`` ``down`` ``left`` ``right``
+   * - Punctuation
+     - ``minus`` ``equal`` ``leftbracket`` ``rightbracket`` ``backslash``
+       ``semicolon`` ``apostrophe`` ``grave`` ``comma`` ``period``
+       ``slash``
+   * - Locks and system
+     - ``capslock`` ``numlock`` ``scrolllock`` ``printscreen`` ``pause``
+       ``menu``
+   * - Keypad
+     - ``kpenter`` ``kpdivide`` ``kpmultiply`` ``kpsubtract`` ``kpadd``
+       ``kpdecimal`` ``kpequal``
+   * - Modifiers
+     - ``lctrl`` ``lshift`` ``lalt`` ``lsuper`` ``rctrl`` ``rshift``
+       ``ralt`` ``rsuper``
+
+``press`` and ``release`` reach every key, because they set and clear bits
+in the HID bitmap. They also take a keycode from 4 to 255 in place of a
+name, written as ``0x2C``, ``$2C`` or decimal, which is the keycode the
+:ref:`RIA keyboard <ria-keyboard>` section describes, where bit N is the
+key with keycode N. A bare single digit is the digit key rather than a
+keycode, so ``press 4`` is the 4 key and ``press $04`` is the a key.
+
+``key`` sends what a terminal sends, so it reaches every key that types a
+character and every key that has an escape sequence. ``+shift`` types the
+shifted character, ``+alt`` prefixes ESC, and ``+ctrl`` sends the control
+byte, which makes ``key c+ctrl`` Ctrl-C and ``key leftbracket+ctrl`` an
+ESC. Those characters are a US keyboard's, whatever layout the machine is
+set to, because a script has to send the same bytes on every machine.
+
+A key that types nothing is an error rather than a silent no-op, which
+covers ``capslock``, ``numlock``, ``scrolllock``, ``printscreen``,
+``pause``, ``menu`` and the modifiers. So is a ``+ctrl`` on a key that has
+no control byte, such as ``key 1+ctrl``.
 
 
 Driving it from a program
