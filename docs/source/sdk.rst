@@ -79,7 +79,7 @@ or IP address and key of a :doc:`pico` you want to test with.
 .. code-block:: text
 
   [RP6502][Launch]
-  emulator = /home/you/hello/tools/rp6502-emu
+  emulator = tools/rp6502-emu
   device = /dev/ttyACM0
   key =
   workdir =
@@ -93,9 +93,11 @@ or IP address and key of a :doc:`pico` you want to test with.
    * - Setting
      - Description
    * - ``emulator``
-     - Path to the emulator. A relative path, like the ``tools/rp6502-emu``
-       written here for you, starts at this file, so the project folder
-       stays portable. A bare filename will search the PATH.
+     - Path to the emulator, written for you as ``tools/rp6502-emu`` when
+       the tools fetched one. A relative path is resolved against this
+       file's own folder first, so the project folder stays portable.
+       Anything not found there is left to the operating system, where a
+       bare name is looked up on the PATH.
    * - ``device``
      - The serial port the machine appears on, or a hostname to
        reach it over telnet.
