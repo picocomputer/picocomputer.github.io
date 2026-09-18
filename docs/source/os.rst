@@ -17,7 +17,7 @@ The OS is POSIX-like, with an Application Binary Interface (ABI) modeled
 on `cc65's fastcall <https://cc65.github.io/doc/cc65-intern.html>`__. It
 offers ``stdio.h`` and ``unistd.h`` services to both the `cc65
 <https://cc65.github.io>`__ and `llvm-mos <https://llvm-mos.org/>`_
-compilers, plus calls to reach RP6502 features and manage FAT
+compilers, plus calls that control RP6502 features and manage FAT
 filesystems.
 
 .. note::
@@ -74,7 +74,7 @@ bringing another compiler to the Picocomputer.
 
 The ABI for calling the operating system is based on fastcall from the
 `cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The OS
-itself uses nothing from cc65, so assembly reaches it the same way C
+itself uses nothing from cc65, so assembly calls it the same way C
 does. The compiler is a convenience here, not a dependency.
 
 At its core, the ABI is four rules:
@@ -89,6 +89,8 @@ into 16 bits, and AXSREG extends that to 32 bits with the 16 SREG bits.
 Every OS call is specified as a C declaration, like so:
 
 .. c:function:: int doit(int arg0, int arg1);
+   :no-index-entry:
+   :no-contents-entry:
 
 The RIA has registers called ``RIA_A``, ``RIA_X``, and ``RIA_SREG``. An
 int is 16 bits, so arg1 goes into the ``RIA_A`` and ``RIA_X``
@@ -96,8 +98,9 @@ registers. Throughout this explanation, "A" means the 6502 register and
 "RIA_A" means the RIA register.
 
 arg0 goes on the XSTACK. Reading ``RIA_XSTACK`` pops bytes; writing
-pushes them. It's a top-down stack, so push each argument left to right,
-keeping little-endian byte order.
+pushes them. It's a top-down stack, so push the arguments left to right,
+and push each value high byte first so that it lies in memory low byte
+first.
 
 To execute the call, store the operation ID in ``RIA_OP``; the operation
 begins immediately. You can keep the 6502 busy with other work, such as a
@@ -133,11 +136,11 @@ return values. ``RIA_SREG`` is updated only for 32-bit returns, and
 ``RIA_ERRNO`` only when there's an error.
 
 Some operations return strings or structures on the stack. Pull the
-entire stack before the next call or use
-``zxstack()`` to abandon the stack in O(1) time without a loop.
-Tail-call optimizations are still possible, though. You can chain
-`read_xstack() <READ_XSTACK_>`_ and `write_xstack() <WRITE_XSTACK_>`_ to
-copy a file without touching any RAM or XRAM.
+entire stack before the next call, or use `zxstack() <ZXSTACK_>`_ to
+abandon the stack in O(1) time without a loop. One operation's output can
+also be the next one's input. `read_xstack() <READ_XSTACK_>`_ leaves its
+data on the XSTACK where `write_xstack() <WRITE_XSTACK_>`_ takes it, so
+the two copy a file without touching any RAM or XRAM.
 
 The time operations chain the same way, without cycling the XSTACK:
 `TIME_GET`_ returns seconds positioned as the input to `GMTIME`_,
@@ -167,10 +170,10 @@ all 8.
 Shorter AX
 ----------
 
-Many operations can save a few cycles by ignoring REG_X. Returned
+A program can save a few cycles by leaving ``RIA_X`` alone. Returned
 integers are always at least 16 bits, to help with C integer promotion,
-but many operations ignore REG_X on the way in and keep their return
-value within REG_A. Those are flagged below as "A regs".
+but many operations ignore ``RIA_X`` on the way in and keep their return
+value within ``RIA_A``. Those are listed below under ``a regs``.
 
 Bulk Data
 ---------
@@ -202,8 +205,8 @@ string for you.
 
 Send ``count`` as a short stack and ``fildes`` in ``RIA_A``; per the
 `READ_XSTACK`_ docs, ``RIA_X`` doesn't need to be set. The value returned
-in AX tells you how many values to pull from the stack. From the C SDK,
-it copies the XSTACK into buf[] for you.
+in AX is the number of bytes to pull from the stack. From the C SDK, it
+copies the XSTACK into buf[] for you.
 
 .. code-block:: C
 
@@ -211,8 +214,8 @@ it copies the XSTACK into buf[] for you.
 
 Send ``fildes`` in ``RIA_A``; per the `WRITE_XSTACK`_ docs, ``RIA_X``
 doesn't need to be set. Push the buf data onto the XSTACK. Don't send
-``count`` — the OS knows it from its internal stack pointer. From the C
-SDK, it copies count bytes of buf[] onto the XSTACK for you.
+``count``; the OS takes it from the XSTACK pointer. From the C SDK, it
+copies count bytes of buf[] onto the XSTACK for you.
 
 Note that read() and write() are part of the C SDK, not OS operations. C
 requires them to handle counts larger than the XSTACK can return, so the
@@ -229,9 +232,9 @@ so you can pull assets straight in without routing them through 6502 RAM.
    int read_xram(unsigned buf, unsigned count, int fildes)
    int write_xram(unsigned buf, unsigned count, int fildes)
 
-The OS expects ``buf`` and ``count`` on the XSTACK as integers, with
-``fildes`` in ``RIA_A``. From the 6502, reach
-XRAM memory through ``RIA_RW0`` or ``RIA_RW1``.
+The OS takes ``buf`` and ``count`` on the XSTACK as integers, with
+``fildes`` in ``RIA_A``. The 6502 reads and writes XRAM through
+``RIA_RW0`` or ``RIA_RW1``.
 
 These operations stand out for their speed and for running in the
 background while the 6502 does other work. Depending on the request size,
@@ -264,10 +267,9 @@ unsecured removable storage such as USB drives and memory cards. POSIX
 filesystems aren't fully compatible with FAT, but there's a solid core of
 basic I/O where the two agree completely. So you'll find familiar POSIX
 functions like ``open()`` alongside others like ``f_stat()`` — close to
-their POSIX cousins, but
-tailored to FAT. If a true POSIX ``stat()`` is ever needed, it can be
-built in the C standard library or in an application by translating
-``f_stat()`` data.
+their POSIX cousins, but tailored to FAT. If a true POSIX ``stat()`` is
+ever needed, it can be built in the C standard library or in an
+application by translating ``f_stat()`` data.
 
 Each operation below is one or more C declarations followed by a short
 list of details. Some declarations carry a flag:
@@ -286,11 +288,14 @@ operation, and ``None`` marks one the C library builds out of other
 operations. ``C proto`` names the header the declaration comes from.
 ``a regs`` names the arguments and the return value that fit in ``RIA_A``
 alone, so a program can leave ``RIA_X`` unset. ``errno`` lists what can
-go wrong.
+go wrong, and `ERRNO_OPT Compiler Constants`_ gives the number of each.
 
+
+Stack and Registers
+-------------------
 
 ZXSTACK
--------
+~~~~~~~
 
 .. c:function:: void zxstack (void);
 
@@ -306,7 +311,7 @@ ZXSTACK
 .. _os-xreg:
 
 XREG
-----
+~~~~
 
 .. c:function:: int xreg (char device, char channel, unsigned char address, ...);
                 lib int xregn (char device, char channel, unsigned char address, unsigned count, ...);
@@ -340,18 +345,24 @@ XREG
    :errno: EACCES, EINVAL, EIO
 
 
+Programs
+--------
+
 .. _os-argv:
 
 ARGV
-----
+~~~~
 
 .. c:function:: ABI int _argv (char *argv, int size)
 
    The virtual _argv is called during C initialization to supply argc and
    argv to main(). It returns an array of zero-terminated string indexes
-   followed by the strings themselves.
-   e.g. ["ABC", "DEF"] is 06 00 0A 00 00 00 41 42 43 00 44 45 46 00
-   The returned data is guaranteed valid.
+   followed by the strings themselves. The returned data is guaranteed
+   valid. For example, ["ABC", "DEF"] is:
+
+   .. code-block:: text
+
+      06 00 0A 00 00 00 41 42 43 00 44 45 46 00
 
    Because this can use up to 512 bytes of RAM, you opt in by providing
    storage for the argv data. Use static memory, or dynamically allocated
@@ -367,8 +378,9 @@ ARGV
    :returns: Size of argv data
    :errno: will not fail
 
+
 EXEC
-----
+~~~~
 
 .. c:function:: ABI int _exec (const char *argv, int size)
                 lib int ria_execl (const char *path, ...)
@@ -396,8 +408,30 @@ EXEC
    :errno: EINVAL
 
 
+EXIT
+~~~~
+
+.. c:function:: void exit (int status)
+
+   Halt the 6502 and hand the console back to the machine. This is
+   the only operation that never returns; the OS pulls RESB low before the
+   next instruction can execute. The status value is kept for the next ROM
+   and is readable via ``RIA_ATTR_EXIT_CODE``.
+
+   Dropping the user out of your program is generally discouraged, but
+   calling exit() beats locking up, as does falling off the end of main().
+
+   :Op code: RIA_OP_EXIT 0xFF
+   :C proto: stdlib.h
+   :a regs: status
+   :param status: 0 is success, 1-255 for error.
+
+
+Attributes
+----------
+
 ATTR_GET
---------
+~~~~~~~~
 
 .. c:function:: long ria_attr_get (unsigned char id)
 
@@ -413,7 +447,7 @@ ATTR_GET
 
 
 ATTR_SET
---------
+~~~~~~~~
 
 .. c:function:: int ria_attr_set (long val, unsigned char id)
 
@@ -429,24 +463,28 @@ ATTR_SET
    :errno: EINVAL
 
 
-TIME_GET
---------
+Time
+----
 
-.. c:function:: time_t time (time_t *timep)
+TIME_GET
+~~~~~~~~
+
+.. c:function:: lib time_t time (time_t *timep)
 
    Obtains the current time as seconds since the Unix epoch,
-   1970-01-01T00:00:00Z. The seconds are pushed to the XSTACK as a
-   64-bit signed integer.
+   1970-01-01T00:00:00Z. The operation pushes the seconds to the XSTACK
+   as a 64-bit signed integer and returns 0, or -1 on error.
 
    :Op code: RIA_OP_TIME_GET 0x3F
    :C proto: time.h
-   :returns: 0 on success. -1 on error.
+   :returns: The current time, also stored at ``timep`` if it is not
+      NULL. -1 on error.
    :a regs: return
    :errno: EINVAL, EIO
 
 
 TIME_SET
---------
+~~~~~~~~
 
 .. c:function:: int time_set (long long time)
 
@@ -457,7 +495,7 @@ TIME_SET
    Only a machine that has a real time-of-day clock will do this. The
    Picocomputer has one and sets it. An emulator will not move the clock of
    the computer it is running on, and a machine that was handed its time at
-   boot has nowhere to write one back; both answer EACCES.
+   boot has nowhere to write one back; both return EACCES.
 
    :Op code: RIA_OP_TIME_SET 0x3E
    :C proto: rp6502.h
@@ -468,9 +506,14 @@ TIME_SET
 
 
 GMTIME
-------
+~~~~~~
 
-.. c:function:: struct tm *gmtime (const time_t *timep)
+.. c:function:: lib struct tm *gmtime (const time_t *timep)
+
+   Converts seconds since the Unix epoch to UTC broken-down time.
+   Push the seconds as a signed integer of up to 64 bits; short pushes
+   are unsigned. The operation pushes this struct tm back to the XSTACK
+   and returns 0, or -1 on error.
 
    .. code-block:: c
 
@@ -486,88 +529,92 @@ GMTIME
          int16_t tm_isdst; /* >0 DST, 0 no DST, <0 unknown */
       };
 
-   Converts seconds since the Unix epoch to UTC broken-down time.
-   Push the seconds as a signed integer of up to 64 bits; short pushes
-   are unsigned. The struct tm above is pushed back to the XSTACK.
-
    :Op code: RIA_OP_GMTIME 0x3A
    :C proto: time.h
-   :returns: 0 on success. -1 on error.
+   :returns: Pointer to a static struct tm. NULL on error.
    :a regs: return
    :errno: EINVAL, ERANGE
 
 
 LOCALTIME
----------
+~~~~~~~~~
 
-.. c:function:: struct tm *localtime (const time_t *timep)
+.. c:function:: lib struct tm *localtime (const time_t *timep)
 
    Converts seconds since the Unix epoch to local broken-down time
    using the configured time zone. Run ``help set tz`` on an :doc:`pico`
    monitor to learn how to configure your time zone. Push the seconds as a
-   signed integer of up to 64 bits; short pushes are unsigned. A
-   struct tm (see `GMTIME`_) is pushed back to the XSTACK.
+   signed integer of up to 64 bits; short pushes are unsigned. The
+   operation pushes a struct tm (see `GMTIME`_) back to the XSTACK and
+   returns 0, or -1 on error.
 
    :Op code: RIA_OP_LOCALTIME 0x3B
    :C proto: time.h
-   :returns: 0 on success. -1 on error.
+   :returns: Pointer to a static struct tm. NULL on error.
    :a regs: return
    :errno: EINVAL, ERANGE
 
 
 MKTIME
-------
+~~~~~~
 
-.. c:function:: time_t mktime (struct tm *timep)
+.. c:function:: lib time_t mktime (struct tm *timep)
 
    Converts local broken-down time to seconds since the Unix epoch.
    Push a struct tm (see `GMTIME`_) to the XSTACK; fields outside
-   their ranges are normalized. The seconds are pushed back as a
-   64-bit signed integer. The C library mktime() then calls
-   `LOCALTIME`_ to write the normalized struct, with tm_wday and
-   tm_yday set, back to the caller.
+   their ranges are normalized. The operation pushes the seconds back as
+   a 64-bit signed integer and returns 0, or -1 on error. The C library
+   mktime() then calls `LOCALTIME`_ to write the normalized struct, with
+   tm_wday and tm_yday set, back to the caller.
 
    :Op code: RIA_OP_MKTIME 0x3C
    :C proto: time.h
-   :returns: 0 on success. -1 on error.
+   :returns: Seconds since the Unix epoch. -1 on error.
    :a regs: return
    :errno: EINVAL, ERANGE
 
 
 STRFTIME
---------
+~~~~~~~~
 
-.. c:function:: size_t strftime (char *buf, size_t bufsize, const char *format, const struct tm *tm)
+.. c:function:: lib size_t strftime (char *buf, size_t bufsize, const char *format, const struct tm *tm)
 
    Formats a broken-down time as a string. Push a struct tm (see
    `GMTIME`_), then a zero-terminated format string, to the XSTACK.
    All struct tm fields must be in range, e.g. as returned by
-   `GMTIME`_, `LOCALTIME`_, or `MKTIME`_. The formatted string is
-   pushed back without a terminator and its length returned; the
-   format and result share the XSTACK, which limits the result. The
-   C library strftime() compares the length to its buffer size and
-   abandons an oversized result with `ZXSTACK`_.
+   `GMTIME`_, `LOCALTIME`_, or `MKTIME`_. The operation pushes the
+   formatted string back without a terminator and returns its length: 0
+   if the result is empty or does not fit, or -1 on error. The format and
+   the result share the XSTACK, which limits the result. The C library
+   strftime() compares the length to its buffer size and abandons an
+   oversized result with `ZXSTACK`_.
 
    ``%a %A %b %B %c %p %r %x %X`` follow the configured locale and
    ``%z %Z`` the configured time zone. Set both with ``SET LOC`` and
-   ``SET TZ`` on an :doc:`pico`.
-   The format and result are code page text. ``%E`` and ``%O``
-   modifiers are ignored.
+   ``SET TZ`` on an :doc:`pico`. The format and result are code page
+   text. ``%E`` and ``%O`` modifiers are ignored.
 
    :Op code: RIA_OP_STRFTIME 0x3D
    :C proto: time.h
-   :returns: Length of the formatted string. 0 if empty or it does
-      not fit. -1 on error.
+   :returns: Length of the string in ``buf``, not counting the
+      terminator. 0 on error, or if the result is empty or does not fit.
    :a regs: return
    :errno: EINVAL
 
 
+Files
+-----
+
 OPEN
-----
+~~~~
 
 .. c:function:: int open (const char *path, int oflag)
 
    Create a connection between a file and a file descriptor.
+
+   A path can also name a device: ``CON:`` and ``TTY:`` in :doc:`term`,
+   ``ROM:`` followed by an asset name in :doc:`sdk`, ``VCP0:``,
+   ``MIDI0:`` and ``NFC:`` in :doc:`ria`, and ``AT:`` in :doc:`ria_w`.
 
    :Op code: RIA_OP_OPEN 0x14
    :C proto: fcntl.h
@@ -590,18 +637,18 @@ OPEN
       | O_TRUNC 0x20
       |    Truncate the file length to 0 after opening.
       | O_APPEND 0x40
-      |    Read/write pointer is set end of the file.
+      |    Read/write pointer is set to the end of the file.
       | O_EXCL 0x80
       |    If O_CREAT and O_EXCL are set, fail if the file exists.
 
 
 CLOSE
------
+~~~~~
 
 .. c:function:: int close (int fildes)
 
-   Finish pending writes and release the file descriptor. File descriptor
-   will rejoin the pool available for use by open().
+   Finish pending writes and release the file descriptor. The descriptor
+   goes back to the pool that open() draws from.
 
    :Op code: RIA_OP_CLOSE 0x15
    :C proto: fcntl.h
@@ -612,7 +659,7 @@ CLOSE
 
 
 READ
-----
+~~~~
 
 .. c:function:: lib int read (int fildes, void *buf, unsigned count)
 
@@ -631,7 +678,7 @@ READ
 
 
 READ_XSTACK
------------
+~~~~~~~~~~~
 
 .. c:function:: int read_xstack (void *buf, unsigned count, int fildes)
 
@@ -647,10 +694,11 @@ READ_XSTACK
    :a regs: fildes
    :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
 
+
 .. _os-read-xram:
 
 READ_XRAM
----------
+~~~~~~~~~
 
 .. c:function:: int read_xram (unsigned buf, unsigned count, int fildes)
 
@@ -668,7 +716,7 @@ READ_XRAM
 
 
 WRITE
------
+~~~~~
 
 .. c:function:: lib int write (int fildes, const void *buf, unsigned count)
 
@@ -687,7 +735,7 @@ WRITE
 
 
 WRITE_XSTACK
-------------
+~~~~~~~~~~~~
 
 .. c:function:: int write_xstack (const void *buf, unsigned count, int fildes)
 
@@ -705,7 +753,7 @@ WRITE_XSTACK
 
 
 WRITE_XRAM
-----------
+~~~~~~~~~~
 
 .. c:function:: int write_xram (unsigned buf, unsigned count, int fildes)
 
@@ -723,7 +771,7 @@ WRITE_XRAM
 
 
 LSEEK
------
+~~~~~
 
 .. c:function:: ABI long f_lseek (long offset, int whence, int fildes)
                 lib off_t lseek (int fildes, off_t offset, int whence)
@@ -735,8 +783,8 @@ LSEEK
 
    :Op code: See table below.
    :C proto: f_lseek: rp6502.h, lseek: unistd.h
-   :param offset: How far you wish to seek.
-   :param whence: From whence you wish to seek. See table below.
+   :param offset: Distance to move the pointer.
+   :param whence: Where the offset is measured from. See table below.
    :param fildes: File descriptor from open().
    :returns: Read/write position. -1 on error. A resulting position past
       0x7FFFFFFF cannot be represented in the returned long; the seek then
@@ -765,38 +813,8 @@ LSEEK
         - 1
 
 
-UNLINK
-------
-
-.. c:function:: int unlink (const char* name)
-
-   Removes a file or directory from the volume.
-
-   :Op code: RIA_OP_UNLINK 0x1B
-   :C proto: unistd.h
-   :param name: File or directory name to unlink (remove).
-   :returns: 0 on success. -1 on error.
-   :errno: EACCES, EBUSY, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
-
-
-RENAME
-------
-
-.. c:function:: int rename (const char* oldname, const char* newname)
-
-   Renames and/or moves a file or directory.
-
-   :Op code: RIA_OP_RENAME 0x1C
-   :C proto: stdio.h
-   :param oldname: Existing file or directory name to rename.
-   :param newname: New object name.
-   :returns: 0 on success. -1 on error.
-   :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSPC,
-      ENOSYS
-
-
 SYNCFS
-------
+~~~~~~
 
 .. c:function:: int syncfs (int fildes)
 
@@ -810,10 +828,17 @@ SYNCFS
    :errno: EACCES, EBADF, EINVAL, EIO, ENOSPC, ENOSYS
 
 
+Paths
+-----
+
 STAT
-----
+~~~~
 
 .. c:function:: int f_stat (const char* path, f_stat_t* dirent)
+
+   Returns file or directory info for requested path. See the
+   `FatFs documentation <https://elm-chan.org/fsw/ff/doc/sfileinfo.html>`__
+   for details about the data structure.
 
    .. code-block:: c
 
@@ -828,10 +853,6 @@ STAT
          char fname[255 + 1];
       } f_stat_t;
 
-   Returns file or directory info for requested path. See the
-   `FatFs documentation <https://elm-chan.org/fsw/ff/doc/sfileinfo.html>`__
-   for details about the data structure.
-
    :Op code: RIA_OP_STAT 0x1F
    :C proto: rp6502.h
    :param path: Pathname to a directory entry.
@@ -841,104 +862,39 @@ STAT
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
-OPENDIR
--------
+UNLINK
+~~~~~~
 
-.. c:function:: int f_opendir (const char* name)
+.. c:function:: int unlink (const char* name)
 
-   Create a connection between a directory and a directory descriptor.
+   Removes a file or directory from the volume.
 
-   :Op code: RIA_OP_OPENDIR 0x20
-   :C proto: rp6502.h
-   :param name: Pathname to a directory.
-   :returns: Directory descriptor. -1 on error.
-   :a regs: return
-   :errno: EACCES, EBADF, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM, ENOSYS
-
-
-READDIR
--------
-
-.. c:function:: int f_readdir (f_stat_t* dirent, int dirdes)
-
-   Returns directory entry info for the current read position of a
-   directory descriptor, then advances the read position.
-
-   :Op code: RIA_OP_READDIR 0x21
-   :C proto: rp6502.h
-   :param dirdes: Directory descriptor from f_opendir().
-   :param dirent: Returned f_stat_t data.
+   :Op code: RIA_OP_UNLINK 0x1B
+   :C proto: unistd.h
+   :param name: File or directory name to unlink (remove).
    :returns: 0 on success. -1 on error.
-   :a regs: return, dirdes
-   :errno: EACCES, EBADF, EINVAL, EIO, ENOENT, ENOMEM
+   :errno: EACCES, EBUSY, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
-CLOSEDIR
---------
+RENAME
+~~~~~~
 
-.. c:function:: int f_closedir (int dirdes)
+.. c:function:: int rename (const char* oldname, const char* newname)
 
-   Release the directory descriptor. Directory descriptor will rejoin the
-   pool available for use by f_opendir().
+   Renames or moves a file or directory. A file already at the new name
+   is replaced.
 
-   :Op code: RIA_OP_CLOSEDIR 0x22
-   :C proto: rp6502.h
-   :param dirdes: Directory descriptor from f_opendir().
+   :Op code: RIA_OP_RENAME 0x1C
+   :C proto: stdio.h
+   :param oldname: Existing file or directory name to rename.
+   :param newname: New object name.
    :returns: 0 on success. -1 on error.
-   :a regs: return, dirdes
-   :errno: EBADF, EINVAL, EIO
-
-
-TELLDIR
--------
-
-.. c:function:: long f_telldir (int dirdes)
-
-   Returns the read position of the directory descriptor.
-
-   :Op code: RIA_OP_TELLDIR 0x23
-   :C proto: rp6502.h
-   :param dirdes: Directory descriptor from f_opendir().
-   :returns: Read position. -1 on error.
-   :a regs: dirdes
-   :errno: EBADF, EINVAL
-
-
-SEEKDIR
--------
-
-.. c:function:: int f_seekdir (long offs, int dirdes)
-
-   Set the read position for the directory descriptor. Internally, the FatFs
-   directory read position can only move forward by one, so use this for
-   convenience, not performance.
-
-   :Op code: RIA_OP_SEEKDIR 0x24
-   :C proto: rp6502.h
-   :param offs: New read position, as returned by f_telldir().
-   :param dirdes: Directory descriptor from f_opendir().
-   :returns: Read position. -1 on error.
-   :a regs: return, dirdes
-   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT, ENOMEM
-
-
-REWINDDIR
----------
-
-.. c:function:: int f_rewinddir (int dirdes)
-
-   Rewind the read position of the directory descriptor.
-
-   :Op code: RIA_OP_REWINDDIR 0x25
-   :C proto: rp6502.h
-   :param dirdes: Directory descriptor from f_opendir().
-   :returns: 0 on success. -1 on error.
-   :a regs: dirdes
-   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT
+   :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSPC,
+      ENOSYS
 
 
 CHMOD
------
+~~~~~
 
 .. c:function:: int f_chmod (const char* path, unsigned char attr, unsigned char mask)
 
@@ -972,7 +928,7 @@ CHMOD
 
 
 UTIME
------
+~~~~~
 
 .. c:function:: int f_utime (const char* path, unsigned fdate, unsigned ftime, unsigned crdate, unsigned crtime)
 
@@ -987,7 +943,7 @@ UTIME
    :param crdate: Creation date.
    :param crtime: Creation time.
    :returns: 0 on success. -1 on error.
-   :a regs: return, crtime
+   :a regs: return
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
    .. list-table:: Date
@@ -1014,7 +970,7 @@ UTIME
 
 
 MKDIR
------
+~~~~~
 
 .. c:function:: int f_mkdir (const char* name)
 
@@ -1028,8 +984,113 @@ MKDIR
    :errno: EACCES, EEXIST, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSPC, ENOSYS
 
 
+Directories
+-----------
+
+OPENDIR
+~~~~~~~
+
+.. c:function:: int f_opendir (const char* name)
+
+   Create a connection between a directory and a directory descriptor.
+
+   :Op code: RIA_OP_OPENDIR 0x20
+   :C proto: rp6502.h
+   :param name: Pathname to a directory.
+   :returns: Directory descriptor. -1 on error.
+   :a regs: return
+   :errno: EACCES, EBADF, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM, ENOSYS
+
+
+READDIR
+~~~~~~~
+
+.. c:function:: int f_readdir (f_stat_t* dirent, int dirdes)
+
+   Returns directory entry info for the current read position of a
+   directory descriptor, then advances the read position. At the end of
+   the directory, the call succeeds and ``fname`` is empty.
+
+   :Op code: RIA_OP_READDIR 0x21
+   :C proto: rp6502.h
+   :param dirdes: Directory descriptor from f_opendir().
+   :param dirent: Returned f_stat_t data.
+   :returns: 0 on success. -1 on error.
+   :a regs: return, dirdes
+   :errno: EACCES, EBADF, EINVAL, EIO, ENOENT, ENOMEM
+
+
+CLOSEDIR
+~~~~~~~~
+
+.. c:function:: int f_closedir (int dirdes)
+
+   Release the directory descriptor. The descriptor goes back to the pool
+   that f_opendir() draws from.
+
+   :Op code: RIA_OP_CLOSEDIR 0x22
+   :C proto: rp6502.h
+   :param dirdes: Directory descriptor from f_opendir().
+   :returns: 0 on success. -1 on error.
+   :a regs: return, dirdes
+   :errno: EBADF, EINVAL, EIO
+
+
+TELLDIR
+~~~~~~~
+
+.. c:function:: long f_telldir (int dirdes)
+
+   Returns the read position of the directory descriptor.
+
+   :Op code: RIA_OP_TELLDIR 0x23
+   :C proto: rp6502.h
+   :param dirdes: Directory descriptor from f_opendir().
+   :returns: Read position. -1 on error.
+   :a regs: dirdes
+   :errno: EBADF, EINVAL
+
+
+SEEKDIR
+~~~~~~~
+
+.. c:function:: int f_seekdir (long offs, int dirdes)
+
+   Set the read position for the directory descriptor. The OS reads
+   entries one at a time up to the new position, starting from the
+   current position when seeking forward and from the start of the
+   directory when seeking backward. Use this for convenience, not
+   performance.
+
+   :Op code: RIA_OP_SEEKDIR 0x24
+   :C proto: rp6502.h
+   :param offs: New read position, as returned by f_telldir().
+   :param dirdes: Directory descriptor from f_opendir().
+   :returns: 0 on success. -1 on error.
+   :a regs: return, dirdes
+   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT, ENOMEM
+
+
+REWINDDIR
+~~~~~~~~~
+
+.. c:function:: int f_rewinddir (int dirdes)
+
+   Rewind the read position of the directory descriptor.
+
+   :Op code: RIA_OP_REWINDDIR 0x25
+   :C proto: rp6502.h
+   :param dirdes: Directory descriptor from f_opendir().
+   :returns: 0 on success. -1 on error.
+   :a regs: dirdes
+   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT
+
+
+Drives and Volumes
+------------------
+
 CHDIR
------
+~~~~~
 
 .. c:function:: int chdir (const char* name)
 
@@ -1044,16 +1105,15 @@ CHDIR
 
 
 CHDRIVE
--------
+~~~~~~~
 
 .. c:function:: int f_chdrive (const char* name)
 
-   Change the current drive. Each machine names its own drives. A
-   :doc:`pico` mounts each attached
-   storage volume — one USB mass-storage LUN — as ``MSC0:``–``MSC9:``, with
-   shortcuts ``0:``–``9:``. A machine with a single filesystem calls it
-   ``FS:``. Windows uses its own drive letters, ``C:`` and the rest of
-   what is mounted.
+   Change the current drive. Each machine names its own drives. An
+   :doc:`pico` mounts each attached storage volume — one USB mass-storage
+   LUN — as ``MSC0:``–``MSC9:``, with shortcuts ``0:``–``9:``. On a
+   machine with a single filesystem, that filesystem is ``FS:``. Windows
+   uses its own drive letters, ``C:`` and the rest of what is mounted.
 
    ``0:``–``9:`` is FatFs's own notation and exists only where FatFs does.
 
@@ -1066,12 +1126,11 @@ CHDRIVE
 
 
 GETCWD
--------
+~~~~~~~
 
 .. c:function:: int f_getcwd (char* name, int size)
 
-   Get the current working directory. Size is ignored by the OS but the C
-   wrapper will use it.
+   Get the current working directory.
 
    The result always includes a device name: ``MSC0:/games`` on a
    :doc:`pico`, ``C:/Users/me`` on Windows, and ``FS:/home/me`` on hosts
@@ -1080,27 +1139,14 @@ GETCWD
    :Op code: RIA_OP_GETCWD 0x2B
    :C proto: rp6502.h
    :param name: The returned directory.
+   :param size: Size of the ``name`` buffer. It stays in the C library,
+      which fails with ENOMEM when the directory does not fit.
    :returns: Size of returned name. -1 on error.
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM
 
 
-SETLABEL
---------
-
-.. c:function:: int f_setlabel (const char* name)
-
-   Change the volume label. Max 11 characters.
-
-   :Op code: RIA_OP_SETLABEL 0x2C
-   :C proto: rp6502.h
-   :param name: Label with optional volume name.
-   :returns: 0 on success. -1 on error.
-   :a regs: return
-   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
-
-
 GETLABEL
---------
+~~~~~~~~
 
 .. c:function:: int f_getlabel (const char* path, char* label)
 
@@ -1115,10 +1161,27 @@ GETLABEL
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
+SETLABEL
+~~~~~~~~
+
+.. c:function:: int f_setlabel (const char* name)
+
+   Change the volume label. Max 11 characters.
+
+   :Op code: RIA_OP_SETLABEL 0x2C
+   :C proto: rp6502.h
+   :param name: Label with optional volume name.
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
+
+
 GETFREE
--------
+~~~~~~~
 
 .. c:function:: int f_getfree (const char* name, unsigned long* free, unsigned long* total)
+
+   Get the free and total space of a volume in 512-byte blocks.
 
    .. code-block:: c
 
@@ -1126,8 +1189,6 @@ GETFREE
          unsigned long free;
          unsigned long total;
       };
-
-   Get the volume free and total space in number of 512 bytes blocks.
 
    :Op code: RIA_OP_GETFREE 0x2E
    :C proto: rp6502.h
@@ -1139,10 +1200,13 @@ GETFREE
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
+Line Editor
+-----------
+
 .. _os-rln-lastkey:
 
 RLN_LASTKEY
------------
+~~~~~~~~~~~
 
 .. c:function:: int ria_rln_lastkey (char* key, unsigned char* action)
 
@@ -1151,10 +1215,10 @@ RLN_LASTKEY
    This includes single characters and multi-byte escape sequences such
    as arrow, function, and editing keys. The ``action`` out-parameter
    reports whether the line editor handled the key as an editing
-   action (non-zero) or passed it through (zero).
-   Reading consumes the captured sequence; the next call returns 0
-   until another key is typed. Sequences longer than 32 bytes, or any
-   call made while no line read is in progress, return 0.
+   action (non-zero) or passed it through (zero). Reading consumes the
+   captured sequence; the next call returns 0 until another key is
+   typed. Sequences longer than 32 bytes, or any call made while no line
+   read is in progress, return 0.
 
    :Op code: RIA_OP_RLN_LASTKEY 0x30
    :C proto: rp6502.h
@@ -1169,7 +1233,7 @@ RLN_LASTKEY
 .. _os-rln-peek:
 
 RLN_PEEK
---------
+~~~~~~~~
 
 .. c:function:: int ria_rln_peek (char* peek, unsigned char* pos)
 
@@ -1192,7 +1256,7 @@ RLN_PEEK
 .. _os-rln-poke:
 
 RLN_POKE
---------
+~~~~~~~~
 
 .. c:function:: int ria_rln_poke (const char* poke)
 
@@ -1203,10 +1267,9 @@ RLN_POKE
    escape sequences are honored. Any C0 control byte (0x00–0x1F) finishes
    the input, with two exceptions — ESC (``\33``) begins a CSI sequence,
    and CAN (``\30``) aborts an in-flight one. Control bytes other than
-   CR (``\r``) echo in caret notation (``^@``..``^_``)
-   when the input length is at least 2. LF submits the field like CR but
-   adds no linefeed, which is useful for form input on the last terminal
-   row.
+   CR (``\r``) echo in caret notation (``^@``..``^_``) when the input
+   length is at least 2. LF submits the field like CR but adds no
+   linefeed, which is useful for form input on the last terminal row.
 
    :Op code: RIA_OP_RLN_POKE 0x32
    :C proto: rp6502.h
@@ -1214,25 +1277,6 @@ RLN_POKE
    :returns: 0.
    :a regs: return
    :errno: EINVAL
-
-
-EXIT
-----
-
-.. c:function:: void exit (int status)
-
-   Halt the 6502 and hand the console back to the machine. This is
-   the only operation that never returns; the OS pulls RESB low before the
-   next instruction can execute. The status value is kept for the next ROM
-   and is readable via ``RIA_ATTR_EXIT_CODE``.
-
-   Dropping the user out of your program is generally discouraged, but
-   calling exit() beats locking up, as does falling off the end of main().
-
-   :Op code: RIA_OP_EXIT 0xFF
-   :C proto: stdlib.h
-   :a regs: status
-   :param status: 0 is success, 1-255 for error.
 
 
 Launcher
