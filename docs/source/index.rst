@@ -90,7 +90,7 @@ The Machine
   6502 never has to
 - **Video** — three planes of tiles, bitmaps, and sprites in RGB555,
   programmable per scanline, with affine transforms on 16-bit sprites
-- **Sound** — eight 48 kHz oscillators with ADSR and stereo panning, or
+- **Sound** — eight oscillators with ADSR and stereo panning, or
   a 9-voice OPL2 FM
 - **Storage** — USB flash drives, and 3.5-inch floppy drives if you
   have one

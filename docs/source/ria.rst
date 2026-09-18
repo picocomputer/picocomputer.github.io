@@ -133,7 +133,7 @@ six are the 6502's own vectors; everything before them is the interface.
 
    * - $FFF1
      - SPIN
-     - Always $80 (the BRA opcode). JSR here (``RIA_SPIN``) to spin-wait
+     - Always $80 (the BRA opcode). JSR here to spin-wait
        for an OS call. The CPU loops on this BRA until BUSY clears, then
        falls through to LDA and LDX below.
    * - $FFF2
@@ -210,8 +210,7 @@ access compared to 6502 system RAM.
 The C macros ``xram0_struct_set`` and ``xram1_struct_set`` come with
 rp6502.h. Each sets one member of a structure in XRAM, given the structure's
 address, its type and the member's name. They are convenient but not
-efficient, because every call sets the address again. The SDK's
-:ref:`XRAM Memory Map <sdk-xram-memory-map>` section shows them in use.
+efficient, because every call sets the address again.
 
 
 Extended Stack (XSTACK)
@@ -1009,7 +1008,7 @@ Programmable Sound Generator
 The RIA includes a Programmable Sound Generator (PSG), configured
 through extended register device 0, channel 1, address 0x00.
 
-* Eight 48 kHz 16-bit oscillator channels.
+* Eight 16-bit oscillator channels.
 * Five waveforms: Sine, Square, Sawtooth, Triangle, Noise.
 * ADSR envelope: Attack, Decay, Sustain, Release.
 * Stereo panning.
