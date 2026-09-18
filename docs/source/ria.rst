@@ -63,8 +63,8 @@ crashed or halted 6502, use any terminal on the
 Registers
 =========
 
-The 6502 sees the RIA as 32 bytes at $FFE0-$FFFF. The last six are the
-6502's own vectors; everything before them is the interface.
+The RIA is 32 bytes at $FFE0-$FFFF in the 6502's address space. The last
+six are the 6502's own vectors; everything before them is the interface.
 
 .. list-table::
    :widths: 5 5 90
@@ -518,8 +518,8 @@ The application and the RIA exchange pointer preferences through the header.
 ``status`` bit 0 (host cursor) is set only when the host can draw a cursor
 for the application, which is the :doc:`emu` with a mouse, in a window or a
 browser. The bit is always clear on real hardware and for touch input.
-``control`` selects the host cursor shape the application wants, or hides
-it so the application can draw its own.
+``control`` selects the host cursor shape, or hides the cursor so the
+application can draw its own.
 
 - 0 - OFF (host cursor hidden; the application draws its own pointer)
 - 1 - ARROW
@@ -673,7 +673,7 @@ buttons, a d-pad, dual analog sticks, select, start, and four shoulders.
 The face buttons vary only in labeling — XY/AB, YX/BA, or
 Square/Triangle/Cross/Circle. Each button reports in the same place
 whatever it is called, so that rarely matters to an application until it
-wants to print a button's name, or the buttons stand in for directions.
+prints a button's name, or the buttons stand in for directions.
 For those, the DPAD register reports which labeling the gamepad wears
 when the RIA can be sure of it. You're free to do your own thing, of
 course — ask players to use a specific gamepad, or offer an "AB or BA"
@@ -733,7 +733,7 @@ L2/R2 triggers, so applications can ignore the analog values entirely if
 they like.
 
 Some gamepads report only digital data; in that case, code that uses L2
-and R2 should expect analog values of just 0 or 255.
+and R2 should allow for analog values of just 0 or 255.
 
 Applications taking the simple "one stick and buttons" approach should
 merge the d-pad and left stick into a single input.

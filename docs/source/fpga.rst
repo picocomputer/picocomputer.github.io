@@ -54,8 +54,8 @@ Core Settings
 - **Keyboard** selects the layout.
 
 - **UTC offset** is three entries: a side, an hour, and a quarter hour.
-  The Pocket knows nothing about time zones, so the offset and DST changes
-  have to be set by hand. A list limit of sixteen options forces the split.
+  The Pocket has no time zones, so the offset and DST changes have to be
+  set by hand. A list limit of sixteen options forces the split.
 
 
 The Dock

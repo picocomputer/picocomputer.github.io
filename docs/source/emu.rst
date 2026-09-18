@@ -416,14 +416,14 @@ MOS-style ``$FF``.
    * - ``run [frames]``
      - Let exactly that many frames elapse, one VSYNC each. Default 1.
    * - ``wait "text" [frames]``
-     - Run until the console says it. Default budget 600 frames.
+     - Run until the console prints it. Default budget 600 frames.
    * - ``wait [xram:|ram:]<addr> <byte> [frames]``
      - Run until that byte reads that value. The byte is read once a
        frame, at the boundary.
    * - ``type "text" [frames]``
-     - Type it. ``\r`` is Enter, ``\t`` is Tab. The text is UTF-8 and
-       reaches the machine in its code page, so a byte that is not UTF-8
-       arrives as ``?``. Waits for the keyboard ring to take it all;
+     - Type it. ``\r`` is Enter, ``\t`` is Tab. The text is UTF-8,
+       converted to the machine's code page, so a byte that is not UTF-8
+       becomes ``?``. Waits for the keyboard ring to take it all;
        default budget 600 frames.
    * - ``key <key>[+ctrl][+shift][+alt]``
      - Send the bytes a terminal sends for that key. See `Key Names`_.
@@ -447,15 +447,16 @@ MOS-style ``$FF``.
    * - ``mouse move <dx> <dy>``,
        ``mouse wheel <n> [pan]``,
        ``mouse buttons <mask>``
-     - Work the mouse. The mask is 0 to 255, holding the mouse button bits
-       from :doc:`ria`.
+     - Work the mouse. The mask is one bit per button, 0 left, 1 right,
+       2 middle, 3 back, 4 forward.
    * - ``tablet at <x> <y> [buttons]``,
        ``tablet touch <x>,<y>...``,
        ``tablet wheel <n> [pan]``,
        ``tablet clear``
      - Work the absolute pointer, including multi-touch up to eight
-       contacts. The buttons are 0 to 255, holding the contact flags from
-       :doc:`ria`.
+       contacts. The buttons are the same bits as the mouse. A pointer
+       placed with ``at`` always reports hover, and a ``touch`` never
+       does.
    * - ``expect "text"``,
        ``expect-not "text"``
      - Check the console since the last check. A match consumes up to and
@@ -536,15 +537,16 @@ themselves. Case does not matter.
      - ``lctrl`` ``lshift`` ``lalt`` ``lsuper`` ``rctrl`` ``rshift``
        ``ralt`` ``rsuper``
 
-``press`` and ``release`` reach every key, because they set and clear bits
+``press`` and ``release`` take any key, because they set and clear bits
 in the HID bitmap. They also take a keycode from 4 to 255 in place of a
-name, written as ``0x2C``, ``$2C`` or decimal, which is the keycode the
-:ref:`RIA keyboard <ria-keyboard>` section describes, where bit N is the
-key with keycode N. A bare single digit is the digit key rather than a
-keycode, so ``press 4`` is the 4 key and ``press $04`` is the a key.
+name, written as ``0x2C``, ``$2C`` or decimal. These are the keyboard
+usage codes from the USB HID specification, not PS/2 scancodes, and bit N
+of the bitmap is the key with keycode N. A bare single digit is the digit
+key rather than a keycode, so ``press 4`` is the 4 key and ``press $04``
+is the a key.
 
-``key`` sends what a terminal sends, so it reaches every key that types a
-character and every key that has an escape sequence. ``+shift`` types the
+``key`` sends what a terminal sends, so it takes the keys that type a
+character and the keys that have an escape sequence. ``+shift`` types the
 shifted character, ``+alt`` prefixes ESC, and ``+ctrl`` sends the control
 byte, which makes ``key c+ctrl`` Ctrl-C and ``key leftbracket+ctrl`` an
 ESC. Those characters are a US keyboard's, whatever layout the machine is

@@ -135,7 +135,7 @@ The basic pattern:
      editor consumed it as an editing action. When ``action == 0`` the
      editor passed the key through. That is the application's chance
      to handle Tab, function keys, arrow keys for history or form
-     navigation, and any other keys it wants to claim. Call ``ria_rln_peek()``
+     navigation, and any other keys it claims. Call ``ria_rln_peek()``
      to get the current input text and cursor position. Respond by
      poking literal characters or ANSI sequences (``CUF``, ``CUB``,
      ``ICH``, ``DCH``) back into the editor.

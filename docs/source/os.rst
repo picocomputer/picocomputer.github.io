@@ -368,8 +368,8 @@ EXEC
 
    The virtual _exec is called by ria_execl() and ria_execv(). Note one
    difference from the execl() and execv() you may know: because RAM is
-   precious, the path is supplied once, not again in argv[0]. The launched
-   ROM sees argv[0] as the filename.
+   precious, the path is supplied once, not again in argv[0]. In the
+   launched ROM, argv[0] is the filename.
 
    The data sent by _exec() is checked for pointer safety and sanity, but
    the path is assumed to point at a loadable ROM file. On EINVAL, the argv
@@ -1280,8 +1280,8 @@ the chain ends depends on which machine: an :doc:`pico` returns to its
 monitor, the :doc:`emu` exits unless debugging, and the :doc:`fpga` stops
 until you load a new ROM with the host menu.
 
-The launcher ROM decides what to run next by calling `EXEC`_, optionally
-passing arguments to the new ROM through argv. The launched ROM reads those
+The launcher ROM runs the next one by calling `EXEC`_, optionally
+passing arguments to it through argv. The launched ROM reads those
 arguments back with `ARGV`_.
 
 Two keystrokes stop a running ROM. Ctrl-Alt-Del stops it and clears the
@@ -1304,7 +1304,7 @@ with an error, the process manager re-executes the launcher and the user
 lands back on the menu.
 
 No manual reset is needed between runs. Each ROM is a self-contained binary
-that knows nothing about the menu. The launcher can supply context through
+with nothing in it about the menu. The launcher can supply context through
 argv, such as a save-file path or difficulty setting, and the ROM just calls
 `EXIT`_ when it's done.
 
