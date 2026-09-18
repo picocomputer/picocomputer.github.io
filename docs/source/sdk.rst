@@ -399,9 +399,8 @@ changes.
 
 The regular expression chooses which names to take and has to match a whole
 name. Only ``#define`` lines whose value starts with ``offsetof`` are read,
-so the rest of the header is yours. A backslash continues a definition onto
-the next line, the structure can be called anything, and one header can hold
-several. Call ``rp6502_xram()`` before the ``rp6502_asset()`` calls that use
+so the rest of the header is yours. Call ``rp6502_xram()`` before
+the ``rp6502_asset()`` calls that use
 its names. Each name is an ordinary CMake variable too, so
 ``${XRAM_BITMAP_DATA}`` works anywhere else you need it.
 
@@ -410,18 +409,15 @@ never go stale. A layout too big for the 64K of XRAM stops the build.
 
 ``rp6502_xram()`` reads C only. For an assembly project, pass
 ``rp6502_asset()`` the address as a number, such as ``0x10000`` plus the
-offset, or set a CMake variable to it. The llvm-mos assembler does not search
-the directory of the including file for ``.include``, so add that directory
-with ``target_include_directories``.
+offset, or set a CMake variable to it.
 
 Alignment
 ---------
 
 Neither compiler pads a structure, so a member starts wherever the members
 before it end. Mode configurations, palettes, and the PSG are read in 16-bit
-values, so they need an even address, and the hardware quietly ignores or
-refuses an odd one. Every address is checked, and an odd one stops the
-build.
+values, so they need an even address. Every address is checked, and an odd
+one stops the build.
 
 .. code-block:: text
 

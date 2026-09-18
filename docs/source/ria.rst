@@ -412,7 +412,7 @@ Mouse buttons are a bitfield:
           uint8_t y;
           uint8_t wheel;
           uint8_t pan;
-          uint8_t pad;
+          uint8_t pad; // alignment, unused
       } mouse_t;
 
 .. tab:: ca65
