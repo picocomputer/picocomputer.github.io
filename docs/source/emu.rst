@@ -552,7 +552,7 @@ byte, which makes ``key c+ctrl`` Ctrl-C and ``key leftbracket+ctrl`` an
 ESC. Those characters are a US keyboard's, whatever layout the machine is
 set to, because a script has to send the same bytes on every machine.
 
-A key that types nothing is an error rather than a silent no-op, which
+A key that types nothing is an error, which
 covers ``capslock``, ``numlock``, ``scrolllock``, ``printscreen``,
 ``pause``, ``menu`` and the modifiers. So is a ``+ctrl`` on a key that has
 no control byte, such as ``key 1+ctrl``.
@@ -560,10 +560,6 @@ no control byte, such as ``key 1+ctrl``.
 
 Driving it from a program
 -------------------------
-
-.. note::
-
-   Scripting is beta and may change.
 
 ``reply`` turns on one line of answer per command — ``ok``, ``ok <values>``
 for ``dump`` and ``crc``, or ``fail <why>``. It is off until asked, so a
