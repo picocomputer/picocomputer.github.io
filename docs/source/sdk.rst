@@ -379,72 +379,14 @@ the keyboard to its address and waits for a key to be pressed.
           and #(1 << KEYBOARD_NO_KEY)
           bne 1b
 
-To add a 320x240 bitmap, copy the :ref:`Key Registers <vga-key-registers>`
-and :ref:`Mode 3 <vga-mode-3>` blocks from the :doc:`vga` datasheet
-into the file above the layout, then change the layout to hold the bitmap's
-pixels and its mode 3 configuration.
-
-.. tab:: C
-   :new-set:
-
-   .. code-block:: C
-      :caption: xram.h
-
-      typedef struct
-      {
-          uint8_t bitmap[320UL * 240 / 2];
-          mode3_config_t bitmap_config;
-          keyboard_t keyboard;
-      } xram_layout_t;
-
-      #define XRAM_BITMAP_DATA offsetof(xram_layout_t, bitmap)
-      #define XRAM_BITMAP_CONFIG offsetof(xram_layout_t, bitmap_config)
-      #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-      :caption: xram.inc
-
-      .struct xram_layout_t
-          bitmap        .res 320 * 240 / 2
-          bitmap_config .tag mode3_config_t
-          keyboard      .tag keyboard_t
-      .endstruct
-
-      XRAM_BITMAP_DATA   = xram_layout_t::bitmap
-      XRAM_BITMAP_CONFIG = xram_layout_t::bitmap_config
-      XRAM_KEYBOARD      = xram_layout_t::keyboard
-
-      .assert .sizeof(xram_layout_t) <= $10000, error, "XRAM layout is too large"
-      .assert (XRAM_BITMAP_CONFIG & 1) = 0, error, "XRAM_BITMAP_CONFIG is odd"
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :caption: xram.inc
-      :force:
-
-      XRAM_BITMAP_DATA   = 0
-      XRAM_BITMAP_CONFIG = XRAM_BITMAP_DATA + 320 * 240 / 2
-      XRAM_KEYBOARD      = XRAM_BITMAP_CONFIG + MODE3_CONFIG_SIZE
-      XRAM_END           = XRAM_KEYBOARD + KEYBOARD_SIZE
-
-      .if XRAM_END > $10000
-      .error "XRAM layout is too large"
-      .endif
-      .if XRAM_BITMAP_CONFIG & 1
-      .error "XRAM_BITMAP_CONFIG is odd"
-      .endif
-
-The keyboard now comes after the bitmap, at a different address. The code
-that waits for a key does not change, because it uses ``XRAM_KEYBOARD``.
 
 Addresses in CMake
 ------------------
 
-``rp6502_xram()`` reads the header and gives CMake the same names, so an
-asset loads exactly where your program looks for it.
+``rp6502_xram()`` reads the header and gives CMake the same names, so the
+layout is written once. Without it the same address sits in both the header
+and the CMake file, and the two drift apart the first time the layout
+changes.
 
 .. code-block:: cmake
 
