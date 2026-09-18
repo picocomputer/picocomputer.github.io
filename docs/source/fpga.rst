@@ -4,6 +4,10 @@ RP6502-FPGA
 
 RP6502 - Field Programmable Gate Array
 
+.. note::
+
+   FPGA is new and will have better doccumentation later.
+
 
 Introduction
 ============
@@ -51,15 +55,11 @@ in the working directory on any other host.
 Core Settings
 -------------
 
-The core menu has four entries: the keyboard layout, and a UTC offset
-split across three of them.
-
 - **Keyboard** selects the layout.
 
 - **UTC offset** is three entries: a side, an hour, and a quarter hour.
-  The Pocket knows nothing about time zones, so the offset and DST changes
-  have to be set by hand. A list limit of sixteen options requires this
-  setting to be split across three entries.
+  The Pocket has no time zones, so the offset and DST changes have to be
+  set by hand. A list limit of sixteen options forces the split.
 
 
 The Dock

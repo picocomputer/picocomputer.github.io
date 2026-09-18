@@ -1,0 +1,22 @@
+/* Furo gives a description 0.125rem of space under its signature, which runs
+   the two together where the signature is a whole line of code. */
+dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple).c.function dd > :first-child {
+    margin-top: 0.75rem;
+}
+
+/* ABI and lib are parser attributes, from c_id_attributes in conf.py. They
+   are the only bare spans directly inside a signature, every other token
+   being wrapped in a type or name span first, so they can be set apart from
+   the C they sit in front of. */
+dl.c.function > dt.sig > span.pre {
+    font-size: var(--font-size--small--3);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-foreground-secondary);
+    border: 1px solid var(--color-background-border);
+    border-radius: 0.25rem;
+    padding: 0.1em 0.4em;
+    margin-right: 0.2em;
+    vertical-align: 0.1em;
+}

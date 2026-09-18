@@ -16,6 +16,7 @@ release = ''
 
 extensions = [
     'sphinx_copybutton',
+    'sphinx_inline_tabs',
     'sphinxext.opengraph',
 ]
 exclude_patterns = []
@@ -27,7 +28,10 @@ html_theme = 'furo'
 html_title = 'Picocomputer 6502'
 html_logo = '_static/logo.png'
 html_favicon = '_static/favicon.ico'
+c_id_attributes = ['ABI', 'lib']
+
 html_static_path = ['_static']
+html_css_files = ['custom.css']
 html_theme_options = {
     # 'announcement': '',
     'source_repository': 'https://github.com/picocomputer/picocomputer.github.io/',

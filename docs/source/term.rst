@@ -5,6 +5,8 @@ RP6502-TERM
 RP6502 - Terminal
 
 
+.. _term-console-manifold:
+
 Console Manifold
 ================
 
@@ -26,7 +28,7 @@ can be attached at once and fanned in to one console; this is the
   and access the console over the USB CDC ACM serial port that appears.
   No driver is needed.
 * **Telnet.** The :doc:`ria_w` exposes the console over the network. See
-  `Telnet Console <ria_w.html#telnet-console>`__ for setup.
+  :ref:`Telnet Console <ria-w-telnet-console>` for setup.
 
 Any terminal on the console manifold can be used for development and
 scripting. The limits show up when software needs the terminal to report
@@ -35,13 +37,13 @@ information back.
 Size and Feature Detection
 --------------------------
 
-The monitor — and some ROMs, like MS-BASIC — send ANSI commands that
+The monitor and some ROMs, like MS-BASIC, send ANSI commands that
 terminals reply to, which is how they detect screen size and features.
 At the start of every cooked stdin read, the active terminal is queried
 with a Cursor Position Report (CPR) sequence.
 
 The built-in VGA terminal stops responding to these queries if a telnet
-or USB terminal is connected, so the external terminal wins. **If both
+or USB terminal is connected. **If both
 USB and telnet terminals are connected at the same time and both reply,
 the system may get confused.** If pagination or word-wrap seem wrong,
 check what terminals are attached to the console manifold.
@@ -55,7 +57,7 @@ Locking the Size
 ----------------
 
 A ROM can pin a fixed terminal size by writing non-zero values to
-`RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT <os.html#ria-attributes>`__.
+:ref:`RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT <os-ria-attributes>`.
 With both axes pinned, the auto-detect handshake is skipped entirely.
 Writing 0 returns the channel to auto-detect, and both attributes revert
 to 0 when the ROM stops.
@@ -89,7 +91,7 @@ channels:
   once the editor flushes. Writes may send less than you asked for.
 * ``TTY:`` — non-blocking raw input, with no canonical input and no
   newline translation. ``read()`` returns whatever bytes are queued.
-  This is what the `RIA TX and RX registers <ria.html#uart>`__ provide,
+  This is what the :ref:`RIA TX and RX registers <ria-uart>` provide,
   packaged as stdio.
 
 ``CON:`` and ``TTY:`` are each locked to their own file descriptor,
@@ -99,20 +101,19 @@ as the first, and a close succeeds as a no-op.
 Non-blocking Read Line
 ----------------------
 
-A non-blocking cooked read is more than just a prompt that doesn't
-stall. Between the activating read and the line flush, the application
+Between the activating read and the line flush, the application
 can inspect and modify the editor's state. That is what makes features
 like history recall, tab completion, and multi-field form navigation
-possible. The hooks are `RLN_LASTKEY <os.html#rln-lastkey>`__,
-`RLN_PEEK <os.html#rln-peek>`__, and `RLN_POKE <os.html#rln-poke>`__.
+possible. The hooks are :ref:`RLN_LASTKEY <os-rln-lastkey>`,
+:ref:`RLN_PEEK <os-rln-peek>`, and :ref:`RLN_POKE <os-rln-poke>`.
 
 The basic pattern:
 
 #. **Open the channel.** ``open("CON:", 0)`` returns a file descriptor.
-#. **Set the input cap** (optional): write ``RIA_ATTR_RLN_LENGTH``.
-   Different prompts — or different fields in a form — can use
+#. **Set the input cap** (optional). Write ``RIA_ATTR_RLN_LENGTH``.
+   Different prompts, or different fields in a form, can use
    different caps. The default is 254.
-#. **Pin the terminal size** (optional): write ``RIA_ATTR_RLN_WIDTH``
+#. **Pin the terminal size** (optional). Write ``RIA_ATTR_RLN_WIDTH``
    and ``RIA_ATTR_RLN_HEIGHT`` when the layout is built for a fixed
    canvas. See `Locking the Size`_.
 #. **Loop on ``read()``** until the line flushes.
@@ -128,27 +129,26 @@ The basic pattern:
      are echoed by the editor as if the user had typed them.
    * Optionally check for Ctrl-C via ``RIA_ATTR_SIGINT`` or the RIA SIGINT IRQ.
      To leave cooked input cleanly, poke ``\x03`` to print a visible
-     ``^C``, or poke ``\r`` or ``\n`` to flush silently — then wait for
+     ``^C``, or poke ``\r`` or ``\n`` to flush silently. Then wait for
      ``read()`` to return the line.
    * ``ria_rln_lastkey()`` reports the last keystroke and whether the
      editor consumed it as an editing action. When ``action == 0`` the
-     editor passed the key through — that is the application's chance
+     editor passed the key through. That is the application's chance
      to handle Tab, function keys, arrow keys for history or form
-     navigation, and any other keys it wants to claim. Call ``ria_rln_peek()``
+     navigation, and any other keys it claims. Call ``ria_rln_peek()``
      to get the current input text and cursor position. Respond by
      poking literal characters or ANSI sequences (``CUF``, ``CUB``,
-     ``ICH``, ``DCH``) back into the editor as if the user had typed
-     them.
+     ``ICH``, ``DCH``) back into the editor.
 
 #. **Read ``RIA_ATTR_RLN_WIDTH`` and ``RIA_ATTR_RLN_HEIGHT``** to obtain
    the dynamic size after the read line completes.
 
-Anything you can do by typing, you can do by poking. To pull the buffer
-out without the user pressing Enter — for example, when Tab should jump
-to the next field of a form — poke ``\r`` or ``\n``. The editor flushes through
-``read()`` like any other line, and the application can move on,
-entering the next field with a fresh ``read()`` and ``ria_rln_poke()``
-to restore its prior contents.
+Anything you can do by typing, you can do by poking. Poke ``\r`` or
+``\n`` to pull the buffer out without the user pressing Enter, for
+example when Tab should jump to the next field of a form. The editor
+flushes through ``read()`` like any other line, and the application can
+move on, entering the next field with a fresh ``read()`` and
+``ria_rln_poke()`` to restore its prior contents.
 
 
 Terminal
@@ -176,15 +176,15 @@ Behavior Notes
 
 **Blink and iCE colors.** SGR 5 / 6 (blink) sets the blink
 attribute and the renderer pulses the cell foreground at a fixed
-rate. The legacy ANSI.SYS / IBM-VGA behavior — where SGR 5 / 6
-brightens the background instead of blinking — is preserved as
+rate. The legacy ANSI.SYS / IBM-VGA behavior, where SGR 5 / 6
+brightens the background instead of blinking, is preserved as
 opt-in via ``CSI ?33h`` (iCE colors). This is the standard
 ANSI-art compatibility mode; off by default. Toggle off with
 ``CSI ?33l``.
 
 **Alternate screen buffer.** ``?47`` swaps only. ``?1047`` swaps
 and clears the alt buffer on exit. ``?1049`` is the modern app
-default — saves the cursor on entry, swaps, clears on entry, and
+default. It saves the cursor on entry, swaps, clears on entry, and
 restores the cursor on exit.
 
 **DEC Special Graphics.** A built-in line-drawing font (boxes,
@@ -336,7 +336,7 @@ The terminal keeps two character-set slots, named **G0** and
 **G1**. You load a font into each slot independently, then switch
 which slot is active at any time. This lets you mix regular text
 with the DEC line-drawing characters (boxes, dashes, arrows)
-without an escape sequence per character — load the line-drawing
+without an escape sequence per character. Load the line-drawing
 font into G1 once, then toggle between G0 and G1 as you go.
 
 **Load a font into a slot.** The byte after the sequence selects

@@ -8,9 +8,6 @@ RP6502 - Emulator
 Introduction
 ============
 
-This page documents the software hosts. The :doc:`fpga` is the host made
-of gates, and the :doc:`pico` is a standalone machine you can build.
-
 An emulator is a first-class Picocomputer rather than a facsimile.
 It runs the same 6502 code, responds to the same registers, and maps its
 own errors onto the same errno values every other host reports.
@@ -18,42 +15,35 @@ own errors onto the same errno values every other host reports.
 What differs between the software hosts:
 
 .. list-table::
-   :widths: 28 22 18 16 16
+   :widths: 28 22 18 16
    :header-rows: 1
 
    * -
      - Linux, macOS, Windows
      - Browser
-     - Android
      - RetroArch
    * - On-screen debugger
      - yes
-     - no
      - no
      - no
    * - DAP debug adapter
      - yes
      - no
      - no
-     - no
    * - Scripting
      - yes
-     - no
      - no
      - no
    * - Arguments
      - command line
      - config block
      - none
-     - none
    * - Drop a ROM on the window
      - yes
      - no
      - no
-     - no
    * - Save states
      - by script
-     - no
      - no
      - yes, with rewind and netplay
 
@@ -67,17 +57,16 @@ the :doc:`sdk` template will fetch the right one into ``tools/``, so
 you may have it already.
 
 - **Windows** — ``rp6502-emu.exe`` is the program itself, not an installer.
-  Requires  a GPU with Direct3D 11. It isn't code signed, so SmartScreen
+  Requires a GPU with Direct3D 11. It isn't code signed, so SmartScreen
   warns on first launch; choose "More info" then "Run anyway".
 - **macOS** — drag ``rp6502-emu.app`` to Applications.
-  It isn't signed or notarized, so Gatekeeper blocks
-  the first launch — allow it under System Settings > Privacy & Security >
+  It isn't signed or notarized, so Gatekeeper blocks the first launch.
+  Allow it under System Settings > Privacy & Security >
   "Open Anyway", or ``xattr -dr com.apple.quarantine rp6502-emu.app``.
 - **Linux** — built on Ubuntu 22.04, so it needs glibc 2.35 or
   later plus the GL, X11, and ALSA runtime libraries.
   The tarball preserves the execute bit; if something
   along the way stripped it, ``chmod +x rp6502-emu``.
-- **Android** — the APK from the same release.
 - **RetroArch** — the core is in the Online Updater, under
   "Picocomputer 6502"; see `RetroArch`_ below.
 
@@ -96,152 +85,6 @@ Start the emulator with a ROM, or drag one onto the window.
 .. code-block:: text
 
   rp6502-emu game.rp6502
-
-
-Arguments
-=========
-
-.. note::
-
-   Arguments are beta and may change.
-
-There are no short options. Both ``--opt value`` and ``--opt=value``
-work.
-
-.. list-table::
-   :widths: 20 25 45 10
-   :header-rows: 1
-
-   * - Option
-     - Value
-     - Description
-     - Hosts
-   * - ``--help``
-     - \-
-     - Print the options and the script commands, then exit.
-     - all
-   * - ``--screenshot``
-     - ``file.png``
-     - Run headlessly, render the frames to PNG, and exit.
-     - all
-   * - ``--crc``
-     - \-
-     - Run headlessly, render the frames, print the canvas as a CRC-32
-       on stdout, and exit.
-     - all
-   * - ``--frames``
-     - number
-     - Frames to run before the screenshot or the CRC. Default 120.
-     - all
-   * - ``--scale``
-     - number
-     - Window scale, fractional allowed. Default 1.5.
-     - desktop
-   * - ``--filter``
-     - ``nearest``,
-       ``linear``,
-       ``sharp``
-     - How pixels are scaled to the window. Default ``sharp``, which
-       prescales by an integer and then interpolates.
-     - all
-   * - ``--script``
-     - ``file``, or
-       ``-``
-     - See `Scripting`_.
-     - desktop
-   * - ``--headless``
-     - \-
-     - No window and no picture. The program reads and writes the host's
-       stdin, stdout and stderr, and its exit code becomes the emulator's.
-       Implies ``--stdin``.
-     - desktop
-   * - ``--stdin``
-     - \-
-     - The host's stdin becomes the machine's console input. A terminal
-       there becomes the console itself. Implied by ``--headless``. See
-       `Standard Streams`_.
-     - desktop
-   * - ``--rom``
-     - ``file``
-     - Install a ROM on the null drive, reached as ``:basename``.
-       Repeatable to sixteen; the first one boots.
-     - all
-   * - ``--bgcolor``
-     - ``RRGGBB``
-     - Letterbox and pillarbox fill. Default ``000000``.
-     - all
-   * - ``--phi2``
-     - kHz
-     - 6502 clock, 100 to 8000. Default 8000. ``0`` runs unpaced: the
-       machine goes as fast as the host can take it.
-     - all
-   * - ``--cp``
-     - number
-     - OEM code page. 437, 720, 737, 771, 775, 850, 852, 855, 857,
-       860-866, or 869. Default 437.
-     - all
-   * - ``--seed``
-     - number
-     - Fixed seed for the run, covering both the memory fill and the
-       random numbers a program draws, so a run repeats exactly.
-     - all
-   * - ``--fill``
-     - ``random``,
-       or a byte
-     - What RAM and XRAM hold before anything writes them. The default
-       is ``random``. Supply a byte, as ``$00`` or ``0``, to start with
-       known memory.
-     - all
-   * - ``--mute``
-     - \-
-     - No synthesis and no audio device opened at all.
-     - all
-   * - ``--debug``
-     - \-
-     - The on-screen machine debugger. It also holds the window open
-       after the program exits, so you can examine where it stopped.
-     - desktop
-   * - ``--dap``
-     - \-
-     - Act as a DAP debug adapter on stdio. Implies ``--debug``.
-     - desktop
-   * - ``--ini``
-     - ``file``
-     - Where the debugger keeps its window layout.
-     - desktop
-   * - ``--credits``
-     - \-
-     - Print third-party credits and licenses, then exit.
-     - all
-   * - ``--version``
-     - \-
-     - Print the version and exit.
-     - all
-   * - ``--``
-     - words
-     - Pass everything after this to the ROM as ``argv[1..]``.
-     - all
-
-
-Standard Streams
-----------------
-
-A program's ``stdout`` and ``stderr`` both show on the VGA
-terminal, so someone at the screen sees an error even when the streams
-are redirected somewhere else. On the desktop hosts they also reach
-the process: ``stdout`` goes to the host's stdout and ``stderr`` to
-the host's stderr, so a console program written for the Picocomputer
-runs in a shell pipeline.
-
-Host stdin becomes the machine's console input under ``--stdin``, which
-``--headless`` implies. A pipe's end of file reaches the
-program. Once the input is gone, a read of ``stdin`` returns 0 bytes.
-
-.. code-block:: text
-
-  rp6502-emu --headless --phi2 0 tool.rp6502 < input.txt > output.txt
-  rp6502-emu --headless adventure.rp6502
-  rp6502-emu --stdin game.rp6502           # a window, and the terminal too
 
 
 Web Builds
@@ -311,10 +154,155 @@ same ``db`` and their programs share one filesystem.
 RetroArch
 =========
 
-The Picocomputer is also a libretro core, which is how it reaches
-RetroArch and the launchers built on it. Install it from Online Updater >
+The Picocomputer is also a libretro core. Install it from Online Updater >
 Core Downloader, under "Picocomputer 6502", then load a ``.rp6502`` ROM
-as content the way you would a cartridge.
+the way you would a cartridge.
+
+
+Arguments
+=========
+
+.. note::
+
+   Arguments are beta and may change.
+
+There are no short options. Both ``--opt value`` and ``--opt=value``
+work.
+
+.. list-table::
+   :widths: 20 25 45 10
+   :header-rows: 1
+
+   * - Option
+     - Value
+     - Description
+     - Hosts
+   * - ``--help``
+     - \-
+     - Print the options and the script commands, then exit.
+     - all
+   * - ``--screenshot``
+     - ``file.png``
+     - Run headlessly, render the frames to PNG, and exit.
+     - all
+   * - ``--crc``
+     - \-
+     - Run headlessly, render the frames, print the canvas as a CRC-32
+       on stdout, and exit.
+     - all
+   * - ``--frames``
+     - number
+     - Frames to run before the screenshot or the CRC. Default 120.
+     - all
+   * - ``--scale``
+     - number
+     - Window scale, fractional allowed. Default 1.5.
+     - desktop
+   * - ``--filter``
+     - ``nearest``,
+       ``linear``,
+       ``sharp``
+     - How pixels are scaled to the window. Default ``sharp``, which
+       prescales by an integer and then interpolates.
+     - all
+   * - ``--script``
+     - ``file``, or
+       ``-``
+     - See `Scripting`_.
+     - desktop
+   * - ``--headless``
+     - \-
+     - No window and no picture. The program reads and writes the host's
+       stdin, stdout and stderr, and its exit code becomes the emulator's.
+       Implies ``--stdin``.
+     - desktop
+   * - ``--stdin``
+     - \-
+     - The host's stdin becomes the machine's console input. A terminal
+       there becomes the console itself. Implied by ``--headless``. See
+       `Standard Streams`_.
+     - desktop
+   * - ``--install``
+     - ``file``
+     - Install a ROM on the null drive, reached as ``:basename``.
+       Repeatable to sixteen; the first one boots.
+     - all
+   * - ``--bgcolor``
+     - ``RRGGBB``
+     - Letterbox and pillarbox fill. Default ``000000``.
+     - all
+   * - ``--phi2``
+     - kHz
+     - 6502 clock, 100 to 8000. Default 8000. ``0`` runs unpaced: the
+       machine goes as fast as the host can take it.
+     - all
+   * - ``--cp``
+     - number
+     - OEM code page. 437, 720, 737, 771, 775, 850, 852, 855, 857,
+       860-866, or 869. Default 437.
+     - all
+   * - ``--seed``
+     - number
+     - Fixed seed for the run, covering both the memory fill and the
+       random numbers a program draws, so a run repeats exactly.
+     - all
+   * - ``--fill``
+     - ``random``,
+       or a byte
+     - What RAM and XRAM hold before anything writes them. The default
+       is ``random``. Supply a byte, as ``$00`` or ``0``, to start with
+       known memory.
+     - all
+   * - ``--mute``
+     - \-
+     - No synthesis and no audio device opened at all.
+     - all
+   * - ``--debug``
+     - \-
+     - The on-screen machine debugger. It also holds the window open
+       after the program exits, so you can examine where it stopped.
+     - desktop
+   * - ``--dap``
+     - \-
+     - Act as a DAP debug adapter on stdio. Implies ``--debug``.
+     - desktop
+   * - ``--ini``
+     - ``file``
+     - Where the debugger keeps its window layout.
+     - desktop
+   * - ``--credits``
+     - \-
+     - Print third-party credits and licenses, then exit.
+     - all
+   * - ``--version``
+     - \-
+     - Print the version and exit.
+     - all
+   * - ``--``
+     - words
+     - Pass everything after this to the ROM as ``argv[1..]``.
+     - all
+
+
+Standard Streams
+----------------
+
+A program's ``stdout`` and ``stderr`` both show on the VGA
+terminal, so someone at the screen sees an error even when the streams
+are redirected somewhere else. On the desktop hosts they also reach
+the process. ``stdout`` goes to the host's stdout and ``stderr`` to
+the host's stderr, so a console program written for the Picocomputer
+runs in a shell pipeline.
+
+Host stdin becomes the machine's console input under ``--stdin``, which
+``--headless`` implies. Once the input is gone, a read of ``stdin``
+returns 0 bytes.
+
+.. code-block:: text
+
+  rp6502-emu --headless --phi2 0 tool.rp6502 < input.txt > output.txt
+  rp6502-emu --headless adventure.rp6502
+  rp6502-emu --stdin game.rp6502           # a window, and the terminal too
 
 
 Debugging
@@ -374,7 +362,7 @@ before the first instruction. ``stopOnExit`` is on by default and keeps
 the session alive after the program ends, so the final screen remains on
 display. The program's ``stdout`` and ``stderr`` reach the Debug Console
 as output events of those two categories, so VS Code shows ``stderr`` in
-red; the emulated terminal in the window shows both.
+red.
 
 
 Scripting
@@ -404,8 +392,10 @@ them, so ``run 600`` is six hundred frames and six hundred VSYNCs every
 time.
 
 One command per line. ``#`` starts a comment anywhere outside quotes.
-Text is always in double quotes and takes ``\n``, ``\r``, ``\t``,
-``\\``, and ``\"``. Numbers may be decimal, C-style ``0xFF``, or
+Text is always in double quotes and takes the C escapes, so ``\n`` is a
+newline, ``\\`` and ``\"`` are themselves, and ``\x03`` or ``\3`` is a
+control byte. Hex takes up to two digits and octal up to three, and a
+string cannot hold ``\0``. Numbers may be decimal, C-style ``0xFF``, or
 MOS-style ``$FF``.
 
 .. code-block:: text
@@ -426,18 +416,21 @@ MOS-style ``$FF``.
    * - ``run [frames]``
      - Let exactly that many frames elapse, one VSYNC each. Default 1.
    * - ``wait "text" [frames]``
-     - Run until the console says it. Default budget 600 frames.
+     - Run until the console prints it. Default budget 600 frames.
    * - ``wait [xram:|ram:]<addr> <byte> [frames]``
      - Run until that byte reads that value. The byte is read once a
        frame, at the boundary.
    * - ``type "text" [frames]``
-     - Type it. ``\r`` is Enter, ``\t`` is Tab. Waits for the keyboard
-       ring to take it all; default budget 600 frames.
-   * - ``key <name>[+ctrl][+shift][+alt]``
-     - Send a key's escape sequence.
+     - Type it. ``\r`` is Enter, ``\t`` is Tab. The text is UTF-8,
+       converted to the machine's code page, so a byte that is not UTF-8
+       becomes ``?``. Waits for the keyboard ring to take it all;
+       default budget 600 frames.
+   * - ``key <key>[+ctrl][+shift][+alt]``
+     - Send the bytes a terminal sends for that key. See `Key Names`_.
    * - ``press <key>...``,
        ``release <key>...``
-     - The direct HID bitmap, by name or usage ID.
+     - Set and clear bits in the HID bitmap a program reads. Each key is a
+       name or a keycode. See `Key Names`_.
    * - ``lock num|caps|scroll``
      - Toggle a lock LED.
    * - ``pad <n> connect [western|eastern|playstation] [sticks]``,
@@ -454,12 +447,16 @@ MOS-style ``$FF``.
    * - ``mouse move <dx> <dy>``,
        ``mouse wheel <n> [pan]``,
        ``mouse buttons <mask>``
-     - Work the mouse.
+     - Work the mouse. The mask is one bit per button, 0 left, 1 right,
+       2 middle, 3 back, 4 forward.
    * - ``tablet at <x> <y> [buttons]``,
        ``tablet touch <x>,<y>...``,
        ``tablet wheel <n> [pan]``,
        ``tablet clear``
-     - Work the absolute pointer, including multi-touch.
+     - Work the absolute pointer, including multi-touch up to eight
+       contacts. The buttons are the same bits as the mouse. A pointer
+       placed with ``at`` always reports hover, and a ``touch`` never
+       does.
    * - ``expect "text"``,
        ``expect-not "text"``
      - Check the console since the last check. A match consumes up to and
@@ -499,24 +496,70 @@ MOS-style ``$FF``.
    * - ``reply [on|off]``
      - Answer every command on stdout. See `Driving it from a program`_.
 
-A failed check names the script and the line it was on, then exits 1,
-which is what a test runner needs.
+A failed check names the script and the line it was on, then exits 1.
 
 Memory starts random, as it often does on real hardware. This will catch
-uninitialize memory usage... eventually. ``--fill 00`` gives a test
+uninitialized memory usage... eventually. ``--fill 00`` gives a test
 known memory when it needs it.
+
+
+Key Names
+---------
+
+A ``<key>`` is one name out of one list, whichever command reads it.
+Letters are ``a`` to ``z``, digits are ``0`` to ``9``, function keys are
+``f1`` to ``f12``, and keypad digits are ``kp0`` to ``kp9``. The rest have
+a name of their own, because only letters and digits are written as
+themselves. Case does not matter.
+
+.. list-table::
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Group
+     - Names
+   * - Typing
+     - ``enter`` ``escape`` ``backspace`` ``tab`` ``space``
+   * - Navigation
+     - ``insert`` ``delete`` ``home`` ``end`` ``pageup`` ``pagedown``
+       ``up`` ``down`` ``left`` ``right``
+   * - Punctuation
+     - ``minus`` ``equal`` ``leftbracket`` ``rightbracket`` ``backslash``
+       ``semicolon`` ``apostrophe`` ``grave`` ``comma`` ``period``
+       ``slash``
+   * - Locks and system
+     - ``capslock`` ``numlock`` ``scrolllock`` ``printscreen`` ``pause``
+       ``menu``
+   * - Keypad
+     - ``kpenter`` ``kpdivide`` ``kpmultiply`` ``kpsubtract`` ``kpadd``
+       ``kpdecimal`` ``kpequal``
+   * - Modifiers
+     - ``lctrl`` ``lshift`` ``lalt`` ``lsuper`` ``rctrl`` ``rshift``
+       ``ralt`` ``rsuper``
+
+``press`` and ``release`` take any key, because they set and clear bits
+in the HID bitmap. They also take a keycode from 4 to 255 in place of a
+name, written as ``0x2C``, ``$2C`` or decimal. These are the keyboard
+usage codes from the USB HID specification, not PS/2 scancodes, and bit N
+of the bitmap is the key with keycode N. A bare single digit is the digit
+key rather than a keycode, so ``press 4`` is the 4 key and ``press $04``
+is the a key.
+
+``key`` sends what a terminal sends, so it takes the keys that type a
+character and the keys that have an escape sequence. ``+shift`` types the
+shifted character, ``+alt`` prefixes ESC, and ``+ctrl`` sends the control
+byte, which makes ``key c+ctrl`` Ctrl-C and ``key leftbracket+ctrl`` an
+ESC. Those characters are a US keyboard's, whatever layout the machine is
+set to, because a script has to send the same bytes on every machine.
+
+A key that types nothing is an error, which
+covers ``capslock``, ``numlock``, ``scrolllock``, ``printscreen``,
+``pause``, ``menu`` and the modifiers. So is a ``+ctrl`` on a key that has
+no control byte, such as ``key 1+ctrl``.
 
 
 Driving it from a program
 -------------------------
-
-.. note::
-
-   Scripting is beta and may change.
-
-A script file is a list of commands that drive the emulator. ``--script -``
-is the other half: the machine reads one line at a time and waits, so a
-program on the other end of the pipe can test the machine.
 
 ``reply`` turns on one line of answer per command — ``ok``, ``ok <values>``
 for ``dump`` and ``crc``, or ``fail <why>``. It is off until asked, so a
@@ -537,6 +580,5 @@ An answer comes when the command **finishes**, not when it parses. The
   dump xram:$FF00 4        -> ok 80 00 00 08
   peek xram:$FF00 $99      -> fail $FF00+0 is $80, expected $99
 
-Any language that can write a pipe and read a line back can drive the emulator.
 The arithmetic and the assertions belong in your driver program, which is
-why you don't see any in this scripting lanugage.
+why you don't see any in this scripting language.
