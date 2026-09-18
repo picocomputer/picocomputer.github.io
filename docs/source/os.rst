@@ -1381,102 +1381,15 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
        every 68 years.
 
 
-ERRNO_OPT Compiler Constants
-============================
-
-OS calls set ``RIA_ERRNO`` when an error occurs. Because cc65 and llvm-mos
-each define their own errno constants, the errno option selects which set
-of numeric values to use. Both compilers set it automatically in their C
-runtime, and ``errno`` in C maps directly to ``RIA_ERRNO``. Assembly
-programs must set ``RIA_ATTR_ERRNO_OPT`` themselves before any OS call that
-can fail.
-
-.. list-table::
-   :header-rows: 1
-   :widths: 34 33 33
-
-   * -
-     - cc65
-     - llvm-mos
-   * - option
-     - 1
-     - 2
-   * - ENOENT
-     - 1
-     - 2
-   * - ENOMEM
-     - 2
-     - 12
-   * - EACCES
-     - 3
-     - 13
-   * - ENODEV
-     - 4
-     - 19
-   * - EMFILE
-     - 5
-     - 24
-   * - EBUSY
-     - 6
-     - 16
-   * - EINVAL
-     - 7
-     - 22
-   * - ENOSPC
-     - 8
-     - 28
-   * - EEXIST
-     - 9
-     - 17
-   * - EAGAIN
-     - 10
-     - 11
-   * - EIO
-     - 11
-     - 5
-   * - EINTR
-     - 12
-     - 4
-   * - ENOSYS
-     - 13
-     - 38
-   * - ESPIPE
-     - 14
-     - 29
-   * - ERANGE
-     - 15
-     - 34
-   * - EBADF
-     - 16
-     - 9
-   * - ENOEXEC
-     - 17
-     - 8
-   * - EDOM
-     - 18
-     - 33
-   * - EILSEQ
-     - 18
-     - 84
-   * - EUNKNOWN
-     - 18
-     - 85
-
-.. note::
-
-   cc65 does not define ``EDOM`` or ``EILSEQ``; under option 1 the OS reports
-   both as ``EUNKNOWN`` (18).
-
-
 Host Error Codes
-----------------
+================
 
 A program never gets a host's own error codes. Each host maps them onto
-the errno values above, and the table below shows which become which, for
-a developer porting code from POSIX or Windows. ``ENOTDIR``, for one, has
-no errno of its own here and arrives as ``ENOENT``. The littlefs codes are
-shown without their ``LFS_ERR_`` prefix and the Windows codes without
-their ``ERROR_`` prefix. Any other code becomes ``EIO``.
+the errno values in the left column, and the table shows which become
+which, for a developer porting code from POSIX or Windows. ``ENOTDIR``,
+for one, has no errno of its own here and arrives as ``ENOENT``. The
+littlefs codes are shown without their ``LFS_ERR_`` prefix and the Windows
+codes without their ``ERROR_`` prefix. Any other code becomes ``EIO``.
 
 .. list-table::
    :header-rows: 1
@@ -1571,3 +1484,85 @@ no column. It returns ``ENOSYS`` for fourteen calls, because its
 filesystem is a single folder: STAT, UNLINK, RENAME, OPENDIR, READDIR,
 CLOSEDIR, REWINDDIR, CHMOD, UTIME, MKDIR, CHDIR, GETLABEL, SETLABEL and
 GETFREE.
+
+
+ERRNO_OPT Compiler Constants
+============================
+
+OS calls set ``RIA_ERRNO`` when an error occurs. Because cc65 and llvm-mos
+each define their own errno constants, the errno option selects which set
+of numeric values to use. Both compilers set it automatically in their C
+runtime, and ``errno`` in C maps directly to ``RIA_ERRNO``. Assembly
+programs must set ``RIA_ATTR_ERRNO_OPT`` themselves before any OS call that
+can fail.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 33 33
+
+   * -
+     - cc65
+     - llvm-mos
+   * - option
+     - 1
+     - 2
+   * - ENOENT
+     - 1
+     - 2
+   * - ENOMEM
+     - 2
+     - 12
+   * - EACCES
+     - 3
+     - 13
+   * - ENODEV
+     - 4
+     - 19
+   * - EMFILE
+     - 5
+     - 24
+   * - EBUSY
+     - 6
+     - 16
+   * - EINVAL
+     - 7
+     - 22
+   * - ENOSPC
+     - 8
+     - 28
+   * - EEXIST
+     - 9
+     - 17
+   * - EAGAIN
+     - 10
+     - 11
+   * - EIO
+     - 11
+     - 5
+   * - EINTR
+     - 12
+     - 4
+   * - ENOSYS
+     - 13
+     - 38
+   * - ESPIPE
+     - 14
+     - 29
+   * - ERANGE
+     - 15
+     - 34
+   * - EBADF
+     - 16
+     - 9
+   * - ENOEXEC
+     - 17
+     - 8
+   * - EDOM
+     - 18
+     - 33
+   * - EILSEQ
+     - 18
+     - 84
+   * - EUNKNOWN
+     - 18
+     - 85
