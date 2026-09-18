@@ -425,28 +425,13 @@ one stops the build.
   [<unaligned_regex>] in rp6502_xram.
 
 Pixel data, fonts, tiles, sprite images, and the keyboard, mouse, gamepad
-and tablet blocks work the same at any address, so the check is advice
-there rather than a rule. Take it anyway, and fix an odd one by putting
-the odd-sized members last or by giving one a padding byte. Name whatever
-has to stay odd with the third argument and it is left unchecked.
+and tablet blocks work at any address, so the check on those is advice
+rather than a hardware rule. Follow it anyway. Some hosts are faster for
+it.
 
 The 64 bytes of the PSG must also stay within one page, and the OPL2
-registers must start on a page. In assembly, write these checks yourself, as
-in the layout above.
-
-Loading at Run Time
--------------------
-
-Data can also be read into XRAM while your program runs, from a named
-asset or any other file.
-
-.. code-block:: C
-
-  int fd = open("ROM:logo", O_RDONLY);
-  read_xram(XRAM_BITMAP_DATA, 320U * 240 / 2, fd);
-  close(fd);
-
-See :ref:`READ_XRAM <os-read-xram>`.
+registers must start on a page. These are the only two things not checked,
+so make sure of them yourself.
 
 
 Multiple Compiler Artifacts
