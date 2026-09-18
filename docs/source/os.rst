@@ -25,8 +25,6 @@ filesystems.
    ExFAT is ready to go and will be enabled when the patents expire.
 
 
-.. _os-memory-map:
-
 Memory Map
 ==========
 
