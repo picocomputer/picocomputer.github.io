@@ -256,10 +256,8 @@ arguments or change their data structures, though. The reason becomes
 clear once you're in assembly, fine-tuning short stacking and integer
 demotion — shrinking a return value to fit in fewer registers. In C you
 may never notice, because the standard library wraps these calls in
-familiar prototypes. The ``f_lseek()`` below, for instance, reorders its
-arguments to put the long one in position for short stacking, but you
-don't have to call ``f_lseek()`` from C. You can call the usual
-``lseek()``, which keeps the traditional argument order.
+familiar prototypes, and the flags below mark the two forms apart wherever
+they differ.
 
 The OS is built around FAT filesystems, the de facto standard for
 unsecured removable storage such as USB drives and memory cards. POSIX
@@ -271,9 +269,20 @@ tailored to FAT. If a true POSIX ``stat()`` is ever needed, it can be
 built in the C standard library or in an application by translating
 ``f_stat()`` data.
 
-Each operation below is a C declaration followed by a short list of
-details. ``Op code`` is the value a program writes to ``RIA_OP`` to start
-the operation, and ``None`` marks one the C library builds out of other
+Each operation below is one or more C declarations followed by a short
+list of details. Some declarations carry a flag:
+
+.. c:function:: ABI int an_operation (int arg0, int arg1)
+                lib int a_library_call (int arg1, int arg0)
+   :no-index-entry:
+   :no-contents-entry:
+
+``ABI`` marks a prototype that is only the ABI form. ``LIB`` marks a
+prototype that exists only in the library. A prototype with neither flag
+is both.
+
+``Op code`` is the value a program writes to ``RIA_OP`` to start the
+operation, and ``None`` marks one the C library builds out of other
 operations. ``C proto`` names the header the declaration comes from.
 ``a regs`` names the arguments and the return value that fit in ``RIA_A``
 alone, so a program can leave ``RIA_X`` unset. ``errno`` lists what can
@@ -300,7 +309,7 @@ XREG
 ----
 
 .. c:function:: int xreg (char device, char channel, unsigned char address, ...);
-.. c:function:: int xregn (char device, char channel, unsigned char address, unsigned count, ...);
+                lib int xregn (char device, char channel, unsigned char address, unsigned count, ...);
 
    Prefer xreg() from C to avoid a counting mistake. The count isn't sent
    over the ABI, so both prototypes are equally valid.
@@ -335,7 +344,7 @@ XREG
 ARGV
 ----
 
-.. c:function:: int _argv (char *argv, int size)
+.. c:function:: ABI int _argv (char *argv, int size)
 
    The virtual _argv is called during C initialization to supply argc and
    argv to main(). It returns an array of zero-terminated string indexes
@@ -360,9 +369,9 @@ ARGV
 EXEC
 ----
 
-.. c:function:: int ria_execl (const char *path, ...)
-.. c:function:: int ria_execv (const char *path, char * const argv[])
-.. c:function:: int _exec (const char *argv, int size)
+.. c:function:: ABI int _exec (const char *argv, int size)
+                lib int ria_execl (const char *path, ...)
+                lib int ria_execv (const char *path, char * const argv[])
 
    The virtual _exec is called by ria_execl() and ria_execv(). Note one
    difference from the execl() and execv() you may know: because RAM is
@@ -608,7 +617,7 @@ CLOSE
 READ
 ----
 
-.. c:function:: int read (int fildes, void *buf, unsigned count)
+.. c:function:: lib int read (int fildes, void *buf, unsigned count)
 
    Read ``count`` bytes from a file into a buffer. This is implemented in
    the compiler library as a series of calls to `READ_XSTACK`_.
@@ -667,7 +676,7 @@ READ_XRAM
 WRITE
 -----
 
-.. c:function:: int write (int fildes, const void *buf, unsigned count)
+.. c:function:: lib int write (int fildes, const void *buf, unsigned count)
 
    Write ``count`` bytes from a buffer to a file. This is implemented in
    the compiler library as a series of calls to `WRITE_XSTACK`_.
@@ -725,11 +734,10 @@ WRITE_XRAM
 LSEEK
 -----
 
-.. c:function:: long f_lseek (long offset, int whence, int fildes)
-.. c:function:: off_t lseek (int fildes, off_t offset, int whence)
+.. c:function:: ABI long f_lseek (long offset, int whence, int fildes)
+                lib off_t lseek (int fildes, off_t offset, int whence)
 
-   Move the read/write pointer. The OS uses the ABI format of f_lseek(). An
-   lseek() compatible wrapper is provided with the compiler library.
+   Move the read/write pointer.
 
    This can also be used to obtain the current read/write position with
    ``f_lseek(0, SEEK_CUR, fd)``.
