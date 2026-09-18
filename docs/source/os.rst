@@ -318,8 +318,9 @@ XREG
    registers, starting at address on the given device and channel. See the
    :doc:`ria` and :doc:`vga` docs for what each register does. Setting an
    extended register can fail, which doubles as feature detection: EINVAL
-   means the device sent a negative acknowledgement, and EIO means a
-   timeout waiting for ack/nak.
+   means the device sent a negative acknowledgement, EIO means a timeout
+   waiting for ack/nak, and EACCES means a write to the VGA control
+   channel, which the RIA manages.
 
    This is how you add virtual hardware to extended RAM. Both the :doc:`ria`
    and :doc:`vga` ship with virtual devices you can install, and you can
@@ -336,7 +337,7 @@ XREG
    :param address: PIX address. 0-255
    :param ...: 16 bit integers to set starting at address.
    :a regs: return
-   :errno: EINVAL, EIO
+   :errno: EACCES, EINVAL, EIO
 
 
 .. _os-argv:
@@ -441,7 +442,7 @@ TIME_GET
    :C proto: time.h
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EIO
+   :errno: EINVAL, EIO
 
 
 TIME_SET
@@ -463,7 +464,7 @@ TIME_SET
    :param time: Seconds since 1970-01-01T00:00:00Z.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EACCES, EINVAL, ERANGE
+   :errno: EACCES, EINVAL
 
 
 GMTIME
@@ -574,11 +575,8 @@ OPEN
    :param oflag: Bitfield of options.
    :returns: File descriptor. -1 on error.
    :a regs: return, oflag
-   :errno: EINVAL, EMFILE, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY,
-      FR_NO_FILE, FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_EXIST,
-      FR_INVALID_OBJECT, FR_WRITE_PROTECTED, FR_INVALID_DRIVE,
-      FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_LOCKED,
-      FR_NOT_ENOUGH_CORE, FR_TOO_MANY_OPEN_FILES
+   :errno: EACCES, EBADF, EBUSY, EEXIST, EINVAL, EIO, EMFILE, ENODEV, ENOENT,
+      ENOMEM, ENOSPC
    :Options:
 
       | O_RDONLY 0x01
@@ -610,8 +608,7 @@ CLOSE
    :param fildes: File descriptor from open().
    :returns: 0 on success. -1 on error.
    :a regs: return, fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
-      FR_TIMEOUT
+   :errno: EBADF, EIO, ENOSPC
 
 
 READ
@@ -630,8 +627,7 @@ READ
    :returns: On success, number of bytes read is returned. On error, -1 is
       returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
-      FR_TIMEOUT
+   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
 
 
 READ_XSTACK
@@ -649,8 +645,7 @@ READ_XSTACK
    :returns: On success, number of bytes read is returned. On error, -1 is
       returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
-      FR_TIMEOUT
+   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
 
 .. _os-read-xram:
 
@@ -669,8 +664,7 @@ READ_XRAM
    :returns: On success, number of bytes read is returned. On error, -1 is
       returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
-      FR_TIMEOUT
+   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
 
 
 WRITE
@@ -689,8 +683,7 @@ WRITE
    :returns: On success, number of bytes written is returned. On error, -1
       is returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
-      FR_TIMEOUT
+   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC, ENOSYS
 
 
 WRITE_XSTACK
@@ -708,8 +701,7 @@ WRITE_XSTACK
    :returns: On success, number of bytes written is returned. On error, -1
       is returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
-      FR_TIMEOUT
+   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC, ENOSYS
 
 
 WRITE_XRAM
@@ -727,8 +719,7 @@ WRITE_XRAM
    :returns: On success, number of bytes written is returned. On error, -1
       is returned.
    :a regs: fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_DENIED, FR_INVALID_OBJECT,
-      FR_TIMEOUT
+   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC, ENOSYS
 
 
 LSEEK
@@ -751,8 +742,7 @@ LSEEK
       0x7FFFFFFF cannot be represented in the returned long; the seek then
       fails with errno ERANGE and the file position is left unchanged.
    :a regs: fildes
-   :errno: EINVAL, ERANGE, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
-      FR_TIMEOUT
+   :errno: EBADF, EINVAL, EIO, ENOSYS, ERANGE, ESPIPE
 
    .. list-table::
       :header-rows: 1
@@ -786,10 +776,7 @@ UNLINK
    :C proto: unistd.h
    :param name: File or directory name to unlink (remove).
    :returns: 0 on success. -1 on error.
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
-      FR_NO_PATH, FR_INVALID_NAME, FR_DENIED, FR_WRITE_PROTECTED,
-      FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT,
-      FR_LOCKED, FR_NOT_ENOUGH_CORE
+   :errno: EACCES, EBUSY, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 RENAME
@@ -804,10 +791,8 @@ RENAME
    :param oldname: Existing file or directory name to rename.
    :param newname: New object name.
    :returns: 0 on success. -1 on error.
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
-      FR_NO_PATH, FR_INVALID_NAME, FR_EXIST, FR_WRITE_PROTECTED,
-      FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT,
-      FR_LOCKED, FR_NOT_ENOUGH_CORE
+   :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSPC,
+      ENOSYS
 
 
 SYNCFS
@@ -822,8 +807,7 @@ SYNCFS
    :param fildes: File descriptor from open().
    :returns: 0 on success. -1 on error.
    :a regs: return, fildes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
-      FR_TIMEOUT
+   :errno: EACCES, EBADF, EINVAL, EIO, ENOSPC, ENOSYS
 
 
 STAT
@@ -854,9 +838,7 @@ STAT
    :param dirent: Returned f_stat_t data.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
-      FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED,
-      FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 OPENDIR
@@ -871,10 +853,7 @@ OPENDIR
    :param name: Pathname to a directory.
    :returns: Directory descriptor. -1 on error.
    :a regs: return
-   :errno: EINVAL, EMFILE, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY,
-      FR_NO_PATH, FR_INVALID_NAME, FR_INVALID_OBJECT, FR_INVALID_DRIVE,
-      FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE,
-      FR_TOO_MANY_OPEN_FILES
+   :errno: EACCES, EBADF, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 READDIR
@@ -891,8 +870,7 @@ READDIR
    :param dirent: Returned f_stat_t data.
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT,
-      FR_NOT_ENOUGH_CORE
+   :errno: EACCES, EBADF, EINVAL, EIO, ENOENT, ENOMEM
 
 
 CLOSEDIR
@@ -908,7 +886,7 @@ CLOSEDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
-   :errno: EINVAL, FR_INT_ERR, FR_INVALID_OBJECT, FR_TIMEOUT
+   :errno: EBADF, EINVAL, EIO
 
 
 TELLDIR
@@ -923,7 +901,7 @@ TELLDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: Read position. -1 on error.
    :a regs: dirdes
-   :errno: EINVAL, EBADF
+   :errno: EBADF, EINVAL
 
 
 SEEKDIR
@@ -941,8 +919,7 @@ SEEKDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: Read position. -1 on error.
    :a regs: return, dirdes
-   :errno: EINVAL, EBADF, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
-      FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT, ENOMEM
 
 
 REWINDDIR
@@ -957,8 +934,7 @@ REWINDDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
    :a regs: dirdes
-   :errno: EINVAL, EBADF, FR_DISK_ERR, FR_INT_ERR, FR_INVALID_OBJECT,
-      FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT
 
 
 CHMOD
@@ -975,9 +951,7 @@ CHMOD
    :param mask: Only attributes with bits set here will be changed.
    :returns: 0 on success. -1 on error.
    :a regs: return, mask
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
-      FR_NO_PATH, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE,
-      FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
    .. list-table::
       :header-rows: 1
@@ -1014,9 +988,7 @@ UTIME
    :param crtime: Creation time.
    :returns: 0 on success. -1 on error.
    :a regs: return, crtime
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_FILE,
-      FR_NO_PATH, FR_INVALID_NAME, FR_WRITE_PROTECTED, FR_INVALID_DRIVE,
-      FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
    .. list-table:: Date
       :header-rows: 0
@@ -1053,10 +1025,7 @@ MKDIR
    :param name: Pathname of the directory to create.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH,
-      FR_INVALID_NAME, FR_DENIED, FR_EXIST, FR_WRITE_PROTECTED,
-      FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT,
-      FR_NOT_ENOUGH_CORE
+   :errno: EACCES, EEXIST, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSPC, ENOSYS
 
 
 CHDIR
@@ -1071,9 +1040,7 @@ CHDIR
    :param name: Pathname of the directory to make current.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NO_PATH,
-      FR_INVALID_NAME, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM,
-      FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 CHDRIVE
@@ -1095,7 +1062,7 @@ CHDRIVE
    :param name: Drive name to change to.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: FR_INVALID_DRIVE
+   :errno: EACCES, EIO, ENODEV, ENOENT
 
 
 GETCWD
@@ -1114,8 +1081,7 @@ GETCWD
    :C proto: rp6502.h
    :param name: The returned directory.
    :returns: Size of returned name. -1 on error.
-   :errno: ENOMEM, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_NOT_ENABLED,
-      FR_NO_FILESYSTEM, FR_TIMEOUT, FR_NOT_ENOUGH_CORE
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM
 
 
 SETLABEL
@@ -1130,9 +1096,7 @@ SETLABEL
    :param name: Label with optional volume name.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_NAME,
-      FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED,
-      FR_NO_FILESYSTEM, FR_TIMEOUT
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 GETLABEL
@@ -1148,8 +1112,7 @@ GETLABEL
    :param label: Storage for returned label.
    :returns: Size of returned label. -1 on error.
    :a regs: return
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_DRIVE,
-      FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 GETFREE
@@ -1173,8 +1136,7 @@ GETFREE
    :param total: Storage for returned value.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EINVAL, FR_DISK_ERR, FR_INT_ERR, FR_NOT_READY, FR_INVALID_DRIVE,
-      FR_NOT_ENABLED, FR_NO_FILESYSTEM, FR_TIMEOUT
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 .. _os-rln-lastkey:
@@ -1429,105 +1391,183 @@ runtime, and ``errno`` in C maps directly to ``RIA_ERRNO``. Assembly
 programs must set ``RIA_ATTR_ERRNO_OPT`` themselves before any OS call that
 can fail.
 
-Every RP6502 machine maps its filesystem errors onto the same errno
-values. The table below lists the FatFs mappings, and each call above is
-documented with its FatFs errors too, to help when cross-referencing the
-`FatFs documentation <https://elm-chan.org/fsw/ff/>`__.
-
 .. list-table::
    :header-rows: 1
-   :widths: 25 25 25 25
+   :widths: 34 33 33
 
    * -
      - cc65
      - llvm-mos
-     - FatFs
    * - option
      - 1
      - 2
-     -
    * - ENOENT
      - 1
      - 2
-     - FR_NO_FILE, FR_NO_PATH
    * - ENOMEM
      - 2
      - 12
-     - FR_NOT_ENOUGH_CORE
    * - EACCES
      - 3
      - 13
-     - FR_DENIED, FR_WRITE_PROTECTED
    * - ENODEV
      - 4
      - 19
-     - FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM
    * - EMFILE
      - 5
      - 24
-     - FR_TOO_MANY_OPEN_FILES
    * - EBUSY
      - 6
      - 16
-     - FR_LOCKED
    * - EINVAL
      - 7
      - 22
-     - FR_INVALID_NAME, FR_INVALID_PARAMETER
    * - ENOSPC
      - 8
      - 28
-     -
    * - EEXIST
      - 9
      - 17
-     - FR_EXIST
    * - EAGAIN
      - 10
      - 11
-     - FR_TIMEOUT
    * - EIO
      - 11
      - 5
-     - FR_DISK_ERR, FR_INT_ERR, FR_MKFS_ABORTED
    * - EINTR
      - 12
      - 4
-     -
    * - ENOSYS
      - 13
      - 38
-     -
    * - ESPIPE
      - 14
      - 29
-     -
    * - ERANGE
      - 15
      - 34
-     -
    * - EBADF
      - 16
      - 9
-     - FR_INVALID_OBJECT
    * - ENOEXEC
      - 17
      - 8
-     -
    * - EDOM
      - 18
      - 33
-     -
    * - EILSEQ
      - 18
      - 84
-     -
    * - EUNKNOWN
      - 18
      - 85
-     -
 
 .. note::
 
    cc65 does not define ``EDOM`` or ``EILSEQ``; under option 1 the OS reports
    both as ``EUNKNOWN`` (18).
+
+
+Host Error Codes
+----------------
+
+A program never gets a host's own error codes. Each host maps them onto
+the errno values above, and the table below shows which become which, for
+a developer porting code from POSIX or Windows. ``ENOTDIR``, for one, has
+no errno of its own here and arrives as ``ENOENT``. The littlefs codes are
+shown without their ``LFS_ERR_`` prefix and the Windows codes without
+their ``ERROR_`` prefix. Any other code becomes ``EIO``.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 14 22 20 20 24
+
+   * -
+     - FatFs
+     - littlefs
+     - POSIX
+     - Windows
+   * - ENOENT
+     - FR_NO_FILE, FR_NO_PATH
+     - NOENT
+     - ENOENT, ENOTDIR
+     - FILE_NOT_FOUND, PATH_NOT_FOUND, INVALID_NAME, NO_MORE_FILES, DIRECTORY
+   * - EACCES
+     - FR_DENIED, FR_WRITE_PROTECTED
+     -
+     - EACCES, EPERM, EROFS, EISDIR, ENOTEMPTY
+     - ACCESS_DENIED, SHARING_VIOLATION, LOCK_VIOLATION, WRITE_PROTECT, DIR_NOT_EMPTY
+   * - EINVAL
+     - FR_INVALID_NAME, FR_INVALID_PARAMETER
+     - NOTDIR, ISDIR, NOTEMPTY, INVAL, NAMETOOLONG
+     - EINVAL, ENAMETOOLONG
+     - FILENAME_EXCED_RANGE, INVALID_PARAMETER, NEGATIVE_SEEK
+   * - ENODEV
+     - FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM
+     -
+     - ENODEV, ENXIO
+     - NOT_READY, BAD_UNIT, INVALID_DRIVE, NOT_SAME_DEVICE
+   * - ENOSPC
+     -
+     - FBIG, NOSPC
+     - ENOSPC, EFBIG
+     - DISK_FULL, HANDLE_DISK_FULL
+   * - EEXIST
+     - FR_EXIST
+     - EXIST
+     - EEXIST
+     - ALREADY_EXISTS, FILE_EXISTS
+   * - EMFILE
+     - FR_TOO_MANY_OPEN_FILES
+     -
+     - EMFILE, ENFILE
+     - TOO_MANY_OPEN_FILES
+   * - ENOMEM
+     - FR_NOT_ENOUGH_CORE
+     - NOMEM
+     - ENOMEM
+     - NOT_ENOUGH_MEMORY, OUTOFMEMORY
+   * - EBUSY
+     - FR_LOCKED
+     -
+     - EBUSY
+     - BUSY, PIPE_BUSY
+   * - EBADF
+     - FR_INVALID_OBJECT
+     - BADF
+     - EBADF
+     - INVALID_HANDLE
+   * - EAGAIN
+     - FR_TIMEOUT
+     -
+     - EAGAIN
+     -
+   * - EINTR
+     -
+     -
+     -
+     - OPERATION_ABORTED
+   * - ESPIPE
+     -
+     -
+     - ESPIPE
+     -
+   * - ERANGE
+     -
+     -
+     - ERANGE
+     -
+   * - EIO
+     - FR_DISK_ERR, FR_INT_ERR, FR_MKFS_ABORTED
+     - IO, CORRUPT, NOATTR
+     - EIO
+     -
+
+On POSIX, a read or write on a descriptor opened the wrong way fails with
+``EBADF`` from the host and ``EACCES`` here.
+
+The Pocket sets errno itself rather than mapping a host's codes, so it has
+no column. It returns ``ENOSYS`` for fourteen calls, because its
+filesystem is a single folder: STAT, UNLINK, RENAME, OPENDIR, READDIR,
+CLOSEDIR, REWINDDIR, CHMOD, UTIME, MKDIR, CHDIR, GETLABEL, SETLABEL and
+GETFREE.
