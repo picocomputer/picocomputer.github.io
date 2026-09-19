@@ -907,9 +907,9 @@ manipulation code slightly smaller and faster.
 Mode 4: Sprite 16-bit
 ---------------------
 
-Sprites can be drawn over any fill plane. This is the 16-bit sprite
-system from the Pi Pico Playground; for lower bit depths, see mode 5.
-Its appetite for memory is offset by something the others can't do —
+Sprites can be drawn over any fill plane. This is the same 16-bit
+sprite system used by Pi Pico Playground and Luke Wren's RISCBoy.
+Its appetite for memory is offset by something mode 5 can't do —
 affine transforms.
 
 .. list-table::
@@ -1127,7 +1127,7 @@ Mode 5: Sprite 1,2,4,8-bit
 
 This is a memory-efficient sprite system that uses palettes to cut the
 bit depth. Sprites can be drawn over any fill plane, including a null
-fill plane. For examplke, you might put affine sprites for explosions and
+fill plane. For example, you might put affine sprites for explosions and
 the player on one plane, 16x16 4bpp enemy sprites on a second, and 8x8 1bpp
 bullets on the third.
 
@@ -1173,30 +1173,9 @@ Program the mode by setting MODE and the registers after it in one call.
 Disable unused sprites by moving them off the canvas.
 
 Sprite image data uses the same format as individual mode 2 tiles.
-
-.. code-block:: C
-
-  // 8x8 tiles
-  struct {
-      struct {
-          uint8_t cols[bpp];
-      } rows[8];
-  } data;
-
-  // 16x16 tiles
-  struct {
-      struct {
-          uint8_t cols[2*bpp];
-      } rows[16];
-  } data;
-
-  // NxN tiles
-  struct {
-      struct {
-          uint8_t cols[N/8*bpp];
-      } rows[N];
-  } data;
-
+``MODE5_IMAGE`` declares the structure of one image from its color depth and
+sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
+4-bit color.
 
 .. tab:: C
 
@@ -1217,6 +1196,15 @@ Sprite image data uses the same format as individual mode 2 tiles.
       #define MODE5_128X128 0x20
       #define MODE5_256X256 0x28
       #define MODE5_512X512 0x30
+
+      #define MODE5_IMAGE(bpp, size)                \
+          struct                                    \
+          {                                         \
+              struct                                \
+              {                                     \
+                  uint8_t cols[(size) * (bpp) / 8]; \
+              } rows[size];                         \
+          }
 
       typedef struct
       {
@@ -1248,6 +1236,15 @@ Sprite image data uses the same format as individual mode 2 tiles.
       MODE5_256X256 = $28
       MODE5_512X512 = $30
 
+      .macro MODE5_IMAGE name, bpp, size
+          .struct name
+              rows .struct
+                  cols .res (size) * (bpp) / 8
+              .endstruct
+              .res ((size) - 1) * .sizeof(rows)
+          .endstruct
+      .endmacro
+
       .struct mode5_sprite_t
           x_pos_px        .word
           y_pos_px        .word
@@ -1277,6 +1274,13 @@ Sprite image data uses the same format as individual mode 2 tiles.
       MODE5_128X128 = $20
       MODE5_256X256 = $28
       MODE5_512X512 = $30
+
+      .macro MODE5_IMAGE name, bpp, size
+          \name\()_ROWS      = 0
+          \name\()_ROWS_COLS = 0
+          \name\()_ROWS_SIZE = (\size) * (\bpp) / 8
+          \name\()_SIZE      = (\size) * \name\()_ROWS_SIZE
+      .endm
 
       MODE5_SPRITE_X_POS_PX        = 0
       MODE5_SPRITE_Y_POS_PX        = 2
@@ -1336,19 +1340,19 @@ applications are denied access to them.
 Backchannel
 ===========
 
-The 6502 programmer never has to think about any of this. What follows is
-the return path for machines where the RIA and the VGA are separate chips
-joined by a serial wire.
+The :doc:`pico` hardware is constrained by GPIO pins, which is why two
+are needed for a Picocomputer. This is a hack to recover a single pin.
+The 6502 programmer never has to think about any of this.
 
 Because the PIX bus is unidirectional, the VGA system can't send data
 straight back to the RIA. The UART Rx path won't do either — it would
 add framing overhead or unusable control characters. But the PIX bus has
 plenty of idle bandwidth (it only carries data when the 6502 writes to
 XRAM), so all Tx data is routed over PIX, leaving the UART Tx pin free to
-serve as a backchannel.
+reverse directions and serve as the backchannel.
 
 Values 0x00 to 0x7F send a version string as ASCII, terminated by 0x0D
-or 0x0A. Send it immediately after the backchannel-enable message
+or 0x0A. Sent immediately after the backchannel-enable message
 arrives for it to appear in the boot message.
 
 When bit 0x80 is set, the 0x70 bits give the command type and the 0x0F
@@ -1363,26 +1367,6 @@ completion.
 
 0xA0 OP_NAK - This acknowledges a failure.
 
-
-Two Implementations
-===================
-
-Everything on this page exists twice. There is a software renderer in C
-and there is Register Transfer Logic (RTL) in System Verilog. Neither one
-is a simplification of the other. They have the same registers, the same
-config structures at the same offsets, and they produce the same pixels.
-
-The C is the RP6502-VGA firmware, which is designed to fit entirely on a
-Raspberry Pi Pico 2 as part of an :doc:`pico`, and the :doc:`emu`
-compiles the same files, so that module and every software host draw
-with one renderer. The RTL is in the :doc:`fpga`, where each mode is a
-scanline engine in fabric.
-
-The C renderer is built around a modified scanvideo library from Pi Pico
-Extras. The mode 4 sprite system comes from Pi Pico Playground, and the
-scanline programming system and every other mode are original work for
-the RP6502.
-
-The two are tested against each other. A generator writes a corpus of
-small ROMs covering every mode. Every fixture boots on both machines,
-settles, and the two framebuffers are compared word for word.
+Because waiting for an entire character to decode over UART is lost time
+for VSYNC, a predictive algorithm suspends ACK/NAK around the expected
+window for a VSYNC so it can be edge triggered on the first bit.
