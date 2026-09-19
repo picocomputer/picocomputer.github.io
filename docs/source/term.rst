@@ -42,16 +42,11 @@ terminals reply to, which is how they detect screen size and features.
 At the start of every cooked stdin read, the active terminal is queried
 with a Cursor Position Report (CPR) sequence.
 
-The built-in VGA terminal stops responding to these queries if a telnet
+The :doc:`pico` VGA terminal stops responding to these queries if a telnet
 or USB terminal is connected. **If both
 USB and telnet terminals are connected at the same time and both reply,
 the system may get confused.** If pagination or word-wrap seem wrong,
 check what terminals are attached to the console manifold.
-
-The monitor word-wraps and column-fits its output to the detected
-width. That includes listings, help text, status responses, settings,
-and the time zone selector. ROMs that use cooked stdin and read the size
-get the same information.
 
 Locking the Size
 ----------------
@@ -70,7 +65,7 @@ A **cooked** read returns a complete line. The user has edited freely
 with backspace, arrow keys, and optionally command completion and
 history; the editor flushes the line when Enter is pressed. A **raw**
 read returns bytes as they arrive, keystroke by keystroke, with no echo
-and no editing. The OS implements cooked input with the line editor in
+and no editing. The OS implements cooked input with a line editor in
 ``rln.c``.
 
 A modern operating system layers canonical input and translated output
