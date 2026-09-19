@@ -678,7 +678,7 @@ The face buttons vary only in labeling — XY/AB, YX/BA, or
 Square/Triangle/Cross/Circle. Each button reports in the same place
 whatever it is called, so that rarely matters to an application until it
 prints a button's name, or the buttons stand in for directions.
-For those, the DPAD register reports which labeling the gamepad wears
+For those, the DPAD register reports which labeling the gamepad has
 when the RIA can be sure of it. You're free to do your own thing, of
 course — ask players to use a specific gamepad, or offer an "AB or BA"
 option.
@@ -699,11 +699,6 @@ per gamepad.
 
 The upper bits of the DPAD register report readiness and type. The
 connected bit is high when a gamepad occupies that player slot.
-
-The button type says where the face button labels sit, so an application
-can print the right one. The buttons themselves never move. BTN0 bit 0 is
-the button labeled A or Cross, wherever that label happens to be
-printed. A type is only reported when the RIA is certain.
 
 .. list-table::
    :widths: 1 1 1 1 1
@@ -730,14 +725,17 @@ printed. A type is only reported when the RIA is certain.
      - Square, west
      - Triangle, north
 
-The sticks bit is high when the gamepad has both analog sticks.
+The sticks bit is high when the gamepad has both analog sticks. Some
+retro-style gamepads indicate they have sticks when they do not. They may
+also map buttons in unusual ways. The RIA does the best it can with the
+provided metadata.
 
 Both digital and analog values are available for the sticks and the
 L2/R2 triggers, so applications can ignore the analog values entirely if
 they like.
 
 Some gamepads report only digital data; in that case, code that uses L2
-and R2 should allow for analog values of just 0 or 255.
+and R2 should expect analog values of just 0 or 255.
 
 Applications taking the simple "one stick and buttons" approach should
 merge the d-pad and left stick into a single input.
@@ -1258,7 +1256,8 @@ extended register device 0, channel 1, address 0x01.
 
 Enable and disable the OPL2 by setting its extended register. The value
 is the XRAM start address for the 256 OPL2 registers, which must begin
-on a page boundary.
+on a page boundary. So if xaddr is 0x4200, the 256 OPL2 registers map into
+XRAM from 0x4200 to 0x42FF. Any invalid address disables the OPL2.
 
 .. code-block:: C
 
@@ -1266,8 +1265,6 @@ on a page boundary.
   xreg(0, 1, 0x01, 0xFFFF); // disable
   xreg_ria_opl(xaddr);      // macro shortcut
 
-So if xaddr is 0x4200, the 256 OPL2 registers map into XRAM from 0x4200
-to 0x42FF. Any invalid address disables the OPL2.
 
 Timers, interrupts, and the status register are not supported. Those
 features existed mainly to cost-reduce consumer devices; computers of
@@ -1326,7 +1323,7 @@ Virtual COM Port
 
 If you need serial ports beyond the console UART, USB adapters are
 available for CMOS/TTL, RS-232, RS-422, and RS-485, and each one appears
-as a Virtual COM Port (VCP). RIA firmware carries drivers for FTDI,
+as a Virtual COM Port (VCP). :doc:`pico` firmware carries drivers for FTDI,
 CP210X, CH34X, PL2303, and CDC ACM.
 
 The ``status`` command lists any connected VCP devices. Open one like a
