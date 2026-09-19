@@ -97,10 +97,9 @@ Setting a key register may fail, returning -1 with errno EINVAL.
    * - $1:0:00
      - CANVAS
      - Select a graphics canvas. This clears $1:0:02-$1:0:FF and all
-       scanline programming. The 80 column console canvas is used as
-       a failsafe and therefore not scanline programmable.
+       scanline programming. The console canvas is not programmable.
 
-       * 0 - 80 column console. (4:3 or 5:4)
+       * 0 - console (4:3 or 5:4)
        * 1 - 320x240 (4:3)
        * 2 - 320x180 (16:9)
        * 3 - 640x480 (4:3)
@@ -181,7 +180,8 @@ All three planes run RGB555 color plus transparency.
 makes a color opaque; clearing it makes the color transparent. Despite
 the name, alpha here is a binary flag, not a blending factor. The
 built-in ANSI palette has the alpha bit set on every color except color
-0 (black), which is transparent.
+0 (black), which is transparent. Note that ANSI color 16 is also black
+but without transparency.
 
 .. tab:: C
 
@@ -235,8 +235,7 @@ built-in ANSI palette has the alpha bit set on every color except color
 
 A palette is just an array. The 8bpp, 4bpp, 2bpp, and 1bpp modes use one;
 16-bit-per-pixel modes aren't indexed and ignore the palette entirely.
-Palettes must be 16-bit aligned; an odd one falls back to the built-in
-table.
+Palettes must be 16-bit aligned.
 
 .. code-block:: C
 
@@ -245,10 +244,6 @@ table.
 The built-in color palettes are reached through the sentinel XRAM pointer
 $FFFF. 1-bit is black and white. 4-bit and 8-bit modes start with an ANSI
 palette of 16 colors, followed by 216 colors (6x6x6), then 24 grays.
-
-The built-in 8x8 and 8x16 fonts are available through the same sentinel
-XRAM pointer $FFFF. Glyphs 0-127 are ASCII; glyphs 128-255 vary by code
-page.
 
 
 .. _vga-mode-0:
@@ -390,6 +385,10 @@ on the color bit depth selected.
 
 Fonts are encoded in a wide format: the first 256 bytes hold the first
 row of all 256 glyphs, the next 256 bytes the second row, and so on.
+
+The built-in 8x8 and 8x16 fonts are available through the sentinel
+XRAM pointer $FFFF. Glyphs 0-127 are ASCII; glyphs 128-255 vary by code
+page.
 
 .. code-block:: C
 
@@ -579,7 +578,7 @@ Mode 2: Tile
 ------------
 
 Tile modes bake the color information into each tile's bitmap. This is
-the mode you want for a video-game playfield, where a small set of tiles
+the mode you want for a video game playfield, where a small set of tiles
 is repeated across a large map.
 
 .. list-table::
@@ -629,23 +628,11 @@ The data is a matrix of tile IDs, with 0,0 at the top left.
       uint8_t tile_id;
   } data[width_tiles * height_tiles];
 
-Tiles themselves are encoded in a "tall" bitmap format.
-
-.. code-block:: C
-
-  // 8x8 tiles
-  struct {
-      struct {
-          uint8_t cols[bpp];
-      } rows[8];
-  } tile[up_to_256];
-
-  // 16x16 tiles
-  struct {
-      struct {
-          uint8_t cols[2*bpp];
-      } rows[16];
-  } tile[up_to_256];
+Tiles themselves are encoded in a "tall" bitmap format, where every row of
+one tile is stored, top to bottom, before the next tile begins. Each tile ID
+is an index into an array of up to 256 tiles. ``MODE2_TILE`` declares the
+structure of one tile from its color depth and tile size, so
+``typedef MODE2_TILE(4, 8) tile_t;`` is an 8x8 tile in 4-bit color.
 
 Trim values shrink the drawn tile to an arbitrary size up to the base 8x8
 or 16x16, dropping X trim columns off the right and Y trim rows off the
@@ -669,6 +656,15 @@ cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
 
       #define MODE2_X_TRIM(cols) ((cols) << 4)
       #define MODE2_Y_TRIM(rows) ((rows) << 8)
+
+      #define MODE2_TILE(bpp, size)                 \
+          struct                                    \
+          {                                         \
+              struct                                \
+              {                                     \
+                  uint8_t cols[(size) * (bpp) / 8]; \
+              } rows[size];                         \
+          }
 
       typedef struct
       {
@@ -700,6 +696,15 @@ cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
       MODE2_8X8   = $00
       MODE2_16X16 = $08
 
+      .macro MODE2_TILE name, bpp, size
+          .struct name
+              rows .struct
+                  cols .res (size) * (bpp) / 8
+              .endstruct
+              .res ((size) - 1) * .sizeof(rows)
+          .endstruct
+      .endmacro
+
       .struct mode2_config_t
           x_wrap           .byte
           y_wrap           .byte
@@ -729,6 +734,13 @@ cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
 
       MODE2_8X8   = $00
       MODE2_16X16 = $08
+
+      .macro MODE2_TILE name, bpp, size
+          \name\()_ROWS      = 0
+          \name\()_ROWS_COLS = 0
+          \name\()_ROWS_SIZE = (\size) * (\bpp) / 8
+          \name\()_SIZE      = (\size) * \name\()_ROWS_SIZE
+      .endm
 
       MODE2_CONFIG_X_WRAP           = 0
       MODE2_CONFIG_Y_WRAP           = 1
