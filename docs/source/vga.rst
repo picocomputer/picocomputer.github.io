@@ -73,11 +73,11 @@ structure.
 
     // Select a 320x240 canvas
     result = xreg(1, 0, 0, 1); // or
-    result = xreg_vga_canvas(1);
+    result = xreg_vga_canvas(CANVAS_320X240);
     // Program mode 3 for 4 bit color with
     // its config structure at XRAM $FF00.
     result = xreg(1, 0, 1, 3, 2, 0xFF00); // or
-    result = xreg_vga_mode3(2, 0xFF00);
+    result = xreg_vga_mode3(MODE3_4BPP, 0xFF00);
 
 
 .. _vga-key-registers:
@@ -124,8 +124,8 @@ because setting CANVAS clears all scanline programming.
 
 .. code-block:: C
 
-  xreg(1, 0, 0, 1);   // 320x240 canvas
-  xreg_vga_canvas(1); // macro shortcut
+  xreg(1, 0, 0, 1);                // 320x240 canvas
+  xreg_vga_canvas(CANVAS_320X240); // macro shortcut
 
 .. tab:: C
 
@@ -133,6 +133,12 @@ because setting CANVAS clears all scanline programming.
       :caption: xram.h
 
       #define xreg_vga_canvas(...) xreg(1, 0, 0, __VA_ARGS__)
+
+      #define CANVAS_CONSOLE 0
+      #define CANVAS_320X240 1
+      #define CANVAS_320X180 2
+      #define CANVAS_640X480 3
+      #define CANVAS_640X360 4
 
 .. tab:: ca65
 
@@ -143,6 +149,12 @@ because setting CANVAS clears all scanline programming.
           xreg 1, 0, 0, canvas
       .endmacro
 
+      CANVAS_CONSOLE = 0
+      CANVAS_320X240 = 1
+      CANVAS_320X180 = 2
+      CANVAS_640X480 = 3
+      CANVAS_640X360 = 4
+
 .. tab:: llvm-mc
 
    .. code-block:: ca65
@@ -152,6 +164,12 @@ because setting CANVAS clears all scanline programming.
       .macro xreg_vga_canvas canvas
           xreg 1, 0, 0, \canvas
       .endm
+
+      CANVAS_CONSOLE = 0
+      CANVAS_320X240 = 1
+      CANVAS_320X180 = 2
+      CANVAS_640X480 = 3
+      CANVAS_640X360 = 4
 
 
 Colors, Palettes and Fonts
@@ -344,8 +362,8 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 1, 3, xaddr, 0); // 8-bit color on plane 0
-  xreg_vga_mode1(3, xaddr, 0);   // macro shortcut
+  xreg(1, 0, 1, 1, 3, xaddr, 0);        // 8-bit color on plane 0
+  xreg_vga_mode1(MODE1_8BPP, xaddr, 0); // macro shortcut
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -387,6 +405,15 @@ row of all 256 glyphs, the next 256 bytes the second row, and so on.
       :caption: xram.h
 
       #define xreg_vga_mode1(...) xreg(1, 0, 1, 1, __VA_ARGS__)
+
+      #define MODE1_1BPP 0x00
+      #define MODE1_4BPPR 0x01
+      #define MODE1_4BPP 0x02
+      #define MODE1_8BPP 0x03
+      #define MODE1_16BPP 0x04
+
+      #define MODE1_8X8 0x00
+      #define MODE1_8X16 0x08
 
       #define MODE1_FG_BG(fg, bg) ((uint8_t)(((fg) << 4) | (bg)))
       #define MODE1_BG_FG(bg, fg) ((uint8_t)(((bg) << 4) | (fg)))
@@ -445,6 +472,15 @@ row of all 256 glyphs, the next 256 bytes the second row, and so on.
           xreg 1, 0, 1, 1, options, config, plane, begin, end
       .endmacro
 
+      MODE1_1BPP  = $00
+      MODE1_4BPPR = $01
+      MODE1_4BPP  = $02
+      MODE1_8BPP  = $03
+      MODE1_16BPP = $04
+
+      MODE1_8X8  = $00
+      MODE1_8X16 = $08
+
       .struct mode1_config_t
           x_wrap           .byte
           y_wrap           .byte
@@ -493,6 +529,15 @@ row of all 256 glyphs, the next 256 bytes the second row, and so on.
       .macro xreg_vga_mode1 values:vararg
           xreg 1, 0, 1, 1, \values
       .endm
+
+      MODE1_1BPP  = $00
+      MODE1_4BPPR = $01
+      MODE1_4BPP  = $02
+      MODE1_8BPP  = $03
+      MODE1_16BPP = $04
+
+      MODE1_8X8  = $00
+      MODE1_8X16 = $08
 
       MODE1_CONFIG_X_WRAP           = 0
       MODE1_CONFIG_Y_WRAP           = 1
@@ -571,8 +616,8 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 2, 2, xaddr, 0); // 4-bit color 8x8 tiles on plane 0
-  xreg_vga_mode2(2, xaddr, 0);   // macro shortcut
+  xreg(1, 0, 1, 2, 2, xaddr, 0);                    // 4-bit color 8x8 tiles on plane 0
+  xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, xaddr, 0); // macro shortcut
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -614,6 +659,17 @@ cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
 
       #define xreg_vga_mode2(...) xreg(1, 0, 1, 2, __VA_ARGS__)
 
+      #define MODE2_1BPP 0x00
+      #define MODE2_2BPP 0x01
+      #define MODE2_4BPP 0x02
+      #define MODE2_8BPP 0x03
+
+      #define MODE2_8X8 0x00
+      #define MODE2_16X16 0x08
+
+      #define MODE2_X_TRIM(cols) ((cols) << 4)
+      #define MODE2_Y_TRIM(rows) ((rows) << 8)
+
       typedef struct
       {
           bool x_wrap;
@@ -636,6 +692,14 @@ cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
           xreg 1, 0, 1, 2, options, config, plane, begin, end
       .endmacro
 
+      MODE2_1BPP = $00
+      MODE2_2BPP = $01
+      MODE2_4BPP = $02
+      MODE2_8BPP = $03
+
+      MODE2_8X8   = $00
+      MODE2_16X16 = $08
+
       .struct mode2_config_t
           x_wrap           .byte
           y_wrap           .byte
@@ -657,6 +721,14 @@ cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
       .macro xreg_vga_mode2 values:vararg
           xreg 1, 0, 1, 2, \values
       .endm
+
+      MODE2_1BPP = $00
+      MODE2_2BPP = $01
+      MODE2_4BPP = $02
+      MODE2_8BPP = $03
+
+      MODE2_8X8   = $00
+      MODE2_16X16 = $08
 
       MODE2_CONFIG_X_WRAP           = 0
       MODE2_CONFIG_Y_WRAP           = 1
@@ -711,8 +783,8 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 3, 2, xaddr, 0); // 4-bit color on plane 0
-  xreg_vga_mode3(2, xaddr, 0);   // macro shortcut
+  xreg(1, 0, 1, 3, 2, xaddr, 0);        // 4-bit color on plane 0
+  xreg_vga_mode3(MODE3_4BPP, xaddr, 0); // macro shortcut
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -741,6 +813,14 @@ manipulation code slightly smaller and faster.
 
       #define xreg_vga_mode3(...) xreg(1, 0, 1, 3, __VA_ARGS__)
 
+      #define MODE3_1BPP 0x00
+      #define MODE3_2BPP 0x01
+      #define MODE3_4BPP 0x02
+      #define MODE3_8BPP 0x03
+      #define MODE3_16BPP 0x04
+
+      #define MODE3_REVERSE_BITS 0x08
+
       typedef struct
       {
           bool x_wrap;
@@ -762,6 +842,14 @@ manipulation code slightly smaller and faster.
           xreg 1, 0, 1, 3, options, config, plane, begin, end
       .endmacro
 
+      MODE3_1BPP  = $00
+      MODE3_2BPP  = $01
+      MODE3_4BPP  = $02
+      MODE3_8BPP  = $03
+      MODE3_16BPP = $04
+
+      MODE3_REVERSE_BITS = $08
+
       .struct mode3_config_t
           x_wrap           .byte
           y_wrap           .byte
@@ -782,6 +870,14 @@ manipulation code slightly smaller and faster.
       .macro xreg_vga_mode3 values:vararg
           xreg 1, 0, 1, 3, \values
       .endm
+
+      MODE3_1BPP  = $00
+      MODE3_2BPP  = $01
+      MODE3_4BPP  = $02
+      MODE3_8BPP  = $03
+      MODE3_16BPP = $04
+
+      MODE3_REVERSE_BITS = $08
 
       MODE3_CONFIG_X_WRAP           = 0
       MODE3_CONFIG_Y_WRAP           = 1
@@ -879,6 +975,8 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
 
       #define xreg_vga_mode4(...) xreg(1, 0, 1, 4, __VA_ARGS__)
 
+      #define MODE4_AFFINE_BIT 0x01
+
       #define MODE4_AFFINE_A00 0
       #define MODE4_AFFINE_A01 1
       #define MODE4_AFFINE_B0 2
@@ -919,6 +1017,8 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
           xreg 1, 0, 1, 4, options, config, length, plane, begin, end
       .endmacro
 
+      MODE4_AFFINE_BIT = $01
+
       MODE4_AFFINE_A00 = 0
       MODE4_AFFINE_A01 = 1
       MODE4_AFFINE_B0  = 2
@@ -957,6 +1057,8 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
       .macro xreg_vga_mode4 values:vararg
           xreg 1, 0, 1, 4, \values
       .endm
+
+      MODE4_AFFINE_BIT = $01
 
       MODE4_AFFINE_A00 = 0
       MODE4_AFFINE_A01 = 1
@@ -1034,8 +1136,8 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 5, 0x0A, xaddr, length, 1); // 16x16 4-bit sprites on plane 1
-  xreg_vga_mode5(0x0A, xaddr, length, 1);   // macro shortcut
+  xreg(1, 0, 1, 5, 0x0A, xaddr, length, 1);                   // 16x16 4-bit, plane 1
+  xreg_vga_mode5(MODE5_4BPP | MODE5_16X16, xaddr, length, 1); // macro shortcut
 
 Disable unused sprites by moving them off the canvas.
 
@@ -1072,6 +1174,19 @@ Sprite image data uses the same format as individual mode 2 tiles.
 
       #define xreg_vga_mode5(...) xreg(1, 0, 1, 5, __VA_ARGS__)
 
+      #define MODE5_1BPP 0x00
+      #define MODE5_2BPP 0x01
+      #define MODE5_4BPP 0x02
+      #define MODE5_8BPP 0x03
+
+      #define MODE5_8X8 0x00
+      #define MODE5_16X16 0x08
+      #define MODE5_32X32 0x10
+      #define MODE5_64X64 0x18
+      #define MODE5_128X128 0x20
+      #define MODE5_256X256 0x28
+      #define MODE5_512X512 0x30
+
       typedef struct
       {
           int16_t x_pos_px;
@@ -1089,6 +1204,19 @@ Sprite image data uses the same format as individual mode 2 tiles.
           xreg 1, 0, 1, 5, options, config, length, plane, begin, end
       .endmacro
 
+      MODE5_1BPP = $00
+      MODE5_2BPP = $01
+      MODE5_4BPP = $02
+      MODE5_8BPP = $03
+
+      MODE5_8X8     = $00
+      MODE5_16X16   = $08
+      MODE5_32X32   = $10
+      MODE5_64X64   = $18
+      MODE5_128X128 = $20
+      MODE5_256X256 = $28
+      MODE5_512X512 = $30
+
       .struct mode5_sprite_t
           x_pos_px        .word
           y_pos_px        .word
@@ -1105,6 +1233,19 @@ Sprite image data uses the same format as individual mode 2 tiles.
       .macro xreg_vga_mode5 values:vararg
           xreg 1, 0, 1, 5, \values
       .endm
+
+      MODE5_1BPP = $00
+      MODE5_2BPP = $01
+      MODE5_4BPP = $02
+      MODE5_8BPP = $03
+
+      MODE5_8X8     = $00
+      MODE5_16X16   = $08
+      MODE5_32X32   = $10
+      MODE5_64X64   = $18
+      MODE5_128X128 = $20
+      MODE5_256X256 = $28
+      MODE5_512X512 = $30
 
       MODE5_SPRITE_X_POS_PX        = 0
       MODE5_SPRITE_Y_POS_PX        = 2
