@@ -20,8 +20,7 @@ Video Programming
 
 The VGA system provides virtual video hardware modeled on the home
 computers and arcades of the 8-bit and early-16-bit era. Applications mix
-and match the existing modes freely, and a new mode is one more scanline
-engine alongside the ones already here.
+and match the existing modes freely.
 
 Everything the VGA system draws is on the canvas, a grid of pixels such as
 320x240. Scanlines are the rows of the canvas, numbered from 0 at the top.
@@ -40,12 +39,23 @@ transparent pixel shows the plane behind it. A plane's sprite layer is
 drawn over its fill layer. There's enough fill rate to blow past any
 classic 8-bit system — but push too hard and you overrun the renderer.
 
-Every mode is programmed into one plane over a range of scanlines, which
+The video system is optimized for efficiency instead of consistency across
+all hosts. The 6502 will begin to struggle long before you hit the sprite
+limit of even the slowest host. The :doc:`pico` and :doc:`fpga` support
+around 1000-1600 pixels of fill per scanline on a 640 wide canvas and
+2000-3200 pixels for 320 wide. :doc:`emu` hosts run powerful hardware with
+extreme fill rates far beyond that. Not having to emulate single-clock
+accuracy saves a significant amount of power for phones and other handheld
+devices.
+
+Video modes are programmed into a plane over a range of scanlines, which
 is what the PLANE, BEGIN and END registers do in the mode sections below.
-BEGIN is the first scanline and END is one past the last, so a mode that
-covers the whole canvas is programmed with both of them 0. Different
-ranges of the same plane take different modes, which is how a status bar
-of characters sits above a bitmap.
+BEGIN is the first scanline and END is one past the last. A mode that
+covers the whole canvas may be programmed with both of them 0. Different
+ranges of the same plane allow different modes, which is how you might
+implement a graphical text adventure with half the screen for text and
+the other half for graphics. This happens without interrupts, leaving more
+CPU headroom for your game logic.
 
 Putting a picture on the canvas takes four steps. Select a canvas, load
 the data into XRAM, write the mode's configuration structure into XRAM,
@@ -63,11 +73,11 @@ structure.
 
     // Select a 320x240 canvas
     result = xreg(1, 0, 0, 1); // or
-    result = xreg_vga_canvas(1);
+    result = xreg_vga_canvas(CANVAS_320X240);
     // Program mode 3 for 4 bit color with
     // its config structure at XRAM $FF00.
     result = xreg(1, 0, 1, 3, 2, 0xFF00); // or
-    result = xreg_vga_mode3(2, 0xFF00);
+    result = xreg_vga_mode3(MODE3_4BPP, 0xFF00);
 
 
 .. _vga-key-registers:
@@ -87,10 +97,9 @@ Setting a key register may fail, returning -1 with errno EINVAL.
    * - $1:0:00
      - CANVAS
      - Select a graphics canvas. This clears $1:0:02-$1:0:FF and all
-       scanline programming. The 80 column console canvas is used as
-       a failsafe and therefore not scanline programmable.
+       scanline programming. The console canvas is not programmable.
 
-       * 0 - 80 column console. (4:3 or 5:4)
+       * 0 - console (4:3 or 5:4)
        * 1 - 320x240 (4:3)
        * 2 - 320x180 (16:9)
        * 3 - 640x480 (4:3)
@@ -114,8 +123,8 @@ because setting CANVAS clears all scanline programming.
 
 .. code-block:: C
 
-  xreg(1, 0, 0, 1);   // 320x240 canvas
-  xreg_vga_canvas(1); // macro shortcut
+  xreg(1, 0, 0, 1);                // 320x240 canvas
+  xreg_vga_canvas(CANVAS_320X240); // macro shortcut
 
 .. tab:: C
 
@@ -123,6 +132,12 @@ because setting CANVAS clears all scanline programming.
       :caption: xram.h
 
       #define xreg_vga_canvas(...) xreg(1, 0, 0, __VA_ARGS__)
+
+      #define CANVAS_CONSOLE 0
+      #define CANVAS_320X240 1
+      #define CANVAS_320X180 2
+      #define CANVAS_640X480 3
+      #define CANVAS_640X360 4
 
 .. tab:: ca65
 
@@ -132,6 +147,12 @@ because setting CANVAS clears all scanline programming.
       .macro xreg_vga_canvas canvas
           xreg 1, 0, 0, canvas
       .endmacro
+
+      CANVAS_CONSOLE = 0
+      CANVAS_320X240 = 1
+      CANVAS_320X180 = 2
+      CANVAS_640X480 = 3
+      CANVAS_640X360 = 4
 
 .. tab:: llvm-mc
 
@@ -143,6 +164,12 @@ because setting CANVAS clears all scanline programming.
           xreg 1, 0, 0, \canvas
       .endm
 
+      CANVAS_CONSOLE = 0
+      CANVAS_320X240 = 1
+      CANVAS_320X180 = 2
+      CANVAS_640X480 = 3
+      CANVAS_640X360 = 4
+
 
 Colors, Palettes and Fonts
 --------------------------
@@ -153,7 +180,8 @@ All three planes run RGB555 color plus transparency.
 makes a color opaque; clearing it makes the color transparent. Despite
 the name, alpha here is a binary flag, not a blending factor. The
 built-in ANSI palette has the alpha bit set on every color except color
-0 (black), which is transparent.
+0 (black), which is transparent. Note that ANSI color 16 is also black
+but without transparency.
 
 .. tab:: C
 
@@ -207,8 +235,7 @@ built-in ANSI palette has the alpha bit set on every color except color
 
 A palette is just an array. The 8bpp, 4bpp, 2bpp, and 1bpp modes use one;
 16-bit-per-pixel modes aren't indexed and ignore the palette entirely.
-Palettes must be 16-bit aligned; an odd one falls back to the built-in
-table.
+Palettes must be 16-bit aligned.
 
 .. code-block:: C
 
@@ -217,10 +244,6 @@ table.
 The built-in color palettes are reached through the sentinel XRAM pointer
 $FFFF. 1-bit is black and white. 4-bit and 8-bit modes start with an ANSI
 palette of 16 colors, followed by 216 colors (6x6x6), then 24 grays.
-
-The built-in 8x8 and 8x16 fonts are available through the same sentinel
-XRAM pointer $FFFF. Glyphs 0-127 are ASCII; glyphs 128-255 vary by code
-page.
 
 
 .. _vga-mode-0:
@@ -334,8 +357,8 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 1, 3, xaddr, 0); // 8-bit color on plane 0
-  xreg_vga_mode1(3, xaddr, 0);   // macro shortcut
+  xreg(1, 0, 1, 1, 3, xaddr, 0);        // 8-bit color on plane 0
+  xreg_vga_mode1(MODE1_8BPP, xaddr, 0); // macro shortcut
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -363,6 +386,10 @@ on the color bit depth selected.
 Fonts are encoded in a wide format: the first 256 bytes hold the first
 row of all 256 glyphs, the next 256 bytes the second row, and so on.
 
+The built-in 8x8 and 8x16 fonts are available through the sentinel
+XRAM pointer $FFFF. Glyphs 0-127 are ASCII; glyphs 128-255 vary by code
+page.
+
 .. code-block:: C
 
   struct {
@@ -377,6 +404,15 @@ row of all 256 glyphs, the next 256 bytes the second row, and so on.
       :caption: xram.h
 
       #define xreg_vga_mode1(...) xreg(1, 0, 1, 1, __VA_ARGS__)
+
+      #define MODE1_1BPP 0x00
+      #define MODE1_4BPPR 0x01
+      #define MODE1_4BPP 0x02
+      #define MODE1_8BPP 0x03
+      #define MODE1_16BPP 0x04
+
+      #define MODE1_8X8 0x00
+      #define MODE1_8X16 0x08
 
       #define MODE1_FG_BG(fg, bg) ((uint8_t)(((fg) << 4) | (bg)))
       #define MODE1_BG_FG(bg, fg) ((uint8_t)(((bg) << 4) | (fg)))
@@ -435,6 +471,15 @@ row of all 256 glyphs, the next 256 bytes the second row, and so on.
           xreg 1, 0, 1, 1, options, config, plane, begin, end
       .endmacro
 
+      MODE1_1BPP  = $00
+      MODE1_4BPPR = $01
+      MODE1_4BPP  = $02
+      MODE1_8BPP  = $03
+      MODE1_16BPP = $04
+
+      MODE1_8X8  = $00
+      MODE1_8X16 = $08
+
       .struct mode1_config_t
           x_wrap           .byte
           y_wrap           .byte
@@ -484,6 +529,15 @@ row of all 256 glyphs, the next 256 bytes the second row, and so on.
           xreg 1, 0, 1, 1, \values
       .endm
 
+      MODE1_1BPP  = $00
+      MODE1_4BPPR = $01
+      MODE1_4BPP  = $02
+      MODE1_8BPP  = $03
+      MODE1_16BPP = $04
+
+      MODE1_8X8  = $00
+      MODE1_8X16 = $08
+
       MODE1_CONFIG_X_WRAP           = 0
       MODE1_CONFIG_Y_WRAP           = 1
       MODE1_CONFIG_X_POS_PX         = 2
@@ -524,7 +578,7 @@ Mode 2: Tile
 ------------
 
 Tile modes bake the color information into each tile's bitmap. This is
-the mode you want for a video-game playfield, where a small set of tiles
+the mode you want for a video game playfield, where a small set of tiles
 is repeated across a large map.
 
 .. list-table::
@@ -561,8 +615,8 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 2, 2, xaddr, 0); // 4-bit color 8x8 tiles on plane 0
-  xreg_vga_mode2(2, xaddr, 0);   // macro shortcut
+  xreg(1, 0, 1, 2, 2, xaddr, 0);                    // 4-bit color 8x8 tiles on plane 0
+  xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, xaddr, 0); // macro shortcut
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -574,23 +628,11 @@ The data is a matrix of tile IDs, with 0,0 at the top left.
       uint8_t tile_id;
   } data[width_tiles * height_tiles];
 
-Tiles themselves are encoded in a "tall" bitmap format.
-
-.. code-block:: C
-
-  // 8x8 tiles
-  struct {
-      struct {
-          uint8_t cols[bpp];
-      } rows[8];
-  } tile[up_to_256];
-
-  // 16x16 tiles
-  struct {
-      struct {
-          uint8_t cols[2*bpp];
-      } rows[16];
-  } tile[up_to_256];
+Tiles themselves are encoded in a "tall" bitmap format, where every row of
+one tile is stored, top to bottom, before the next tile begins. Each tile ID
+is an index into an array of up to 256 tiles. ``MODE2_TILE`` declares the
+structure of one tile from its color depth and tile size, so
+``typedef MODE2_TILE(4, 8) tile_t;`` is an 8x8 tile in 4-bit color.
 
 Trim values shrink the drawn tile to an arbitrary size up to the base 8x8
 or 16x16, dropping X trim columns off the right and Y trim rows off the
@@ -603,6 +645,26 @@ cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
       :caption: xram.h
 
       #define xreg_vga_mode2(...) xreg(1, 0, 1, 2, __VA_ARGS__)
+
+      #define MODE2_1BPP 0x00
+      #define MODE2_2BPP 0x01
+      #define MODE2_4BPP 0x02
+      #define MODE2_8BPP 0x03
+
+      #define MODE2_8X8 0x00
+      #define MODE2_16X16 0x08
+
+      #define MODE2_X_TRIM(cols) ((cols) << 4)
+      #define MODE2_Y_TRIM(rows) ((rows) << 8)
+
+      #define MODE2_TILE(bpp, size)                 \
+          struct                                    \
+          {                                         \
+              struct                                \
+              {                                     \
+                  uint8_t cols[(size) * (bpp) / 8]; \
+              } rows[size];                         \
+          }
 
       typedef struct
       {
@@ -626,6 +688,23 @@ cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
           xreg 1, 0, 1, 2, options, config, plane, begin, end
       .endmacro
 
+      MODE2_1BPP = $00
+      MODE2_2BPP = $01
+      MODE2_4BPP = $02
+      MODE2_8BPP = $03
+
+      MODE2_8X8   = $00
+      MODE2_16X16 = $08
+
+      .macro MODE2_TILE name, bpp, size
+          .struct name
+              rows .struct
+                  cols .res (size) * (bpp) / 8
+              .endstruct
+              .res ((size) - 1) * .sizeof(rows)
+          .endstruct
+      .endmacro
+
       .struct mode2_config_t
           x_wrap           .byte
           y_wrap           .byte
@@ -646,6 +725,21 @@ cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
 
       .macro xreg_vga_mode2 values:vararg
           xreg 1, 0, 1, 2, \values
+      .endm
+
+      MODE2_1BPP = $00
+      MODE2_2BPP = $01
+      MODE2_4BPP = $02
+      MODE2_8BPP = $03
+
+      MODE2_8X8   = $00
+      MODE2_16X16 = $08
+
+      .macro MODE2_TILE name, bpp, size
+          \name\()_ROWS      = 0
+          \name\()_ROWS_COLS = 0
+          \name\()_ROWS_SIZE = (\size) * (\bpp) / 8
+          \name\()_SIZE      = (\size) * \name\()_ROWS_SIZE
       .endm
 
       MODE2_CONFIG_X_WRAP           = 0
@@ -701,8 +795,8 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 3, 2, xaddr, 0); // 4-bit color on plane 0
-  xreg_vga_mode3(2, xaddr, 0);   // macro shortcut
+  xreg(1, 0, 1, 3, 2, xaddr, 0);        // 4-bit color on plane 0
+  xreg_vga_mode3(MODE3_4BPP, xaddr, 0); // macro shortcut
 
 Config structure may be updated without reprogramming scanlines.
 
@@ -731,6 +825,14 @@ manipulation code slightly smaller and faster.
 
       #define xreg_vga_mode3(...) xreg(1, 0, 1, 3, __VA_ARGS__)
 
+      #define MODE3_1BPP 0x00
+      #define MODE3_2BPP 0x01
+      #define MODE3_4BPP 0x02
+      #define MODE3_8BPP 0x03
+      #define MODE3_16BPP 0x04
+
+      #define MODE3_REVERSE_BITS 0x08
+
       typedef struct
       {
           bool x_wrap;
@@ -751,6 +853,14 @@ manipulation code slightly smaller and faster.
       .macro xreg_vga_mode3 options, config, plane, begin, end
           xreg 1, 0, 1, 3, options, config, plane, begin, end
       .endmacro
+
+      MODE3_1BPP  = $00
+      MODE3_2BPP  = $01
+      MODE3_4BPP  = $02
+      MODE3_8BPP  = $03
+      MODE3_16BPP = $04
+
+      MODE3_REVERSE_BITS = $08
 
       .struct mode3_config_t
           x_wrap           .byte
@@ -773,6 +883,14 @@ manipulation code slightly smaller and faster.
           xreg 1, 0, 1, 3, \values
       .endm
 
+      MODE3_1BPP  = $00
+      MODE3_2BPP  = $01
+      MODE3_4BPP  = $02
+      MODE3_8BPP  = $03
+      MODE3_16BPP = $04
+
+      MODE3_REVERSE_BITS = $08
+
       MODE3_CONFIG_X_WRAP           = 0
       MODE3_CONFIG_Y_WRAP           = 1
       MODE3_CONFIG_X_POS_PX         = 2
@@ -789,9 +907,9 @@ manipulation code slightly smaller and faster.
 Mode 4: Sprite 16-bit
 ---------------------
 
-Sprites can be drawn over any fill plane. This is the 16-bit sprite
-system from the Pi Pico Playground; for lower bit depths, see mode 5.
-Its appetite for memory is offset by something the others can't do —
+Sprites can be drawn over any fill plane. This is the same 16-bit
+sprite system used by Pi Pico Playground and Luke Wren's RISCBoy.
+Its appetite for memory is offset by something mode 5 can't do —
 affine transforms.
 
 .. list-table::
@@ -839,18 +957,11 @@ why there are just six transform values. They're in signed 8.8 fixed-point
 format, in the order {a00, a01, b0, a10, a11, b1}. The matrix maps a
 position within the sprite on the canvas to a position in the image.
 
-
 Sprite image data is an array of 16-bit colors. A sprite is a square of
 2^log_size pixels a side, from 1x1 up to 128x128; a log_size above 7
-describes a square too large for XRAM and draws nothing.
-
-.. code-block:: C
-
-  struct {
-    struct {
-        uint16_t color[1 << log_size];
-    } rows[1 << log_size];
-  } data;
+describes a square too large for XRAM and draws nothing. ``MODE4_IMAGE``
+declares the structure of one image from its log_size, so
+``typedef MODE4_IMAGE(4) image_t;`` is a 16x16 image.
 
 When ``has_opacity_metadata`` is set, the image is followed by one
 little-endian 32-bit value per row. Bits 15-0 are the end of the row's
@@ -869,6 +980,8 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
 
       #define xreg_vga_mode4(...) xreg(1, 0, 1, 4, __VA_ARGS__)
 
+      #define MODE4_AFFINE_BIT 0x01
+
       #define MODE4_AFFINE_A00 0
       #define MODE4_AFFINE_A01 1
       #define MODE4_AFFINE_B0 2
@@ -880,6 +993,15 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
       #define MODE4_SPAN(start, end, solid)            \
           (((solid) ? 0x80000000ul : 0ul) |            \
            ((unsigned long)(start) << 16) | (unsigned)(end))
+
+      #define MODE4_IMAGE(log_size)                \
+          struct                                   \
+          {                                        \
+              struct                               \
+              {                                    \
+                  uint16_t color[1 << (log_size)]; \
+              } rows[1 << (log_size)];             \
+          }
 
       typedef struct
       {
@@ -909,6 +1031,8 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
           xreg 1, 0, 1, 4, options, config, length, plane, begin, end
       .endmacro
 
+      MODE4_AFFINE_BIT = $01
+
       MODE4_AFFINE_A00 = 0
       MODE4_AFFINE_A01 = 1
       MODE4_AFFINE_B0  = 2
@@ -919,6 +1043,17 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
 
       .macro MODE4_SPAN start, end, solid
           .dword ((solid) << 31) | ((start) << 16) | (end)
+      .endmacro
+
+      .macro MODE4_IMAGE name, log_size
+          .struct name
+              rows .struct
+                  color .word 1 << (log_size)
+              .endstruct
+              .if log_size
+                  .res ((1 << (log_size)) - 1) * .sizeof(rows)
+              .endif
+          .endstruct
       .endmacro
 
       .struct mode4_sprite_t
@@ -948,6 +1083,8 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
           xreg 1, 0, 1, 4, \values
       .endm
 
+      MODE4_AFFINE_BIT = $01
+
       MODE4_AFFINE_A00 = 0
       MODE4_AFFINE_A01 = 1
       MODE4_AFFINE_B0  = 2
@@ -958,6 +1095,13 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
 
       .macro MODE4_SPAN start, end, solid
           .4byte (((\solid) << 31) | ((\start) << 16) | (\end))
+      .endm
+
+      .macro MODE4_IMAGE name, log_size
+          \name\()_ROWS       = 0
+          \name\()_ROWS_COLOR = 0
+          \name\()_ROWS_SIZE  = 2 << (\log_size)
+          \name\()_SIZE       = (1 << (\log_size)) * \name\()_ROWS_SIZE
       .endm
 
       MODE4_SPRITE_X_POS_PX             = 0
@@ -983,10 +1127,9 @@ Mode 5: Sprite 1,2,4,8-bit
 
 This is a memory-efficient sprite system that uses palettes to cut the
 bit depth. Sprites can be drawn over any fill plane, including a null
-fill plane. So you might put affine sprites for explosions and the
-player on one plane, 16x16 4bpp enemy sprites on a second, and 8x8 1bpp
+fill plane. For example, you might put affine sprites for explosions and
+the player on one plane, 16x16 4bpp enemy sprites on a second, and 8x8 1bpp
 bullets on the third.
-
 
 .. list-table::
    :widths: 5 5 90
@@ -1024,36 +1167,15 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 5, 0x0A, xaddr, length, 1); // 16x16 4-bit sprites on plane 1
-  xreg_vga_mode5(0x0A, xaddr, length, 1);   // macro shortcut
+  xreg(1, 0, 1, 5, 0x0A, xaddr, length, 1);                   // 16x16 4-bit, plane 1
+  xreg_vga_mode5(MODE5_4BPP | MODE5_16X16, xaddr, length, 1); // macro shortcut
 
 Disable unused sprites by moving them off the canvas.
 
 Sprite image data uses the same format as individual mode 2 tiles.
-
-.. code-block:: C
-
-  // 8x8 tiles
-  struct {
-      struct {
-          uint8_t cols[bpp];
-      } rows[8];
-  } data;
-
-  // 16x16 tiles
-  struct {
-      struct {
-          uint8_t cols[2*bpp];
-      } rows[16];
-  } data;
-
-  // NxN tiles
-  struct {
-      struct {
-          uint8_t cols[N/8*bpp];
-      } rows[N];
-  } data;
-
+``MODE5_IMAGE`` declares the structure of one image from its color depth and
+sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
+4-bit color.
 
 .. tab:: C
 
@@ -1061,6 +1183,28 @@ Sprite image data uses the same format as individual mode 2 tiles.
       :caption: xram.h
 
       #define xreg_vga_mode5(...) xreg(1, 0, 1, 5, __VA_ARGS__)
+
+      #define MODE5_1BPP 0x00
+      #define MODE5_2BPP 0x01
+      #define MODE5_4BPP 0x02
+      #define MODE5_8BPP 0x03
+
+      #define MODE5_8X8 0x00
+      #define MODE5_16X16 0x08
+      #define MODE5_32X32 0x10
+      #define MODE5_64X64 0x18
+      #define MODE5_128X128 0x20
+      #define MODE5_256X256 0x28
+      #define MODE5_512X512 0x30
+
+      #define MODE5_IMAGE(bpp, size)                \
+          struct                                    \
+          {                                         \
+              struct                                \
+              {                                     \
+                  uint8_t cols[(size) * (bpp) / 8]; \
+              } rows[size];                         \
+          }
 
       typedef struct
       {
@@ -1079,6 +1223,28 @@ Sprite image data uses the same format as individual mode 2 tiles.
           xreg 1, 0, 1, 5, options, config, length, plane, begin, end
       .endmacro
 
+      MODE5_1BPP = $00
+      MODE5_2BPP = $01
+      MODE5_4BPP = $02
+      MODE5_8BPP = $03
+
+      MODE5_8X8     = $00
+      MODE5_16X16   = $08
+      MODE5_32X32   = $10
+      MODE5_64X64   = $18
+      MODE5_128X128 = $20
+      MODE5_256X256 = $28
+      MODE5_512X512 = $30
+
+      .macro MODE5_IMAGE name, bpp, size
+          .struct name
+              rows .struct
+                  cols .res (size) * (bpp) / 8
+              .endstruct
+              .res ((size) - 1) * .sizeof(rows)
+          .endstruct
+      .endmacro
+
       .struct mode5_sprite_t
           x_pos_px        .word
           y_pos_px        .word
@@ -1094,6 +1260,26 @@ Sprite image data uses the same format as individual mode 2 tiles.
 
       .macro xreg_vga_mode5 values:vararg
           xreg 1, 0, 1, 5, \values
+      .endm
+
+      MODE5_1BPP = $00
+      MODE5_2BPP = $01
+      MODE5_4BPP = $02
+      MODE5_8BPP = $03
+
+      MODE5_8X8     = $00
+      MODE5_16X16   = $08
+      MODE5_32X32   = $10
+      MODE5_64X64   = $18
+      MODE5_128X128 = $20
+      MODE5_256X256 = $28
+      MODE5_512X512 = $30
+
+      .macro MODE5_IMAGE name, bpp, size
+          \name\()_ROWS      = 0
+          \name\()_ROWS_COLS = 0
+          \name\()_ROWS_SIZE = (\size) * (\bpp) / 8
+          \name\()_SIZE      = (\size) * \name\()_ROWS_SIZE
       .endm
 
       MODE5_SPRITE_X_POS_PX        = 0
@@ -1154,19 +1340,19 @@ applications are denied access to them.
 Backchannel
 ===========
 
-The 6502 programmer never has to think about any of this. What follows is
-the return path for machines where the RIA and the VGA are separate chips
-joined by a serial wire.
+The :doc:`pico` hardware is constrained by GPIO pins, which is why two
+are needed for a Picocomputer. This is a hack to recover a single pin.
+The 6502 programmer never has to think about any of this.
 
 Because the PIX bus is unidirectional, the VGA system can't send data
 straight back to the RIA. The UART Rx path won't do either — it would
 add framing overhead or unusable control characters. But the PIX bus has
 plenty of idle bandwidth (it only carries data when the 6502 writes to
 XRAM), so all Tx data is routed over PIX, leaving the UART Tx pin free to
-serve as a backchannel.
+reverse directions and serve as the backchannel.
 
 Values 0x00 to 0x7F send a version string as ASCII, terminated by 0x0D
-or 0x0A. Send it immediately after the backchannel-enable message
+or 0x0A. Sent immediately after the backchannel-enable message
 arrives for it to appear in the boot message.
 
 When bit 0x80 is set, the 0x70 bits give the command type and the 0x0F
@@ -1181,26 +1367,6 @@ completion.
 
 0xA0 OP_NAK - This acknowledges a failure.
 
-
-Two Implementations
-===================
-
-Everything on this page exists twice. There is a software renderer in C
-and there is Register Transfer Logic (RTL) in System Verilog. Neither one
-is a simplification of the other. They have the same registers, the same
-config structures at the same offsets, and they produce the same pixels.
-
-The C is the RP6502-VGA firmware, which is designed to fit entirely on a
-Raspberry Pi Pico 2 as part of an :doc:`pico`, and the :doc:`emu`
-compiles the same files, so that module and every software host draw
-with one renderer. The RTL is in the :doc:`fpga`, where each mode is a
-scanline engine in fabric.
-
-The C renderer is built around a modified scanvideo library from Pi Pico
-Extras. The mode 4 sprite system comes from Pi Pico Playground, and the
-scanline programming system and every other mode are original work for
-the RP6502.
-
-The two are tested against each other. A generator writes a corpus of
-small ROMs covering every mode. Every fixture boots on both machines,
-settles, and the two framebuffers are compared word for word.
+Because waiting for an entire character to decode over UART is lost time
+for VSYNC, a predictive algorithm suspends ACK/NAK around the expected
+window for a VSYNC so it can be edge triggered on the first bit.

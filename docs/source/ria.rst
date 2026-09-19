@@ -8,49 +8,53 @@ RP6502 - RP6502 Interface Adapter
 Introduction
 ============
 
-The RP6502 Interface Adapter (RIA) is a specification for the interface
-between a host CPU and a 6502. It provides every essential service a WDC
-W65C02S microprocessor needs to run: the clock, reset, memory beyond the
-6502's own 64 KB, an operating system, and every device the 6502 reaches.
+The RP6502 Interface Adapter (RIA) is the interface between a host and a
+WDC W65C02S microprocessor. It provides every essential service needed to
+run: the clock, reset, file and I/O services, and another 64K (XRAM) that
+services video, audio, and direct access to peripherals.
 
 The RIA must live at $FFE0-$FFFF and must control RESB and PHI2. Those
-are the only hard requirements. Everything else is yours to customize —
-even the :doc:`vga` is optional.
+are the only hard requirements. Everything else is yours to customize if
+you're designing your own hardware.
 
 
 Implementations
 ===============
 
-- :doc:`pico` — RIA firmware on a Raspberry Pi Pico 2. The RIA is
-  designed to fit entirely on one.
-- :doc:`fpga` — a trimmed build of the same firmware C on a Hazard3
-  RISC-V soft CPU, behind the same register window in fabric.
-- :doc:`emu` — that same register window handed to a native host CPU.
+- :doc:`pico` — The RIA software fits entirely on a Raspberry Pi Pico 2.
+  Registers are implemented in PIO for connecting to a 65C02.
+- :doc:`fpga` — The same software on a Hazard3 RISC-V soft CPU. The 65C02,
+   65C22, and registers are in fabric.
+- :doc:`emu` — RIA software runs natively on the host CPU along with a
+  a 65C02 and 65C22 software emulator.
 
-The RP6502 monitor is RIA firmware, so every ``load``, ``install``,
-``set``, ``status``, and ``help`` command on this page applies only to
-an :doc:`pico`. The :doc:`emu` takes command-line arguments instead, and
-the :doc:`fpga` uses the Pocket's own menus.
+A Picocomputer always has a companion CPU and Operating System. For example,
+one :doc:`emu` runs on Linux with an ARM processor. The :doc:`pico` is
+special because it hosts itself. The :doc:`os` is an abstraction on all
+other hosts, but it is the native Operating System on the :doc:`pico`.
+
+One other special feature of the :doc:`pico` is its monitor. Every ``load``,
+``install``, ``set``, ``status``, and ``help`` command on this page applies
+only to an :doc:`pico`. The :doc:`emu` takes command-line arguments instead,
+and the :doc:`fpga` uses the Pocket's own menus.
 
 
 Reset
 =====
 
 Think of reset as two states rather than a pulse on RESB. While reset
-is low, the 6502 is stopped and the console is connected to the machine
-instead of to a running program — on an :doc:`pico` that is the RP6502
-monitor.
-While reset is high, the 6502 runs and the console manifold connects to both
-the :doc:`os` and the UART TX/RX registers described below.
+is low, the 6502 is stopped. On an :doc:`pico`, the monitor is connected
+to the console while in reset. On the Pocket, the system waits for a new
+ROM to be loaded from the settings menu. On :doc:`emu`, some hosts wait
+for a new ROM to load while others exit the host process.
 
-To bring reset from low to high, either ``load`` a ROM that has a reset
-vector, or use the ``reset`` command if you've prepared RAM some other
-way.
-
-The :doc:`pico` is unique in that it hosts itself and therefore requires
-a way to terminate a halted or wedged 6502.
+Reset is mostly handled automatically and this works well for all hosts
+except the :doc:`pico`. Here we need a way to stop a wedged 6502. The monitor
+also provides two commands that will bring reset high.
+Either ``load`` a ROM that has a reset vector, or use the ``reset`` command
+if you've prepared RAM some other way.
 To drop reset from high to low and return to the monitor, even from a
-crashed or halted 6502, use any terminal on the
+wedged 6502, use any terminal on the
 :ref:`console manifold <term-console-manifold>`:
 
 1. Press Ctrl-Alt-Del from a USB keyboard.
@@ -63,8 +67,8 @@ crashed or halted 6502, use any terminal on the
 Registers
 =========
 
-The RIA is 32 bytes at $FFE0-$FFFF in the 6502's address space. The last
-six are the 6502's own vectors; everything before them is the interface.
+The RIA registers are mapped into 32 bytes of the 6502's address space at
+$FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
 
 .. list-table::
    :widths: 5 5 90
@@ -227,11 +231,10 @@ The RIA is both the host of the PIX bus (documented below) and device 0
 on it. Addresses are written $device:$channel:register, so every register
 in the table below begins with $0.
 
-A register that maps a device holds the XRAM address of the device's
-structure. $FFFF, or any other invalid address, disables the device.
-Setting the register installs the device at that address. From then on
-the RIA and the program both use that block of XRAM, which is read and
-written through the RW0 and RW1 portals above.
+Extended registers are how the XRAM is configured. For example, if you
+want direct access to gamepad input, you would set an extended register
+with the starting address of where you want the gamepad registers. You
+can then read that range of XRAM to see the status of the gamepads.
 
 A C program sets an extended register with :ref:`xreg() <os-xreg>`, and an
 assembly program with the ``xreg`` macro in ``rp6502.inc``. Both take the
@@ -270,7 +273,7 @@ device, the channel, the address, and then one or more 16-bit values.
 Keyboard
 ========
 
-The RIA can hand applications direct access to keyboard data, which is
+The RIA can provide applications direct access to keyboard data, which is
 what you want when you need key-up and key-down events or the modifier
 keys. If you don't need that, the UART or stdin works just as well.
 
@@ -355,9 +358,9 @@ Mouse
 .. note::
 
    The `Tablet`_ interface is almost always the better choice. It gives a
-   canvas pixel position for a mouse, pen, or touchscreen, so a program has
-   no movement to accumulate or scale. Raw mouse input is still useful for
-   devices that act like a mouse but are not a pointer, such as spinners.
+   canvas pixel position for a mouse, pen, or touchscreen. Raw mouse input
+   is still useful for devices that act like a mouse but are not a pointer,
+   such as spinners.
 
 The RIA can give applications direct access to mouse data. Enable and
 disable it by mapping it to an address in XRAM.
@@ -486,11 +489,13 @@ them by subtracting the previous value. They advance only while a mouse drives
 the tablet.
 
 Each axis is a set of single-byte *windows*: exactly one is non-zero, and it
-alone carries the value. Decode by taking the first non-zero byte.
+alone carries the value. Decode by taking the first non-zero byte. This unusal
+decode is because XRAM is atomic for 8-bits only. The single retry is enough
+to guarantee safety because updates are 1ms or more apart while the retry
+happens in a few microseconds.
 
 .. code-block:: C
 
-  // X is 0..639, Y is 0..479
   if (c.x0) x = c.x0 - 1;
   else if (c.x1) x = c.x1 + 254;
   else if (c.x2) x = c.x2 + 509;
@@ -673,7 +678,7 @@ The face buttons vary only in labeling — XY/AB, YX/BA, or
 Square/Triangle/Cross/Circle. Each button reports in the same place
 whatever it is called, so that rarely matters to an application until it
 prints a button's name, or the buttons stand in for directions.
-For those, the DPAD register reports which labeling the gamepad wears
+For those, the DPAD register reports which labeling the gamepad has
 when the RIA can be sure of it. You're free to do your own thing, of
 course — ask players to use a specific gamepad, or offer an "AB or BA"
 option.
@@ -694,11 +699,6 @@ per gamepad.
 
 The upper bits of the DPAD register report readiness and type. The
 connected bit is high when a gamepad occupies that player slot.
-
-The button type says where the face button labels sit, so an application
-can print the right one. The buttons themselves never move. BTN0 bit 0 is
-the button labeled A or Cross, wherever that label happens to be
-printed. A type is only reported when the RIA is certain.
 
 .. list-table::
    :widths: 1 1 1 1 1
@@ -725,14 +725,17 @@ printed. A type is only reported when the RIA is certain.
      - Square, west
      - Triangle, north
 
-The sticks bit is high when the gamepad has both analog sticks.
+The sticks bit is high when the gamepad has both analog sticks. Some
+retro-style gamepads indicate they have sticks when they do not. They may
+also map buttons in unusual ways. The RIA does the best it can with the
+provided metadata.
 
 Both digital and analog values are available for the sticks and the
 L2/R2 triggers, so applications can ignore the analog values entirely if
 they like.
 
 Some gamepads report only digital data; in that case, code that uses L2
-and R2 should allow for analog values of just 0 or 255.
+and R2 should expect analog values of just 0 or 255.
 
 Applications taking the simple "one stick and buttons" approach should
 merge the d-pad and left stick into a single input.
@@ -1253,7 +1256,8 @@ extended register device 0, channel 1, address 0x01.
 
 Enable and disable the OPL2 by setting its extended register. The value
 is the XRAM start address for the 256 OPL2 registers, which must begin
-on a page boundary.
+on a page boundary. So if xaddr is 0x4200, the 256 OPL2 registers map into
+XRAM from 0x4200 to 0x42FF. Any invalid address disables the OPL2.
 
 .. code-block:: C
 
@@ -1261,8 +1265,6 @@ on a page boundary.
   xreg(0, 1, 0x01, 0xFFFF); // disable
   xreg_ria_opl(xaddr);      // macro shortcut
 
-So if xaddr is 0x4200, the 256 OPL2 registers map into XRAM from 0x4200
-to 0x42FF. Any invalid address disables the OPL2.
 
 Timers, interrupts, and the status register are not supported. Those
 features existed mainly to cost-reduce consumer devices; computers of
@@ -1321,7 +1323,7 @@ Virtual COM Port
 
 If you need serial ports beyond the console UART, USB adapters are
 available for CMOS/TTL, RS-232, RS-422, and RS-485, and each one appears
-as a Virtual COM Port (VCP). RIA firmware carries drivers for FTDI,
+as a Virtual COM Port (VCP). :doc:`pico` firmware carries drivers for FTDI,
 CP210X, CH34X, PL2303, and CDC ACM.
 
 The ``status`` command lists any connected VCP devices. Open one like a

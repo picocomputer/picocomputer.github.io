@@ -10,17 +10,17 @@ Introduction
 
 The **RP6502 Interface Adapter W** is the :doc:`ria` with a radio, the
 same specification extended for wireless. Everything on the RIA page
-applies here, and this page covers only the wireless part. The hardware
-that implements it is the :doc:`pico`, and the ``SET`` commands below are
-monitor commands entered there.
+applies here, and this page covers only the wireless part. The :doc:`pico`
+is the only host that supports this today. Support is planned for other
+hosts.
 
 
 Wi-Fi Setup
 ===========
 
 The radio is configured from the monitor. Set the network name and the
-password, and the radio connects and remembers both across reboots. The
-``status`` command reports the state of the connection.
+password, and the radio connects. The ``status`` command reports the state
+of the connection.
 
 .. list-table::
    :widths: 25 75
@@ -61,9 +61,9 @@ Telnet Console
 ==============
 
 The console can be exposed over the network. A telnet client is then a
-terminal like any other, for the monitor and for a running 6502. The
+console like any other, for the monitor and for a running 6502. The
 traffic is unencrypted, so anything typed or printed can be read along
-the way.
+the way, including the key.
 
 .. list-table::
    :widths: 25 75
