@@ -469,11 +469,11 @@ Time
 TIME_GET
 ~~~~~~~~
 
+.. c:function:: ABI int time (time_t *timep)
 .. c:function:: lib time_t time (time_t *timep)
 
    Obtains the current time as seconds since the Unix epoch,
-   1970-01-01T00:00:00Z. The operation pushes the seconds to the XSTACK
-   as a 64-bit signed integer and returns 0, or -1 on error.
+   1970-01-01T00:00:00Z.
 
    :Op code: RIA_OP_TIME_GET 0x3F
    :C proto: time.h
@@ -488,14 +488,8 @@ TIME_SET
 
 .. c:function:: int time_set (long long time)
 
-   Sets the clock to seconds since the Unix epoch. Push the seconds to
-   the XSTACK as a signed integer of up to 64 bits; short pushes are
-   unsigned.
-
-   Only a machine that has a real time-of-day clock will do this. The
-   Picocomputer has one and sets it. An emulator will not move the clock of
-   the computer it is running on, and a machine that was handed its time at
-   boot has nowhere to write one back; both return EACCES.
+   Sets the clock to seconds since the Unix epoch. Supported only on
+   :doc:`pico`. All other hosts have a
 
    :Op code: RIA_OP_TIME_SET 0x3E
    :C proto: rp6502.h
@@ -544,7 +538,7 @@ LOCALTIME
    Converts seconds since the Unix epoch to local broken-down time
    using the configured time zone. Run ``help set tz`` on an :doc:`pico`
    monitor to learn how to configure your time zone. Push the seconds as a
-   signed integer of up to 64 bits; short pushes are unsigned. The
+   signed integer of up to 64 bits. The
    operation pushes a struct tm (see `GMTIME`_) back to the XSTACK and
    returns 0, or -1 on error.
 
