@@ -957,18 +957,11 @@ why there are just six transform values. They're in signed 8.8 fixed-point
 format, in the order {a00, a01, b0, a10, a11, b1}. The matrix maps a
 position within the sprite on the canvas to a position in the image.
 
-
 Sprite image data is an array of 16-bit colors. A sprite is a square of
 2^log_size pixels a side, from 1x1 up to 128x128; a log_size above 7
-describes a square too large for XRAM and draws nothing.
-
-.. code-block:: C
-
-  struct {
-    struct {
-        uint16_t color[1 << log_size];
-    } rows[1 << log_size];
-  } data;
+describes a square too large for XRAM and draws nothing. ``MODE4_IMAGE``
+declares the structure of one image from its log_size, so
+``typedef MODE4_IMAGE(4) image_t;`` is a 16x16 image.
 
 When ``has_opacity_metadata`` is set, the image is followed by one
 little-endian 32-bit value per row. Bits 15-0 are the end of the row's
@@ -1000,6 +993,15 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
       #define MODE4_SPAN(start, end, solid)            \
           (((solid) ? 0x80000000ul : 0ul) |            \
            ((unsigned long)(start) << 16) | (unsigned)(end))
+
+      #define MODE4_IMAGE(log_size)                \
+          struct                                   \
+          {                                        \
+              struct                               \
+              {                                    \
+                  uint16_t color[1 << (log_size)]; \
+              } rows[1 << (log_size)];             \
+          }
 
       typedef struct
       {
@@ -1043,6 +1045,17 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
           .dword ((solid) << 31) | ((start) << 16) | (end)
       .endmacro
 
+      .macro MODE4_IMAGE name, log_size
+          .struct name
+              rows .struct
+                  color .word 1 << (log_size)
+              .endstruct
+              .if log_size
+                  .res ((1 << (log_size)) - 1) * .sizeof(rows)
+              .endif
+          .endstruct
+      .endmacro
+
       .struct mode4_sprite_t
           x_pos_px             .word
           y_pos_px             .word
@@ -1084,6 +1097,13 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
           .4byte (((\solid) << 31) | ((\start) << 16) | (\end))
       .endm
 
+      .macro MODE4_IMAGE name, log_size
+          \name\()_ROWS       = 0
+          \name\()_ROWS_COLOR = 0
+          \name\()_ROWS_SIZE  = 2 << (\log_size)
+          \name\()_SIZE       = (1 << (\log_size)) * \name\()_ROWS_SIZE
+      .endm
+
       MODE4_SPRITE_X_POS_PX             = 0
       MODE4_SPRITE_Y_POS_PX             = 2
       MODE4_SPRITE_XRAM_SPRITE_PTR      = 4
@@ -1107,10 +1127,9 @@ Mode 5: Sprite 1,2,4,8-bit
 
 This is a memory-efficient sprite system that uses palettes to cut the
 bit depth. Sprites can be drawn over any fill plane, including a null
-fill plane. So you might put affine sprites for explosions and the
-player on one plane, 16x16 4bpp enemy sprites on a second, and 8x8 1bpp
+fill plane. For examplke, you might put affine sprites for explosions and
+the player on one plane, 16x16 4bpp enemy sprites on a second, and 8x8 1bpp
 bullets on the third.
-
 
 .. list-table::
    :widths: 5 5 90
