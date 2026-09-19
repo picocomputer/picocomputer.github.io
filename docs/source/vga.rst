@@ -20,8 +20,7 @@ Video Programming
 
 The VGA system provides virtual video hardware modeled on the home
 computers and arcades of the 8-bit and early-16-bit era. Applications mix
-and match the existing modes freely, and a new mode is one more scanline
-engine alongside the ones already here.
+and match the existing modes freely.
 
 Everything the VGA system draws is on the canvas, a grid of pixels such as
 320x240. Scanlines are the rows of the canvas, numbered from 0 at the top.
@@ -40,12 +39,23 @@ transparent pixel shows the plane behind it. A plane's sprite layer is
 drawn over its fill layer. There's enough fill rate to blow past any
 classic 8-bit system — but push too hard and you overrun the renderer.
 
-Every mode is programmed into one plane over a range of scanlines, which
+The video system is optimized for efficiency instead of consistency across
+all hosts. The 6502 will begin to struggle long before you hit the sprite
+limit of even the slowest host. The :doc:`pico` and :doc:`fpga` support
+around 1000-1600 pixels of fill per scanline on a 640 wide canvas and
+2000-3200 pixels for 320 wide. :doc:`emu` hosts run powerful hardware with
+extreme fill rates far beyond that. Not having to emulate single-clock
+accuracy saves a significant amount of power for phones and other handheld
+devices.
+
+Video modes are programmed into a plane over a range of scanlines, which
 is what the PLANE, BEGIN and END registers do in the mode sections below.
-BEGIN is the first scanline and END is one past the last, so a mode that
-covers the whole canvas is programmed with both of them 0. Different
-ranges of the same plane take different modes, which is how a status bar
-of characters sits above a bitmap.
+BEGIN is the first scanline and END is one past the last. A mode that
+covers the whole canvas may be programmed with both of them 0. Different
+ranges of the same plane allow different modes, which is how you might
+implement a graphical text adventure with half the screen for text and
+the other half for graphics. This happens without interrupts, leaving more
+CPU headroom for your game logic.
 
 Putting a picture on the canvas takes four steps. Select a canvas, load
 the data into XRAM, write the mode's configuration structure into XRAM,
