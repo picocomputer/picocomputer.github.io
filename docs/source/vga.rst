@@ -639,6 +639,9 @@ or 16x16, dropping X trim columns off the right and Y trim rows off the
 bottom. Tiles are still stored at the full base size, so the dropped
 cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
 
+A full set of 256 tiles is not required. A tile ID whose row would run past
+the end of XRAM is not drawn, and its cells are transparent black.
+
 .. tab:: C
 
    .. code-block:: C

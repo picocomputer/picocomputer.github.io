@@ -234,6 +234,11 @@ A C program sets an extended register with :ref:`xreg() <os-xreg>`, and an
 assembly program with the ``xreg`` macro in ``rp6502.inc``. Both take the
 device, the channel, the address, and then one or more 16-bit values.
 
+Every register below maps a device into XRAM. An address that is not valid
+for a device disables it, and ``$FFFF`` is never valid, which is how a mapping
+is turned off and the one case that succeeds. Any other invalid address
+disables the device as well, and returns ``EINVAL``.
+
 
 .. list-table::
    :widths: 5 5 90
@@ -479,8 +484,8 @@ The block is a four-byte header followed by eight contact records for
 multi-touch; a mouse or pen uses only the first.
 
 ``wheel`` and ``pan`` are scroll counters in the same format as the mouse: read
-them by subtracting the previous value. They advance only while a mouse drives
-the tablet.
+them by subtracting the previous value. These don't need polling beyond VSYNC
+for normal use cases.
 
 Each axis is a set of single-byte *windows*: exactly one is non-zero, and it
 alone carries the value. Decode by taking the first non-zero byte. This unusal
@@ -679,7 +684,7 @@ option.
 
 Enable and disable the RIA gamepad data by setting its extended
 register. The register value is the XRAM start address of the gamepad
-data; any invalid address disables the gamepads.
+data.
 
 .. code-block:: C
 
@@ -1017,8 +1022,7 @@ the oscillator array is a bit shift.
 
 Enable and disable the PSG by setting its extended register. The value
 is the XRAM start address for the 64 bytes of config; it must be
-int-aligned and must not cross a page boundary. Any invalid address
-disables the PSG.
+int-aligned and must not cross a page boundary.
 
 .. code-block:: C
 
@@ -1251,7 +1255,7 @@ extended register device 0, channel 1, address 0x01.
 Enable and disable the OPL2 by setting its extended register. The value
 is the XRAM start address for the 256 OPL2 registers, which must begin
 on a page boundary. So if xaddr is 0x4200, the 256 OPL2 registers map into
-XRAM from 0x4200 to 0x42FF. Any invalid address disables the OPL2.
+XRAM from 0x4200 to 0x42FF.
 
 .. code-block:: C
 
