@@ -211,12 +211,6 @@ access compared to 6502 system RAM.
   RIA.rw0 = 0x12; /* $1000 */
   RIA.rw0 = 0x34; /* $1001 */
 
-The C macros ``xram0_struct_set`` and ``xram1_struct_set`` come with
-rp6502.h. Each sets one member of a structure in XRAM, given the structure's
-address, its type and the member's name. They are convenient but not
-efficient, because every call sets the address again.
-
-
 Extended Stack (XSTACK)
 -----------------------
 

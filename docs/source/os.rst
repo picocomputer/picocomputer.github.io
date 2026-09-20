@@ -291,8 +291,10 @@ alone, so a program can leave ``RIA_X`` unset. ``errno`` lists what can
 go wrong, and `ERRNO_OPT Compiler Constants`_ gives the number of each.
 
 
-Stack and Registers
--------------------
+.. _os-extended-memory:
+
+Extended Memory
+---------------
 
 ZXSTACK
 ~~~~~~~
@@ -345,8 +347,60 @@ XREG
    :errno: EACCES, EINVAL, EIO
 
 
-Programs
---------
+XRAM_STRUCT_SET
+~~~~~~~~~~~~~~~
+
+.. c:macro:: xram0_struct_set (addr, type, member, val)
+             xram1_struct_set (addr, type, member, val)
+
+   Set one member of a structure in XRAM, given the structure's address, its
+   type and the member's name. These are convenient but not efficient,
+   because every call sets the step and address.
+
+   :Op code: None
+   :C proto: rp6502.h
+
+
+XRAM_READ
+~~~~~~~~~
+
+.. c:function:: lib void xram0_read (void* dest, unsigned src, unsigned count)
+                lib void xram1_read (void* dest, unsigned src, unsigned count)
+
+   Copy ``count`` bytes from XRAM into 6502 RAM, the way ``memcpy`` copies
+   within RAM. The portal in the name is the one the copy runs through, so
+   the other portal is left as a program had it. A count of 0 copies nothing.
+   This moves data inside the machine, unlike `READ_XRAM`_, which fills XRAM
+   from a file.
+
+   The call sets that portal's address register and sets its step register to
+   1, so an interrupt handler using the same portal saves and restores both.
+
+   :Op code: None
+   :C proto: rp6502.h
+   :param dest: Destination in 6502 RAM.
+   :param src: Source address in XRAM.
+   :param count: Quantity of bytes to copy.
+
+
+XRAM_WRITE
+~~~~~~~~~~
+
+.. c:function:: lib void xram0_write (unsigned dest, const void* src, unsigned count)
+                lib void xram1_write (unsigned dest, const void* src, unsigned count)
+
+   Copy ``count`` bytes from 6502 RAM into XRAM. This is the other direction
+   of `XRAM_READ`_ and follows the same rules.
+
+   :Op code: None
+   :C proto: rp6502.h
+   :param dest: Destination address in XRAM.
+   :param src: Source in 6502 RAM.
+   :param count: Quantity of bytes to copy.
+
+
+Process
+-------
 
 .. _os-argv:
 
