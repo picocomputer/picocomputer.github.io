@@ -304,7 +304,7 @@ ZXSTACK
    Abandon the XSTACK by resetting the XSTACK pointer. This is the only
    operation you don't have to wait on, and you never need it after a
    failed operation. It's handy when you want to quickly ignore part of a
-   returned structure.
+   returned structure or abandon a call setup.
 
    :Op code: RIA_OP_ZXSTACK 0x00
    :C proto: rp6502.h
@@ -396,6 +396,41 @@ XRAM_WRITE
    :C proto: rp6502.h
    :param dest: Destination address in XRAM.
    :param src: Source in 6502 RAM.
+   :param count: Quantity of bytes to copy.
+
+
+XRAM_SET
+~~~~~~~~
+
+.. c:function:: lib void xram0_set (unsigned dest, unsigned char val, unsigned count)
+                lib void xram1_set (unsigned dest, unsigned char val, unsigned count)
+
+   Fill ``count`` bytes of XRAM with ``val``, the way ``memset`` fills RAM.
+   The portal in the name is the one the fill runs through, and the address
+   and step registers are set as `XRAM_READ`_ sets them.
+
+   :Op code: None
+   :C proto: rp6502.h
+   :param dest: Address in XRAM to fill.
+   :param val: Byte written to every position.
+   :param count: Quantity of bytes to fill.
+
+
+XRAM_MOVE
+~~~~~~~~~
+
+.. c:function:: lib void xram_move (unsigned dest, unsigned src, unsigned count)
+
+   Copy ``count`` bytes from one place in XRAM to another, the way
+   ``memmove`` copies within RAM, so regions that overlap still arrive
+   whole. Portal 0 reads and portal 1 writes, and both are left with their
+   address registers set and their step registers at 1, or at -1 where the
+   overlap makes the copy run backward.
+
+   :Op code: None
+   :C proto: rp6502.h
+   :param dest: Destination address in XRAM.
+   :param src: Source address in XRAM.
    :param count: Quantity of bytes to copy.
 
 
