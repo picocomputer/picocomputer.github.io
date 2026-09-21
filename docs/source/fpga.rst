@@ -86,6 +86,7 @@ Internals
    │ pocket_bridge  pocket_file  pocket_sst   pocket_video  pocket_i2s   │
    │ pocket_sdram   pocket_sram  pocket_dbg   pocket_dbglog  pocket_fifo │
    │ pocket_bars    pocket_pll: clk_sys ──> altclkctrl ──> clk_mach      │
+   │                pocket_pll: clk_a2 100.8 MHz, XRAM's render port     │
    │                                                                     │
    │ ┌─────────────────────────────────────────────────────────────────┐ │
    │ │ src/core — the machine, platform independent                    │ │
