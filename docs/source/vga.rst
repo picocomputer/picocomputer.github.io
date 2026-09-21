@@ -45,7 +45,7 @@ take. Doing a whole row at a time is what makes the machine efficient, which
 matters because these are often battery powered.
 
 Three fill planes fit on every canvas, at every color depth, on every host.
-What differs is how much is left over, and the arithmetic below works out the
+Sprites are what you count, and the arithmetic below works that out for the
 tightest case, which is the :doc:`fpga` on a 640 wide canvas.
 
 Video modes are programmed into a plane over a range of scanlines, which
@@ -80,136 +80,104 @@ structure.
     result = xreg_vga_mode3(MODE3_4BPP, 0xFF00);
 
 
-.. _vga-key-registers:
-
 Doing the arithmetic
 --------------------
 
-The :doc:`fpga` is the slowest, so anything that fits there fits everywhere,
-and its budget is simple enough to work out on paper. Its video logic runs at
-twice the 25.2 MHz pixel clock, and a row of the raster is 800 pixels wide, so
-every row of the raster is 1,600 clocks. A 320 wide canvas is scanned out with
-its lines doubled, so each row of graphics gets two of them: **3,200 clocks
-for half as many pixels**. That is why 320 is where games have room, and it is
-worth choosing for that alone.
+The :doc:`fpga` is the slowest, so anything that fits there fits everywhere.
+Its video logic runs at twice the 25.2 MHz pixel clock, and a row of the
+raster is 800 pixels wide, so every row is 1,600 clocks. A 320 wide canvas is
+scanned out with its lines doubled, so each row of graphics gets two of them:
+**3,200 clocks for half as many pixels**, which is the reason to choose a 320
+wide canvas for a game.
 
-Fill and sprites are separate engines, each with the whole line of clocks
-to itself and a word of XRAM every clock of its own, so neither takes
-anything from the other. Each is measured against the line by itself, and
-the last row of the table below is the proof.
+Fill needs no arithmetic: any three planes at any depth fit on any canvas.
+Fill and sprites are separate engines with separate XRAM reads every clock,
+so neither slows the other.
 
-Fill lands two pixels a clock, so a plane of paletted pixels costs about half
-its width in clocks, and the planes are drawn one after another. Text costs
-the same as a bitmap: :ref:`mode 1 <vga-mode-1>` fetches a cell's bytes and
-its glyph row in the four clocks its eight pixels take. A palette in XRAM is
-reloaded before each fill at two colors a clock, which is 128 clocks for 256
-colors and 8 for 16. Built-in palettes load nothing.
-
-Sixteen-bit color loads no palette, but every pixel is a halfword of its own,
-so a pair of them is a whole word and the fill takes a word from XRAM every
-clock. Its word a clock is exactly that, so it costs the same as a paletted
-fill with a built-in palette, wherever the bitmap starts.
-
-A 640 wide canvas has 1,600 clocks for all three planes together. These are
-measured, and they include the 25 or so clocks each fill spends starting.
+A row of sprites costs the clocks below, added up, against the row's 1,600
+or 3,200. The figures are measured on the fpga.
 
 .. list-table::
-   :widths: 64 18 18
+   :widths: 52 16 16 16
    :header-rows: 1
 
-   * - Fill across a 640 wide canvas
-     - Clocks
-     - Of 1,600
-   * - One plane, built-in palette or 16-bit color, any depth
-     - 345
-     - 22%
-   * - One plane, 8bpp with a 256-color palette in XRAM
-     - 470
-     - 29%
-   * - Three planes, 16-bit color
-     - 1,210
-     - 76%
-   * - Three planes, 8bpp with palettes in XRAM
-     - 1,420
-     - 89%
-   * - Three planes of 8x8 text, 8bpp with palettes in XRAM
-     - 1,425
-     - 89%
-   * - Three planes, 16-bit color, under sixteen 16x16 sprites
-     - 1,210
-     - 76%
+   * -
+     - Paletted
+     - 16-bit
+     - Affine
+   * - Once per row
+     - 10
+     - 10
+     - 10
+   * - Each sprite in the list, on the row or not
+     - 2
+     - 2
+     - 5
+   * - Each sprite on the row, before its first pixel
+     - 3
+     - 3
+     - 4
+   * - Each pixel drawn
+     - ½
+     - ½
+     - 1 to 2
+   * - Each palette cache miss, reads two colors
+     - 3
+     -
+     -
 
-The palette reload is what makes 8bpp the tightest case rather than 16-bit
-color: 256 colors are 128 clocks before a single pixel is drawn, and three
-planes pay it three times. The last row costs the same as three 16-bit
-planes alone: the sprites have their own clocks and their own word of XRAM,
-so a stack of them over three 16-bit fills costs the fills nothing.
+Sprites are drawn two pixels a clock. Affine sprites are drawn one texel a
+clock, since the texels of a rotated row are scattered across the image,
+and a texel that straddles two words takes two clocks.
 
-A 320 wide canvas has half the pixels and twice the budget, so it has four
-times the room, and three planes of anything fit there with most of the line
-to spare. What limits 16-bit color in practice is not the clock but the
-memory: a 640 wide row of it is 1,280 bytes against the 64K of XRAM, so a
-16-bit bitmap is a band or a window rather than a whole screen.
+A 16x16 sprite in 16-bit color is therefore 2 + 3 + 8 = 13 clocks, and a
+row holds as many as fit in the 1,590 or 3,190 left after the 10. The table
+below is that arithmetic used to plan for the worst case. In practice, you
+can have far more if they don't all appear on the same row.
 
-Sprites land two pixels a clock like fill, plus a fixed cost for every
-sprite in the list. You pay that fixed cost whether or not the sprite lands
-on the row, because reading the sprite is how the machine finds out where it
-is, but the list is read ahead while the sprites before it draw, so one that
-misses the row costs only the two words its descriptor takes. These are
-measured, sprite by sprite, and the row's ten clocks of setup are on top.
++-----------------------------------+-----------------------+-----------------------+
+| Sprite count limit with all sprites rendering on a single row                     |
++-----------------------------------+-----------------------+-----------------------+
+|                                   | Single palette only   | 100% palette cache    |
+|                                   |                       | misses                |
+|                                   +-----------+-----------+-----------+-----------+
+|                                   | 320 wide  | 640 wide  | 320 wide  | 640 wide  |
++===================================+===========+===========+===========+===========+
+| 16-bit, 8x8                       | 354       | 176       | 354       | 176       |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| 16-bit, 16x16                     | 245       | 122       | 245       | 122       |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| 16-bit, 32x32                     | 151       | 75        | 151       | 75        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, up to 16 colors, 8x8    | 351       | 174       | 96        | 48        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, up to 16 colors, 16x16  | 243       | 120       | 86        | 42        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, up to 16 colors, 32x32  | 150       | 74        | 70        | 35        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, 256 colors, 8x8         | 311       | 134       | 96        | 48        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, 256 colors, 16x16       | 215       | 92        | 52        | 26        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, 256 colors, 32x32       | 133       | 57        | 27        | 13        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Affine, 8x8                       | 145       | 72        | 145       | 72        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Affine, 16x16                     | 83        | 41        | 83        | 41        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Affine, 32x32                     | 45        | 22        | 45        | 22        |
++-----------------------------------+-----------+-----------+-----------+-----------+
 
-.. list-table::
-   :widths: 40 20 20 20
-   :header-rows: 1
+The two halves of the table differ only in the palette cache. The cache is
+1 KB direct-mapped, so it's beneficial to keep all palettes contiguous in
+XRAM. The cache is cleared once at the start of every row.
+16-bit and affine sprites have no palette and no need of cache.
 
-   * - One 16 pixel wide sprite on the row
-     - Clocks
-     - 320 wide
-     - 640 wide
-   * - :ref:`Mode 5 <vga-mode-5>`, paletted
-     - 5 + 8 = 13
-     - 245
-     - 122
-   * - :ref:`Mode 4 <vga-mode-4>`, 16-bit color
-     - 5 + 8 = 13
-     - 245
-     - 122
-   * - :ref:`Mode 4 <vga-mode-4>`, affine
-     - 11 + 16 = 27
-     - 118
-     - 59
-   * - Any sprite not on the row
-     - 2 to 2.5
-     - 1,300
-     - 640
+These are the :doc:`fpga`'s limits. The :doc:`pico` and :doc:`emu` hosts
+have far more clocks. In practice the limit is an 8 MHz CPU and 64 KB of XRAM.
 
-So a 320 wide canvas holds about 245 sprites of 16x16 on one row, which is
-twelve times the width of the row: sprites can be stacked deep everywhere
-and still finish. A list longer than about 1,300 runs out of clocks before
-drawing anything, however few of them are on screen, so keep the list short
-rather than parking unused sprites offscreen. The affine path samples one
-texel a clock rather than two, because a rotated row's texels are scattered
-across the image and each is a word of its own.
 
-Sprites look their colors up as they go and never load a palette, so a narrow
-sprite pays only for the colors it actually uses. A 16-color palette costs
-about 45 extra clocks the first time it is used on a row, five for each of
-its nine words, and sprites sharing a row share that cache.
-
-The two pixels a clock above assume the cache holds the colors a row of
-the sprite uses, and it holds sixteen words of palette, which is 32 colors and
-always enough for a 16-color palette. It is emptied at the start of every
-row and never watches palette writes, so cycling the palette every frame
-costs it nothing: what matters is how many different colors one row of
-pixels reaches for. An 8bpp sprite whose row spreads across more than
-sixteen words of its palette misses on nearly every pixel, and each miss
-holds the sprite until the word arrives, about four and a half clocks a
-pixel in all, nine times the usual rate, so plan on a ninth as many of those
-on a row.
-
-:doc:`pico` and :doc:`emu` hosts run far beyond all of this. In practice the
-friction comes from an 8 MHz CPU and 64K of XRAM long before it comes from
-the video system.
+.. _vga-key-registers:
 
 Key Registers
 -------------
