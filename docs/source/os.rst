@@ -136,11 +136,11 @@ return values. ``RIA_SREG`` is updated only for 32-bit returns, and
 ``RIA_ERRNO`` only when there's an error.
 
 Some operations return strings or structures on the stack. Pull the
-entire stack before the next call, or use `zxstack() <ZXSTACK_>`_ to
-abandon the stack in O(1) time without a loop. One operation's output can
-also be the next one's input. `read_xstack() <READ_XSTACK_>`_ leaves its
-data on the XSTACK where `write_xstack() <WRITE_XSTACK_>`_ takes it, so
-the two copy a file without touching any RAM or XRAM.
+entire stack before the next call, or use `ria_drop() <DROP_XSTACK_>`_
+to abandon the stack in O(1) time without a loop. One operation's output
+can also be the next one's input. `read_xstack() <READ_XSTACK_>`_ leaves
+its data on the XSTACK where `write_xstack() <WRITE_XSTACK_>`_ takes it,
+so the two copy a file without touching any RAM or XRAM.
 
 The time operations chain the same way, without cycling the XSTACK:
 `TIME_GET`_ returns seconds positioned as the input to `GMTIME`_,
@@ -296,17 +296,17 @@ go wrong, and `ERRNO_OPT Compiler Constants`_ gives the number of each.
 Extended Memory
 ---------------
 
-ZXSTACK
-~~~~~~~
+DROP_XSTACK
+~~~~~~~~~~~
 
-.. c:function:: void zxstack (void);
+.. c:function:: void ria_drop (void);
 
    Abandon the XSTACK by resetting the XSTACK pointer. This is the only
    operation you don't have to wait on, and you never need it after a
    failed operation. It's handy when you want to quickly ignore part of a
    returned structure or abandon a call setup.
 
-   :Op code: RIA_OP_ZXSTACK 0x00
+   :Op code: RIA_OP_DROP_XSTACK 0x00
    :C proto: rp6502.h
 
 
@@ -670,7 +670,7 @@ STRFTIME
    if the result is empty or does not fit, or -1 on error. The format and
    the result share the XSTACK, which limits the result. The C library
    strftime() compares the length to its buffer size and abandons an
-   oversized result with `ZXSTACK`_.
+   oversized result with `DROP_XSTACK`_.
 
    ``%a %A %b %B %c %p %r %x %X`` follow the configured locale and
    ``%z %Z`` the configured time zone. Set both with ``SET LOC`` and
