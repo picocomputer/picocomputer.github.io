@@ -234,10 +234,10 @@ A C program sets an extended register with :ref:`xreg() <os-xreg>`, and an
 assembly program with the ``xreg`` macro in ``rp6502.inc``. Both take the
 device, the channel, the address, and then one or more 16-bit values.
 
-Every register below maps a device into XRAM. An address that is not valid
-for a device disables it, and ``$FFFF`` is never valid, which is how a mapping
-is turned off and the one case that succeeds. Any other invalid address
-disables the device as well, and returns ``EINVAL``.
+Each register below maps a device into XRAM at the address written to
+it. Writing ``$FFFF`` turns the device off and always succeeds. Any other
+address that is invalid for the device also turns it off, and the call
+fails with ``EINVAL``.
 
 
 .. list-table::
@@ -483,9 +483,9 @@ in XRAM.
 The block is a four-byte header followed by eight contact records for
 multi-touch; a mouse or pen uses only the first.
 
-``wheel`` and ``pan`` are scroll counters in the same format as the mouse: read
-them by subtracting the previous value. These don't need polling beyond VSYNC
-for normal use cases.
+``wheel`` and ``pan`` are scroll counters in the same format as the
+mouse's: subtract the previous reading to get the change. Reading them
+once per VSYNC is enough for normal use.
 
 Each axis is a set of single-byte *windows*: exactly one is non-zero, and it
 alone carries the value. Decode by taking the first non-zero byte. This unusal

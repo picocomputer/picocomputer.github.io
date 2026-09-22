@@ -171,6 +171,17 @@ A numeric address is a memory chunk. The file is loaded straight into RAM
 (``$0000-$FEFF``) or XRAM (``$10000-$1FFFF``) when the ROM loads, before
 the 6502 starts.
 
+An address can also be written as ``RAM(addr)`` or ``XRAM(addr)``. Both
+check that the address is in range and stop CMake with an error if it is
+not. ``XRAM()`` takes an offset into XRAM, the same number your program
+uses, so ``XRAM(0x1000)`` loads at ``0x11000``.
+
+.. code-block:: cmake
+  :force:
+
+  rp6502_asset(hello RAM(0x00F0) bin/f0.bin)
+  rp6502_asset(hello XRAM(0x1000) img/tiles.bin)
+
 Anything else is a name, and named assets become part of the filesystem
 while your ROM runs. Prefix the name with ``ROM:`` and open it like any
 other file. They're read-only, and you can have several open at once.
@@ -181,25 +192,6 @@ other file. They're read-only, and you can have several open at once.
 
 Some names are special. The ``help`` asset is what an :doc:`pico`
 monitor's HELP and INFO commands display.
-
-Writing the address as ``RAM(...)`` or ``XRAM(...)`` checks that it is in
-range, and ``XRAM()`` sets the bit that indicates XRAM. A name from your
-:ref:`XRAM layout <sdk-xram-memory-map>` is an offset, the same number your
-program uses, so wrap it in ``XRAM()`` to load an asset there.
-
-.. code-block:: cmake
-  :force:
-
-  rp6502_asset(hello XRAM(XRAM_BITMAP_DATA) img/intro.bin)
-
-The only difference between the following two examples is that RAM()
-validates the address.
-
-.. code-block:: cmake
-  :force:
-
-  rp6502_asset(hello 0x00f0 bin/f0.bin)
-  rp6502_asset(hello RAM(0x00f0) bin/f0.bin)
 
 Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
 
@@ -402,10 +394,10 @@ the keyboard to its address and waits for a key to be pressed.
 Addresses in CMake
 ------------------
 
-``rp6502_xram()`` reads the header and gives CMake the same names, so the
-layout is written once. Without it the same address sits in both the header
-and the CMake file, and the two drift apart the first time the layout
-changes.
+``rp6502_xram()`` reads the address names from your header into CMake,
+so the layout is written in one place. Without it, every address would be
+written twice, in the header and in ``CMakeLists.txt``, and the two would
+disagree as soon as the layout changed.
 
 .. code-block:: cmake
 
@@ -417,40 +409,42 @@ changes.
   rp6502_xram(src/xram.h "XRAM_.*")
   rp6502_asset(hello XRAM(XRAM_BITMAP_DATA) img/logo.bin)
 
-The regular expression chooses which names to take and has to match a whole
-name. A ``#define`` of any form is read, so an address built from another
-address comes through with the rest.
+The regular expression selects which ``#define`` names to read, and must
+match the whole name. The value can be any constant expression, including
+one built from another name:
 
 .. code-block:: C
 
   #define XRAM_TILES offsetof(xram_layout_t, tiles)
   #define XRAM_TILES_2 (XRAM_TILES + 64)
 
-The rest of the header is yours. A define that is commented out, one inside
-an ``#if`` the preprocessor does not take, one with no value such as an
-include guard, and a function-like macro are all left alone. Each name holds the offset the header computes, which is the number
-your program uses, and is why ``rp6502_asset()`` is given it inside
-``XRAM()``. Each name is an ordinary CMake variable too, so
-``${XRAM_BITMAP_DATA}`` works anywhere else you need it. Call
+A define is skipped if it is commented out, inside an ``#if`` whose
+condition is false, has no value (such as an include guard), or is a
+function-like macro. The header can hold anything else your program
+needs.
+
+Each name becomes a CMake variable holding the offset your program sees,
+so ``${XRAM_BITMAP_DATA}`` works anywhere in ``CMakeLists.txt``. Because
+it is an offset, pass it to ``rp6502_asset()`` inside ``XRAM()``. Call
 ``rp6502_xram()`` before ``rp6502_asset()`` and ``rp6502_executable()``.
 
-Editing the header configures your project again, so these addresses can
-never go stale. A header that will not compile leaves the addresses at zero
-and is reported by the build rather than stopping the configure, so your
-project stays configured while you fix it.
+Changing the header makes CMake configure again on the next build, so the
+addresses always match it. If the header doesn't compile, every name is
+set to 0 and the build fails with the compiler's error. The configure
+step still completes, so the project stays usable while you fix the
+header.
 
-``rp6502_xram()`` reads C only. For an assembly project, pass
+``rp6502_xram()`` reads C headers only. For an assembly project, pass
 ``rp6502_asset()`` the address as a number, or set a CMake variable to it.
 
 Alignment
 ---------
 
-Neither compiler pads a structure, so a member starts wherever the members
-before it end. Mode configurations, palettes, and the PSG are read in 16-bit
-values, so they need an even address. Every address is checked, and an odd
-one stops the build. The check is made while the project builds, by a
-generated program of assertions your compiler reports against the line in
-the header, so the define is highlighted where you wrote it.
+Neither compiler pads structures, so each member starts right after the
+one before it. Mode configurations, palettes and the PSG are read as
+16-bit values, so they need an even address. Every address is checked,
+and an odd one fails the build with an error on the line of the
+``#define``:
 
 .. code-block:: text
 
@@ -458,20 +452,20 @@ the header, so the define is highlighted where you wrote it.
   unaligned. To allow, use the [<unaligned_regex>] in rp6502_xram.'
 
 Pixel data, fonts, tiles, sprite images, and the keyboard, mouse, gamepad
-and tablet blocks work at any address, so the check on those is advice
-rather than a hardware rule. Follow it anyway. Some hosts are faster for
-it. The second regular expression names the addresses to leave unchecked.
+and tablet blocks work at any address. They are checked anyway, because
+some hosts access them faster at an even address. To exempt names from
+the check, pass a second regular expression:
 
 .. code-block:: cmake
 
   rp6502_xram(src/xram.h "XRAM_.*" "XRAM_.*_DATA")
 
-A layout grown past the 64K of XRAM stops the build as well, and so does an
-address that overflows 16 bits.
+The build also fails if the layout is larger than the 64 KB of XRAM, or
+if an address does not fit in 16 bits.
 
-The 64 bytes of the PSG must also stay within one page, and the OPL2
-registers must start on a page. These are the only two things not checked,
-so make sure of them yourself.
+Two requirements are not checked, so check them yourself: the 64 bytes of
+the PSG must not cross a page boundary, and the OPL2 registers must start
+on one.
 
 
 Multiple Compiler Artifacts
@@ -626,14 +620,15 @@ A ROM file begins with a shebang line, followed by any number of assets.
 Text lines end with ``\r``, ``\n``, or both, and numbers may be written
 in decimal (255), C-style hex (0xFF), or MOS-style hex ($FF).
 
-**Shebang** — first line of every ROM file. The tools write this one:
+**Shebang** — the first line of every ROM file. The tools write:
 
 .. code-block:: text
 
   #!RP6502
 
-Any shebang naming ``rp6502`` is accepted, in any case, so a ROM can name
-the program that runs it and be marked executable:
+Any first line that starts with ``#!`` and contains ``rp6502``, in upper
+or lower case, is accepted. A ROM can then name the program that runs it,
+and a ROM file marked executable runs directly from a shell:
 
 .. code-block:: text
 

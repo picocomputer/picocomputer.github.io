@@ -301,10 +301,11 @@ DROP_XSTACK
 
 .. c:function:: void ria_drop (void);
 
-   Abandon the XSTACK by resetting the XSTACK pointer. This is the only
-   operation you don't have to wait on, and you never need it after a
-   failed operation. It's handy when you want to quickly ignore part of a
-   returned structure or abandon a call setup.
+   Empty the XSTACK by resetting its pointer. This is the only operation
+   that finishes immediately, so there is no need to wait for it. It is
+   never needed after a failed operation, because a failure already
+   empties the XSTACK. Use it to discard the rest of a returned structure,
+   or arguments already pushed for a call you decide not to make.
 
    :Op code: RIA_OP_DROP_XSTACK 0x00
    :C proto: rp6502.h
@@ -367,14 +368,16 @@ XRAM_READ
 .. c:function:: lib void xram0_read (void* dest, unsigned src, unsigned count)
                 lib void xram1_read (void* dest, unsigned src, unsigned count)
 
-   Copy ``count`` bytes from XRAM into 6502 RAM, the way ``memcpy`` copies
-   within RAM. The portal in the name is the one the copy runs through, so
-   the other portal is left as a program had it. A count of 0 copies nothing.
-   This moves data inside the machine, unlike `READ_XRAM`_, which fills XRAM
-   from a file.
+   Copy ``count`` bytes from XRAM to 6502 RAM, like ``memcpy``.
+   ``xram0_read()`` copies through portal 0 and ``xram1_read()`` through
+   portal 1. The other portal is not touched. A count of 0 copies nothing.
 
-   The call sets that portal's address register and sets its step register to
-   1, so an interrupt handler using the same portal saves and restores both.
+   The call changes the portal's address register and sets its step
+   register to 1. An interrupt handler that uses the same portal must save
+   and restore both.
+
+   This copies within the machine. To load XRAM from a file, use
+   `READ_XRAM`_.
 
    :Op code: None
    :C proto: rp6502.h
@@ -405,9 +408,9 @@ XRAM_SET
 .. c:function:: lib void xram0_set (unsigned dest, unsigned char val, unsigned count)
                 lib void xram1_set (unsigned dest, unsigned char val, unsigned count)
 
-   Fill ``count`` bytes of XRAM with ``val``, the way ``memset`` fills RAM.
-   The portal in the name is the one the fill runs through, and the address
-   and step registers are set as `XRAM_READ`_ sets them.
+   Fill ``count`` bytes of XRAM with ``val``, like ``memset``.
+   ``xram0_set()`` uses portal 0 and ``xram1_set()`` uses portal 1, with the
+   same effect on the portal's registers as `XRAM_READ`_.
 
    :Op code: None
    :C proto: rp6502.h
@@ -421,11 +424,11 @@ XRAM_MOVE
 
 .. c:function:: lib void xram_move (unsigned dest, unsigned src, unsigned count)
 
-   Copy ``count`` bytes from one place in XRAM to another, the way
-   ``memmove`` copies within RAM, so regions that overlap still arrive
-   whole. Portal 0 reads and portal 1 writes, and both are left with their
-   address registers set and their step registers at 1, or at -1 where the
-   overlap makes the copy run backward.
+   Copy ``count`` bytes from one XRAM address to another, like ``memmove``,
+   so the result is correct even when the two ranges overlap. Portal 0 reads
+   and portal 1 writes, and both address registers are changed. Both step
+   registers are left at 1, or at -1 if the destination overlaps the end of
+   the source and the copy runs backward.
 
    :Op code: None
    :C proto: rp6502.h
