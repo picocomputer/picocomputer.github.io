@@ -98,30 +98,36 @@ A row of sprites costs the clocks below, added up, against the row's 1,600
 or 3,200. The figures are measured on the fpga.
 
 .. list-table::
-   :widths: 52 16 16 16
+   :widths: 40 15 15 15 15
    :header-rows: 1
 
    * -
      - Paletted
+     - Custom
      - 16-bit
      - Affine
    * - Once per row
      - 10
      - 10
      - 10
+     - 10
    * - Each sprite in the list, on the row or not
      - 2
+     - 2½
      - 2
      - 5
    * - Each sprite on the row, before its first pixel
-     - 3
+     - 4
+     - 4
      - 3
      - 4
    * - Each pixel drawn
      - ½
      - ½
+     - ½
      - 1 to 2
    * - Each palette cache miss, reads two colors
+     - 3
      - 3
      -
      -
@@ -149,17 +155,17 @@ can have far more if they don't all appear on the same row.
 +-----------------------------------+-----------+-----------+-----------+-----------+
 | 16-bit, 32x32                     | 151       | 75        | 151       | 75        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, up to 16 colors, 8x8    | 351       | 174       | 96        | 48        |
+| Paletted, up to 16 colors, 8x8    | 316       | 156       | 93        | 46        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, up to 16 colors, 16x16  | 243       | 120       | 86        | 42        |
+| Paletted, up to 16 colors, 16x16  | 225       | 111       | 83        | 40        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, up to 16 colors, 32x32  | 150       | 74        | 70        | 35        |
+| Paletted, up to 16 colors, 32x32  | 143       | 70        | 68        | 34        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, 256 colors, 8x8         | 311       | 134       | 96        | 48        |
+| Paletted, 256 colors, 8x8         | 283       | 123       | 93        | 46        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, 256 colors, 16x16       | 215       | 92        | 52        | 26        |
+| Paletted, 256 colors, 16x16       | 201       | 86        | 51        | 25        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, 256 colors, 32x32       | 133       | 57        | 27        | 13        |
+| Paletted, 256 colors, 32x32       | 127       | 55        | 26        | 12        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
 | Affine, 8x8                       | 145       | 72        | 145       | 72        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
@@ -167,6 +173,12 @@ can have far more if they don't all appear on the same row.
 +-----------------------------------+-----------+-----------+-----------+-----------+
 | Affine, 32x32                     | 45        | 22        | 45        | 22        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
+
+A custom sprite costs what a paletted sprite of the same size and color
+depth costs, plus half a clock for each entry in the list. The list is read
+four bytes at a time, and a ten byte descriptor is two and a half of those,
+so one descriptor takes three reads and the next takes two. Doubling is
+free: a doubled sprite draws two pixels a clock like any other.
 
 The two halves of the table differ only in the palette cache. The cache is
 1 KB direct-mapped, so it's beneficial to keep all palettes contiguous in
@@ -1229,7 +1241,8 @@ This is a memory-efficient sprite system that uses palettes to cut the
 bit depth. Sprites can be drawn over any fill plane, including a null
 fill plane. For example, you might put affine sprites for explosions and
 the player on one plane, 16x16 4bpp enemy sprites on a second, and 8x8 1bpp
-bullets on the third.
+bullets on the third. A plane can also hold sprites of mixed size, color
+depth and orientation, using the custom form below.
 
 .. list-table::
    :widths: 5 5 90
@@ -1244,8 +1257,9 @@ bullets on the third.
    * - $1:0:02
      - OPTIONS
      - | bit 0:2 - 0=1, 1=2, 2=4, or 3=8 bit color
-       | bit 3:5 - 0=8x8, 1=16x16, 2=32x32, 3=64x64, 4=128x128, 5=256x256, 6=512x512
+       | bit 3:5 - 0=8x8, 1=16x16, 2=32x32, 3=64x64, 4=128x128, 5=256x256, 6=512x512, 7=custom
        | 512x512 only supports 1-bit and 2-bit color.
+       | Custom uses size and color depth from CONFIG, and bit 0:2 is ignored.
    * - $1:0:03
      - CONFIG
      - | Address of config array in XRAM. Must be even.
@@ -1269,6 +1283,7 @@ Program the mode by setting MODE and the registers after it in one call.
 
   xreg(1, 0, 1, 5, 0x0A, xaddr, length, 1);                   // 16x16 4-bit, plane 1
   xreg_vga_mode5(MODE5_4BPP | MODE5_16X16, xaddr, length, 1); // macro shortcut
+  xreg_vga_mode5(MODE5_CUSTOM, xaddr, length, 2);             // custom sprites, plane 2
 
 Disable unused sprites by moving them off the canvas.
 
@@ -1276,6 +1291,18 @@ Sprite image data uses the same format as individual mode 2 tiles.
 ``MODE5_IMAGE`` declares the structure of one image from its color depth and
 sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
 4-bit color.
+
+Custom sprites use ``mode5_csprite_t``. Each sprite has its own width and
+height, from 4 to 64 pixels in steps of 4, packed into ``width_height`` by
+``MODE5_SIZE``. ``MODE5_CUSTOM_IMAGE`` declares the structure of one image
+from its color depth, width and height, so
+``typedef MODE5_CUSTOM_IMAGE(4, 24, 16) image_t;`` is a 24x16 image in 4-bit
+color. Every row of the image starts on a byte. Bits 0:2 of
+``options`` hold the color depth, with the same values as OPTIONS.
+``MODE5_HFLIP`` and ``MODE5_VFLIP`` mirror the image left to right and top
+to bottom. ``MODE5_HDOUBLE`` and ``MODE5_VDOUBLE`` draw every pixel twice
+across or down, so a doubled 16x16 image covers 32x32 pixels of the canvas.
+Bit 3 of ``options`` is reserved and must be 0.
 
 .. tab:: C
 
@@ -1296,6 +1323,12 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
       #define MODE5_128X128 0x20
       #define MODE5_256X256 0x28
       #define MODE5_512X512 0x30
+      #define MODE5_CUSTOM 0x38
+
+      #define MODE5_HFLIP 0x10
+      #define MODE5_VFLIP 0x20
+      #define MODE5_HDOUBLE 0x40
+      #define MODE5_VDOUBLE 0x80
 
       #define MODE5_IMAGE(bpp, size)                \
           struct                                    \
@@ -1306,6 +1339,18 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
               } rows[size];                         \
           }
 
+      #define MODE5_SIZE(width, height) \
+          ((((height) / 4 - 1) << 4) | ((width) / 4 - 1))
+
+      #define MODE5_CUSTOM_IMAGE(bpp, width, height)       \
+          struct                                           \
+          {                                                \
+              struct                                       \
+              {                                            \
+                  uint8_t cols[((width) * (bpp) + 7) / 8]; \
+              } rows[height];                              \
+          }
+
       typedef struct
       {
           int16_t x_pos_px;
@@ -1313,6 +1358,16 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
           uint16_t xram_sprite_ptr;
           uint16_t palette_ptr;
       } mode5_sprite_t;
+
+      typedef struct
+      {
+          int16_t x_pos_px;
+          int16_t y_pos_px;
+          uint16_t xram_sprite_ptr;
+          uint16_t palette_ptr;
+          uint8_t width_height;
+          uint8_t options;
+      } mode5_csprite_t;
 
 .. tab:: ca65
 
@@ -1335,6 +1390,12 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
       MODE5_128X128 = $20
       MODE5_256X256 = $28
       MODE5_512X512 = $30
+      MODE5_CUSTOM  = $38
+
+      MODE5_HFLIP   = $10
+      MODE5_VFLIP   = $20
+      MODE5_HDOUBLE = $40
+      MODE5_VDOUBLE = $80
 
       .macro MODE5_IMAGE name, bpp, size
           .struct name
@@ -1345,11 +1406,33 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
           .endstruct
       .endmacro
 
+      .macro MODE5_SIZE width, height
+          .byte (((height) / 4 - 1) << 4) | ((width) / 4 - 1)
+      .endmacro
+
+      .macro MODE5_CUSTOM_IMAGE name, bpp, width, height
+          .struct name
+              rows .struct
+                  cols .res ((width) * (bpp) + 7) / 8
+              .endstruct
+              .res ((height) - 1) * .sizeof(rows)
+          .endstruct
+      .endmacro
+
       .struct mode5_sprite_t
           x_pos_px        .word
           y_pos_px        .word
           xram_sprite_ptr .word
           palette_ptr     .word
+      .endstruct
+
+      .struct mode5_csprite_t
+          x_pos_px        .word
+          y_pos_px        .word
+          xram_sprite_ptr .word
+          palette_ptr     .word
+          width_height    .byte
+          options         .byte
       .endstruct
 
 .. tab:: llvm-mc
@@ -1374,6 +1457,12 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
       MODE5_128X128 = $20
       MODE5_256X256 = $28
       MODE5_512X512 = $30
+      MODE5_CUSTOM  = $38
+
+      MODE5_HFLIP   = $10
+      MODE5_VFLIP   = $20
+      MODE5_HDOUBLE = $40
+      MODE5_VDOUBLE = $80
 
       .macro MODE5_IMAGE name, bpp, size
           \name\()_ROWS      = 0
@@ -1382,11 +1471,30 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
           \name\()_SIZE      = (\size) * \name\()_ROWS_SIZE
       .endm
 
+      .macro MODE5_SIZE width, height
+          .byte ((((\height) / 4 - 1) << 4) | ((\width) / 4 - 1))
+      .endm
+
+      .macro MODE5_CUSTOM_IMAGE name, bpp, width, height
+          \name\()_ROWS      = 0
+          \name\()_ROWS_COLS = 0
+          \name\()_ROWS_SIZE = ((\width) * (\bpp) + 7) / 8
+          \name\()_SIZE      = (\height) * \name\()_ROWS_SIZE
+      .endm
+
       MODE5_SPRITE_X_POS_PX        = 0
       MODE5_SPRITE_Y_POS_PX        = 2
       MODE5_SPRITE_XRAM_SPRITE_PTR = 4
       MODE5_SPRITE_PALETTE_PTR     = 6
       MODE5_SPRITE_SIZE            = 8
+
+      MODE5_CSPRITE_X_POS_PX        = 0
+      MODE5_CSPRITE_Y_POS_PX        = 2
+      MODE5_CSPRITE_XRAM_SPRITE_PTR = 4
+      MODE5_CSPRITE_PALETTE_PTR     = 6
+      MODE5_CSPRITE_WIDTH_HEIGHT    = 8
+      MODE5_CSPRITE_OPTIONS         = 9
+      MODE5_CSPRITE_SIZE            = 10
 
 
 Control Channel $F
