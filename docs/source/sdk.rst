@@ -182,6 +182,25 @@ other file. They're read-only, and you can have several open at once.
 Some names are special. The ``help`` asset is what an :doc:`pico`
 monitor's HELP and INFO commands display.
 
+Writing the address as ``RAM(...)`` or ``XRAM(...)`` checks that it is in
+range, and ``XRAM()`` sets the bit that indicates XRAM. A name from your
+:ref:`XRAM layout <sdk-xram-memory-map>` is an offset, the same number your
+program uses, so wrap it in ``XRAM()`` to load an asset there.
+
+.. code-block:: cmake
+  :force:
+
+  rp6502_asset(hello XRAM(XRAM_BITMAP_DATA) img/intro.bin)
+
+The only difference between the following two examples is that RAM()
+validates the address.
+
+.. code-block:: cmake
+  :force:
+
+  rp6502_asset(hello 0x00f0 bin/f0.bin)
+  rp6502_asset(hello RAM(0x00f0) bin/f0.bin)
+
 Every ``rp6502_asset()`` has to come before ``rp6502_executable()``.
 
 
@@ -393,23 +412,35 @@ changes.
   rp6502_xram(<header> <regex> [<unaligned_regex>])
 
 .. code-block:: cmake
+  :force:
 
   rp6502_xram(src/xram.h "XRAM_.*")
-  rp6502_asset(hello XRAM_BITMAP_DATA img/logo.bin)
+  rp6502_asset(hello XRAM(XRAM_BITMAP_DATA) img/logo.bin)
 
 The regular expression chooses which names to take and has to match a whole
-name. Only ``#define`` lines whose value starts with ``offsetof`` are read,
-so the rest of the header is yours. Call ``rp6502_xram()`` before
-the ``rp6502_asset()`` calls that use
-its names. Each name is an ordinary CMake variable too, so
-``${XRAM_BITMAP_DATA}`` works anywhere else you need it.
+name. A ``#define`` of any form is read, so an address built from another
+address comes through with the rest.
+
+.. code-block:: C
+
+  #define XRAM_TILES offsetof(xram_layout_t, tiles)
+  #define XRAM_TILES_2 (XRAM_TILES + 64)
+
+The rest of the header is yours. A define that is commented out, one inside
+an ``#if`` the preprocessor does not take, one with no value such as an
+include guard, and a function-like macro are all left alone. Each name holds the offset the header computes, which is the number
+your program uses, and is why ``rp6502_asset()`` is given it inside
+``XRAM()``. Each name is an ordinary CMake variable too, so
+``${XRAM_BITMAP_DATA}`` works anywhere else you need it. Call
+``rp6502_xram()`` before ``rp6502_asset()`` and ``rp6502_executable()``.
 
 Editing the header configures your project again, so these addresses can
-never go stale. A layout too big for the 64K of XRAM stops the build.
+never go stale. A header that will not compile leaves the addresses at zero
+and is reported by the build rather than stopping the configure, so your
+project stays configured while you fix it.
 
 ``rp6502_xram()`` reads C only. For an assembly project, pass
-``rp6502_asset()`` the address as a number, such as ``0x10000`` plus the
-offset, or set a CMake variable to it.
+``rp6502_asset()`` the address as a number, or set a CMake variable to it.
 
 Alignment
 ---------
@@ -417,17 +448,26 @@ Alignment
 Neither compiler pads a structure, so a member starts wherever the members
 before it end. Mode configurations, palettes, and the PSG are read in 16-bit
 values, so they need an even address. Every address is checked, and an odd
-one stops the build.
+one stops the build. The check is made while the project builds, by a
+generated program of assertions your compiler reports against the line in
+the header, so the define is highlighted where you wrote it.
 
 .. code-block:: text
 
-  xram.h: XRAM_BITMAP_CONFIG is unaligned at $9A1D. To allow, use the
-  [<unaligned_regex>] in rp6502_xram.
+  src/xram.h:34: error: static_assert failed 'XRAM_BITMAP_CONFIG is
+  unaligned. To allow, use the [<unaligned_regex>] in rp6502_xram.'
 
 Pixel data, fonts, tiles, sprite images, and the keyboard, mouse, gamepad
 and tablet blocks work at any address, so the check on those is advice
 rather than a hardware rule. Follow it anyway. Some hosts are faster for
-it.
+it. The second regular expression names the addresses to leave unchecked.
+
+.. code-block:: cmake
+
+  rp6502_xram(src/xram.h "XRAM_.*" "XRAM_.*_DATA")
+
+A layout grown past the 64K of XRAM stops the build as well, and so does an
+address that overflows 16 bits.
 
 The 64 bytes of the PSG must also stay within one page, and the OPL2
 registers must start on a page. These are the only two things not checked,
