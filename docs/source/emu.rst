@@ -87,6 +87,8 @@ Start the emulator with a ROM, or drag one onto the window.
   rp6502-emu game.rp6502
 
 
+.. _emu-web-builds:
+
 Web Builds
 ==========
 
@@ -305,6 +307,8 @@ returns 0 bytes.
   rp6502-emu --stdin game.rp6502           # a window, and the terminal too
 
 
+.. _emu-debugging:
+
 Debugging
 =========
 
@@ -349,6 +353,8 @@ disassembly, execution history, breakpoints, a stopwatch, memory editors
 for RAM and XRAM and XSTACK, a memory heatmap, and the linker's segments.
 The Options menu sets window and UI scale and the theme, and it shows the
 loaded ROM's own help.
+
+.. _emu-dap:
 
 The Debug Adapter Protocol
 --------------------------

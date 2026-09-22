@@ -1419,18 +1419,18 @@ are measured on the FPGA.
      - 16-bit
      - Affine
    * - Once per row
-     - 10
-     - 10
-     - 10
-     - 10
+     - 9
+     - 9
+     - 9
+     - 9
    * - Each sprite in the list, on the row or not
      - 2
      - 2½
      - 2
      - 5
    * - Each sprite on the row, before its first pixel
-     - 4
-     - 4
+     - 3
+     - 3
      - 3
      - 4
    * - Each pixel drawn
@@ -1444,6 +1444,10 @@ are measured on the FPGA.
      -
      -
 
+The once-per-row cost is for sprites in one plane. Each further plane
+with sprites on the row adds 8 clocks, and each plane without sprites that
+comes before one with sprites adds 2.
+
 Paletted, custom and 16-bit sprites are drawn two pixels per clock.
 Affine sprites are drawn one texel per clock, where a texel is a pixel of
 the source image. The texels along a rotated row are scattered across the
@@ -1451,8 +1455,8 @@ image, and a texel that straddles two words takes two clocks.
 
 For example, a 16x16 sprite in 16-bit color costs 13 clocks on each row
 it covers: 2 for its list entry, 3 before its first pixel, and 8 for 16
-pixels at half a clock each. After the 10-clock overhead, 1,590 clocks
-remain at 640 wide, room for 122 of these sprites on one row, and 3,190
+pixels at half a clock each. After the 9-clock overhead, 1,591 clocks
+remain at 640 wide, room for 122 of these sprites on one row, and 3,191
 remain at 320 wide, room for 245.
 
 The next table applies the same calculation to every sprite type, with
@@ -1473,17 +1477,17 @@ number far more.
 +-----------------------------------+-----------+-----------+-----------+-----------+
 | 16-bit, 32x32                     | 151       | 75        | 151       | 75        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, up to 16 colors, 8x8    | 316       | 156       | 93        | 46        |
+| Paletted, up to 16 colors, 8x8    | 351       | 174       | 96        | 48        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, up to 16 colors, 16x16  | 225       | 111       | 83        | 40        |
+| Paletted, up to 16 colors, 16x16  | 243       | 120       | 86        | 43        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, up to 16 colors, 32x32  | 143       | 70        | 68        | 34        |
+| Paletted, up to 16 colors, 32x32  | 150       | 74        | 70        | 35        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, 256 colors, 8x8         | 283       | 123       | 93        | 46        |
+| Paletted, 256 colors, 8x8         | 311       | 134       | 96        | 48        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, 256 colors, 16x16       | 201       | 86        | 51        | 25        |
+| Paletted, 256 colors, 16x16       | 215       | 92        | 52        | 26        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, 256 colors, 32x32       | 127       | 55        | 26        | 12        |
+| Paletted, 256 colors, 32x32       | 133       | 57        | 27        | 13        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
 | Affine, 8x8                       | 145       | 72        | 145       | 72        |
 +-----------------------------------+-----------+-----------+-----------+-----------+
