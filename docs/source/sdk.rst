@@ -626,11 +626,18 @@ A ROM file begins with a shebang line, followed by any number of assets.
 Text lines end with ``\r``, ``\n``, or both, and numbers may be written
 in decimal (255), C-style hex (0xFF), or MOS-style hex ($FF).
 
-**Shebang** — first line of every ROM file:
+**Shebang** — first line of every ROM file. The tools write this one:
 
 .. code-block:: text
 
   #!RP6502
+
+Any shebang naming ``rp6502`` is accepted, in any case, so a ROM can name
+the program that runs it and be marked executable:
+
+.. code-block:: text
+
+  #!/usr/bin/env rp6502-emu
 
 **Null-named asset** — a group of memory chunks loaded directly into RAM:
 
