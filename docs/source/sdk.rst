@@ -85,17 +85,17 @@ Code's Debug Console. The session stays open after the program ends so
 the screen can be read. Stop it with Shift+F5. The emulator window may
 open behind VS Code.
 
-.. image:: _static/sdk/first-run-light.*
+.. image:: _static/sdk/first-run-light.png
    :class: only-light
    :width: 700
-   :alt: VS Code with Hello, world! in the Debug Console, beside the
-         emulator window showing the same text.
+   :alt: The emulator window showing Hello, world!, in front of VS Code
+         with its debug toolbar.
 
-.. image:: _static/sdk/first-run-dark.*
+.. image:: _static/sdk/first-run-dark.png
    :class: only-dark
    :width: 700
-   :alt: VS Code with Hello, world! in the Debug Console, beside the
-         emulator window showing the same text.
+   :alt: The emulator window showing Hello, world!, in front of VS Code
+         with its debug toolbar.
 
 The project now looks like this:
 
@@ -151,13 +151,13 @@ Running and Debugging
 "Start Debugging" (F5) runs one of two launch configurations. Choose
 which in the Run and Debug side panel.
 
-.. image:: _static/sdk/configs-light.*
+.. image:: _static/sdk/configs-light.png
    :class: only-light
    :width: 400
    :alt: The Run and Debug configuration list with RP6502 (Emulator) and
          RP6502 (Hardware).
 
-.. image:: _static/sdk/configs-dark.*
+.. image:: _static/sdk/configs-dark.png
    :class: only-dark
    :width: 400
    :alt: The Run and Debug configuration list with RP6502 (Emulator) and
@@ -171,13 +171,13 @@ arrays expand. With cc65, variables have no types, and each variable's
 size comes from where its symbol sits in memory.
 :ref:`Debugging <emu-debugging>` in the emulator's datasheet covers both.
 
-.. image:: _static/sdk/breakpoint-light.*
+.. image:: _static/sdk/breakpoint-light.png
    :class: only-light
    :width: 700
    :alt: VS Code stopped at a breakpoint in main.c, with the Variables and
          Call Stack panels.
 
-.. image:: _static/sdk/breakpoint-dark.*
+.. image:: _static/sdk/breakpoint-dark.png
    :class: only-dark
    :width: 700
    :alt: VS Code stopped at a breakpoint in main.c, with the Variables and
@@ -203,13 +203,13 @@ USB drive without running it. "RP6502: console terminal" opens a
 terminal on the console. Both send a break first, which stops the running
 program.
 
-.. image:: _static/sdk/tasks-light.*
+.. image:: _static/sdk/tasks-light.png
    :class: only-light
    :width: 600
    :alt: The Run Task list filtered to RP6502: update tools, upload ROM and
          console terminal.
 
-.. image:: _static/sdk/tasks-dark.*
+.. image:: _static/sdk/tasks-dark.png
    :class: only-dark
    :width: 600
    :alt: The Run Task list filtered to RP6502: update tools, upload ROM and
@@ -813,15 +813,15 @@ CMake side panel.
   rp6502_executable(setup DATA default RESET default)
   target_sources(setup PRIVATE src/setup.c)
 
-.. image:: _static/sdk/launch-target-light.*
+.. image:: _static/sdk/launch-target-light.png
    :class: only-light
-   :width: 400
+   :width: 560
    :alt: The CMake side panel with the Launch target list open, showing
          the project's ROMs.
 
-.. image:: _static/sdk/launch-target-dark.*
+.. image:: _static/sdk/launch-target-dark.png
    :class: only-dark
-   :width: 400
+   :width: 560
    :alt: The CMake side panel with the Launch target list open, showing
          the project's ROMs.
 
