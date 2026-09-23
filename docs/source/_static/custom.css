@@ -20,3 +20,28 @@ dl.c.function > dt.sig > span.pre {
     margin-right: 0.2em;
     vertical-align: 0.1em;
 }
+
+/* The Links toctree in index.rst carries only text, so each link is given
+   the footer's icon. The icon is a mask over the link's own colour, which
+   follows the light and dark themes. */
+.sidebar-tree a.reference.external[href="https://github.com/picocomputer"]::before,
+.sidebar-tree a.reference.external[href="https://discord.gg/TC6X8kTr6d"]::before,
+.sidebar-tree a.reference.external[href="https://www.youtube.com/@rumbledethumps"]::before {
+    content: "";
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    margin-right: 0.5em;
+    vertical-align: -0.125em;
+    background-color: currentColor;
+    mask: no-repeat center / contain;
+}
+.sidebar-tree a.reference.external[href="https://github.com/picocomputer"]::before {
+    mask-image: url("icons/github.svg");
+}
+.sidebar-tree a.reference.external[href="https://discord.gg/TC6X8kTr6d"]::before {
+    mask-image: url("icons/discord.svg");
+}
+.sidebar-tree a.reference.external[href="https://www.youtube.com/@rumbledethumps"]::before {
+    mask-image: url("icons/youtube.svg");
+}

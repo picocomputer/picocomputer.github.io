@@ -19,6 +19,14 @@
    RP6502-TERM <term>
    RP6502-OS <os>
 
+.. toctree::
+   :hidden:
+   :caption: Links
+
+   GitHub <https://github.com/picocomputer>
+   Discord <https://discord.gg/TC6X8kTr6d>
+   YouTube <https://www.youtube.com/@rumbledethumps>
+
 ==================
 Picocomputer 6502
 ==================
