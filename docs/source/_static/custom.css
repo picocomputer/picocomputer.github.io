@@ -78,3 +78,27 @@ dl.c.function > dt.sig > span.pre {
 .showcase a:hover {
     text-decoration-color: #878787;
 }
+
+/* A long example collapses to its first 20 lines, from custom.js. The copy
+   button still copies all of it. */
+.highlight.collapsed pre {
+    max-height: 20lh;
+    overflow-y: hidden;
+    mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+.highlight.collapsed button.expand {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--color-background-border);
+    border-radius: 0.25rem;
+    background: var(--color-background-secondary);
+    color: var(--color-link);
+    font-size: var(--font-size--small);
+    cursor: pointer;
+}
+.highlight.collapsed button.expand:hover {
+    border-color: var(--color-foreground-border);
+}

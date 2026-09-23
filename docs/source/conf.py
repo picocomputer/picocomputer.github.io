@@ -41,6 +41,7 @@ def icon(name):
         return file.read().strip()
 
 html_css_files = ['custom.css']
+html_js_files = ['custom.js']
 html_theme_options = {
     # 'announcement': '',
     'source_repository': 'https://github.com/picocomputer/picocomputer.github.io/',
