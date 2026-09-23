@@ -138,9 +138,9 @@ Windows, close the emulator before updating.
 
 When ``tools/`` has no emulator, the next configure downloads one, so a
 fresh clone needs no extra step. If the release has no emulator for your
-system, the configure lists the missing build in
-``tools/rp6502-emu.unsupported``. Later configures skip that build until
-the next update. Build the emulator from the `rp6502 repository
+system, the configure writes ``tools/rp6502-emu.unsupported``, which
+names the missing build. Later configures don't try again until the next
+update. Build the emulator from the `rp6502 repository
 <https://github.com/picocomputer/rp6502>`__, then set ``emulator`` in
 `The .rp6502 Settings File`_ to its path.
 
@@ -483,8 +483,8 @@ modes draw. XRAM has no fixed map. You choose an address for each
 device's data, and your program gives the device that address by setting
 its extended register (XREG) with :ref:`xreg() <os-xreg>`.
 
-The map is kept in one file, ``xram.h`` for C or ``xram.inc`` for
-assembly. It holds the structure of each device the program uses, and a
+A ROM's map is usually kept in one file, ``xram.h`` for C or ``xram.inc``
+for assembly. It holds the structure of each device the program uses, and a
 layout that places them in XRAM with a name for each address. Add a
 device's structure when the program starts using the device, and
 rearrange the layout as the data grows. The template's ``src/xram.h`` is
@@ -665,9 +665,8 @@ Only the changed part of ``xram.h`` is shown.
   #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
   #define XRAM_LOGO offsetof(xram_layout_t, logo)
 
-``rp6502_map()`` reads the address names from the header for one ROM,
-so each address is written once, in the header, and ``CMakeLists.txt``
-can never disagree with it.
+``rp6502_map()`` reads the address names from the header, so each address
+is written once, in the header, and never repeated in ``CMakeLists.txt``.
 
 .. code-block:: cmake
 
@@ -693,11 +692,10 @@ A define is skipped if it:
 
 The header can hold any other code the program uses.
 
-A name works only inside ``RAM()`` and ``XRAM()`` in ``rp6502_asset()``
-calls for the same target, so two ROMs in one ``CMakeLists.txt`` can use
-different layouts. A ROM can read more than one header, with one
-``rp6502_map()`` call for each. A name defined in two of them stops the
-configure with an error.
+A name works only inside ``RAM()`` and ``XRAM()``, in ``rp6502_asset()``
+calls for the target named in ``rp6502_map()``. To read several headers
+for one target, call ``rp6502_map()`` once for each. A name that two of
+the headers define is a configure error.
 
 ``rp6502_map()`` compiles the header into a small program and runs it
 in the emulator when CMake configures. Changing the header configures the
@@ -827,8 +825,9 @@ CMake side panel.
    :alt: The CMake side panel with the Launch target list open, showing
          the project's ROMs.
 
-Each ``rp6502_map()`` names its ROM, so the two ROMs can place XRAM
-differently. A ROM is built only after its own header's checks pass.
+``rp6502_map()`` takes the target, so ``hello`` and ``setup`` can have
+different XRAM layouts. Each ROM is built only after the checks pass for
+every header mapped for it.
 
 A larger project can give each ROM a directory of its own, as the
 `examples <https://github.com/picocomputer/examples>`__ do:
