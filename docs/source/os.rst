@@ -563,8 +563,8 @@ Time
 TIME_GET
 ~~~~~~~~
 
-.. c:function:: ABI int time (time_t *timep)
-.. c:function:: lib time_t time (time_t *timep)
+.. c:function:: ABI int _time (time_t *timep)
+                lib time_t time (time_t *timep)
 
    Obtains the current time as seconds since the Unix epoch,
    1970-01-01T00:00:00Z.
@@ -861,7 +861,7 @@ WRITE_XRAM
 LSEEK
 ~~~~~
 
-.. c:function:: ABI long f_lseek (long offset, int whence, int fildes)
+.. c:function:: ABI long _lseek (long offset, int whence, int fildes)
                 lib off_t lseek (int fildes, off_t offset, int whence)
 
    Move the read/write pointer.
