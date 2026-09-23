@@ -45,3 +45,36 @@ dl.c.function > dt.sig > span.pre {
 .sidebar-tree a.reference.external[href="https://www.youtube.com/@rumbledethumps"]::before {
     mask-image: url("icons/youtube.svg");
 }
+
+/* The game on the front page, with its caption bar underneath. Both stay
+   dark in the light theme too, to sit with the game. */
+.showcase {
+    max-width: min(640px, 75vh * 4 / 3);
+    margin: 0 auto 1em;
+    border: 1px solid #303335;
+    background: #000;
+    color: #9ca0a5;
+    font-size: var(--font-size--small);
+    text-align: center;
+}
+.showcase iframe {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border: 0;
+}
+.showcase > div {
+    padding: 0.5em 1em;
+    border-top: 1px solid #303335;
+}
+.showcase p {
+    margin: 0;
+}
+.showcase a,
+.showcase a:visited {
+    color: #5ca5ff;
+    text-decoration-color: #303335;
+}
+.showcase a:hover {
+    text-decoration-color: #878787;
+}

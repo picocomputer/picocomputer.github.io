@@ -26,12 +26,14 @@
     font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   /* Click to start. Embedded in a page, this frame never sees the reader's
-     gesture, so it has to ask for one of its own. */
+     gesture, so it has to ask for one of its own. The top padding centers
+     the prompt at 81% of the height, the empty band under the ship on Star
+     Hopper's title screen. */
   #overlay {
     position: fixed; inset: 0;
     display: flex; flex-direction: column; gap: 10px;
     align-items: center; justify-content: center; text-align: center;
-    background: rgba(0, 0, 0, .82); cursor: pointer; padding: 16px;
+    background: rgba(0, 0, 0, .82); cursor: pointer; padding: 62vh 16px 0;
     font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     transition: opacity .3s ease;
   }
@@ -53,12 +55,12 @@
      *  Nothing else in this file needs changing. See README.md for steps.
      * ===================================================================== */
     var CONFIG = {
-      rom:    'raiders.rp6502',            // your program, sitting next to this file
-      title:  'Space Raiders',             // browser tab title
+      rom:    'starhopper.rp6502',         // your program, sitting next to this file
+      title:  'Star Hopper',               // browser tab title
       bg:     '000000',                    // letterbox fill, 6 hex digits (no '#')
       filter: 'sharp',                     // pixel scaling: nearest | linear | sharp
       db:      '',    // save database name; blank = the rom filename (see README)
-      persist: false, // true = saves are kept in the player's browser (see README)
+      persist: true,  // true = saves are kept in the player's browser (see README)
     };
     /* ===================== end of editable section ====================== */
 
@@ -148,7 +150,7 @@
       var base = baseName(CONFIG.rom);
       var dbname = sanitize(String(CONFIG.db || '') || CONFIG.rom);
       var persist = CONFIG.persist === true;
-      var args = ['--rom', '/' + base];
+      var args = ['--install', '/' + base];
       if (hasBg) args.push('--bgcolor', bg);
       if (hasFilter) args.push('--filter', filter);
 

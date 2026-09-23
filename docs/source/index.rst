@@ -33,18 +33,16 @@ Picocomputer 6502
 
 .. raw:: html
 
-   <iframe src="_static/emu/index.html"
-           title="Space Raiders on the Picocomputer 6502"
-           allow="gamepad; fullscreen; autoplay"
-           allowfullscreen
-           style="display: block; box-sizing: border-box;
-                  width: 100%; max-width: 640px;
-                  aspect-ratio: 4 / 3; max-height: 75vh;
-                  margin: 0 auto 1em; background: #000;
-                  border: 1px solid var(--color-background-border)"></iframe>
-
-- Arrows move. Space, up, or down fires. Gamepads work too.
-- ``1`` one player, ``2`` two players, ``p`` pause, ``r`` restart.
+   <div class="showcase">
+     <iframe src="_static/emu/index.html"
+             title="Star Hopper on the Picocomputer 6502"
+             allow="gamepad; fullscreen; autoplay"
+             allowfullscreen></iframe>
+     <div>
+       <p>WASD, arrows, or numpad to move, any other key to fire. Gamepads work too.</p>
+       <p><a href="https://jasonrowe.org/picocomputer/index.html">See more games by Dr. Jason Rowe</a></p>
+     </div>
+   </div>
 
 
 Why a Picocomputer
