@@ -284,7 +284,7 @@ template's:
   project(MY-RP6502-PROJECT C CXX ASM)
 
   add_executable(hello)
-  rp6502_xram(src/xram.h "XRAM_.*")
+  rp6502_map(hello src/xram.h "XRAM_.*")
   rp6502_asset(hello help src/help.txt)
   rp6502_executable(hello DATA default RESET default)
   target_sources(hello PRIVATE
@@ -294,16 +294,17 @@ template's:
 - ``include()`` loads the RP6502 CMake functions from ``tools/``.
 - ``add_executable(hello)`` creates the program, a CMake target named
   ``hello``.
-- ``rp6502_xram()`` reads the XRAM addresses from ``src/xram.h``. See
-  `Addresses in CMake`_.
+- ``rp6502_map()`` reads the XRAM addresses for ``hello`` from
+  ``src/xram.h``. See `Addresses in CMake`_.
 - ``rp6502_asset()`` adds an asset to the ROM. See `Adding Assets`_.
 - ``rp6502_executable()`` packages the program and its assets into
   ``hello.rp6502``, named after the target.
 - ``target_sources()`` lists the program's source files.
 
-``rp6502_xram()`` and every ``rp6502_asset()`` come before
-``rp6502_executable()``. ``target_sources()`` can go anywhere after
-``add_executable()``.
+``rp6502_map()`` and every ``rp6502_asset()`` come after
+``add_executable()`` and before ``rp6502_executable()``. ``rp6502_map()``
+also comes before any ``rp6502_asset()`` that uses its names.
+``target_sources()`` can go anywhere after ``add_executable()``.
 
 The ROM is written to the preset's build folder,
 ``build/<compiler>/<debug or release>/``, so the cc65 Debug build is
@@ -664,18 +665,18 @@ Only the changed part of ``xram.h`` is shown.
   #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
   #define XRAM_LOGO offsetof(xram_layout_t, logo)
 
-``rp6502_xram()`` reads the address names from the header into CMake, so
-each address is written once, in the header, and ``CMakeLists.txt`` can
-never disagree with it.
+``rp6502_map()`` reads the address names from the header for one ROM,
+so each address is written once, in the header, and ``CMakeLists.txt``
+can never disagree with it.
 
 .. code-block:: cmake
 
-  rp6502_xram(<header> <regex> [<unaligned_regex>])
+  rp6502_map(<target> <header> <regex> [<unaligned_regex>])
 
 .. code-block:: cmake
   :force:
 
-  rp6502_xram(src/xram.h "XRAM_.*")
+  rp6502_map(hello src/xram.h "XRAM_.*")
   rp6502_asset(hello XRAM(XRAM_LOGO) img/logo.bin)
 
 The regular expression selects which ``#define`` names to read, and must
@@ -692,21 +693,22 @@ A define is skipped if it:
 
 The header can hold any other code the program uses.
 
-``XRAM(XRAM_LOGO)`` is the checked form. Each name is also an ordinary
-CMake variable, and ``${XRAM_LOGO}`` expands to the bare number, with no
-range check and no XRAM offset. As an asset address, it loads into RAM,
-not XRAM.
+A name works only inside ``RAM()`` and ``XRAM()`` in ``rp6502_asset()``
+calls for the same target, so two ROMs in one ``CMakeLists.txt`` can use
+different layouts. A ROM can read more than one header, with one
+``rp6502_map()`` call for each. A name defined in two of them stops the
+configure with an error.
 
-``rp6502_xram()`` compiles the header into a small program and runs it
+``rp6502_map()`` compiles the header into a small program and runs it
 in the emulator when CMake configures. Changing the header configures the
 project again on the next build, so the addresses always match it. If the
-header doesn't compile, or the emulator can't run, every name is set to
-``0xFFFFFFFF``, and the build fails with the reason. ``RAM()`` and
-``XRAM()`` fail on that value, so no ROM is written from an address that
-was not read. The configure step still completes. Configure again once
-the problem is fixed.
+header doesn't compile, or the emulator can't run, the build fails with
+the reason. Every ``rp6502_asset()`` that uses one of the header's names
+fails as well, so no ROM is written from an address that was not read.
+The configure step still completes. Configure again once the problem is
+fixed.
 
-``rp6502_xram()`` reads C headers only. For an assembly project, pass
+``rp6502_map()`` reads C headers only. For an assembly project, pass
 ``rp6502_asset()`` the address as a number, or set a CMake variable to it.
 
 Alignment
@@ -721,7 +723,7 @@ and an odd one fails the build with an error on the line of its
 .. code-block:: text
 
   /home/me/hello/src/xram.h:34: error: static_assert failed 'XRAM_LOGO is
-  unaligned. To allow, use the [<unaligned_regex>] in rp6502_xram.'
+  unaligned. To allow, use the [<unaligned_regex>] in rp6502_map.'
 
 Pixel data, fonts, tiles, sprite images, and the keyboard, mouse, gamepad
 and tablet blocks work at any address. They are checked anyway, because
@@ -730,7 +732,7 @@ the check, pass a second regular expression:
 
 .. code-block:: cmake
 
-  rp6502_xram(src/xram.h "XRAM_.*" "XRAM_LOGO")
+  rp6502_map(hello src/xram.h "XRAM_.*" "XRAM_LOGO")
 
 The build also fails if the layout is larger than the 64 KB of XRAM, or
 if an address does not fit in 16 bits.
@@ -803,10 +805,12 @@ CMake side panel.
 .. code-block:: cmake
 
   add_executable(hello)
+  rp6502_map(hello src/hello.h "XRAM_.*")
   rp6502_executable(hello DATA default RESET default)
   target_sources(hello PRIVATE src/hello.c)
 
   add_executable(setup)
+  rp6502_map(setup src/setup.h "XRAM_.*")
   rp6502_asset(setup help src/setup.hlp)
   rp6502_executable(setup DATA default RESET default)
   target_sources(setup PRIVATE src/setup.c)
@@ -823,11 +827,11 @@ CMake side panel.
    :alt: The CMake side panel with the Launch target list open, showing
          the project's ROMs.
 
-``rp6502_xram()`` applies to a whole directory. It must come before the
-directory's first ``rp6502_executable()``, and no ROM in the directory is
-built until the header's checks pass. To give each ROM its own XRAM layout,
-put each ROM in a directory of its own, as the `examples
-<https://github.com/picocomputer/examples>`__ do:
+Each ``rp6502_map()`` names its ROM, so the two ROMs can place XRAM
+differently. A ROM is built only after its own header's checks pass.
+
+A larger project can give each ROM a directory of its own, as the
+`examples <https://github.com/picocomputer/examples>`__ do:
 
 .. code-block:: cmake
 
@@ -837,7 +841,7 @@ put each ROM in a directory of its own, as the `examples
 
   # src/setup/CMakeLists.txt
   add_executable(setup)
-  rp6502_xram(xram.h "XRAM_.*")
+  rp6502_map(setup xram.h "XRAM_.*")
   rp6502_asset(setup help setup.hlp)
   rp6502_executable(setup DATA default RESET default)
   target_sources(setup PRIVATE setup.c)
