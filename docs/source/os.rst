@@ -159,15 +159,20 @@ stack argument pushed. Take `LSEEK`_:
 
 .. code-block:: C
 
-   long f_lseek(long offset, int whence, int fildes)
+   ABI long f_lseek(long offset, unsigned char whence, int fildes)
 
 Here you push a 32-bit value, and — not by coincidence — it sits in the
 right position for short stacking. If the offset always fits in 16 bits,
 push two bytes instead of four.
 
-Trimmed bytes are zero-filled, so short pushes read as unsigned. The
-time operations accept seconds as 4 or 8 bytes; negative values need
-all 8.
+Signed arguments are sign-extended, so two bytes carry -32768 to 32767.
+Unsigned arguments are zero-filled.
+
+.. warning::
+
+   Size a short push by the signed range. An offset of 200 pushed as the
+   single byte 0xC8 arrives as -56, because the top bit of 0xC8 is the
+   sign. Push 0x00 and then 0xC8 to send 200.
 
 Shorter AX
 ----------
@@ -458,10 +463,12 @@ ARGV
 
       06 00 0A 00 00 00 41 42 43 00 44 45 46 00
 
-   Because this can use up to 512 bytes of RAM, you opt in by providing
-   storage for the argv data. Use static memory, or dynamically allocated
-   memory you can free afterward. You can also reject an oversized argv by
-   returning NULL.
+   Because this can use up to 512 bytes of RAM, you opt in by defining
+   ``__argv_mem()`` to provide storage for the argv data. Use static
+   memory, or dynamically allocated memory you can free afterward. You can
+   also reject an oversized argv by returning NULL. The argv data is on
+   the XSTACK while ``__argv_mem()`` runs, so ``__argv_mem()`` must not
+   make an OS call, not even through printf().
 
    .. code-block:: c
 
@@ -567,14 +574,17 @@ TIME_GET
                 lib time_t time (time_t *timep)
 
    Obtains the current time as seconds since the Unix epoch,
-   1970-01-01T00:00:00Z.
+   1970-01-01T00:00:00Z. The operation pushes the seconds to the XSTACK
+   as a 64-bit signed integer and returns 0, or -1 on error. The cc65
+   time_t has 32 bits, so the cc65 time() fails with ERANGE when the
+   seconds do not fit.
 
    :Op code: RIA_OP_TIME_GET 0x3F
    :C proto: time.h
    :returns: The current time, also stored at ``timep`` if it is not
       NULL. -1 on error.
    :a regs: return
-   :errno: EINVAL, EIO
+   :errno: EINVAL, EIO, ERANGE
 
 
 TIME_SET
@@ -583,7 +593,7 @@ TIME_SET
 .. c:function:: int time_set (long long time)
 
    Sets the clock to seconds since the Unix epoch. Supported only on
-   :doc:`pico`. All other hosts have a
+   :doc:`pico`.
 
    :Op code: RIA_OP_TIME_SET 0x3E
    :C proto: rp6502.h
@@ -599,8 +609,8 @@ GMTIME
 .. c:function:: lib struct tm *gmtime (const time_t *timep)
 
    Converts seconds since the Unix epoch to UTC broken-down time.
-   Push the seconds as a signed integer of up to 64 bits; short pushes
-   are unsigned. The operation pushes this struct tm back to the XSTACK
+   Push the seconds as a signed integer of up to 64 bits. The operation
+   pushes this struct tm back to the XSTACK
    and returns 0, or -1 on error.
 
    .. code-block:: c
@@ -710,8 +720,8 @@ OPEN
    :param oflag: Bitfield of options.
    :returns: File descriptor. -1 on error.
    :a regs: return, oflag
-   :errno: EACCES, EBADF, EBUSY, EEXIST, EINVAL, EIO, EMFILE, ENODEV, ENOENT,
-      ENOMEM, ENOSPC
+   :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM,
+      ENOSPC
    :Options:
 
       | O_RDONLY 0x01
@@ -861,7 +871,7 @@ WRITE_XRAM
 LSEEK
 ~~~~~
 
-.. c:function:: ABI long _lseek (long offset, int whence, int fildes)
+.. c:function:: ABI long f_lseek (long offset, unsigned char whence, int fildes)
                 lib off_t lseek (int fildes, off_t offset, int whence)
 
    Move the read/write pointer.
@@ -961,6 +971,7 @@ UNLINK
    :C proto: unistd.h
    :param name: File or directory name to unlink (remove).
    :returns: 0 on success. -1 on error.
+   :a regs: return
    :errno: EACCES, EBUSY, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
@@ -977,6 +988,7 @@ RENAME
    :param oldname: Existing file or directory name to rename.
    :param newname: New object name.
    :returns: 0 on success. -1 on error.
+   :a regs: return
    :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSPC,
       ENOSYS
 
@@ -1087,7 +1099,7 @@ OPENDIR
    :param name: Pathname to a directory.
    :returns: Directory descriptor. -1 on error.
    :a regs: return
-   :errno: EACCES, EBADF, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM, ENOSYS
+   :errno: EACCES, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 READDIR
@@ -1170,7 +1182,7 @@ REWINDDIR
    :C proto: rp6502.h
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
-   :a regs: dirdes
+   :a regs: return, dirdes
    :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT
 
 
@@ -1210,7 +1222,7 @@ CHDRIVE
    :param name: Drive name to change to.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EACCES, EIO, ENODEV, ENOENT
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT
 
 
 GETCWD
@@ -1269,7 +1281,8 @@ GETFREE
 
 .. c:function:: int f_getfree (const char* name, unsigned long* free, unsigned long* total)
 
-   Get the free and total space of a volume in 512-byte blocks.
+   Get the free and total space of a volume in 512-byte blocks. The
+   operation pushes both counts to the XSTACK in this layout:
 
    .. code-block:: c
 
@@ -1327,7 +1340,7 @@ RLN_PEEK
 
    Returns the current contents of the line editor buffer and the
    cursor position within it. The buffer bytes are pushed to the XSTACK.
-   Returns 0 with an empty buffer when no line read is in progress.
+   It fails with EINVAL when no line read is in progress.
 
    :Op code: RIA_OP_RLN_PEEK 0x31
    :C proto: rp6502.h
@@ -1336,7 +1349,7 @@ RLN_PEEK
       ``RIA_ATTR_RLN_LENGTH`` + 1 bytes (256 max).
    :param pos: Out-parameter set to the cursor position within the
       buffer.
-   :returns: Length of the buffer contents.
+   :returns: Length of the buffer contents. -1 on error.
    :a regs: return
    :errno: EINVAL
 
@@ -1428,9 +1441,10 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
    * - | 0x00
        | ``RIA_ATTR_ERRNO_OPT``
      - Errno mapping option. Selects which set of errno constants the OS
-       uses. Both cc65 and llvm-mos set this automatically at C runtime
-       startup; assembly programs must set it before making OS calls that
-       can fail. See `ERRNO_OPT Compiler Constants`_ for option values.
+       uses. The cc65 and llvm-mos C runtimes set it at startup whenever
+       the program links ``errno``; assembly programs must set it before
+       making OS calls that can fail. See `ERRNO_OPT Compiler Constants`_
+       for option values.
    * - | 0x01
        | ``RIA_ATTR_PHI2_KHZ``
      - CPU clock speed in kHz. Range 100–8000. Changes take effect
@@ -1445,8 +1459,8 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
        863, 864, 865, 866, 869.
    * - | 0x03
        | ``RIA_ATTR_RLN_LENGTH``
-     - Maximum input line length for the stdin line editor. 1–255,
-       default 254.
+     - Maximum input line length for the stdin line editor. 0–255,
+       default 254. With 0, only a blank line can be entered.
    * - | 0x04
        | ``RIA_ATTR_LRAND``
      - 31-bit hardware random number seeded with entropy from the RIA.
@@ -1623,10 +1637,10 @@ ERRNO_OPT Compiler Constants
 
 OS calls set ``RIA_ERRNO`` when an error occurs. Because cc65 and llvm-mos
 each define their own errno constants, the errno option selects which set
-of numeric values to use. Both compilers set it automatically in their C
-runtime, and ``errno`` in C maps directly to ``RIA_ERRNO``. Assembly
-programs must set ``RIA_ATTR_ERRNO_OPT`` themselves before any OS call that
-can fail.
+of numeric values to use. In C, ``errno`` maps directly to ``RIA_ERRNO``,
+and both C runtimes set the option at startup whenever the program links
+``errno``. Assembly programs must set ``RIA_ATTR_ERRNO_OPT`` themselves
+before any OS call that can fail.
 
 .. list-table::
    :header-rows: 1
