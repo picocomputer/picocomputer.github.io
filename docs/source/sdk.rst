@@ -40,12 +40,124 @@ with either compiler, and in each compiler's assembly syntax.
    breakpoints and stepping          USB serial or telnet
 
 
+.. _sdk-install:
+
+Installing the Tools
+====================
+
+Building Picocomputer software takes VS Code, CMake 3.21 or later,
+Python 3, git, Make or Ninja, and one or both of the 6502 compilers, cc65
+and llvm-mos. Only the compilers have to be recent. New Picocomputer
+features are often added to cc65 and llvm-mos before their next release,
+and the versions in package managers such as apt and Homebrew are too old.
+
+Each compiler is installed with one command. The command downloads the
+best build at the moment, from the upstream project or from the
+Picocomputer fork of it. Which one is used, and why, is shown on the
+`Picocomputer GitHub page <https://github.com/picocomputer>`__. The
+compiler goes in the ``.rp6502`` folder in your home folder, and its
+``bin`` folder is added to PATH, the list of folders where programs are
+looked up. Running the same command again updates the compiler, and it
+also switches between upstream and the fork when the recommendation on the
+GitHub page changes.
+
+Windows
+-------
+
+Open PowerShell and install the tools with winget:
+
+.. code-block:: powershell
+
+   winget install -e --id Git.Git
+   winget install -e --id Kitware.CMake
+   winget install -e --id Ninja-build.Ninja
+   winget install -e --id Microsoft.VisualStudioCode
+   winget install -e --id Python.PythonInstallManager
+
+Close PowerShell and open it again, so the new PATH takes effect. Then
+install Python, make Ninja the build tool, and install the compilers:
+
+.. code-block:: powershell
+
+   py install default
+   setx CMAKE_GENERATOR Ninja
+   irm https://raw.githubusercontent.com/picocomputer/.github/main/install/cc65.ps1 | iex
+   irm https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.ps1 | iex
+
+Windows has no Make, so ``CMAKE_GENERATOR`` makes Ninja the build tool of
+every CMake project that names no generator. Close every PowerShell and VS
+Code window before going on. For a project configured before this step,
+run "CMake: Delete Cache and Reconfigure" from the VS Code Command Palette.
+
+In WSL, follow the Linux steps instead.
+
+macOS
+-----
+
+Open Terminal and install Apple's command line tools, which include git,
+Make and Python 3:
+
+.. code-block:: sh
+
+   xcode-select --install
+
+.. SCREENSHOT: _static/sdk/macos-clt-light.png and macos-clt-dark.png,
+   the dialog that xcode-select opens, with its Install button.
+
+Download the macOS universal disk image of `CMake
+<https://cmake.org/download/>`__, drag CMake to Applications, and add its
+command-line tools:
+
+.. code-block:: sh
+
+   sudo "/Applications/CMake.app/Contents/bin/cmake-gui" --install
+
+Download `VS Code <https://code.visualstudio.com/download>`__ and drag it
+to Applications. Then install the compilers:
+
+.. code-block:: sh
+
+   curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/cc65.sh | sh
+   curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.sh | sh
+
+Quit VS Code with Cmd+Q and open it again, because VS Code reads PATH
+only when it starts.
+
+Linux
+-----
+
+On Ubuntu and Debian, install the tools with apt. Ubuntu 22.04 and Debian
+12 and their later releases have CMake 3.21 or later.
+
+.. code-block:: sh
+
+   sudo apt install git cmake build-essential python3
+
+Download the ``.deb`` of `VS Code <https://code.visualstudio.com/download>`__,
+and install it from the folder it was saved in:
+
+.. code-block:: sh
+
+   sudo apt install ./code_*.deb
+
+Give your account access to the Picocomputer's USB serial port, and
+install the compilers:
+
+.. code-block:: sh
+
+   sudo usermod -a -G dialout $USER
+   curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/cc65.sh | sh
+   curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.sh | sh
+
+Restart the computer, so the new group and PATH take effect. Other
+distributions have the same tools under other package names. On Arch,
+the serial port group is ``uucp`` instead of ``dialout``.
+
+
 Getting Started
 ===============
 
-Install VS Code, and the compilers and other programs listed in the
-template's README. On Windows, the README also describes a ``generator``
-line to add to ``CMakePresets.json`` after step 1 and before step 3.
+Install the tools first. The steps are in `Installing the Tools`_.
 
 **1. Make a project.** On the template's GitHub page, select "Use this
 template", then "Create a new repository". GitHub creates a new repository
@@ -107,7 +219,7 @@ The project now looks like this:
    my-project/
    ├── CMakeLists.txt         the ROMs this project builds
    ├── CMakePresets.json      the four configure presets
-   ├── README.md              what to install
+   ├── README.md              requirements and updating
    ├── .vscode/               F5 configurations, tasks, extensions
    ├── src/
    │   ├── main.c             Hello, world! in C
@@ -198,25 +310,6 @@ plugged in. The copy replaces any file with the same name. The program's
 console opens in a VS Code terminal. There are no breakpoints or stepping
 on hardware. In the terminal, Ctrl-A then X exits, and Ctrl-A then B
 sends a break. A break stops the program and returns to the monitor.
-
-Two tasks in Terminal > Run Task use a Picocomputer without starting a
-debug session. "RP6502: upload ROM" copies the ROM of the launch target,
-the program selected in the Launch row of the CMake side panel, to the
-same place without running it. "RP6502: console terminal" opens a
-terminal on the console. Both send a break first, which stops the running
-program.
-
-.. image:: _static/sdk/tasks-light.png
-   :class: only-light
-   :width: 600
-   :alt: The Run Task list filtered to RP6502: update tools, upload ROM and
-         console terminal.
-
-.. image:: _static/sdk/tasks-dark.png
-   :class: only-dark
-   :width: 600
-   :alt: The Run Task list filtered to RP6502: update tools, upload ROM and
-         console terminal.
 
 
 The .rp6502 Settings File
