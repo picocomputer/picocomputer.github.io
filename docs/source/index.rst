@@ -2,28 +2,23 @@
 
 .. toctree::
    :hidden:
-   :caption: Machine
-
-   RP6502-PICO <pico>
-   RP6502-EMU <emu>
-   RP6502-FPGA <fpga>
-
-.. toctree::
-   :hidden:
-   :caption: Programming
+   :caption: Manual
 
    RP6502-SDK <sdk>
-   RP6502-PORT <port>
-
-.. toctree::
-   :hidden:
-   :caption: Reference
-
    RP6502-RIA <ria>
    RP6502-RIA-W <ria_w>
    RP6502-VGA <vga>
    RP6502-TERM <term>
    RP6502-OS <os>
+   RP6502-PORT <port>
+
+.. toctree::
+   :hidden:
+   :caption: Machine
+
+   RP6502-PICO <pico>
+   RP6502-EMU <emu>
+   RP6502-FPGA <fpga>
 
 .. toctree::
    :hidden:
@@ -114,6 +109,26 @@ The Machine
 All of it is documented on this site, down to the register.
 
 
+Read the Manual
+===============
+
+Start with the :doc:`sdk`. The datasheets after it are for the parts of
+the machine. Read the datasheet for a part when a program starts to use
+that part, and read :doc:`port` before the program is published.
+
+- :doc:`sdk`: writing software, from a new project to a running program.
+- :doc:`ria`: the register map and every device reached through it. The
+  interface adapter, in the spirit of the classic CIA, VIA, and ACIA
+  chips.
+- :doc:`ria_w`: setting up Wi-Fi, Bluetooth, telnet, and the Hayes modem.
+- :doc:`vga`: canvases, video modes, sprites, and the scanline
+  programming underneath.
+- :doc:`term`: the console, its escape sequences, and the line editor.
+- :doc:`os`: the system calls, the ABI, and the C library sitting on them.
+- :doc:`port`: writing a program that works the same on every machine,
+  from gamepads to saves.
+
+
 Get a Machine
 =============
 
@@ -138,23 +153,3 @@ to the YouTube channel and share the project on social media.
 - **Discord:** https://discord.gg/TC6X8kTr6d
 - **Wiki:** https://github.com/picocomputer/community/wiki
 - **GitHub Q&A:** https://github.com/picocomputer/community/discussions
-
-
-Read the Docs
-=============
-
-Start with the :doc:`sdk`, then :doc:`port`. The rest are datasheets for
-the parts of the machine. Read the datasheet for a part when a program
-starts to use that part.
-
-- :doc:`sdk`: writing software, from a new project to a running program.
-- :doc:`port`: writing a program that works the same on every machine,
-  from gamepads to saves.
-- :doc:`ria`: the register map and every device reached through it. The
-  interface adapter, in the spirit of the classic CIA, VIA, and ACIA
-  chips.
-- :doc:`ria_w`: setting up Wi-Fi, Bluetooth, telnet, and the Hayes modem.
-- :doc:`vga`: canvases, video modes, sprites, and the scanline
-  programming underneath.
-- :doc:`term`: the console, its escape sequences, and the line editor.
-- :doc:`os`: the system calls, the ABI, and the C library sitting on them.

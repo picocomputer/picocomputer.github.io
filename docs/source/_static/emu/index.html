@@ -59,8 +59,7 @@
       title:  'Star Hopper',               // browser tab title
       bg:     '000000',                    // letterbox fill, 6 hex digits (no '#')
       filter: 'sharp',                     // pixel scaling: nearest | linear | sharp
-      db:      '',    // save database name; blank = the rom filename (see README)
-      persist: true,  // true = saves are kept in the player's browser (see README)
+      db:     '',                          // save database name; blank = the rom filename
     };
     /* ===================== end of editable section ====================== */
 
@@ -149,7 +148,6 @@
 
       var base = baseName(CONFIG.rom);
       var dbname = sanitize(String(CONFIG.db || '') || CONFIG.rom);
-      var persist = CONFIG.persist === true;
       var args = ['--install', '/' + base];
       if (hasBg) args.push('--bgcolor', bg);
       if (hasFilter) args.push('--filter', filter);
@@ -184,42 +182,39 @@
         }],
         preRun: [function () {
           var M = Module;
-          // /db is made the cwd, so program writes land there. With
-          // persist it's IDBFS, mirrored to an IndexedDB database named by
-          // CONFIG.db — IDBFS names databases after the mountpoint, so wrap
-          // getDB to substitute ours. Without persist it's plain memory and
-          // saves vanish when the player leaves.
+          // /db is made the cwd, so program writes land there. It's IDBFS,
+          // mirrored to an IndexedDB database named by CONFIG.db — IDBFS
+          // names databases after the mountpoint, so wrap getDB to
+          // substitute ours.
           try { M.FS.mkdirTree('/db'); } catch (e) {}
-          if (persist) {
-            var I = M.IDBFS;
-            var getDB = I.getDB;
-            I.getDB = function (name, cb) {
-              return getDB(name === '/db' ? dbname : name, cb);
-            };
-            // Store keys mount-relative ('save.dat', not '/db/save.dat') so
-            // the database doesn't bake in the mountpoint. IDBFS uses one
-            // string as both VFS path and database key, so translate on the
-            // remote side only: prepend on the way out, strip on the way in.
-            var strip = function (p) { return p.slice('/db/'.length); };
-            var grs = I.getRemoteSet, lre = I.loadRemoteEntry;
-            var sre = I.storeRemoteEntry, rre = I.removeRemoteEntry;
-            I.getRemoteSet = function (mount, cb) {
-              grs(mount, function (err, remote) {
-                if (remote && remote.entries) {
-                  var entries = {};
-                  for (var k in remote.entries) entries['/db/' + k] = remote.entries[k];
-                  remote.entries = entries;
-                }
-                cb(err, remote);
-              });
-            };
-            I.loadRemoteEntry = function (store, path, cb) { return lre(store, strip(path), cb); };
-            I.storeRemoteEntry = function (store, path, entry, cb) { return sre(store, strip(path), entry, cb); };
-            I.removeRemoteEntry = function (store, path, cb) { return rre(store, strip(path), cb); };
-            M.FS.mount(M.IDBFS, {autoPersist: true}, '/db');
-            M.addRunDependency('idbfs');
-            M.FS.syncfs(true, function () { M.removeRunDependency('idbfs'); });
-          }
+          var I = M.IDBFS;
+          var getDB = I.getDB;
+          I.getDB = function (name, cb) {
+            return getDB(name === '/db' ? dbname : name, cb);
+          };
+          // Store keys mount-relative ('save.dat', not '/db/save.dat') so
+          // the database doesn't bake in the mountpoint. IDBFS uses one
+          // string as both VFS path and database key, so translate on the
+          // remote side only: prepend on the way out, strip on the way in.
+          var strip = function (p) { return p.slice('/db/'.length); };
+          var grs = I.getRemoteSet, lre = I.loadRemoteEntry;
+          var sre = I.storeRemoteEntry, rre = I.removeRemoteEntry;
+          I.getRemoteSet = function (mount, cb) {
+            grs(mount, function (err, remote) {
+              if (remote && remote.entries) {
+                var entries = {};
+                for (var k in remote.entries) entries['/db/' + k] = remote.entries[k];
+                remote.entries = entries;
+              }
+              cb(err, remote);
+            });
+          };
+          I.loadRemoteEntry = function (store, path, cb) { return lre(store, strip(path), cb); };
+          I.storeRemoteEntry = function (store, path, entry, cb) { return sre(store, strip(path), entry, cb); };
+          I.removeRemoteEntry = function (store, path, cb) { return rre(store, strip(path), cb); };
+          M.FS.mount(M.IDBFS, {autoPersist: true}, '/db');
+          M.addRunDependency('idbfs');
+          M.FS.syncfs(true, function () { M.removeRunDependency('idbfs'); });
           M.FS.chdir('/db');
           // Fetch the program into MEMFS (never written back to IndexedDB, so
           // storage only holds saves).
@@ -271,7 +266,7 @@
       // close may miss it). The guard avoids overlapping syncfs calls.
       var syncing = false;
       function flush() {
-        if (!persist || !Module.FS || syncing) return;
+        if (!Module.FS || syncing) return;
         syncing = true;
         try { Module.FS.syncfs(false, function () { syncing = false; }); }
         catch (e) { syncing = false; }

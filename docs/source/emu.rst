@@ -108,8 +108,7 @@ Everything you change lives in one block near the top of ``index.html``:
     title:  'Colossal Cave Adventure',   // browser tab title
     bg:     '000000',                    // letterbox fill, no '#'
     filter: 'sharp',                     // nearest | linear | sharp
-    db:      '',    // save database name; blank = the rom filename
-    persist: false, // true = saves are kept in the player's browser
+    db:     '',                          // save database name; blank = the rom filename
   };
 
 Neither the package nor the tester works from a ``file://`` URL. The
@@ -139,30 +138,27 @@ else at https://itch.io/games/tag-rp6502.
 Saves and browser storage
 -------------------------
 
-A program saves through ``SAVE:``, as shown in
-:ref:`Saves <port-save>`, and the page keeps those files in ``/saves``.
-With ``persist: true``, ``/saves`` is stored in an IndexedDB database in
-the player's browser, which is how players keep saved games and high
-scores. Without it, saves last until the player leaves the page and
-nothing touches browser storage at all.
+A program saves through ``SAVE:``, as shown in :ref:`Saves <port-save>`,
+and the page keeps those files in ``/saves``, which is stored in an
+IndexedDB database in the player's browser. That is how players keep
+saved games and high scores.
 
 The ROM is written to ``/roms``, so argv[0] is ``FS:/roms/`` plus the
 file name from ``rom``. The working directory starts at the root, ``/``,
 and the page never changes it. Everything outside ``/saves`` is memory
 that is gone when the page closes.
 
-With ``persist: true``, closing a file after writing to it queues a save
-of ``/saves`` to IndexedDB, which finishes a moment later, and syncfs
-returns only once that save has finished. A save still queued when the
-player closes the page can be lost, so a program calls syncfs before it
-closes a file it must not lose.
+Closing a file after writing to it queues a save of ``/saves`` to
+IndexedDB, which finishes a moment later, and syncfs returns only once
+that save has finished. A save still queued when the player closes the
+page can be lost, so a program calls syncfs before it closes a file it
+must not lose.
 
 The database is named by ``db``, or, when ``db`` is blank, by the file
-name from ``rom``, such as ``game.rp6502``. One window at a time can use a
-database. A second window of a page with the same ``db`` shows a message
-that the game is running in another window, and it starts once the first
-window closes. This applies only with ``persist: true``, so a page that
-keeps no saves never waits. Pages with different ``db`` names always run
+name from ``rom``, such as ``game.rp6502``. One window at a time can use
+a database. A second window of a page with the same ``db`` shows a
+message that the game is running in another window, and it starts once
+the first window closes. Pages with different ``db`` names always run
 side by side.
 
 itch.io serves every HTML game from one shared origin, and IndexedDB is

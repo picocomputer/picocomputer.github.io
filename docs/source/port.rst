@@ -420,11 +420,9 @@ machine:
   to reach for and remove a USB drive.
 - On Linux, macOS and Windows, written data survives a crash of the
   emulator, and syncfs keeps it through a crash of the whole computer.
-- In a browser page that keeps saves, close queues a save to the
-  browser's storage, and syncfs waits until the save is stored. In a page
-  that does not keep them, saves last only until the player leaves the
-  page. Which kind a page is, and why a game runs in only one window at a
-  time, is covered in :ref:`Saves and browser storage
+- In a browser, close queues a save to the browser's storage, and syncfs
+  waits until the save is stored. Why a game runs in only one window at a
+  time is covered in :ref:`Saves and browser storage
   <emu-browser-storage>`.
 - In RetroArch, a save is as durable as on the system RetroArch runs on.
 - On the Pocket, a successful syncfs does not mean the data is on the
@@ -534,6 +532,6 @@ error for a full card.
    * - Durability limit
      - unplugging a drive before close or syncfs loses data
      - a crash of the computer before syncfs loses data
-     - saves kept: close queues the save, syncfs waits for it
+     - close queues the save, syncfs waits for it
      - the Pocket sends no reply once data is written, so syncfs cannot
        wait for it
