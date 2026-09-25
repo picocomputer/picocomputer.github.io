@@ -14,7 +14,8 @@ A ROM runs unchanged on every Picocomputer: an :doc:`pico`, the
 sound are the same on all of them. Gamepads and filesystems vary, because
 they come from the hardware and the operating system under each machine.
 How a program handles both so that it works the same way everywhere is
-covered below, and what still differs is listed in a table at the end.
+covered below, and the filesystem differences that remain are listed in a
+table at the end.
 
 
 .. _port-gamepads:
@@ -22,58 +23,67 @@ covered below, and what still differs is listed in a table at the end.
 Gamepads
 ========
 
-Every gamepad arrives in the same report, laid out in
-:ref:`Gamepads <ria-gamepads>` in the RIA datasheet. The layout of that
-report comes from nearly fifty years of game controllers.
+The RIA reports every gamepad in the same layout, described in
+:ref:`Gamepads <ria-gamepads>` in the RIA datasheet. The report has a bit
+for each of fifteen buttons, in a fixed order: A, B, C, X, Y, Z, L1, R1,
+L2, R2, Select, Start, Home, L3 and R3. That order is the DInput layout,
+named after a mode of many USB gamepads, and how it came about explains
+why the report has C and Z when most gamepads do not.
 
-The Atari CX40 joystick of 1978, sold with the Atari 2600, has one stick
-and one button. The stick is digital: it reports which of eight
-directions it is pushed, not how far. The controller of Nintendo's
-Famicom of 1983, sold in North America as the NES from 1985, has a d-pad
-in place of the stick, two buttons, B and A, and Select and Start. The
-controller of the Sega Mega Drive of 1988, the Genesis in North America,
-has three buttons, A, B and C, and the six-button pad of 1993 adds X, Y
-and Z. Those are the C and Z of the RIA report.
+The Sega Genesis controller of 1989 has three face buttons, A, B and C,
+and Sega's six-button pad of 1993 adds a second row, X, Y and Z. The Sega
+Saturn pad of 1994 keeps all six and adds L and R shoulder buttons. Many
+PC gamepads that followed, such as Microsoft's SideWinder Game Pad of
+1996, have the same six face buttons and two shoulder buttons.
 
-The controller of the Super Famicom of 1990, sold in North America as the
-SNES from 1991, has four face buttons in a diamond, with A on the right, B
-at the bottom, X at the top and Y on the left, and L and R shoulder
-buttons. This is type 2, Eastern BA, in the RIA report. The controller of
-the Sony PlayStation of 1994 has shapes on its face buttons, type 3 in the
-RIA report, and four shoulder buttons, L1, L2, R1 and R2. The Nintendo 64
-controller of 1996 has an analog stick, which reports how far it is
-pushed as well as which way. Sony's DualShock of 1997 has two analog
-sticks, and each stick also clicks as a button, L3 and R3.
+Since 2000, Linux has had a name for each button of a generic USB gamepad,
+in order: the first button is A, then B, C, X, Y and Z, as on those pads,
+then two pairs of shoulder buttons, Select, Start and Mode. Two names
+added in 2001 follow Mode, for the stick clicks of Sony's DualShock.
+Android has used the same names in the same order since 2011. Many USB
+gamepads have two modes: XInput, in which the gamepad works as an Xbox 360
+controller, and DInput, named after DirectInput in Windows, in which it
+works as a generic USB gamepad. In DInput mode, some gamepads, such as
+those from 8BitDo, report their buttons in the Linux order. That is the
+order of the RIA report, with Mode as Home and the stick clicks as L3 and
+R3.
 
-The controller of Microsoft's Xbox, from 2001, has A at the bottom and B
-on the right, with X on the left and Y at the top. This is type 1,
-Western AB, in the RIA report. The Xbox 360 controller of 2005 has two
-shoulder buttons over two analog triggers and a Guide button in the
-middle, and most gamepads made for computers since then follow its
-layout.
+Nearly every gamepad today has four face buttons, like the A, B, X and Y
+of the Xbox 360 controller of 2005. C and Z never became a standard, and
+Sega itself left them off its Dreamcast pad in 1998. A four-button gamepad
+leaves the C and Z bits empty or reports other buttons there, such as rear
+paddles, and even the six-button USB pad made for Sega's Mega Drive Mini
+reports its C and Z buttons in other bits. Six-button support takes a
+mapping for every model, so it is left out of the RP6502. C and Z stay in
+the report because of the DInput history, and for programs that let
+players map buttons themselves.
 
-The result is the RIA report: a d-pad, two analog sticks that click as L3
-and R3, four face buttons, C and Z, L1 and R1, the L2 and R2 triggers,
-Select, Start and Home, which is the Guide or PS button.
+The four face buttons vary only in labeling — XY/AB, YX/BA, or
+Square/Triangle/Cross/Circle. Each face button reports in the place of its
+letter, wherever it sits on the gamepad, and Cross, Circle, Square and
+Triangle report as A, B, X and Y. The labeling rarely matters to a game
+until it prints a button's name, or the buttons stand in for directions.
+For those, the type bits of the DPAD register give the labeling of gamepad
+models with a known layout, such as Xbox, Nintendo and PlayStation pads.
+Many gamepads report type 0, unknown, including the pads on an Analogue
+Pocket dock and most generic USB gamepads. For a gamepad of type 0, a game
+can print which gamepad it was made for, or have a setting that picks Xbox
+or Nintendo labels.
 
-Modern gamepads have all converged on this layout, and their face buttons
-vary only in labeling — XY/AB, YX/BA, or Square/Triangle/Cross/Circle.
-Each button reports in the same place whatever it is called, so that
-rarely matters to a game until it prints a button's name, or the buttons
-stand in for directions. For those, the type bits of the DPAD register
-give the labeling of gamepad models with a known layout, such as Xbox,
-Nintendo and PlayStation pads. Many gamepads report type 0, unknown,
-including the pads on an Analogue Pocket dock and most generic USB
-gamepads. You're free to do your own thing, of course — ask players to
-use a specific gamepad, or offer an "AB or BA" option.
+Home is the Guide button on an Xbox gamepad and the PS button on a
+PlayStation one, and a portable game does not use it. Steam, Windows and
+macOS can open a menu when Home is pressed, and nothing in the report
+shows when that happens. In RetroArch and on the Pocket, the Home bit is
+never set.
 
-A game that uses one stick and one or two buttons works with every
+A game that uses one stick and one or two buttons works with nearly every
 gamepad when it merges the d-pad with the left stick and gives each action
-more than one face button. The low four bits of DPAD and STICKS are both
-up, down, left and right, so one OR merges them. A or X can jump and B or
-Y can fire, because each of those pairs sits side by side on every layout.
-This function reads player 1 from gamepads mapped at ``$FF00`` with
-``xreg(0, 0, 2, 0xFF00)``:
+more than one face button. The low four bits of DPAD and of STICKS are up,
+down, left and right in the same order, so a bitwise OR merges them. A
+game can map both A and X to jump and both B and Y to fire, because each
+of those pairs sits side by side on every layout. After
+``xreg(0, 0, 2, 0xFF00)``, the RIA writes the report to ``$FF00`` in
+extended RAM (XRAM), and this function reads player 1 from there:
 
 .. code-block:: C
 
@@ -94,9 +104,9 @@ This function reads player 1 from gamepads mapped at ``$FF00`` with
        fire = btn0 & 0x12;            /* B or Y */
    }
 
-The analog values are optional, because every stick and trigger also
-reports digital bits. A game that reads only the digital bits works with
-every gamepad, including those without analog sticks or triggers.
+The report has digital bits for every stick and trigger as well as their
+analog values. A game that reads only the digital bits works with every
+gamepad, including those without analog sticks or triggers.
 
 
 .. _port-filesystems:

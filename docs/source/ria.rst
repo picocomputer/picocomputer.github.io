@@ -1397,7 +1397,7 @@ Gamepads
 
 The RIA supports up to four gamepads. :doc:`pico` firmware carries drivers
 for Generic HID, XInput, and PlayStation controllers. Where the layout
-comes from, and how a game works with every gamepad, is covered in
+comes from, and how a game works with nearly every gamepad, is covered in
 :ref:`Gamepads <port-gamepads>` in RP6502-PORT.
 
 Enable and disable the RIA gamepad data by setting its extended
