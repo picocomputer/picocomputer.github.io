@@ -95,8 +95,8 @@ The Machine
 - **CPU** — WDC 65C02 and a 65C22 VIA, 0.1 to 8.0 MHz, cycle accurate on
   every host
 - **Memory** — 64 KB of RAM and 64 KB of XRAM, loaded by DMA at up to
-  800 KB/sec while the 6502 keeps running. No ROM, nothing reserved, and
-  zero page is yours
+  800 KB/sec while the 6502 keeps running. Nothing in RAM is reserved,
+  not even zero page
 - **I/O** — 32 registers, and that's all of them. A modern processor
   sits behind them running the USB, the files, and the network, so the
   6502 never has to

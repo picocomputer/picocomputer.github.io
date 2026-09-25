@@ -199,13 +199,12 @@ The monitor is documented here only by a few common commands. Its
 built-in help is extensive and always current. Type ``help`` to get
 started, then dig into deep help like ``help set phi2``.
 
-Use the ``load`` command to load ROMs in ``.rp6502`` format. These
-aren't ROMs in the traditional (obsolete) sense: a ROM here is a file
-holding a memory image that's loaded into RAM before the 6502 starts.
-Use ``install`` to put a ROM in flash; from there it can be run
-directly, or ``set boot`` will load it whenever the RIA boots. The
-:doc:`sdk` builds these files and documents the
-:ref:`ROM File Format <sdk-rom-file-format>`.
+Use the ``load`` command to load ROMs in ``.rp6502`` format. A ROM
+describes the machine as it comes out of reset, and it can also hold
+large amounts of code, video and audio. Use ``install`` to put a ROM in
+flash; from there it can be run directly, or ``set boot`` will load it
+whenever the RIA boots. These files are built with the :doc:`sdk`, where
+the :ref:`ROM File Format <sdk-rom-file-format>` is documented.
 
 A few monitor commands, such as ``upload`` and ``binary``, exist for
 developer tools rather than for people. See :doc:`sdk` for what drives

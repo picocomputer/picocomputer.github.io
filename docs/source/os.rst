@@ -30,10 +30,10 @@ filesystems.
 Memory Map
 ==========
 
-There is no ROM, and nothing in zero page is used or reserved. The
-Picocomputer starts every project as a clean slate. VGA, audio, storage,
-keyboards, mice, gamepads, the RTC, and networking are all reached
-through just the 32 registers of the RIA.
+Everything below $FF00 is RAM, and nothing in zero page is used or
+reserved. The Picocomputer starts every project as a clean slate. VGA,
+audio, storage, keyboards, mice, gamepads, the RTC, and networking are
+all reached through just the 32 registers of the RIA.
 
 .. list-table::
    :widths: 25 75

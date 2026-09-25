@@ -9,11 +9,15 @@ Introduction
 ============
 
 Picocomputer software is distributed as a ROM: one file ending in
-``.rp6502``. Here a ROM is not read-only memory. It is a file that is
-loaded into memory before the 6502 starts, and it holds the program, the
-program's assets, and the 6502 vectors. Assets are data files packaged
-with the program, such as graphics or help text. The vectors are the
-addresses the 6502 jumps to on reset and on an interrupt.
+``.rp6502``, such as ``game.rp6502``. A ROM describes the state of the
+machine as it comes out of reset, and that state is the same every time:
+the program and data are in memory, and the reset vector points to where
+the program begins. A single ROM can hold every piece of code, video and
+audio your game needs. It might also contain the bootloader for an
+operating system.
+
+If this sounds a lot like the cartridge ROM of a game console, or the
+BASIC ROM in your 8-bit home computer, that's not a coincidence.
 
 The SDK builds a ROM, runs it on a Picocomputer or in the emulator, and
 debugs it while it runs. A project starts as a copy of the `RP6502
