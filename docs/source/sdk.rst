@@ -13,7 +13,7 @@ Picocomputer software is distributed as a ROM: one file ending in
 machine as it comes out of reset, and that state is the same every time:
 the program and data are in memory, and the reset vector points to where
 the program begins. A single ROM can hold every piece of code, video and
-audio your game needs. It might also contain the bootloader for an
+audio your game needs. It might also contain only the bootloader for an
 operating system.
 
 If this sounds a lot like the cartridge ROM of a game console, or the
