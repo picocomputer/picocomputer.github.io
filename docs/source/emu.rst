@@ -421,7 +421,7 @@ a test that passes or fails.
 
 .. code-block:: text
 
-  rp6502-emu --mute --seed 1 --script adventure.txt adventure.rp6502
+  rp6502-emu --script adventure.txt adventure.rp6502
 
 Given ``-`` instead of a filename it reads stdin a line at a time, so a
 driver written in any language can work the machine. The machine waits
