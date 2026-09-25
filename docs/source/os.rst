@@ -1151,7 +1151,7 @@ READDIR
    :param dirent: Returned f_stat_t data.
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
-   :errno: EACCES, EBADF, EINVAL, EIO, ENOENT, ENOMEM
+   :errno: EACCES, EBADF, EINVAL, EIO, ENOENT, ENOMEM, ENOSYS
 
 
 CLOSEDIR
@@ -1167,7 +1167,7 @@ CLOSEDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
-   :errno: EBADF, EINVAL, EIO
+   :errno: EBADF, EINVAL, EIO, ENOSYS
 
 
 TELLDIR
@@ -1182,7 +1182,7 @@ TELLDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: Read position. -1 on error.
    :a regs: dirdes
-   :errno: EBADF, EINVAL
+   :errno: EBADF, EINVAL, ENOSYS
 
 
 SEEKDIR
@@ -1202,7 +1202,7 @@ SEEKDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
-   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT, ENOMEM
+   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 REWINDDIR
@@ -1217,7 +1217,7 @@ REWINDDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
-   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT
+   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT, ENOSYS
 
 
 Drives and Volumes

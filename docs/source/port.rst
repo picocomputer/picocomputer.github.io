@@ -65,10 +65,10 @@ Triangle report as A, B, X and Y. The labeling rarely matters to a game
 until it prints a button's name, or the buttons stand in for directions.
 For those, the type bits of the DPAD register give the labeling of gamepad
 models with a known layout, such as Xbox, Nintendo and PlayStation pads.
-Many gamepads report type 0, unknown, including the pads on an Analogue
-Pocket dock and most generic USB gamepads. For a gamepad of type 0, a game
-can print which gamepad it was made for, or have a setting that picks Xbox
-or Nintendo labels.
+Many gamepads report type 0, unknown, including every gamepad in
+RetroArch, the pads on an Analogue Pocket dock and most generic USB
+gamepads. For a gamepad of type 0, a game can print which gamepad it was
+made for, or have a setting that picks Xbox or Nintendo labels.
 
 Home is the Guide button on an Xbox gamepad and the PS button on a
 PlayStation one, and a portable game does not use it. Steam, Windows and
@@ -390,8 +390,20 @@ The folder for saves is fixed when a ROM starts, so a CHDIR or CHDRIVE by
 the program does not move its saves. A missing folder is created the
 first time a program creates a save, so a game that never saves leaves
 nothing behind. The Pocket cannot create folders, so its save folder is
-shipped with the core. Where the folder is on each machine is listed
-under `Compatibility`_.
+shipped with the core. The save folder on each machine is:
+
+- On an :doc:`pico`, the working directory when the ROM starts.
+- On Linux, the folder given with ``--save-dir``, else
+  ``$XDG_DATA_HOME/rp6502/``, which is ``~/.local/share/rp6502/`` by
+  default.
+- On macOS, the folder given with ``--save-dir``, else
+  ``~/Library/Application Support/io.github.picocomputer.rp6502-emu/``.
+- On Windows, the folder given with ``--save-dir``, else
+  ``Saved Games\rp6502\``.
+- In a browser, ``/saves/``.
+- In RetroArch, ``rp6502/`` in the RetroArch save folder, or the working
+  directory when the ROM starts if RetroArch has no save folder.
+- On the Pocket, ``/Saves/rp6502/common/``.
 
 .. _port-durability:
 
@@ -404,8 +416,8 @@ calls syncfs on it before close. What survives a failure differs by
 machine:
 
 - On an :doc:`pico`, close and syncfs write the data to the drive.
-  Unplugging the drive loses whatever was written after the last close or
-  syncfs.
+  The buffers aren't nearly large enough to survive the time it takes
+  to reach for and remove a USB drive.
 - On Linux, macOS and Windows, written data survives a crash of the
   emulator, and syncfs keeps it through a crash of the whole computer.
 - In a browser page that keeps saves, close queues a save to the
@@ -417,6 +429,7 @@ machine:
 - In RetroArch, a save is as durable as on the system RetroArch runs on.
 - On the Pocket, a successful syncfs does not mean the data is on the
   card, because the Pocket sends no reply once the data is written.
+  But like the :doc:`pico`, buffers are too small to be of concern.
 
 .. _port-installed-roms:
 
@@ -459,133 +472,68 @@ Compatibility
 
 Every rule above holds on every machine, apart from the Pocket
 exceptions listed in the next paragraph. The rows of the table below
-differ, because the machines differ. RetroArch runs on Linux, macOS and
-Windows, and "host OS" in its column means the column of the system it
-runs on.
+differ, because the machines differ. The Desktop column is the emulator
+on Linux, macOS and Windows. RetroArch runs on those systems too, and the
+Desktop column holds for it, except that its working directory at start
+is the working directory of RetroArch and it has no installed ROMs.
 
 On the Pocket, files are opened by path, but there are no folder
-operations and no listing. UNLINK, RENAME, OPENDIR, CHMOD, UTIME, MKDIR,
-CHDIR, GETLABEL, SETLABEL and GETFREE fail there with ENOSYS, and so does
-STAT of anything but the root. READDIR, CLOSEDIR, TELLDIR, SEEKDIR and
-REWINDDIR fail with EBADF, because no directory descriptor can exist
-there. An open fails with EACCES for the root of the card,
-``Assets/rp6502/common``, ``Saves/rp6502/common`` and the folders above
-them, and an open of any other folder is sent to the Pocket as the open
-of a file. A seek past the end that cannot extend a file fails with EIO,
-because the Pocket has no error for a full card.
+operations and no listing. STAT, UNLINK, RENAME, MKDIR, CHDIR, CHMOD,
+UTIME, GETLABEL, SETLABEL and GETFREE fail there with ENOSYS, and so do
+OPENDIR, READDIR, CLOSEDIR, TELLDIR, SEEKDIR and REWINDDIR. An open fails
+with EACCES for the root of the card, ``Assets/rp6502/common``,
+``Saves/rp6502/common`` and the folders above them, and an open of any
+other folder is sent to the Pocket as the open of a file. A seek past the
+end that cannot extend a file fails with EIO, because the Pocket has no
+error for a full card.
 
 .. list-table::
    :header-rows: 1
-   :widths: 14 16 16 14 14 12 14
+   :widths: 20 20 20 20 20
 
    * -
      - Pico
-     - Linux, macOS
-     - Windows
+     - Desktop
      - Browser
-     - RetroArch
      - Pocket
    * - Drive names
      - ``MSC0:``–``MSC9:``, or ``0:``–``9:``
+     - ``FS:``, or ``A:``–``Z:`` on Windows
      - ``FS:``
-     - ``A:``–``Z:``
-     - ``FS:``
-     - host OS
      - ``FS:``
    * - Working directory at start
      - ``MSC0:/``
      - the folder the emulator was started from
-     - the folder the emulator was started from
      - ``FS:/``
-     - the working directory of RetroArch
      - ``FS:/Assets/rp6502/common``
-   * - Working directory moved by the machine
-     - an NFC launch enters the folder that holds the ROM
-     - never
-     - never
-     - never
-     - never
-     - never
-   * - CHDIR, CHDRIVE
-     - yes
-     - yes
-     - yes
-     - yes
-     - yes
-     - CHDIR fails with ENOSYS
-   * - ``SAVE:`` folder
-     - the working directory when the ROM starts
-     - ``--save-dir``, else ``$XDG_DATA_HOME/rp6502/``
-       (``~/.local/share/rp6502/`` by default) on Linux and
-       ``~/Library/Application Support/io.github.picocomputer.rp6502-emu/``
-       on macOS
-     - ``--save-dir``, else ``Saved Games\rp6502\``
-     - ``/saves/``
-     - ``rp6502/`` in the RetroArch save folder
-     - ``/Saves/rp6502/common/``
    * - Installed ROMs
      - INSTALL, kept in flash
      - ``--install``, for one run
-     - ``--install``, for one run
      - none
      - none
-     - none
-   * - STAT, UNLINK, RENAME, MKDIR, OPENDIR, CHMOD, UTIME
-     - yes
-     - yes
-     - yes
-     - yes
-     - yes
-     - ENOSYS, except STAT of the root
    * - Volume label
      - the FAT label
-     - EACCES
-     - EACCES
      - EACCES
      - EACCES
      - ENOSYS
    * - GETFREE
      - the FAT volume
      - the host volume
-     - the host volume
      - the storage estimate of the browser
-     - host OS
      - ENOSYS
    * - Case in names
      - ignored
-     - matters on Linux, ignored on macOS
-     - ignored
+     - matters on Linux, ignored on macOS and Windows
      - matters
-     - host OS
-     - set by the card
+     - ignored
    * - Names outside the code page, in a listing or GETCWD
      - the 8.3 name, which opens the file
      - character 127, and the name cannot be opened
      - character 127, and the name cannot be opened
-     - character 127, and the name cannot be opened
-     - character 127, and the name cannot be opened
-     - no listing
+     - not applicable
    * - Durability limit
      - unplugging a drive before close or syncfs loses data
      - a crash of the computer before syncfs loses data
-     - a crash of the computer before syncfs loses data
-     - saves kept: close queues the save, syncfs waits for it, one window
-       per database; saves not kept: memory only
-     - host OS
+     - saves kept: close queues the save, syncfs waits for it
      - the Pocket sends no reply once data is written, so syncfs cannot
        wait for it
-   * - More devices
-     - ``VCP0:``–``VCP3:``, ``MIDI0:``–``MIDI3:``, ``NFC:``; on an
-       RP6502-RIA-W also ``AT:`` and ``AT0:``–``AT9:``
-     - none
-     - none
-     - none
-     - none
-     - none
-   * - Open at once
-     - 11 files and devices, at most 8 of them files; 8 directories
-     - 11 files and devices; 8 directories
-     - 11 files and devices; 8 directories
-     - 11 files and devices; 8 directories
-     - 11 files and devices; 8 directories
-     - 11 files and devices, at most 8 of them files; no directories
