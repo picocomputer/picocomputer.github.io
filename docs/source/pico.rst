@@ -227,6 +227,9 @@ Files live on a USB flash drive. Any USB flash or floppy drive is read and
 written as FAT. 1 MB of flash holds the ROMs you ``install``, and
 ``set boot`` picks one to load at power-on. ROMs do not need to be installed,
 they are intended to be loaded directly from mass storage devices.
+USB drives are named ``MSC0:`` to ``MSC9:``, or ``0:`` to ``9:`` for
+short, and installed ROMs are on the null drive, ``:``, where a ROM
+installed as NAME is ``:NAME``.
 
 Reboot is not Reset
 -------------------

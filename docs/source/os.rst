@@ -490,7 +490,9 @@ EXEC
    The virtual _exec is called by ria_execl() and ria_execv(). Note one
    difference from the execl() and execv() you may know: because RAM is
    precious, the path is supplied once, not again in argv[0]. In the
-   launched ROM, argv[0] is the filename.
+   launched ROM, argv[0] is the absolute form of the path given, with its
+   drive, or ``:NAME`` for a ROM on the null drive, as described in
+   :ref:`Installed ROMs <port-installed-roms>`.
 
    The data sent by _exec() is checked for pointer safety and sanity, but
    the path is assumed to point at a loadable ROM file. On EINVAL, the argv
@@ -703,6 +705,8 @@ STRFTIME
 Files
 -----
 
+.. _os-open:
+
 OPEN
 ~~~~
 
@@ -710,9 +714,16 @@ OPEN
 
    Create a connection between a file and a file descriptor.
 
+   The options must include O_RDONLY, O_WRONLY or O_RDWR, or the call
+   fails with EINVAL. An open of a directory fails with EACCES. A file can
+   be open on several descriptors at once. Close a descriptor that writes
+   a file before opening that file again, as described in
+   :ref:`Files and Folders <port-files>`.
+
    A path can also name a device: ``CON:`` and ``TTY:`` in :doc:`term`,
-   ``ROM:`` followed by an asset name in :doc:`sdk`, ``VCP0:``,
-   ``MIDI0:`` and ``NFC:`` in :doc:`ria`, and ``AT:`` in :doc:`ria_w`.
+   ``ROM:`` followed by an asset name in :doc:`sdk`, ``SAVE:`` followed by
+   a save name in :ref:`RP6502-PORT <port-save>`, ``VCP0:``, ``MIDI0:``
+   and ``NFC:`` in :doc:`ria`, and ``AT:`` in :doc:`ria_w`.
 
    :Op code: RIA_OP_OPEN 0x14
    :C proto: fcntl.h
@@ -735,7 +746,7 @@ OPEN
       | O_TRUNC 0x20
       |    Truncate the file length to 0 after opening.
       | O_APPEND 0x40
-      |    Read/write pointer is set to the end of the file.
+      |    Read/write pointer is set to the end of the file at open.
       | O_EXCL 0x80
       |    If O_CREAT and O_EXCL are set, fail if the file exists.
 
@@ -746,7 +757,9 @@ CLOSE
 .. c:function:: int close (int fildes)
 
    Finish pending writes and release the file descriptor. The descriptor
-   goes back to the pool that open() draws from.
+   goes back to the pool that open() draws from. What survives a failure
+   after close differs by machine, as listed in
+   :ref:`Durability <port-durability>`.
 
    :Op code: RIA_OP_CLOSE 0x15
    :C proto: fcntl.h
@@ -879,6 +892,11 @@ LSEEK
    This can also be used to obtain the current read/write position with
    ``f_lseek(0, SEEK_CUR, fd)``.
 
+   A seek past the end of a file opened for writing extends the file with
+   zeros. On a full drive, that seek fails with ENOSPC and leaves the file
+   and the position unchanged. A seek past the end of a file opened only
+   for reading stops at the end.
+
    :Op code: See table below.
    :C proto: f_lseek: rp6502.h, lseek: unistd.h
    :param offset: Distance to move the pointer.
@@ -888,7 +906,7 @@ LSEEK
       0x7FFFFFFF cannot be represented in the returned long; the seek then
       fails with errno ERANGE and the file position is left unchanged.
    :a regs: fildes
-   :errno: EBADF, EINVAL, EIO, ENOSYS, ERANGE, ESPIPE
+   :errno: EBADF, EINVAL, EIO, ENOSPC, ENOSYS, ERANGE, ESPIPE
 
    .. list-table::
       :header-rows: 1
@@ -916,7 +934,9 @@ SYNCFS
 
 .. c:function:: int syncfs (int fildes)
 
-   Finish pending writes for the file descriptor.
+   Finish pending writes for the file descriptor. The call returns once
+   the data is stored, within the limits of each machine listed in
+   :ref:`Durability <port-durability>`.
 
    :Op code: RIA_OP_SYNCFS 0x1E
    :C proto: unistd.h
@@ -951,6 +971,10 @@ STAT
          char fname[255 + 1];
       } f_stat_t;
 
+   A drive root, such as ``/`` or ``MSC0:/``, returns one fixed entry: a
+   directory named ``/``, with size 0 and zero dates. An empty path or a
+   bare drive name, such as ``MSC0:``, fails with EINVAL.
+
    :Op code: RIA_OP_STAT 0x1F
    :C proto: rp6502.h
    :param path: Pathname to a directory entry.
@@ -965,7 +989,8 @@ UNLINK
 
 .. c:function:: int unlink (const char* name)
 
-   Removes a file or directory from the volume.
+   Removes a file or directory from the volume. A read-only file fails
+   with EACCES. Close a file before removing it.
 
    :Op code: RIA_OP_UNLINK 0x1B
    :C proto: unistd.h
@@ -980,8 +1005,11 @@ RENAME
 
 .. c:function:: int rename (const char* oldname, const char* newname)
 
-   Renames or moves a file or directory. A file already at the new name
-   is replaced.
+   Renames or moves a file or directory within its drive. A new name on
+   another drive fails with ENODEV. A file already at the new name is
+   replaced when the old name is also a file, and any other entry at the
+   new name fails with EEXIST. Close a file before renaming it, and
+   before a rename replaces it.
 
    :Op code: RIA_OP_RENAME 0x1C
    :C proto: stdio.h
@@ -1111,6 +1139,12 @@ READDIR
    directory descriptor, then advances the read position. At the end of
    the directory, the call succeeds and ``fname`` is empty.
 
+   A name with a character that the code page cannot hold, or that FAT
+   refuses, shows character 127 in place of each such character. That
+   entry cannot be opened, because character 127 is refused in a path. On
+   an :doc:`pico`, a name with a character that the code page cannot hold
+   shows as its short 8.3 name instead, and that name opens the file.
+
    :Op code: RIA_OP_READDIR 0x21
    :C proto: rp6502.h
    :param dirdes: Directory descriptor from f_opendir().
@@ -1194,7 +1228,8 @@ CHDIR
 
 .. c:function:: int chdir (const char* name)
 
-   Change to a directory entry.
+   Change to a directory entry. A directory on another drive also makes
+   that drive the current drive.
 
    :Op code: RIA_OP_CHDIR 0x29
    :C proto: unistd.h
@@ -1209,13 +1244,11 @@ CHDRIVE
 
 .. c:function:: int f_chdrive (const char* name)
 
-   Change the current drive. Each machine names its own drives. An
-   :doc:`pico` mounts each attached storage volume — one USB mass-storage
-   LUN — as ``MSC0:``–``MSC9:``, with shortcuts ``0:``–``9:``. On a
-   machine with a single filesystem, that filesystem is ``FS:``. Windows
-   uses its own drive letters, ``C:`` and the rest of what is mounted.
-
-   ``0:``–``9:`` is FatFs's own notation and exists only where FatFs does.
+   Change the current drive. The name is that of a mounted drive, colon
+   included, such as ``MSC1:``, and the name of a drive that is not
+   mounted fails with ENODEV. Each drive keeps the last directory used on
+   it, and that directory becomes current again. The drive names of each
+   machine are listed in :ref:`Filesystems <port-filesystems>`.
 
    :Op code: RIA_OP_CHDRIVE 0x2A
    :C proto: rp6502.h
@@ -1225,6 +1258,8 @@ CHDRIVE
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT
 
 
+.. _os-getcwd:
+
 GETCWD
 ~~~~~~~
 
@@ -1232,9 +1267,10 @@ GETCWD
 
    Get the current working directory.
 
-   The result always includes a device name: ``MSC0:/games`` on a
-   :doc:`pico`, ``C:/Users/me`` on Windows, and ``FS:/home/me`` on hosts
-   like Linux where the filesystem has one root.
+   The result is absolute and always includes a device name, such as
+   ``MSC0:/games``. Each folder name in it shows as it does in
+   `READDIR`_. When the directory is longer than 255 bytes, the call
+   fails with ENOMEM, because no call accepts a path that long.
 
    :Op code: RIA_OP_GETCWD 0x2B
    :C proto: rp6502.h
@@ -1250,7 +1286,9 @@ GETLABEL
 
 .. c:function:: int f_getlabel (const char* path, char* label)
 
-   Get the volume label. Label must have room for (11+1) bytes.
+   Get the volume label. Label must have room for (11+1) bytes. Only an
+   :doc:`pico` has volume labels, and other machines fail with EACCES, or
+   ENOSYS on the Pocket.
 
    :Op code: RIA_OP_GETLABEL 0x2D
    :C proto: rp6502.h
@@ -1266,7 +1304,9 @@ SETLABEL
 
 .. c:function:: int f_setlabel (const char* name)
 
-   Change the volume label. Max 11 characters.
+   Change the volume label. Max 11 characters. Only an :doc:`pico` has
+   volume labels, and other machines fail with EACCES, or ENOSYS on the
+   Pocket.
 
    :Op code: RIA_OP_SETLABEL 0x2C
    :C proto: rp6502.h
@@ -1411,15 +1451,17 @@ ROM Cartridge Menu
 
 The most natural use of the launcher is a menu-driven ROM selector — much
 like slotting a physical cartridge into a retro console. The launcher ROM
-scans the storage device for ``.rp6502`` files, presents the list, and calls
+lists the ``.rp6502`` files in a folder, presents the list, and calls
 `EXEC`_ with the chosen filename. When that ROM stops, whether normally or
 with an error, the process manager re-executes the launcher and the user
-lands back on the menu.
+lands back on the menu. Listing a folder is not available on every
+machine, and the machines without it are listed under
+:ref:`Compatibility <port-compatibility>`.
 
 No manual reset is needed between runs. Each ROM is a self-contained binary
 with nothing in it about the menu. The launcher can supply context through
-argv, such as a save-file path or difficulty setting, and the ROM just calls
-`EXIT`_ when it's done.
+argv, such as the ``SAVE:`` name of a save slot or a difficulty setting,
+and the ROM just calls `EXIT`_ when it's done.
 
 
 .. _os-ria-attributes:
@@ -1550,7 +1592,7 @@ codes without their ``ERROR_`` prefix. Any other code becomes ``EIO``.
      - FR_NO_FILE, FR_NO_PATH
      - NOENT
      - ENOENT, ENOTDIR
-     - FILE_NOT_FOUND, PATH_NOT_FOUND, INVALID_NAME, NO_MORE_FILES, DIRECTORY
+     - FILE_NOT_FOUND, PATH_NOT_FOUND, NO_MORE_FILES, DIRECTORY
    * - EACCES
      - FR_DENIED, FR_WRITE_PROTECTED
      -
@@ -1560,11 +1602,11 @@ codes without their ``ERROR_`` prefix. Any other code becomes ``EIO``.
      - FR_INVALID_NAME, FR_INVALID_PARAMETER
      - NOTDIR, ISDIR, NOTEMPTY, INVAL, NAMETOOLONG
      - EINVAL, ENAMETOOLONG
-     - FILENAME_EXCED_RANGE, INVALID_PARAMETER, NEGATIVE_SEEK
+     - FILENAME_EXCED_RANGE, INVALID_NAME, INVALID_PARAMETER, NEGATIVE_SEEK
    * - ENODEV
      - FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM
      -
-     - ENODEV, ENXIO
+     - ENODEV, ENXIO, EXDEV
      - NOT_READY, BAD_UNIT, INVALID_DRIVE, NOT_SAME_DEVICE
    * - ENOSPC
      -
@@ -1626,10 +1668,8 @@ On POSIX, a read or write on a descriptor opened the wrong way fails with
 ``EBADF`` from the host and ``EACCES`` here.
 
 The Pocket sets errno itself rather than mapping a host's codes, so it has
-no column. It returns ``ENOSYS`` for fourteen calls, because its
-filesystem is a single folder: STAT, UNLINK, RENAME, OPENDIR, READDIR,
-CLOSEDIR, REWINDDIR, CHMOD, UTIME, MKDIR, CHDIR, GETLABEL, SETLABEL and
-GETFREE.
+no column. The calls it lacks are listed under
+:ref:`Compatibility <port-compatibility>`.
 
 
 ERRNO_OPT Compiler Constants

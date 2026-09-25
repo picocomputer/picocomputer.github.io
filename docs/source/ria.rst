@@ -1390,22 +1390,15 @@ pointer, and ``control`` has no effect.
       TABLET_SIZE = TABLET_CONTACT + TABLET_CONTACTS * TABLET_CONTACT_SIZE
 
 
+.. _ria-gamepads:
+
 Gamepads
 ========
 
 The RIA supports up to four gamepads. :doc:`pico` firmware carries drivers
-for Generic HID, XInput, and PlayStation controllers.
-
-Modern gamepads have all converged on the same layout: four face
-buttons, a d-pad, dual analog sticks, select, start, and four shoulders.
-The face buttons vary only in labeling — XY/AB, YX/BA, or
-Square/Triangle/Cross/Circle. Each button reports in the same place
-whatever it is called, so that rarely matters to an application until it
-prints a button's name, or the buttons stand in for directions.
-For those, the DPAD register reports which labeling the gamepad has
-when the RIA can be sure of it. You're free to do your own thing, of
-course — ask players to use a specific gamepad, or offer an "AB or BA"
-option.
+for Generic HID, XInput, and PlayStation controllers. Where the layout
+comes from, and how a game works with every gamepad, is covered in
+:ref:`Gamepads <port-gamepads>` in RP6502-PORT.
 
 Enable and disable the RIA gamepad data by setting its extended
 register. The register value is the XRAM start address of the gamepad
@@ -1455,14 +1448,10 @@ also map buttons in unusual ways. The RIA does the best it can with the
 provided metadata.
 
 Both digital and analog values are available for the sticks and the
-L2/R2 triggers, so applications can ignore the analog values entirely if
-they like.
+L2/R2 triggers.
 
 Some gamepads report only digital data; in that case, code that uses L2
 and R2 should expect analog values of just 0 or 255.
-
-Applications taking the simple "one stick and buttons" approach should
-merge the d-pad and left stick into a single input.
 
 .. list-table::
    :widths: 1 1 20
@@ -2220,10 +2209,8 @@ partial success.
 Program each card with the filename and arguments of the ROM to launch.
 If you'd load the ROM with ``LOAD /jigsaw.rp6502``, put an NDEF TEXT
 record on the card holding just ``/jigsaw.rp6502`` — no load command. A
-card may also name an installed ROM, ``:NAME``, which skips the drive
-scan below. The machine either has it or the tap fails. A leading ``/``
-is implied if you leave it off, and the current working directory is
-ignored.
+leading ``/`` is implied if you leave it off, and the current working
+directory is ignored.
 
 Paths with spaces need quotes, and you can include arguments:
 ``"/My Games/jigsaw.rp6502" cat.bmp``
@@ -2236,6 +2223,11 @@ happens.
 
 To search just one drive, name it in the text record:
 ``MSC0:/encabulator.rp6502``
+
+A card may also name an installed ROM, ``:NAME``. That ROM launches the
+same way, with the same beeps, except that no drive is scanned and the
+current drive and directory stay where they are. A name that is not
+installed gives the error buzz.
 
 NFC Device API
 --------------

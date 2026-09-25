@@ -188,18 +188,18 @@ The connection is USB, through the USB port on the Picocomputer's VGA
 module, or telnet with an :doc:`ria_w`. First set ``device``, and ``key``
 for telnet, as `The .rp6502 Settings File`_ describes.
 
-The ROM is copied to the USB drive plugged into the Picocomputer and
-loaded from there, so a USB drive must be plugged in. The copy replaces
-any file with the same name. The program's console opens in a VS Code
-terminal. There are no breakpoints or stepping on hardware. In the
-terminal, Ctrl-A then X exits, and Ctrl-A then B sends a break. A break
-stops the program and returns to the monitor, the Picocomputer's command
-prompt.
+The ROM is copied to the current drive and folder of the monitor, the
+Picocomputer's command prompt, or to the ``workdir`` folder when the
+settings file sets one. It is loaded from there, so a USB drive must be
+plugged in. The copy replaces any file with the same name. The program's
+console opens in a VS Code terminal. There are no breakpoints or stepping
+on hardware. In the terminal, Ctrl-A then X exits, and Ctrl-A then B
+sends a break. A break stops the program and returns to the monitor.
 
 Two tasks in Terminal > Run Task use a Picocomputer without starting a
 debug session. "RP6502: upload ROM" copies the ROM of the launch target,
 the program selected in the Launch row of the CMake side panel, to the
-USB drive without running it. "RP6502: console terminal" opens a
+same place without running it. "RP6502: console terminal" opens a
 terminal on the console. Both send a break first, which stops the running
 program.
 
@@ -257,8 +257,9 @@ time the tools run. To run on a Picocomputer, set ``device`` in the
      - Passkey for telnet. Leave it empty to use a serial port. See
        :ref:`Telnet Console <ria-w-telnet-console>`.
    * - ``workdir``
-     - Directory on the Picocomputer's USB drive where the ROM is
-       copied, such as ``games``.
+     - Folder at the root of the current drive of the monitor where the
+       ROM is copied, such as ``MyGame``. Leave it empty to copy the ROM to
+       the current folder of the monitor.
    * - ``args``
      - Arguments for the ROM. The program receives them only when it
        defines ``__argv_mem()``, as :ref:`ARGV <os-argv>` describes.
@@ -876,10 +877,11 @@ of a fresh clone needs a network connection.
 Running on Hardware
 -------------------
 
-``rp6502.py run`` copies the ROM to the Picocomputer's USB drive, loads
-it, and opens a terminal on the console. In the terminal, Ctrl-A then X
-exits, and Ctrl-A then B sends a break. Options go before the
-subcommand, and ``-c .rp6502`` uses the settings file that VS Code uses.
+``rp6502.py run`` copies the ROM to the current folder of the monitor, or
+to the ``workdir`` folder, loads it, and opens a terminal on the console.
+In the terminal, Ctrl-A then X exits, and Ctrl-A then B sends a break.
+Options go before the subcommand, and ``-c .rp6502`` uses the settings
+file that VS Code uses.
 
 .. code-block:: text
 

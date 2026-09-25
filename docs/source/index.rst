@@ -10,9 +10,15 @@
 
 .. toctree::
    :hidden:
-   :caption: Reference
+   :caption: Programming
 
    RP6502-SDK <sdk>
+   RP6502-PORT <port>
+
+.. toctree::
+   :hidden:
+   :caption: Reference
+
    RP6502-RIA <ria>
    RP6502-RIA-W <ria_w>
    RP6502-VGA <vga>
@@ -137,10 +143,13 @@ to the YouTube channel and share the project on social media.
 Read the Docs
 =============
 
-Start with the :doc:`sdk`. The rest are datasheets for the parts of the
-machine. Read each one when a program uses the part it describes.
+Start with the :doc:`sdk`, then :doc:`port`. The rest are datasheets for
+the parts of the machine. Read the datasheet for a part when a program
+starts to use that part.
 
 - :doc:`sdk`: writing software, from a new project to a running program.
+- :doc:`port`: writing a program that works the same on every machine,
+  from gamepads to saves.
 - :doc:`ria`: the register map and every device reached through it. The
   interface adapter, in the spirit of the classic CIA, VIA, and ACIA
   chips.
