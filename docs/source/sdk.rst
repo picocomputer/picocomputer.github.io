@@ -479,7 +479,7 @@ XRAM Memory Map
 ===============
 
 XRAM is 64 KB of memory outside the 6502's address space. A program reads
-and writes it through the :ref:`XRAM portals <ria-extended-ram>` of the
+and writes it through the :ref:`XRAM portals <ria-xram-portals>` of the
 RIA, the RP6502 Interface Adapter. XRAM holds the data for the virtual
 devices: keyboard, mouse, tablet and gamepad input, the PSG and OPL2 sound
 generators, VGA mode configurations, and the pixels, tiles and sprites the

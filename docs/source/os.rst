@@ -330,8 +330,9 @@ XREG
    over the ABI, so both prototypes are equally valid.
 
    The variadic argument is a list of ints to store in the extended
-   registers, starting at address on the given device and channel. See the
-   :doc:`ria` and :doc:`vga` docs for what each register does. Setting an
+   registers, starting at address on the given device and channel. See
+   :ref:`Extended Registers <ria-xreg>` in the :doc:`ria` datasheet and the
+   :doc:`vga` datasheet for what each register does. Setting an
    extended register can fail, which doubles as feature detection: EINVAL
    means the device sent a negative acknowledgement, EIO means a timeout
    waiting for ack/nak, and EACCES means a write to the VGA control

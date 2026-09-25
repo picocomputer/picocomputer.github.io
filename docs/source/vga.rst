@@ -82,7 +82,10 @@ structure.
 Key Registers
 -------------
 
-Setting a key register may fail, returning -1 with errno EINVAL.
+CANVAS and MODE are the key registers of channel 0. The registers above
+them, $1:0:02-$1:0:FF, hold arguments for MODE and have no effect until a
+key register is set. Setting a key register may fail, returning -1 with
+errno EINVAL.
 
 .. list-table::
    :widths: 5 5 90

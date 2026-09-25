@@ -189,10 +189,10 @@ these or the :doc:`os` stdio, but not both at once. Driving the UART
 directly while a stdio OS function is in progress is undefined behavior.
 The line runs at 115200 bps, 8-bit words, no parity, 1 stop bit.
 
-.. _ria-extended-ram:
+.. _ria-xram-portals:
 
-Extended RAM (XRAM)
--------------------
+XRAM Portals
+------------
 
 RW0 and RW1 are two portals into the same 64 KB of XRAM. A single
 portal would make moving XRAM slow, since data would have to buffer
@@ -218,27 +218,58 @@ This is a 512-byte, top-down, last-in-first-out stack used by the
 fastcall mechanism described in the :doc:`os`. Reading past the end is
 guaranteed to return zeros. Write to push, read to pull.
 
+
+Peripheral Information Exchange (PIX)
+=====================================
+
+Keyboards, mice and gamepads are connected over USB and Bluetooth, and
+the video and sound are made by modern hardware. A 6502 cannot use any of
+these directly, so each one is given a simple interface of bytes in
+extended RAM (XRAM). The RIA writes keyboard, mouse and gamepad input into
+XRAM for a program to read, and the sound generators and the video system
+read settings and data that a program writes into XRAM. This arrangement
+is called Peripheral Information Exchange (PIX). A program installs each
+device at an XRAM address by setting an extended register (XREG). Until
+then, the device is off and has no XRAM address.
+
+Extended RAM (XRAM)
+-------------------
+
+XRAM is 64 KB of memory outside the 6502's address space. A program reads
+and writes it through the `XRAM Portals`_, and every device uses the same
+64 KB.
+
+.. _ria-xreg:
+
 Extended Registers (XREG)
 -------------------------
 
-The RIA is both the host of the PIX bus (documented below) and device 0
-on it. Addresses are written $device:$channel:register, so every register
-in the table below begins with $0.
+Extended registers are how devices are installed into XRAM. A program
+picks an XRAM address for a device and writes it to the extended register
+for that device, and the device registers are then at that address.
+Setting the keyboard extended register to $1000 puts the 32 keyboard bytes
+at $1000-$101F. Setting the :ref:`MODE <vga-key-registers>` register of
+the :doc:`vga` installs a video mode whose registers are the
+configuration structure at the given address.
 
-Extended registers are how the XRAM is configured. For example, if you
-want direct access to gamepad input, you would set an extended register
-with the starting address of where you want the gamepad registers. You
-can then read that range of XRAM to see the status of the gamepads.
+Extended registers are outside the 6502's address space, so a load or a
+store cannot access one, and no extended register can be read back. A C
+program sets them with the :ref:`xreg() <os-xreg>` OS call, which is made
+through the RIA registers like every other OS call, and an assembly
+program with the ``xreg`` macro in ``rp6502.inc``. Both take the device,
+the channel, the address, and then one or more 16-bit values, which are
+set starting at that address.
 
-A C program sets an extended register with :ref:`xreg() <os-xreg>`, and an
-assembly program with the ``xreg`` macro in ``rp6502.inc``. Both take the
-device, the channel, the address, and then one or more 16-bit values.
+Each extended register holds a 16-bit value at an address written
+$device:$channel:register. Device 0 is the RIA, device 1 is the
+:doc:`vga`, and devices 2-6 are open for expansion. Each device has 16
+channels of 256 registers.
 
-Each register below maps a device into XRAM at the address written to
-it. Writing ``$FFFF`` turns the device off and always succeeds. Any other
-address that is invalid for the device also turns it off, and the call
-fails with ``EINVAL``.
-
+The extended registers of device 0 are in the table below, so every
+address begins with $0. Each one maps a device into XRAM at the address
+written to it. Writing ``$FFFF`` turns the device off and always
+succeeds. Any other address that is invalid for the device also turns it
+off, and the call fails with ``EINVAL``.
 
 .. list-table::
    :widths: 5 5 90
@@ -2330,23 +2361,21 @@ tag image is not refreshed by a write, so re-present the card before the
 next ``NFC_CMD_READ`` if you want to read back what you wrote.
 
 
-Peripheral Information Exchange (PIX)
-=====================================
+PIX Physical Layer
+==================
 
 None of this is needed to program the machine. What follows is the bus
 itself, for anyone building a device to put on it.
 
+On the :doc:`pico`, PIX is a physical bus between the RIA and the VGA.
 High-bandwidth devices like video systems need a bus of their own. PIX
 is that bus: an addressable broadcast system that any number of devices
-can listen to, narrow enough to fit the GPIO budget of a Raspberry Pi
+can receive, narrow enough to fit the GPIO budget of a Raspberry Pi
 Pico, wide enough to move data as fast as the 6502 writes.
 
-Physical layer
---------------
-
 The signals are PHI2 and PIX0-3. This is a double-data-rate bus. It
-shifts PIX0-3 left on both transitions of PHI2, so a 32-bit frame travels
-in just 4 PHI2 cycles. On an :doc:`pico` a PIO block decodes it, since
+shifts PIX0-3 left on both transitions of PHI2, so a 32-bit frame is
+sent in just 4 PHI2 cycles. A PIO block on the Pico decodes it, since
 PIO is essentially a shift register.
 
 Bit 28 (0x10000000) is the framing bit, set in every message. When the
@@ -2354,44 +2383,22 @@ bus is idle, an all-zero payload repeats on device ID 7. A receiver
 synchronizes by checking that PIX0 is high on a falling transition of
 PHI2; if it isn't, stall until the next clock cycle.
 
-Bits 31-29 (0xE0000000) carry the device ID for a message:
+Bits 31-29 (0xE0000000) hold the device ID of a message:
 
-- **Device 0** — the RIA. It's also overloaded to broadcast XRAM.
+- **Device 0** — XRAM broadcasts only. The extended registers of device
+  0 are handled inside the RIA and are never sent on the bus.
 - **Device 1** — the :doc:`vga`.
 - **Devices 2-6** — open for user expansion.
 - **Device 7** — synchronization. (0xF0000000 is hard to miss on test
   equipment.)
 
-The remaining bits address a register within a device:
+For devices 1-6, the remaining bits address an extended register:
 
 - **Bits 27-24** (0x0F000000) — the channel ID; each device can have 16
   channels.
 - **Bits 23-16** (0x00FF0000) — the register address within that channel.
 - **Bits 15-0** (0x0000FFFF) — the value to store in the register.
 
-PIX Extended RAM (XRAM)
------------------------
-
-The RIA broadcasts every change to its 64 KB of XRAM on PIX device 0.
-Bits 15-0 carry the XRAM address; bits 23-16 carry the XRAM data.
-
-Each PIX device keeps a local replica of the XRAM it uses. Typically all
-64 KB is replicated, and an XREG set by a 6502 application installs
-virtual hardware at some location in XRAM.
-
-.. _ria-xreg:
-
-PIX Extended Registers (XREG)
------------------------------
-
-PIX devices may use bits 27-0 however they like. The suggested split
-is:
-
-- **Bits 27-24** — a channel. The RIA, for example, has separate channels
-  for audio, keyboard, mice, and so on.
-- **Bits 23-16** — an extended register address.
-- **Bits 15-0** — the value to store.
-
-That gives seven PIX devices, each with 16 channels of 256 16-bit
-registers. The idea is to use these extended registers to configure
-virtual hardware and map it into extended memory.
+The RIA broadcasts every change to XRAM as a device 0 message, with the
+XRAM address in bits 15-0 and the XRAM data in bits 23-16. Each device
+keeps a local replica of the XRAM it uses, typically all 64 KB.
