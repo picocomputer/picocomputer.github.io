@@ -36,17 +36,14 @@ can be scrolled by changing its position.
 The canvas is drawn from three planes, each with two layers, a fill layer
 and a sprite layer. Plane 0 is the back and plane 2 is the front, and a
 transparent pixel shows the plane behind it. A plane's sprite layer is
-drawn over its fill layer. There's enough fill rate to blow past any
-classic 8-bit system — but push too hard and you overrun the renderer.
+drawn over its fill layer.
 
-The video system is optimized for efficiency instead of consistency across
-all hosts. The 6502 will begin to struggle long before you hit the sprite
-limit of even the slowest host. The :doc:`pico` and :doc:`fpga` support
-around 1000-1600 pixels of fill per scanline on a 640 wide canvas and
-2000-3200 pixels for 320 wide. :doc:`emu` hosts run powerful hardware with
-extreme fill rates far beyond that. Not having to emulate single-clock
-accuracy saves a significant amount of power for phones and other handheld
-devices.
+There is no limit on the number of sprites, only on how many can be drawn
+on one row of the canvas. The video system renders a whole row at a time,
+which keeps power use low on battery-powered hosts. Fill layers never run
+out of time: all three planes can be filled at any color depth on any
+canvas, on every host. `Sprite Limits`_ shows how to count sprites
+against a row's time.
 
 Video modes are programmed into a plane over a range of scanlines, which
 is what the PLANE, BEGIN and END registers do in the mode sections below.
@@ -85,7 +82,10 @@ structure.
 Key Registers
 -------------
 
-Setting a key register may fail, returning -1 with errno EINVAL.
+CANVAS and MODE are the key registers of channel 0. The registers above
+them, $1:0:02-$1:0:FF, hold arguments for MODE and have no effect until a
+key register is set. Setting a key register may fail, returning -1 with
+errno EINVAL.
 
 .. list-table::
    :widths: 5 5 90
@@ -639,6 +639,9 @@ or 16x16, dropping X trim columns off the right and Y trim rows off the
 bottom. Tiles are still stored at the full base size, so the dropped
 cells are unused. A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10.
 
+The tile array can hold fewer than 256 tiles. Cells that use a tile whose
+data would extend past the end of XRAM are drawn as transparent black.
+
 .. tab:: C
 
    .. code-block:: C
@@ -1129,7 +1132,8 @@ This is a memory-efficient sprite system that uses palettes to cut the
 bit depth. Sprites can be drawn over any fill plane, including a null
 fill plane. For example, you might put affine sprites for explosions and
 the player on one plane, 16x16 4bpp enemy sprites on a second, and 8x8 1bpp
-bullets on the third.
+bullets on the third. Custom sprites, described below, let one plane mix
+sprites of different sizes, color depths and orientations.
 
 .. list-table::
    :widths: 5 5 90
@@ -1144,8 +1148,10 @@ bullets on the third.
    * - $1:0:02
      - OPTIONS
      - | bit 0:2 - 0=1, 1=2, 2=4, or 3=8 bit color
-       | bit 3:5 - 0=8x8, 1=16x16, 2=32x32, 3=64x64, 4=128x128, 5=256x256, 6=512x512
+       | bit 3:5 - 0=8x8, 1=16x16, 2=32x32, 3=64x64, 4=128x128, 5=256x256, 6=512x512, 7=custom
        | 512x512 only supports 1-bit and 2-bit color.
+       | With 7=custom, bits 0:2 are ignored and each sprite in CONFIG sets
+         its own size and color depth.
    * - $1:0:03
      - CONFIG
      - | Address of config array in XRAM. Must be even.
@@ -1169,6 +1175,7 @@ Program the mode by setting MODE and the registers after it in one call.
 
   xreg(1, 0, 1, 5, 0x0A, xaddr, length, 1);                   // 16x16 4-bit, plane 1
   xreg_vga_mode5(MODE5_4BPP | MODE5_16X16, xaddr, length, 1); // macro shortcut
+  xreg_vga_mode5(MODE5_CUSTOM, xaddr, length, 2);             // custom sprites, plane 2
 
 Disable unused sprites by moving them off the canvas.
 
@@ -1176,6 +1183,23 @@ Sprite image data uses the same format as individual mode 2 tiles.
 ``MODE5_IMAGE`` declares the structure of one image from its color depth and
 sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
 4-bit color.
+
+With OPTIONS set to custom, CONFIG is an array of ``mode5_csprite_t``,
+and each sprite sets its own size, color depth and orientation.
+
+- ``width_height`` holds the width and height, each 4 to 64 pixels in
+  steps of 4. Build it with ``MODE5_SIZE(width, height)``.
+- ``options`` bits 0:2 hold the color depth, with the same values as
+  OPTIONS. Bit 3 is reserved and must be 0.
+- ``MODE5_HFLIP`` and ``MODE5_VFLIP`` in ``options`` mirror the image
+  left to right and top to bottom.
+- ``MODE5_HDOUBLE`` and ``MODE5_VDOUBLE`` in ``options`` draw each pixel
+  twice across or down, so a doubled 16x16 image covers 32x32 canvas
+  pixels.
+
+``MODE5_CUSTOM_IMAGE`` declares one image from its color depth, width and
+height, so ``typedef MODE5_CUSTOM_IMAGE(4, 24, 16) image_t;`` is a 24x16
+image in 4-bit color. Each row of the image starts on a byte boundary.
 
 .. tab:: C
 
@@ -1196,6 +1220,12 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
       #define MODE5_128X128 0x20
       #define MODE5_256X256 0x28
       #define MODE5_512X512 0x30
+      #define MODE5_CUSTOM 0x38
+
+      #define MODE5_HFLIP 0x10
+      #define MODE5_VFLIP 0x20
+      #define MODE5_HDOUBLE 0x40
+      #define MODE5_VDOUBLE 0x80
 
       #define MODE5_IMAGE(bpp, size)                \
           struct                                    \
@@ -1206,6 +1236,18 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
               } rows[size];                         \
           }
 
+      #define MODE5_SIZE(width, height) \
+          ((((height) / 4 - 1) << 4) | ((width) / 4 - 1))
+
+      #define MODE5_CUSTOM_IMAGE(bpp, width, height)       \
+          struct                                           \
+          {                                                \
+              struct                                       \
+              {                                            \
+                  uint8_t cols[((width) * (bpp) + 7) / 8]; \
+              } rows[height];                              \
+          }
+
       typedef struct
       {
           int16_t x_pos_px;
@@ -1213,6 +1255,16 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
           uint16_t xram_sprite_ptr;
           uint16_t palette_ptr;
       } mode5_sprite_t;
+
+      typedef struct
+      {
+          int16_t x_pos_px;
+          int16_t y_pos_px;
+          uint16_t xram_sprite_ptr;
+          uint16_t palette_ptr;
+          uint8_t width_height;
+          uint8_t options;
+      } mode5_csprite_t;
 
 .. tab:: ca65
 
@@ -1235,6 +1287,12 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
       MODE5_128X128 = $20
       MODE5_256X256 = $28
       MODE5_512X512 = $30
+      MODE5_CUSTOM  = $38
+
+      MODE5_HFLIP   = $10
+      MODE5_VFLIP   = $20
+      MODE5_HDOUBLE = $40
+      MODE5_VDOUBLE = $80
 
       .macro MODE5_IMAGE name, bpp, size
           .struct name
@@ -1245,11 +1303,33 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
           .endstruct
       .endmacro
 
+      .macro MODE5_SIZE width, height
+          .byte (((height) / 4 - 1) << 4) | ((width) / 4 - 1)
+      .endmacro
+
+      .macro MODE5_CUSTOM_IMAGE name, bpp, width, height
+          .struct name
+              rows .struct
+                  cols .res ((width) * (bpp) + 7) / 8
+              .endstruct
+              .res ((height) - 1) * .sizeof(rows)
+          .endstruct
+      .endmacro
+
       .struct mode5_sprite_t
           x_pos_px        .word
           y_pos_px        .word
           xram_sprite_ptr .word
           palette_ptr     .word
+      .endstruct
+
+      .struct mode5_csprite_t
+          x_pos_px        .word
+          y_pos_px        .word
+          xram_sprite_ptr .word
+          palette_ptr     .word
+          width_height    .byte
+          options         .byte
       .endstruct
 
 .. tab:: llvm-mc
@@ -1274,6 +1354,12 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
       MODE5_128X128 = $20
       MODE5_256X256 = $28
       MODE5_512X512 = $30
+      MODE5_CUSTOM  = $38
+
+      MODE5_HFLIP   = $10
+      MODE5_VFLIP   = $20
+      MODE5_HDOUBLE = $40
+      MODE5_VDOUBLE = $80
 
       .macro MODE5_IMAGE name, bpp, size
           \name\()_ROWS      = 0
@@ -1282,11 +1368,152 @@ sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16 image in
           \name\()_SIZE      = (\size) * \name\()_ROWS_SIZE
       .endm
 
+      .macro MODE5_SIZE width, height
+          .byte ((((\height) / 4 - 1) << 4) | ((\width) / 4 - 1))
+      .endm
+
+      .macro MODE5_CUSTOM_IMAGE name, bpp, width, height
+          \name\()_ROWS      = 0
+          \name\()_ROWS_COLS = 0
+          \name\()_ROWS_SIZE = ((\width) * (\bpp) + 7) / 8
+          \name\()_SIZE      = (\height) * \name\()_ROWS_SIZE
+      .endm
+
       MODE5_SPRITE_X_POS_PX        = 0
       MODE5_SPRITE_Y_POS_PX        = 2
       MODE5_SPRITE_XRAM_SPRITE_PTR = 4
       MODE5_SPRITE_PALETTE_PTR     = 6
       MODE5_SPRITE_SIZE            = 8
+
+      MODE5_CSPRITE_X_POS_PX        = 0
+      MODE5_CSPRITE_Y_POS_PX        = 2
+      MODE5_CSPRITE_XRAM_SPRITE_PTR = 4
+      MODE5_CSPRITE_PALETTE_PTR     = 6
+      MODE5_CSPRITE_WIDTH_HEIGHT    = 8
+      MODE5_CSPRITE_OPTIONS         = 9
+      MODE5_CSPRITE_SIZE            = 10
+
+
+Sprite Limits
+-------------
+
+The :doc:`fpga` has the least time per row of any host, so sprites that
+fit there fit everywhere. Its video logic runs at 50.4 MHz, twice the
+25.2 MHz pixel clock, and each row of the video signal is 800 pixel
+clocks long, of which 640 are visible. That gives 1,600 clocks per row.
+A 320-wide canvas is shown with every row doubled, so each canvas row gets
+3,200 clocks for half as many pixels. That extra time is the main reason
+to use a 320-wide canvas for a game.
+
+Fill layers and sprites are drawn by separate engines, each with its own
+XRAM read every clock, so fill never takes time from sprites.
+
+To check a row, add up the costs below for every sprite and compare the
+total with 1,600 clocks at 640 wide or 3,200 at 320 wide. The figures
+are measured on the FPGA.
+
+.. list-table::
+   :widths: 40 15 15 15 15
+   :header-rows: 1
+
+   * -
+     - Paletted
+     - Custom
+     - 16-bit
+     - Affine
+   * - Once per row
+     - 9
+     - 9
+     - 9
+     - 9
+   * - Each sprite in the list, on the row or not
+     - 2
+     - 2½
+     - 2
+     - 5
+   * - Each sprite on the row, before its first pixel
+     - 3
+     - 3
+     - 3
+     - 4
+   * - Each pixel drawn
+     - ½
+     - ½
+     - ½
+     - 1 to 2
+   * - Each palette cache miss (loads two colors)
+     - 3
+     - 3
+     -
+     -
+
+The once-per-row cost is for sprites in one plane. Each further plane
+with sprites on the row adds 8 clocks, and each plane without sprites that
+comes before one with sprites adds 2.
+
+Paletted, custom and 16-bit sprites are drawn two pixels per clock.
+Affine sprites are drawn one texel per clock, where a texel is a pixel of
+the source image. The texels along a rotated row are scattered across the
+image, and a texel that straddles two words takes two clocks.
+
+For example, a 16x16 sprite in 16-bit color costs 13 clocks on each row
+it covers: 2 for its list entry, 3 before its first pixel, and 8 for 16
+pixels at half a clock each. After the 9-clock overhead, 1,591 clocks
+remain at 640 wide, room for 122 of these sprites on one row, and 3,191
+remain at 320 wide, room for 245.
+
+The next table applies the same calculation to every sprite type, with
+all sprites on the same row. Sprites spread across different rows can
+number far more.
+
++-----------------------------------+-----------------------+-----------------------+
+| Maximum sprites with all of them on one row                                       |
++-----------------------------------+-----------------------+-----------------------+
+|                                   | Single palette only   | 100% palette cache    |
+|                                   |                       | misses                |
+|                                   +-----------+-----------+-----------+-----------+
+|                                   | 320 wide  | 640 wide  | 320 wide  | 640 wide  |
++===================================+===========+===========+===========+===========+
+| 16-bit, 8x8                       | 354       | 176       | 354       | 176       |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| 16-bit, 16x16                     | 245       | 122       | 245       | 122       |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| 16-bit, 32x32                     | 151       | 75        | 151       | 75        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, up to 16 colors, 8x8    | 351       | 174       | 96        | 48        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, up to 16 colors, 16x16  | 243       | 120       | 86        | 43        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, up to 16 colors, 32x32  | 150       | 74        | 70        | 35        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, 256 colors, 8x8         | 311       | 134       | 96        | 48        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, 256 colors, 16x16       | 215       | 92        | 52        | 26        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Paletted, 256 colors, 32x32       | 133       | 57        | 27        | 13        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Affine, 8x8                       | 145       | 72        | 145       | 72        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Affine, 16x16                     | 83        | 41        | 83        | 41        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+| Affine, 32x32                     | 45        | 22        | 45        | 22        |
++-----------------------------------+-----------+-----------+-----------+-----------+
+
+A custom sprite costs the same as a paletted sprite of the same size and
+color depth, plus half a clock for each entry in the list. The list is
+read four bytes at a time and a custom entry is ten bytes, so entries
+alternate between three reads and two. Doubling adds no cost of its own,
+because a doubled sprite is still drawn two canvas pixels per clock.
+
+The two halves of the table differ only in palette cache misses.
+Paletted sprites read colors through a 1 KB direct-mapped cache that is
+cleared at the start of every row. Keep all palettes together in XRAM so
+they don't collide in the cache. 16-bit and affine sprites have no
+palette and don't use the cache.
+
+These limits are for the FPGA. The :doc:`pico` and :doc:`emu` hosts have
+far more time per row, so in practice the limits are the 8 MHz 6502 and
+the 64 KB of XRAM.
 
 
 Control Channel $F

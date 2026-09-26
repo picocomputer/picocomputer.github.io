@@ -87,6 +87,8 @@ Start the emulator with a ROM, or drag one onto the window.
   rp6502-emu game.rp6502
 
 
+.. _emu-web-builds:
+
 Web Builds
 ==========
 
@@ -106,8 +108,7 @@ Everything you change lives in one block near the top of ``index.html``:
     title:  'Colossal Cave Adventure',   // browser tab title
     bg:     '000000',                    // letterbox fill, no '#'
     filter: 'sharp',                     // nearest | linear | sharp
-    db:      '',    // save database name; blank = the rom filename
-    persist: false, // true = saves are kept in the player's browser
+    db:     '',                          // save database name; blank = the rom filename
   };
 
 Neither the package nor the tester works from a ``file://`` URL. The
@@ -132,14 +133,33 @@ off.
 Please tag your project **RP6502** so it turns up alongside everything
 else at https://itch.io/games/tag-rp6502.
 
+.. _emu-browser-storage:
+
 Saves and browser storage
 -------------------------
 
-``/db`` is the working directory. With ``persist: true``, anything
-your program writes there lands in an IndexedDB database in the player's
-browser, which is how players keep saved games and high scores. Without
-it, saves last until the player leaves the page and nothing touches
-browser storage at all.
+A program saves through ``SAVE:``, as shown in :ref:`Saves <port-save>`,
+and the page keeps those files in ``/saves``, which is stored in an
+IndexedDB database in the player's browser. That is how players keep
+saved games and high scores.
+
+The ROM is written to ``/roms``, so argv[0] is ``FS:/roms/`` plus the
+file name from ``rom``. The working directory starts at the root, ``/``,
+and the page never changes it. Everything outside ``/saves`` is memory
+that is gone when the page closes.
+
+Closing a file after writing to it queues a save of ``/saves`` to
+IndexedDB, which finishes a moment later, and syncfs returns only once
+that save has finished. A save still queued when the player closes the
+page can be lost, so a program calls syncfs before it closes a file it
+must not lose.
+
+The database is named by ``db``, or, when ``db`` is blank, by the file
+name from ``rom``, such as ``game.rp6502``. One window at a time can use
+a database. A second window of a page with the same ``db`` shows a
+message that the game is running in another window, and it starts once
+the first window closes. Pages with different ``db`` names always run
+side by side.
 
 itch.io serves every HTML game from one shared origin, and IndexedDB is
 per-origin, so your database name shares a namespace with every other
@@ -147,8 +167,9 @@ itch.io game the player runs. Two unrelated games that both ship
 ``game.rp6502`` will read and write each other's saves. Set ``db`` to
 something unique, such as ``yourname-yourgame``, to avoid this.
 
-The same behavior is useful deliberately. Give several of your pages the
-same ``db`` and their programs share one filesystem.
+The same behavior is useful deliberately. Give each episode of a game the
+same ``db``, and every episode reads and writes the same saves. Only one
+episode runs at a time, since they share one database.
 
 
 RetroArch
@@ -157,6 +178,15 @@ RetroArch
 The Picocomputer is also a libretro core. Install it from Online Updater >
 Core Downloader, under "Picocomputer 6502", then load a ``.rp6502`` ROM
 the way you would a cartridge.
+
+The core runs the ROM by its full path, so argv[0] is the absolute path
+of the file. A ROM whose path no program could name runs from the null
+drive as ``:name`` instead, as described in :ref:`Installed ROMs
+<port-installed-roms>`. ``SAVE:`` files go in an ``rp6502`` folder
+inside the RetroArch save folder, or in the working directory when the
+ROM starts if RetroArch has no save folder. The core never changes the
+working directory, so a program starts in the working directory of
+RetroArch.
 
 
 Arguments
@@ -225,7 +255,15 @@ work.
    * - ``--install``
      - ``file``
      - Install a ROM on the null drive, reached as ``:basename``.
-       Repeatable to sixteen; the first one boots.
+       Repeatable to sixteen. When no ROM is named, the first one boots.
+     - all
+   * - ``--save-dir``
+     - ``folder``
+     - The folder that holds ``SAVE:`` files. It is created the first
+       time a program creates a save. The default is
+       ``$XDG_DATA_HOME/rp6502``, or ``~/.local/share/rp6502``, on Linux,
+       ``~/Library/Application Support/io.github.picocomputer.rp6502-emu``
+       on macOS, and ``Saved Games\rp6502`` on Windows.
      - all
    * - ``--bgcolor``
      - ``RRGGBB``
@@ -305,6 +343,8 @@ returns 0 bytes.
   rp6502-emu --stdin game.rp6502           # a window, and the terminal too
 
 
+.. _emu-debugging:
+
 Debugging
 =========
 
@@ -350,6 +390,8 @@ for RAM and XRAM and XSTACK, a memory heatmap, and the linker's segments.
 The Options menu sets window and UI scale and the theme, and it shows the
 loaded ROM's own help.
 
+.. _emu-dap:
+
 The Debug Adapter Protocol
 --------------------------
 
@@ -379,7 +421,7 @@ a test that passes or fails.
 
 .. code-block:: text
 
-  rp6502-emu --mute --seed 1 --script adventure.txt adventure.rp6502
+  rp6502-emu --script adventure.txt adventure.rp6502
 
 Given ``-`` instead of a filename it reads stdin a line at a time, so a
 driver written in any language can work the machine. The machine waits

@@ -20,3 +20,103 @@ dl.c.function > dt.sig > span.pre {
     margin-right: 0.2em;
     vertical-align: 0.1em;
 }
+
+/* The Links toctree in index.rst carries only text, so each link is given
+   the footer's icon. The icon is a mask over the link's own colour, which
+   follows the light and dark themes. */
+.sidebar-tree a.reference.external[href="https://github.com/picocomputer?view_as=public"]::before,
+.sidebar-tree a.reference.external[href="https://discord.gg/TC6X8kTr6d"]::before,
+.sidebar-tree a.reference.external[href="https://www.youtube.com/@rumbledethumps"]::before {
+    content: "";
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    margin-right: 0.5em;
+    vertical-align: -0.125em;
+    background-color: currentColor;
+    mask: no-repeat center / contain;
+}
+.sidebar-tree a.reference.external[href="https://github.com/picocomputer?view_as=public"]::before {
+    mask-image: url("icons/github.svg");
+}
+.sidebar-tree a.reference.external[href="https://discord.gg/TC6X8kTr6d"]::before {
+    mask-image: url("icons/discord.svg");
+}
+.sidebar-tree a.reference.external[href="https://www.youtube.com/@rumbledethumps"]::before {
+    mask-image: url("icons/youtube.svg");
+}
+
+/* The front page title is centered over the game. The page icons float at
+   the right of the title and shift centered text to the left, so on this page
+   they are positioned outside the flow instead. The heading link is taken out
+   of the flow too, so its space does not move the title off center. */
+.article-container:has(#picocomputer-6502) {
+    position: relative;
+}
+.article-container:has(#picocomputer-6502) > .content-icon-container {
+    position: absolute;
+    right: 0;
+}
+#picocomputer-6502 > h1 {
+    text-align: center;
+}
+#picocomputer-6502 > h1 > .headerlink {
+    position: absolute;
+}
+
+/* The game on the front page, with its caption bar underneath. Both stay
+   dark in the light theme too, to sit with the game. */
+.showcase {
+    max-width: min(640px, 75vh * 4 / 3);
+    margin: 0 auto 1em;
+    border: 1px solid #303335;
+    background: #000;
+    color: #9ca0a5;
+    font-size: var(--font-size--small);
+    text-align: center;
+}
+.showcase iframe {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border: 0;
+}
+.showcase > div {
+    padding: 0.5em 1em;
+    border-top: 1px solid #303335;
+}
+.showcase p {
+    margin: 0;
+}
+.showcase a,
+.showcase a:visited {
+    color: #5ca5ff;
+    text-decoration-color: #303335;
+}
+.showcase a:hover {
+    text-decoration-color: #878787;
+}
+
+/* A long example collapses to its first 20 lines, from custom.js. The copy
+   button still copies all of it. */
+.highlight.collapsed pre {
+    max-height: 20lh;
+    overflow-y: hidden;
+    mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+.highlight.collapsed button.expand {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--color-background-border);
+    border-radius: 0.25rem;
+    background: var(--color-background-secondary);
+    color: var(--color-link);
+    font-size: var(--font-size--small);
+    cursor: pointer;
+}
+.highlight.collapsed button.expand:hover {
+    border-color: var(--color-foreground-border);
+}

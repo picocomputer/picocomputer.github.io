@@ -25,13 +25,15 @@ filesystems.
    ExFAT is ready to go and will be enabled when the patents expire.
 
 
+.. _os-memory-map:
+
 Memory Map
 ==========
 
-There is no ROM, and nothing in zero page is used or reserved. The
-Picocomputer starts every project as a clean slate. VGA, audio, storage,
-keyboards, mice, gamepads, the RTC, and networking are all reached
-through just the 32 registers of the RIA.
+Everything below $FF00 is RAM, and nothing in zero page is used or
+reserved. The Picocomputer starts every project as a clean slate. VGA,
+audio, storage, keyboards, mice, gamepads, the RTC, and networking are
+all reached through just the 32 registers of the RIA.
 
 .. list-table::
    :widths: 25 75
@@ -136,11 +138,11 @@ return values. ``RIA_SREG`` is updated only for 32-bit returns, and
 ``RIA_ERRNO`` only when there's an error.
 
 Some operations return strings or structures on the stack. Pull the
-entire stack before the next call, or use `zxstack() <ZXSTACK_>`_ to
-abandon the stack in O(1) time without a loop. One operation's output can
-also be the next one's input. `read_xstack() <READ_XSTACK_>`_ leaves its
-data on the XSTACK where `write_xstack() <WRITE_XSTACK_>`_ takes it, so
-the two copy a file without touching any RAM or XRAM.
+entire stack before the next call, or use `ria_drop() <DROP_XSTACK_>`_
+to abandon the stack in O(1) time without a loop. One operation's output
+can also be the next one's input. `read_xstack() <READ_XSTACK_>`_ leaves
+its data on the XSTACK where `write_xstack() <WRITE_XSTACK_>`_ takes it,
+so the two copy a file without touching any RAM or XRAM.
 
 The time operations chain the same way, without cycling the XSTACK:
 `TIME_GET`_ returns seconds positioned as the input to `GMTIME`_,
@@ -157,15 +159,20 @@ stack argument pushed. Take `LSEEK`_:
 
 .. code-block:: C
 
-   long f_lseek(long offset, int whence, int fildes)
+   ABI long f_lseek(long offset, unsigned char whence, int fildes)
 
 Here you push a 32-bit value, and — not by coincidence — it sits in the
 right position for short stacking. If the offset always fits in 16 bits,
 push two bytes instead of four.
 
-Trimmed bytes are zero-filled, so short pushes read as unsigned. The
-time operations accept seconds as 4 or 8 bytes; negative values need
-all 8.
+Signed arguments are sign-extended, so two bytes carry -32768 to 32767.
+Unsigned arguments are zero-filled.
+
+.. warning::
+
+   Size a short push by the signed range. An offset of 200 pushed as the
+   single byte 0xC8 arrives as -56, because the top bit of 0xC8 is the
+   sign. Push 0x00 and then 0xC8 to send 200.
 
 Shorter AX
 ----------
@@ -296,17 +303,18 @@ go wrong, and `ERRNO_OPT Compiler Constants`_ gives the number of each.
 Extended Memory
 ---------------
 
-ZXSTACK
-~~~~~~~
+DROP_XSTACK
+~~~~~~~~~~~
 
-.. c:function:: void zxstack (void);
+.. c:function:: void ria_drop (void);
 
-   Abandon the XSTACK by resetting the XSTACK pointer. This is the only
-   operation you don't have to wait on, and you never need it after a
-   failed operation. It's handy when you want to quickly ignore part of a
-   returned structure.
+   Empty the XSTACK by resetting its pointer. This is the only operation
+   that finishes immediately, so there is no need to wait for it. It is
+   never needed after a failed operation, because a failure already
+   empties the XSTACK. Use it to discard the rest of a returned structure,
+   or arguments already pushed for a call you decide not to make.
 
-   :Op code: RIA_OP_ZXSTACK 0x00
+   :Op code: RIA_OP_DROP_XSTACK 0x00
    :C proto: rp6502.h
 
 
@@ -322,8 +330,9 @@ XREG
    over the ABI, so both prototypes are equally valid.
 
    The variadic argument is a list of ints to store in the extended
-   registers, starting at address on the given device and channel. See the
-   :doc:`ria` and :doc:`vga` docs for what each register does. Setting an
+   registers, starting at address on the given device and channel. See
+   :ref:`Extended Registers <ria-xreg>` in the :doc:`ria` datasheet and the
+   :doc:`vga` datasheet for what each register does. Setting an
    extended register can fail, which doubles as feature detection: EINVAL
    means the device sent a negative acknowledgement, EIO means a timeout
    waiting for ack/nak, and EACCES means a write to the VGA control
@@ -367,14 +376,16 @@ XRAM_READ
 .. c:function:: lib void xram0_read (void* dest, unsigned src, unsigned count)
                 lib void xram1_read (void* dest, unsigned src, unsigned count)
 
-   Copy ``count`` bytes from XRAM into 6502 RAM, the way ``memcpy`` copies
-   within RAM. The portal in the name is the one the copy runs through, so
-   the other portal is left as a program had it. A count of 0 copies nothing.
-   This moves data inside the machine, unlike `READ_XRAM`_, which fills XRAM
-   from a file.
+   Copy ``count`` bytes from XRAM to 6502 RAM, like ``memcpy``.
+   ``xram0_read()`` copies through portal 0 and ``xram1_read()`` through
+   portal 1. The other portal is not touched. A count of 0 copies nothing.
 
-   The call sets that portal's address register and sets its step register to
-   1, so an interrupt handler using the same portal saves and restores both.
+   The call changes the portal's address register and sets its step
+   register to 1. An interrupt handler that uses the same portal must save
+   and restore both.
+
+   This copies within the machine. To load XRAM from a file, use
+   `READ_XRAM`_.
 
    :Op code: None
    :C proto: rp6502.h
@@ -399,6 +410,41 @@ XRAM_WRITE
    :param count: Quantity of bytes to copy.
 
 
+XRAM_SET
+~~~~~~~~
+
+.. c:function:: lib void xram0_set (unsigned dest, unsigned char val, unsigned count)
+                lib void xram1_set (unsigned dest, unsigned char val, unsigned count)
+
+   Fill ``count`` bytes of XRAM with ``val``, like ``memset``.
+   ``xram0_set()`` uses portal 0 and ``xram1_set()`` uses portal 1, with the
+   same effect on the portal's registers as `XRAM_READ`_.
+
+   :Op code: None
+   :C proto: rp6502.h
+   :param dest: Address in XRAM to fill.
+   :param val: Byte written to every position.
+   :param count: Quantity of bytes to fill.
+
+
+XRAM_MOVE
+~~~~~~~~~
+
+.. c:function:: lib void xram_move (unsigned dest, unsigned src, unsigned count)
+
+   Copy ``count`` bytes from one XRAM address to another, like ``memmove``,
+   so the result is correct even when the two ranges overlap. Portal 0 reads
+   and portal 1 writes, and both address registers are changed. Both step
+   registers are left at 1, or at -1 if the destination overlaps the end of
+   the source and the copy runs backward.
+
+   :Op code: None
+   :C proto: rp6502.h
+   :param dest: Destination address in XRAM.
+   :param src: Source address in XRAM.
+   :param count: Quantity of bytes to copy.
+
+
 Process
 -------
 
@@ -418,10 +464,12 @@ ARGV
 
       06 00 0A 00 00 00 41 42 43 00 44 45 46 00
 
-   Because this can use up to 512 bytes of RAM, you opt in by providing
-   storage for the argv data. Use static memory, or dynamically allocated
-   memory you can free afterward. You can also reject an oversized argv by
-   returning NULL.
+   Because this can use up to 512 bytes of RAM, you opt in by defining
+   ``__argv_mem()`` to provide storage for the argv data. Use static
+   memory, or dynamically allocated memory you can free afterward. You can
+   also reject an oversized argv by returning NULL. The argv data is on
+   the XSTACK while ``__argv_mem()`` runs, so ``__argv_mem()`` must not
+   make an OS call, not even through printf().
 
    .. code-block:: c
 
@@ -443,7 +491,9 @@ EXEC
    The virtual _exec is called by ria_execl() and ria_execv(). Note one
    difference from the execl() and execv() you may know: because RAM is
    precious, the path is supplied once, not again in argv[0]. In the
-   launched ROM, argv[0] is the filename.
+   launched ROM, argv[0] is the absolute form of the path given, with its
+   drive, or ``:NAME`` for a ROM on the null drive, as described in
+   :ref:`Installed ROMs <port-installed-roms>`.
 
    The data sent by _exec() is checked for pointer safety and sanity, but
    the path is assumed to point at a loadable ROM file. On EINVAL, the argv
@@ -523,18 +573,21 @@ Time
 TIME_GET
 ~~~~~~~~
 
-.. c:function:: ABI int time (time_t *timep)
-.. c:function:: lib time_t time (time_t *timep)
+.. c:function:: ABI int _time (time_t *timep)
+                lib time_t time (time_t *timep)
 
    Obtains the current time as seconds since the Unix epoch,
-   1970-01-01T00:00:00Z.
+   1970-01-01T00:00:00Z. The operation pushes the seconds to the XSTACK
+   as a 64-bit signed integer and returns 0, or -1 on error. The cc65
+   time_t has 32 bits, so the cc65 time() fails with ERANGE when the
+   seconds do not fit.
 
    :Op code: RIA_OP_TIME_GET 0x3F
    :C proto: time.h
    :returns: The current time, also stored at ``timep`` if it is not
       NULL. -1 on error.
    :a regs: return
-   :errno: EINVAL, EIO
+   :errno: EINVAL, EIO, ERANGE
 
 
 TIME_SET
@@ -543,7 +596,7 @@ TIME_SET
 .. c:function:: int time_set (long long time)
 
    Sets the clock to seconds since the Unix epoch. Supported only on
-   :doc:`pico`. All other hosts have a
+   :doc:`pico`.
 
    :Op code: RIA_OP_TIME_SET 0x3E
    :C proto: rp6502.h
@@ -559,8 +612,8 @@ GMTIME
 .. c:function:: lib struct tm *gmtime (const time_t *timep)
 
    Converts seconds since the Unix epoch to UTC broken-down time.
-   Push the seconds as a signed integer of up to 64 bits; short pushes
-   are unsigned. The operation pushes this struct tm back to the XSTACK
+   Push the seconds as a signed integer of up to 64 bits. The operation
+   pushes this struct tm back to the XSTACK
    and returns 0, or -1 on error.
 
    .. code-block:: c
@@ -635,7 +688,7 @@ STRFTIME
    if the result is empty or does not fit, or -1 on error. The format and
    the result share the XSTACK, which limits the result. The C library
    strftime() compares the length to its buffer size and abandons an
-   oversized result with `ZXSTACK`_.
+   oversized result with `DROP_XSTACK`_.
 
    ``%a %A %b %B %c %p %r %x %X`` follow the configured locale and
    ``%z %Z`` the configured time zone. Set both with ``SET LOC`` and
@@ -653,6 +706,8 @@ STRFTIME
 Files
 -----
 
+.. _os-open:
+
 OPEN
 ~~~~
 
@@ -660,9 +715,16 @@ OPEN
 
    Create a connection between a file and a file descriptor.
 
+   The options must include O_RDONLY, O_WRONLY or O_RDWR, or the call
+   fails with EINVAL. An open of a directory fails with EACCES. A file can
+   be open on several descriptors at once. Close a descriptor that writes
+   a file before opening that file again, as described in
+   :ref:`Files and Folders <port-files>`.
+
    A path can also name a device: ``CON:`` and ``TTY:`` in :doc:`term`,
-   ``ROM:`` followed by an asset name in :doc:`sdk`, ``VCP0:``,
-   ``MIDI0:`` and ``NFC:`` in :doc:`ria`, and ``AT:`` in :doc:`ria_w`.
+   ``ROM:`` followed by an asset name in :doc:`sdk`, ``SAVE:`` followed by
+   a save name in :ref:`RP6502-PORT <port-save>`, ``VCP0:``, ``MIDI0:``
+   and ``NFC:`` in :doc:`ria`, and ``AT:`` in :doc:`ria_w`.
 
    :Op code: RIA_OP_OPEN 0x14
    :C proto: fcntl.h
@@ -670,8 +732,8 @@ OPEN
    :param oflag: Bitfield of options.
    :returns: File descriptor. -1 on error.
    :a regs: return, oflag
-   :errno: EACCES, EBADF, EBUSY, EEXIST, EINVAL, EIO, EMFILE, ENODEV, ENOENT,
-      ENOMEM, ENOSPC
+   :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM,
+      ENOSPC
    :Options:
 
       | O_RDONLY 0x01
@@ -685,7 +747,7 @@ OPEN
       | O_TRUNC 0x20
       |    Truncate the file length to 0 after opening.
       | O_APPEND 0x40
-      |    Read/write pointer is set to the end of the file.
+      |    Read/write pointer is set to the end of the file at open.
       | O_EXCL 0x80
       |    If O_CREAT and O_EXCL are set, fail if the file exists.
 
@@ -696,7 +758,9 @@ CLOSE
 .. c:function:: int close (int fildes)
 
    Finish pending writes and release the file descriptor. The descriptor
-   goes back to the pool that open() draws from.
+   goes back to the pool that open() draws from. What survives a failure
+   after close differs by machine, as listed in
+   :ref:`Durability <port-durability>`.
 
    :Op code: RIA_OP_CLOSE 0x15
    :C proto: fcntl.h
@@ -821,13 +885,18 @@ WRITE_XRAM
 LSEEK
 ~~~~~
 
-.. c:function:: ABI long f_lseek (long offset, int whence, int fildes)
+.. c:function:: ABI long f_lseek (long offset, unsigned char whence, int fildes)
                 lib off_t lseek (int fildes, off_t offset, int whence)
 
    Move the read/write pointer.
 
    This can also be used to obtain the current read/write position with
    ``f_lseek(0, SEEK_CUR, fd)``.
+
+   A seek past the end of a file opened for writing extends the file with
+   zeros. On a full drive, that seek fails with ENOSPC and leaves the file
+   and the position unchanged. A seek past the end of a file opened only
+   for reading stops at the end.
 
    :Op code: See table below.
    :C proto: f_lseek: rp6502.h, lseek: unistd.h
@@ -838,7 +907,7 @@ LSEEK
       0x7FFFFFFF cannot be represented in the returned long; the seek then
       fails with errno ERANGE and the file position is left unchanged.
    :a regs: fildes
-   :errno: EBADF, EINVAL, EIO, ENOSYS, ERANGE, ESPIPE
+   :errno: EBADF, EINVAL, EIO, ENOSPC, ENOSYS, ERANGE, ESPIPE
 
    .. list-table::
       :header-rows: 1
@@ -866,7 +935,9 @@ SYNCFS
 
 .. c:function:: int syncfs (int fildes)
 
-   Finish pending writes for the file descriptor.
+   Finish pending writes for the file descriptor. The call returns once
+   the data is stored, within the limits of each machine listed in
+   :ref:`Durability <port-durability>`.
 
    :Op code: RIA_OP_SYNCFS 0x1E
    :C proto: unistd.h
@@ -901,6 +972,10 @@ STAT
          char fname[255 + 1];
       } f_stat_t;
 
+   A drive root, such as ``/`` or ``MSC0:/``, returns one fixed entry: a
+   directory named ``/``, with size 0 and zero dates. An empty path or a
+   bare drive name, such as ``MSC0:``, fails with EINVAL.
+
    :Op code: RIA_OP_STAT 0x1F
    :C proto: rp6502.h
    :param path: Pathname to a directory entry.
@@ -915,12 +990,14 @@ UNLINK
 
 .. c:function:: int unlink (const char* name)
 
-   Removes a file or directory from the volume.
+   Removes a file or directory from the volume. A read-only file fails
+   with EACCES. Close a file before removing it.
 
    :Op code: RIA_OP_UNLINK 0x1B
    :C proto: unistd.h
    :param name: File or directory name to unlink (remove).
    :returns: 0 on success. -1 on error.
+   :a regs: return
    :errno: EACCES, EBUSY, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
@@ -929,14 +1006,18 @@ RENAME
 
 .. c:function:: int rename (const char* oldname, const char* newname)
 
-   Renames or moves a file or directory. A file already at the new name
-   is replaced.
+   Renames or moves a file or directory within its drive. A new name on
+   another drive fails with ENODEV. A file already at the new name is
+   replaced when the old name is also a file, and any other entry at the
+   new name fails with EEXIST. Close a file before renaming it, and
+   before a rename replaces it.
 
    :Op code: RIA_OP_RENAME 0x1C
    :C proto: stdio.h
    :param oldname: Existing file or directory name to rename.
    :param newname: New object name.
    :returns: 0 on success. -1 on error.
+   :a regs: return
    :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSPC,
       ENOSYS
 
@@ -1047,7 +1128,7 @@ OPENDIR
    :param name: Pathname to a directory.
    :returns: Directory descriptor. -1 on error.
    :a regs: return
-   :errno: EACCES, EBADF, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM, ENOSYS
+   :errno: EACCES, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 READDIR
@@ -1059,13 +1140,19 @@ READDIR
    directory descriptor, then advances the read position. At the end of
    the directory, the call succeeds and ``fname`` is empty.
 
+   A name with a character that the code page cannot hold, or that FAT
+   refuses, shows character 127 in place of each such character. That
+   entry cannot be opened, because character 127 is refused in a path. On
+   an :doc:`pico`, a name with a character that the code page cannot hold
+   shows as its short 8.3 name instead, and that name opens the file.
+
    :Op code: RIA_OP_READDIR 0x21
    :C proto: rp6502.h
    :param dirdes: Directory descriptor from f_opendir().
    :param dirent: Returned f_stat_t data.
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
-   :errno: EACCES, EBADF, EINVAL, EIO, ENOENT, ENOMEM
+   :errno: EACCES, EBADF, EINVAL, EIO, ENOENT, ENOMEM, ENOSYS
 
 
 CLOSEDIR
@@ -1081,7 +1168,7 @@ CLOSEDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
-   :errno: EBADF, EINVAL, EIO
+   :errno: EBADF, EINVAL, EIO, ENOSYS
 
 
 TELLDIR
@@ -1096,7 +1183,7 @@ TELLDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: Read position. -1 on error.
    :a regs: dirdes
-   :errno: EBADF, EINVAL
+   :errno: EBADF, EINVAL, ENOSYS
 
 
 SEEKDIR
@@ -1116,7 +1203,7 @@ SEEKDIR
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
-   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT, ENOMEM
+   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 REWINDDIR
@@ -1130,8 +1217,8 @@ REWINDDIR
    :C proto: rp6502.h
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
-   :a regs: dirdes
-   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT
+   :a regs: return, dirdes
+   :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT, ENOSYS
 
 
 Drives and Volumes
@@ -1142,7 +1229,8 @@ CHDIR
 
 .. c:function:: int chdir (const char* name)
 
-   Change to a directory entry.
+   Change to a directory entry. A directory on another drive also makes
+   that drive the current drive.
 
    :Op code: RIA_OP_CHDIR 0x29
    :C proto: unistd.h
@@ -1157,21 +1245,21 @@ CHDRIVE
 
 .. c:function:: int f_chdrive (const char* name)
 
-   Change the current drive. Each machine names its own drives. An
-   :doc:`pico` mounts each attached storage volume — one USB mass-storage
-   LUN — as ``MSC0:``–``MSC9:``, with shortcuts ``0:``–``9:``. On a
-   machine with a single filesystem, that filesystem is ``FS:``. Windows
-   uses its own drive letters, ``C:`` and the rest of what is mounted.
-
-   ``0:``–``9:`` is FatFs's own notation and exists only where FatFs does.
+   Change the current drive. The name is that of a mounted drive, colon
+   included, such as ``MSC1:``, and the name of a drive that is not
+   mounted fails with ENODEV. Each drive keeps the last directory used on
+   it, and that directory becomes current again. The drive names of each
+   machine are listed in :ref:`Filesystems <port-filesystems>`.
 
    :Op code: RIA_OP_CHDRIVE 0x2A
    :C proto: rp6502.h
    :param name: Drive name to change to.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EACCES, EIO, ENODEV, ENOENT
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT
 
+
+.. _os-getcwd:
 
 GETCWD
 ~~~~~~~
@@ -1180,9 +1268,10 @@ GETCWD
 
    Get the current working directory.
 
-   The result always includes a device name: ``MSC0:/games`` on a
-   :doc:`pico`, ``C:/Users/me`` on Windows, and ``FS:/home/me`` on hosts
-   like Linux where the filesystem has one root.
+   The result is absolute and always includes a device name, such as
+   ``MSC0:/games``. Each folder name in it shows as it does in
+   `READDIR`_. When the directory is longer than 255 bytes, the call
+   fails with ENOMEM, because no call accepts a path that long.
 
    :Op code: RIA_OP_GETCWD 0x2B
    :C proto: rp6502.h
@@ -1198,7 +1287,9 @@ GETLABEL
 
 .. c:function:: int f_getlabel (const char* path, char* label)
 
-   Get the volume label. Label must have room for (11+1) bytes.
+   Get the volume label. Label must have room for (11+1) bytes. Only an
+   :doc:`pico` has volume labels, and other machines fail with EACCES, or
+   ENOSYS on the Pocket.
 
    :Op code: RIA_OP_GETLABEL 0x2D
    :C proto: rp6502.h
@@ -1214,7 +1305,9 @@ SETLABEL
 
 .. c:function:: int f_setlabel (const char* name)
 
-   Change the volume label. Max 11 characters.
+   Change the volume label. Max 11 characters. Only an :doc:`pico` has
+   volume labels, and other machines fail with EACCES, or ENOSYS on the
+   Pocket.
 
    :Op code: RIA_OP_SETLABEL 0x2C
    :C proto: rp6502.h
@@ -1229,7 +1322,8 @@ GETFREE
 
 .. c:function:: int f_getfree (const char* name, unsigned long* free, unsigned long* total)
 
-   Get the free and total space of a volume in 512-byte blocks.
+   Get the free and total space of a volume in 512-byte blocks. The
+   operation pushes both counts to the XSTACK in this layout:
 
    .. code-block:: c
 
@@ -1287,7 +1381,7 @@ RLN_PEEK
 
    Returns the current contents of the line editor buffer and the
    cursor position within it. The buffer bytes are pushed to the XSTACK.
-   Returns 0 with an empty buffer when no line read is in progress.
+   It fails with EINVAL when no line read is in progress.
 
    :Op code: RIA_OP_RLN_PEEK 0x31
    :C proto: rp6502.h
@@ -1296,7 +1390,7 @@ RLN_PEEK
       ``RIA_ATTR_RLN_LENGTH`` + 1 bytes (256 max).
    :param pos: Out-parameter set to the cursor position within the
       buffer.
-   :returns: Length of the buffer contents.
+   :returns: Length of the buffer contents. -1 on error.
    :a regs: return
    :errno: EINVAL
 
@@ -1358,15 +1452,17 @@ ROM Cartridge Menu
 
 The most natural use of the launcher is a menu-driven ROM selector — much
 like slotting a physical cartridge into a retro console. The launcher ROM
-scans the storage device for ``.rp6502`` files, presents the list, and calls
+lists the ``.rp6502`` files in a folder, presents the list, and calls
 `EXEC`_ with the chosen filename. When that ROM stops, whether normally or
 with an error, the process manager re-executes the launcher and the user
-lands back on the menu.
+lands back on the menu. Listing a folder is not available on every
+machine, and the machines without it are listed under
+:ref:`Compatibility <port-compatibility>`.
 
 No manual reset is needed between runs. Each ROM is a self-contained binary
 with nothing in it about the menu. The launcher can supply context through
-argv, such as a save-file path or difficulty setting, and the ROM just calls
-`EXIT`_ when it's done.
+argv, such as the ``SAVE:`` name of a save slot or a difficulty setting,
+and the ROM just calls `EXIT`_ when it's done.
 
 
 .. _os-ria-attributes:
@@ -1388,9 +1484,10 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
    * - | 0x00
        | ``RIA_ATTR_ERRNO_OPT``
      - Errno mapping option. Selects which set of errno constants the OS
-       uses. Both cc65 and llvm-mos set this automatically at C runtime
-       startup; assembly programs must set it before making OS calls that
-       can fail. See `ERRNO_OPT Compiler Constants`_ for option values.
+       uses. The cc65 and llvm-mos C runtimes set it at startup whenever
+       the program links ``errno``; assembly programs must set it before
+       making OS calls that can fail. See `ERRNO_OPT Compiler Constants`_
+       for option values.
    * - | 0x01
        | ``RIA_ATTR_PHI2_KHZ``
      - CPU clock speed in kHz. Range 100–8000. Changes take effect
@@ -1405,8 +1502,8 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
        863, 864, 865, 866, 869.
    * - | 0x03
        | ``RIA_ATTR_RLN_LENGTH``
-     - Maximum input line length for the stdin line editor. 1–255,
-       default 254.
+     - Maximum input line length for the stdin line editor. 0–255,
+       default 254. With 0, only a blank line can be entered.
    * - | 0x04
        | ``RIA_ATTR_LRAND``
      - 31-bit hardware random number seeded with entropy from the RIA.
@@ -1496,7 +1593,7 @@ codes without their ``ERROR_`` prefix. Any other code becomes ``EIO``.
      - FR_NO_FILE, FR_NO_PATH
      - NOENT
      - ENOENT, ENOTDIR
-     - FILE_NOT_FOUND, PATH_NOT_FOUND, INVALID_NAME, NO_MORE_FILES, DIRECTORY
+     - FILE_NOT_FOUND, PATH_NOT_FOUND, NO_MORE_FILES, DIRECTORY
    * - EACCES
      - FR_DENIED, FR_WRITE_PROTECTED
      -
@@ -1506,11 +1603,11 @@ codes without their ``ERROR_`` prefix. Any other code becomes ``EIO``.
      - FR_INVALID_NAME, FR_INVALID_PARAMETER
      - NOTDIR, ISDIR, NOTEMPTY, INVAL, NAMETOOLONG
      - EINVAL, ENAMETOOLONG
-     - FILENAME_EXCED_RANGE, INVALID_PARAMETER, NEGATIVE_SEEK
+     - FILENAME_EXCED_RANGE, INVALID_NAME, INVALID_PARAMETER, NEGATIVE_SEEK
    * - ENODEV
      - FR_NOT_READY, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM
      -
-     - ENODEV, ENXIO
+     - ENODEV, ENXIO, EXDEV
      - NOT_READY, BAD_UNIT, INVALID_DRIVE, NOT_SAME_DEVICE
    * - ENOSPC
      -
@@ -1572,10 +1669,8 @@ On POSIX, a read or write on a descriptor opened the wrong way fails with
 ``EBADF`` from the host and ``EACCES`` here.
 
 The Pocket sets errno itself rather than mapping a host's codes, so it has
-no column. It returns ``ENOSYS`` for fourteen calls, because its
-filesystem is a single folder: STAT, UNLINK, RENAME, OPENDIR, READDIR,
-CLOSEDIR, REWINDDIR, CHMOD, UTIME, MKDIR, CHDIR, GETLABEL, SETLABEL and
-GETFREE.
+no column. The calls it lacks are listed under
+:ref:`Compatibility <port-compatibility>`.
 
 
 ERRNO_OPT Compiler Constants
@@ -1583,10 +1678,10 @@ ERRNO_OPT Compiler Constants
 
 OS calls set ``RIA_ERRNO`` when an error occurs. Because cc65 and llvm-mos
 each define their own errno constants, the errno option selects which set
-of numeric values to use. Both compilers set it automatically in their C
-runtime, and ``errno`` in C maps directly to ``RIA_ERRNO``. Assembly
-programs must set ``RIA_ATTR_ERRNO_OPT`` themselves before any OS call that
-can fail.
+of numeric values to use. In C, ``errno`` maps directly to ``RIA_ERRNO``,
+and both C runtimes set the option at startup whenever the program links
+``errno``. Assembly programs must set ``RIA_ATTR_ERRNO_OPT`` themselves
+before any OS call that can fail.
 
 .. list-table::
    :header-rows: 1

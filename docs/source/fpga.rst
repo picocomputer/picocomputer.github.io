@@ -38,19 +38,25 @@ Pocket menu under openFPGA.
 ROMs
 ----
 
-Put ``.rp6502`` files in ``Assets/rp6502/common/`` and the core asks you
-to pick one when it opens. Find them on Discord, which has a forum for
-ROMs, or on itch.io under the RP6502 tag:
+Put ``.rp6502`` files in ``Assets/rp6502/common/``, and pick one from the
+list shown when the core opens. Find them on Discord, which has a forum
+for ROMs, or on itch.io under the RP6502 tag:
 
 - https://discord.gg/TC6X8kTr6d
 - https://itch.io/games/tag-rp6502
 
+``Assets/rp6502/common/`` is also the working directory, so a program
+opens a file beside its ROM by its plain name. The working directory
+cannot be changed on the Pocket.
+
 Saves
 -----
 
-``Saves/rp6502/common/`` is the core's working directory, so a program's
-plain ``open("game.save", ...)`` resolves there the same way it resolves
-in the working directory on any other host.
+A program saves through ``SAVE:``, as shown in :ref:`Saves <port-save>`,
+and the core keeps those files in ``Saves/rp6502/common/``. A successful
+syncfs does not mean the data is on the card, because the Pocket sends no
+reply once the data is written. The calls the Pocket lacks, such as
+folder listing, are listed under :ref:`Compatibility <port-compatibility>`.
 
 Core Settings
 -------------
@@ -86,6 +92,7 @@ Internals
    │ pocket_bridge  pocket_file  pocket_sst   pocket_video  pocket_i2s   │
    │ pocket_sdram   pocket_sram  pocket_dbg   pocket_dbglog  pocket_fifo │
    │ pocket_bars    pocket_pll: clk_sys ──> altclkctrl ──> clk_mach      │
+   │                pocket_pll: clk_a2 100.8 MHz, XRAM's render port     │
    │                                                                     │
    │ ┌─────────────────────────────────────────────────────────────────┐ │
    │ │ src/core — the machine, platform independent                    │ │

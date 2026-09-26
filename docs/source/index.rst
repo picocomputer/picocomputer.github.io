@@ -2,6 +2,18 @@
 
 .. toctree::
    :hidden:
+   :caption: Manual
+
+   RP6502-SDK <sdk>
+   RP6502-RIA <ria>
+   RP6502-RIA-W <ria_w>
+   RP6502-VGA <vga>
+   RP6502-TERM <term>
+   RP6502-OS <os>
+   RP6502-PORT <port>
+
+.. toctree::
+   :hidden:
    :caption: Machine
 
    RP6502-PICO <pico>
@@ -10,14 +22,11 @@
 
 .. toctree::
    :hidden:
-   :caption: Reference
+   :caption: Links
 
-   RP6502-SDK <sdk>
-   RP6502-RIA <ria>
-   RP6502-RIA-W <ria_w>
-   RP6502-VGA <vga>
-   RP6502-TERM <term>
-   RP6502-OS <os>
+   GitHub <https://github.com/picocomputer?view_as=public>
+   Discord <https://discord.gg/TC6X8kTr6d>
+   YouTube <https://www.youtube.com/@rumbledethumps>
 
 ==================
 Picocomputer 6502
@@ -25,18 +34,16 @@ Picocomputer 6502
 
 .. raw:: html
 
-   <iframe src="_static/emu/index.html"
-           title="Space Raiders on the Picocomputer 6502"
-           allow="gamepad; fullscreen; autoplay"
-           allowfullscreen
-           style="display: block; box-sizing: border-box;
-                  width: 100%; max-width: 640px;
-                  aspect-ratio: 4 / 3; max-height: 75vh;
-                  margin: 0 auto 1em; background: #000;
-                  border: 1px solid var(--color-background-border)"></iframe>
-
-- Arrows move. Space, up, or down fires. Gamepads work too.
-- ``1`` one player, ``2`` two players, ``p`` pause, ``r`` restart.
+   <div class="showcase">
+     <iframe src="_static/emu/index.html"
+             title="Star Hopper on the Picocomputer 6502"
+             allow="gamepad; fullscreen; autoplay"
+             allowfullscreen></iframe>
+     <div>
+       <p>WASD, arrows, or numpad to move, any other key to fire. Gamepads work too.</p>
+       <p><a href="https://jasonrowe.org/picocomputer/index.html">See more games by Dr. Jason Rowe</a></p>
+     </div>
+   </div>
 
 
 Why a Picocomputer
@@ -83,8 +90,8 @@ The Machine
 - **CPU** — WDC 65C02 and a 65C22 VIA, 0.1 to 8.0 MHz, cycle accurate on
   every host
 - **Memory** — 64 KB of RAM and 64 KB of XRAM, loaded by DMA at up to
-  800 KB/sec while the 6502 keeps running. No ROM, nothing reserved, and
-  zero page is yours
+  800 KB/sec while the 6502 keeps running. Nothing in RAM is reserved,
+  not even zero page
 - **I/O** — 32 registers, and that's all of them. A modern processor
   sits behind them running the USB, the files, and the network, so the
   6502 never has to
@@ -100,6 +107,26 @@ The Machine
   Saving, and a true random number generator
 
 All of it is documented on this site, down to the register.
+
+
+Read the Manual
+===============
+
+Start with the :doc:`sdk`. The datasheets after it are for the parts of
+the machine. Read the datasheet for a part when a program starts to use
+that part, and read :doc:`port` before the program is published.
+
+- :doc:`sdk`: writing software, from a new project to a running program.
+- :doc:`ria`: the register map and every device reached through it. The
+  interface adapter, in the spirit of the classic CIA, VIA, and ACIA
+  chips.
+- :doc:`ria_w`: setting up Wi-Fi, Bluetooth, telnet, and the Hayes modem.
+- :doc:`vga`: canvases, video modes, sprites, and the scanline
+  programming underneath.
+- :doc:`term`: the console, its escape sequences, and the line editor.
+- :doc:`os`: the system calls, the ABI, and the C library sitting on them.
+- :doc:`port`: writing a program that works the same on every machine,
+  from gamepads to saves.
 
 
 Get a Machine
@@ -124,22 +151,5 @@ to the YouTube channel and share the project on social media.
 
 - **YouTube:** https://www.youtube.com/@rumbledethumps
 - **Discord:** https://discord.gg/TC6X8kTr6d
-- **Wiki:** https://github.com/picocomputer/community/wiki
+- **Wiki:** https://github.com/picocomputer/.github/wiki
 - **GitHub Q&A:** https://github.com/picocomputer/community/discussions
-
-
-Read the Docs
-=============
-
-Start with the :doc:`sdk`. The rest are datasheets for the parts of the
-machine. Read each one when a program uses the part it describes.
-
-- :doc:`sdk`: writing software, from a new project to a running program.
-- :doc:`ria`: the register map and every device reached through it. The
-  interface adapter, in the spirit of the classic CIA, VIA, and ACIA
-  chips.
-- :doc:`ria_w`: setting up Wi-Fi, Bluetooth, telnet, and the Hayes modem.
-- :doc:`vga`: canvases, video modes, sprites, and the scanline
-  programming underneath.
-- :doc:`term`: the console, its escape sequences, and the line editor.
-- :doc:`os`: the system calls, the ABI, and the C library sitting on them.
