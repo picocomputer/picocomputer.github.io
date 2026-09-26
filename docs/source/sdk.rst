@@ -54,7 +54,7 @@ and the versions in package managers such as apt and Homebrew are too old.
 Each compiler is installed with one command. The command downloads the
 best build at the moment, from the upstream project or from the
 Picocomputer fork of it. Which one is used, and why, is shown on the
-`Picocomputer GitHub page <https://github.com/picocomputer>`__. The
+`Picocomputer GitHub page <https://github.com/picocomputer?view_as=public>`__. The
 compiler goes in the ``.rp6502`` folder in your home folder, and its
 ``bin`` folder is added to PATH, the list of folders where programs are
 looked up. Running the same command again updates the compiler, and it

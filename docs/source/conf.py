@@ -50,7 +50,7 @@ html_theme_options = {
     'footer_icons': [
         {
             'name': 'GitHub',
-            'url': 'https://github.com/picocomputer',
+            'url': 'https://github.com/picocomputer?view_as=public',
             'html': icon('github'),
             'class': '',
         },

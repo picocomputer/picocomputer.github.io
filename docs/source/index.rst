@@ -24,7 +24,7 @@
    :hidden:
    :caption: Links
 
-   GitHub <https://github.com/picocomputer>
+   GitHub <https://github.com/picocomputer?view_as=public>
    Discord <https://discord.gg/TC6X8kTr6d>
    YouTube <https://www.youtube.com/@rumbledethumps>
 
