@@ -968,7 +968,7 @@ that preset in VS Code.
 
 The ROM is ``build/cc65/debug/hello.rp6502``. The configure step
 downloads the emulator when ``tools/`` has none, so the first configure
-of a fresh clone needs a network connection.
+of a fresh copy needs a network connection.
 
 Running on Hardware
 -------------------
