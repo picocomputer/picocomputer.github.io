@@ -24,7 +24,7 @@ dl.c.function > dt.sig > span.pre {
 /* The Links toctree in index.rst carries only text, so each link is given
    the footer's icon. The icon is a mask over the link's own colour, which
    follows the light and dark themes. */
-.sidebar-tree a.reference.external[href="https://github.com/picocomputer"]::before,
+.sidebar-tree a.reference.external[href="https://github.com/picocomputer?view_as=public"]::before,
 .sidebar-tree a.reference.external[href="https://discord.gg/TC6X8kTr6d"]::before,
 .sidebar-tree a.reference.external[href="https://www.youtube.com/@rumbledethumps"]::before {
     content: "";
@@ -36,7 +36,7 @@ dl.c.function > dt.sig > span.pre {
     background-color: currentColor;
     mask: no-repeat center / contain;
 }
-.sidebar-tree a.reference.external[href="https://github.com/picocomputer"]::before {
+.sidebar-tree a.reference.external[href="https://github.com/picocomputer?view_as=public"]::before {
     mask-image: url("icons/github.svg");
 }
 .sidebar-tree a.reference.external[href="https://discord.gg/TC6X8kTr6d"]::before {
@@ -44,6 +44,24 @@ dl.c.function > dt.sig > span.pre {
 }
 .sidebar-tree a.reference.external[href="https://www.youtube.com/@rumbledethumps"]::before {
     mask-image: url("icons/youtube.svg");
+}
+
+/* The front page title is centered over the game. The page icons float at
+   the right of the title and shift centered text to the left, so on this page
+   they are positioned outside the flow instead. The heading link is taken out
+   of the flow too, so its space does not move the title off center. */
+.article-container:has(#picocomputer-6502) {
+    position: relative;
+}
+.article-container:has(#picocomputer-6502) > .content-icon-container {
+    position: absolute;
+    right: 0;
+}
+#picocomputer-6502 > h1 {
+    text-align: center;
+}
+#picocomputer-6502 > h1 > .headerlink {
+    position: absolute;
 }
 
 /* The game on the front page, with its caption bar underneath. Both stay
