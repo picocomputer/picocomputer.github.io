@@ -151,5 +151,5 @@ to the YouTube channel and share the project on social media.
 
 - **YouTube:** https://www.youtube.com/@rumbledethumps
 - **Discord:** https://discord.gg/TC6X8kTr6d
-- **Wiki:** https://github.com/picocomputer/community/wiki
+- **Wiki:** https://github.com/picocomputer/.github/wiki
 - **GitHub Q&A:** https://github.com/picocomputer/community/discussions
