@@ -26,49 +26,31 @@ Gamepads
 The RIA reports every gamepad in the same layout, described in
 :ref:`Gamepads <ria-gamepads>` in the RIA datasheet. The report has a bit
 for each of fifteen buttons, in a fixed order: A, B, C, X, Y, Z, L1, R1,
-L2, R2, Select, Start, Home, L3 and R3. That order is the DInput layout,
-named after a mode of many USB gamepads, and how it came about explains
-why the report has C and Z when most gamepads do not.
+L2, R2, Select, Start, Home, L3 and R3. Linux and Android use the same
+order for a generic gamepad, so each button of a gamepad sold as
+Android-compatible sets the bit of the same name. Xbox and PlayStation
+gamepads work too.
 
-The Sega Genesis controller of 1989 has three face buttons, A, B and C,
-and Sega's six-button pad of 1993 adds a second row, X, Y and Z. The Sega
-Saturn pad of 1994 keeps all six and adds L and R shoulder buttons. Many
-PC gamepads that followed, such as Microsoft's SideWinder Game Pad of
-1996, have the same six face buttons and two shoulder buttons.
-
-Since 2000, Linux has had a name for each button of a generic USB gamepad,
-in order: the first button is A, then B, C, X, Y and Z, as on those pads,
-then two pairs of shoulder buttons, Select, Start and Mode. Two names
-added in 2001 follow Mode, for the stick clicks of Sony's DualShock.
-Android has used the same names in the same order since 2011. Many USB
-gamepads have two modes: XInput, in which the gamepad works as an Xbox 360
-controller, and DInput, named after DirectInput in Windows, in which it
-works as a generic USB gamepad. In DInput mode, some gamepads, such as
-those from 8BitDo, report their buttons in the Linux order. That is the
-order of the RIA report, with Mode as Home and the stick clicks as L3 and
-R3.
-
-Nearly every gamepad today has four face buttons, like the A, B, X and Y
-of the Xbox 360 controller of 2005. C and Z never became a standard, and
-Sega itself left them off its Dreamcast pad in 1998. A four-button gamepad
-leaves the C and Z bits empty or reports other buttons there, such as rear
-paddles, and even the six-button USB pad made for Sega's Mega Drive Mini
-reports its C and Z buttons in other bits. Six-button support takes a
-mapping for every model, so it is left out of the RP6502. C and Z stay in
-the report because of the DInput history, and for programs that let
-players map buttons themselves.
+The order has C and Z because the Linux names were chosen around 2000,
+when six-button gamepads were as common as four-button ones. Most
+gamepads today have four face buttons and report nothing in the C and Z
+bits, or report other buttons there, such as rear paddles. A six-button
+gamepad, such as a Sega-style pad, usually reports its C and Z buttons in
+other bits, and each model uses different ones. A mapping for every
+six-button model is left out of the RP6502, because nearly every gamepad
+sold today is Android-compatible, Xbox or PlayStation and works without
+one. C and Z stay in the report for programs that let players map buttons
+themselves.
 
 The four face buttons vary only in labeling — XY/AB, YX/BA, or
-Square/Triangle/Cross/Circle. Each face button reports in the place of its
-letter, wherever it sits on the gamepad, and Cross, Circle, Square and
-Triangle report as A, B, X and Y. The labeling rarely matters to a game
+Square/Triangle/Cross/Circle. The labeling rarely matters to a game
 until it prints a button's name, or the buttons stand in for directions.
 For those, the type bits of the DPAD register give the labeling of gamepad
 models with a known layout, such as Xbox, Nintendo and PlayStation pads.
 Many gamepads report type 0, unknown, including every gamepad in
 RetroArch, the pads on an Analogue Pocket dock and most generic USB
 gamepads. For a gamepad of type 0, a game can print which gamepad it was
-made for, or have a setting that picks Xbox or Nintendo labels.
+made for, or provide a setting.
 
 Home is the Guide button on an Xbox gamepad and the PS button on a
 PlayStation one, and a portable game does not use it. Steam, Windows and
