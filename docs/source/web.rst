@@ -80,6 +80,15 @@ open http://localhost:8000.
    * - ``rom``
      - ``'game.rp6502'``
      - The ROM, as a path from ``index.html``. Required.
+   * - ``args``
+     - ``['-c1']``
+     - The arguments for the program, argv[1] and on.
+   * - ``install``
+     - ``['game.bas']``
+     - Files for the program, as paths from ``index.html``. Each one is
+       installed on the null drive, where the program reads it as ``:``
+       followed by the file name, in any case. See :ref:`Installed ROMs
+       <port-installed-roms>`.
    * - ``db``
      - ``'username-mygame'``
      - The name of the IndexedDB database for saves. See `Saves`_.
@@ -103,6 +112,14 @@ open http://localhost:8000.
      - A picture shown until the game starts. See `Picture`_.
 
 A setting that is left out, or left blank, is off or takes its default.
+For example, Microsoft BASIC loads and runs a program named as an
+argument, and ``-c1`` keeps the keyboard in capitals:
+
+.. code-block:: javascript
+
+  rom:     'basic.rp6502',
+  install: ['game.bas'],
+  args:    ['-c1', ':GAME.BAS'],
 
 .. _web-saves:
 

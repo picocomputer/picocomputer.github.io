@@ -416,12 +416,15 @@ Installed ROMs
 
 The null drive, ``:``, holds ROMs that come from outside the filesystem.
 On an :doc:`pico`, the monitor's INSTALL command puts a ROM in flash,
-where it stays. On a desktop, ``--install`` puts a ROM there for one run
-of the emulator. The emulators also run a ROM from the null drive when no
-program could name its path, as when the path is longer than 255 bytes or
-has a character that the code page cannot hold or that FAT refuses. A
-program runs an installed ROM with EXEC and the name ``:name``, and every
-other call on a ``:`` path fails with ENODEV.
+where it stays. On a desktop, ``--install`` puts a file there for one run
+of the emulator, and in a browser, so does the ``install`` setting of the
+page, as described in :doc:`web`. The emulators also run a ROM from the
+null drive when no program could name its path, as when the path is
+longer than 255 bytes or has a character that the code page cannot hold
+or that FAT refuses. A program runs an installed ROM with EXEC and the
+name ``:name``. On the emulators, a program can also open an installed
+file for reading, such as a BASIC program. Case does not matter in an
+installed name. Every other call on a ``:`` path fails with ENODEV.
 
 argv[0] is the absolute path of the ROM, with its drive, however the ROM
 was started: ``MSC0:/games/hopper.rp6502``, ``C:/games/hopper.rp6502`` or
@@ -487,7 +490,7 @@ error for a full card.
    * - Installed ROMs
      - INSTALL, kept in flash
      - ``--install``, for one run
-     - none
+     - ``install``, for one visit
      - none
    * - Volume label
      - the FAT label

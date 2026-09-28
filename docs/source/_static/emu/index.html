@@ -9,8 +9,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
   .overlay {
-    --y: 78%;                              /* height of the button, from the top */
-    --size: clamp(56px, 18vmin, 96px);     /* width of the button */
+    --y: 84%;                              /* height of the button, from the top */
+    --size: clamp(40px, 16vmin, 96px);     /* width of the button */
     --shade: rgba(0, 0, 0, .45);           /* over the game */
     position: absolute; inset: 0; cursor: pointer; background: var(--shade);
     color: #fff; font: 600 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -43,7 +43,7 @@
   var CONFIG = {
     title:   'Star Hopper',             // browser tab title
     rom:     'starhopper.rp6502',       // the program, next to this file
-    db:      '',                        // saves database, such as 'username-projectname'
+    db:      'starhopper',              // saves database, such as 'username-projectname'
     bg:      '000000',                  // letterbox color, six hex digits
     filter:  'sharp',                   // nearest | linear | sharp
     overlay: 'overlay',                 // 'overlay' turns on the click-to-play template

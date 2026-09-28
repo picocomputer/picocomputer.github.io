@@ -181,8 +181,10 @@ work.
      - desktop
    * - ``--install``
      - ``file``
-     - Install a ROM on the null drive, reached as ``:basename``.
-       Repeatable to sixteen. When no ROM is named, the first one boots.
+     - Install a file on the null drive, reached as ``:basename``. A
+       program runs an installed ROM with EXEC and opens any other
+       installed file for reading. Repeatable to sixteen. When no ROM is
+       named, the first one boots.
      - all
    * - ``--save-dir``
      - ``folder``
@@ -457,8 +459,8 @@ MOS-style ``$FF``.
      - Print the seed this run filled memory with.
    * - ``install "path" [NAME]``,
        ``remove <NAME>``
-     - Install a ROM on the null drive as ``:NAME``, and remove it again.
-       The default name is the file's own basename.
+     - Install a file on the null drive as ``:NAME``, and remove it
+       again. The default name is the basename of the file.
    * - ``load "path"``
      - Boot a program. The machine must be stopped, since loading writes
        the memory a running program is using.
