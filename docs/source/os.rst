@@ -291,11 +291,52 @@ prototype that exists only in the library. A prototype with neither flag
 is both.
 
 ``Op code`` is the value a program writes to ``RIA_OP`` to start the
-operation, and ``None`` marks one the C library builds out of other
-operations. ``C proto`` names the header the declaration comes from.
+operation. An entry with only ``LIB`` prototypes has no op code.
+``C proto`` names the header the declaration comes from.
 ``a regs`` names the arguments and the return value that fit in ``RIA_A``
 alone, so a program can leave ``RIA_X`` unset. ``errno`` lists what can
 go wrong, and `ERRNO_OPT Compiler Constants`_ gives the number of each.
+
+
+Registers
+---------
+
+SPIN
+~~~~
+
+.. c:function:: lib int ria_spin (void)
+
+   Waits for the running OS operation to finish and returns ``RIA_A`` and
+   ``RIA_X`` as an int. A call to ``ria_spin()`` is a ``JSR RIA_SPIN``, as
+   described under `Application Binary Interface`_.
+
+   :C proto: rp6502.h
+
+
+VSYNC
+~~~~~
+
+.. c:function:: lib unsigned char ria_vsync (void)
+
+   Returns the VSYNC register, which increments every 1/60 second when
+   :doc:`PIX VGA <vga>` device 1 is connected.
+
+   :C proto: rp6502.h
+
+
+IRQ
+~~~
+
+.. c:function:: lib unsigned char ria_irq_read (void)
+                lib void ria_irq_write (unsigned char mask)
+
+   ``ria_irq_read()`` returns the triggered signals and clears them.
+   ``ria_irq_write()`` sets the enable mask and also clears any triggered
+   signals. Bit 7 is VSYNC and bit 6 is SIGINT, as in the
+   :ref:`register table <ria-registers>` of the :doc:`ria` datasheet.
+
+   :C proto: rp6502.h
+   :param mask: Signals to enable.
 
 
 .. _os-extended-memory:
@@ -356,20 +397,6 @@ XREG
    :errno: EACCES, EINVAL, EIO
 
 
-XRAM_STRUCT_SET
-~~~~~~~~~~~~~~~
-
-.. c:macro:: xram0_struct_set (addr, type, member, val)
-             xram1_struct_set (addr, type, member, val)
-
-   Set one member of a structure in XRAM, given the structure's address, its
-   type and the member's name. These are convenient but not efficient,
-   because every call sets the step and address.
-
-   :Op code: None
-   :C proto: rp6502.h
-
-
 XRAM_READ
 ~~~~~~~~~
 
@@ -381,13 +408,11 @@ XRAM_READ
    portal 1. The other portal is not touched. A count of 0 copies nothing.
 
    The call changes the portal's address register and sets its step
-   register to 1. An interrupt handler that uses the same portal must save
-   and restore both.
+   register to 1.
 
    This copies within the machine. To load XRAM from a file, use
    `READ_XRAM`_.
 
-   :Op code: None
    :C proto: rp6502.h
    :param dest: Destination in 6502 RAM.
    :param src: Source address in XRAM.
@@ -403,7 +428,6 @@ XRAM_WRITE
    Copy ``count`` bytes from 6502 RAM into XRAM. This is the other direction
    of `XRAM_READ`_ and follows the same rules.
 
-   :Op code: None
    :C proto: rp6502.h
    :param dest: Destination address in XRAM.
    :param src: Source in 6502 RAM.
@@ -420,7 +444,6 @@ XRAM_SET
    ``xram0_set()`` uses portal 0 and ``xram1_set()`` uses portal 1, with the
    same effect on the portal's registers as `XRAM_READ`_.
 
-   :Op code: None
    :C proto: rp6502.h
    :param dest: Address in XRAM to fill.
    :param val: Byte written to every position.
@@ -438,11 +461,48 @@ XRAM_MOVE
    registers are left at 1, or at -1 if the destination overlaps the end of
    the source and the copy runs backward.
 
-   :Op code: None
    :C proto: rp6502.h
    :param dest: Destination address in XRAM.
    :param src: Source address in XRAM.
    :param count: Quantity of bytes to copy.
+
+
+XRAM_PEEK
+~~~~~~~~~
+
+.. c:function:: lib unsigned char xram0_peek8 (unsigned addr)
+                lib unsigned char xram1_peek8 (unsigned addr)
+                lib unsigned xram0_peek16 (unsigned addr)
+                lib unsigned xram1_peek16 (unsigned addr)
+
+   Read one value from XRAM. ``xram0_peek8()`` and ``xram0_peek16()`` read
+   through portal 0, and ``xram1_peek8()`` and ``xram1_peek16()`` through
+   portal 1. The other portal is not touched.
+
+   The 8-bit calls read one byte and leave the step register unchanged.
+   The 16-bit calls read two bytes, low byte first, and set the step
+   register to 1. Every call changes the address register of the portal
+   it uses.
+
+   :C proto: rp6502.h
+   :param addr: Address in XRAM to read.
+   :returns: The value read.
+
+
+XRAM_POKE
+~~~~~~~~~
+
+.. c:function:: lib void xram0_poke8 (unsigned addr, unsigned char val)
+                lib void xram1_poke8 (unsigned addr, unsigned char val)
+                lib void xram0_poke16 (unsigned addr, unsigned val)
+                lib void xram1_poke16 (unsigned addr, unsigned val)
+
+   Write one value to XRAM. This is the other direction of `XRAM_PEEK`_
+   and follows the same rules.
+
+   :C proto: rp6502.h
+   :param addr: Address in XRAM to write.
+   :param val: Value to write.
 
 
 Process
@@ -527,8 +587,7 @@ EXIT
 
    :Op code: RIA_OP_EXIT 0xFF
    :C proto: stdlib.h
-   :a regs: status
-   :param status: 0 is success, 1-255 for error.
+   :param status: 0 is success, and any other value is an error.
 
 
 Attributes
@@ -778,7 +837,6 @@ READ
    Read ``count`` bytes from a file into a buffer. This is implemented in
    the compiler library as a series of calls to `READ_XSTACK`_.
 
-   :Op code: None
    :C proto: unistd.h
    :param buf: Destination for the returned data.
    :param count: Quantity of bytes to read. 0x7FFF max.
@@ -835,7 +893,6 @@ WRITE
    Write ``count`` bytes from a buffer to a file. This is implemented in
    the compiler library as a series of calls to `WRITE_XSTACK`_.
 
-   :Op code: None
    :C proto: unistd.h
    :param buf: Location of the data.
    :param count: Quantity of bytes to write. 0x7FFF max.
@@ -945,6 +1002,20 @@ SYNCFS
    :returns: 0 on success. -1 on error.
    :a regs: return, fildes
    :errno: EACCES, EBADF, EINVAL, EIO, ENOSPC, ENOSYS
+
+
+ISATTY
+~~~~~~
+
+.. c:function:: lib int isatty (int fildes)
+
+   Test whether a file descriptor is the console. ``stdin``, ``stdout``,
+   ``stderr``, ``CON:`` and ``TTY:`` are the console, as described in the
+   :ref:`console manifold <term-console-manifold>`.
+
+   :C proto: unistd.h
+   :param fildes: File descriptor.
+   :returns: 1 for the console. 0 for any other file descriptor.
 
 
 Paths

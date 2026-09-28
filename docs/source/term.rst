@@ -89,9 +89,9 @@ channels:
   This is what the :ref:`RIA TX and RX registers <ria-uart>` provide,
   packaged as stdio.
 
-``CON:`` and ``TTY:`` are each locked to their own file descriptor,
-which cannot be closed. A second open returns the same file descriptor
-as the first, and a close succeeds as a no-op.
+``CON:`` is locked to file descriptor 3 and ``TTY:`` to file descriptor
+4, and neither can be closed. A second open returns the same file
+descriptor as the first, and a close succeeds as a no-op.
 
 Non-blocking Read Line
 ----------------------

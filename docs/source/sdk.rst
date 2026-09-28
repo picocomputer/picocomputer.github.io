@@ -243,6 +243,20 @@ To start from assembly, replace ``src/main.c`` in ``CMakeLists.txt`` with
 files you don't use. An assembly project builds only with its compiler's
 presets.
 
+.. warning::
+
+   ``volatile`` has no effect on the cc65 optimizer, so wrap C code that
+   accesses RIA or VIA registers directly in an optimize pragma:
+
+   .. code-block:: C
+
+      #pragma optimize (push, off)
+      static void timer_start(void)
+      {
+          VIA.acr = 0x40;
+      }
+      #pragma optimize (pop)
+
 Commit the ``tools/`` folder, so every clone of the project builds with
 the same tools. The tools change only when you update them, with the
 "RP6502: update tools" task (Terminal > Run Task) or with
@@ -407,8 +421,7 @@ The ROM is written to the preset's build folder,
 ``build/<compiler>/<debug or release>/``, so the cc65 Debug build is
 ``build/cc65/debug/hello.rp6502``. To share a program, build it with a
 Release preset and share that file. It runs on every Picocomputer and in
-the emulator, including in a web browser through a
-:ref:`web build <emu-web-builds>`.
+the emulator, including in a web browser, as described in :doc:`web`.
 
 ``rp6502_executable()`` takes these keywords:
 
@@ -601,7 +614,8 @@ and a name in the copy can be changed without affecting anything else.
 This example is for a program that uses only the keyboard. The keyboard
 definitions are the :ref:`Keyboard <ria-keyboard>` block from the
 :doc:`ria` datasheet, and the layout after them places the keyboard at
-address 0.
+address 0. The types marked ``/* layout */`` are the blocks a program
+places in ``xram_layout_t`` and gives to an XREG.
 
 .. tab:: C
 
@@ -628,7 +642,7 @@ address 0.
       typedef struct
       {
           uint8_t keys[32];
-      } keyboard_t;
+      } keyboard_t; /* layout */
 
       typedef struct
       {
@@ -707,9 +721,7 @@ keyboard to its address, then loops until a key is pressed.
    .. code-block:: C
 
       xreg_ria_keyboard(XRAM_KEYBOARD);
-      RIA.addr0 = XRAM_KEYBOARD;
-      RIA.step0 = 0;
-      while (RIA.rw0 & (1 << KEYBOARD_NO_KEY))
+      while (xram0_peek8(XRAM_KEYBOARD) & (1 << KEYBOARD_NO_KEY))
           ;
 
 .. tab:: ca65

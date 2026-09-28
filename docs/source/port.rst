@@ -403,9 +403,7 @@ machine:
 - On Linux, macOS and Windows, written data survives a crash of the
   emulator, and syncfs keeps it through a crash of the whole computer.
 - In a browser, close queues a save to the browser's storage, and syncfs
-  waits until the save is stored. Why a game runs in only one window at a
-  time is covered in :ref:`Saves and browser storage
-  <emu-browser-storage>`.
+  waits until the save is stored.
 - In RetroArch, a save is as durable as on the system RetroArch runs on.
 - On the Pocket, a successful syncfs does not mean the data is on the
   card, because the Pocket sends no reply once the data is written.
