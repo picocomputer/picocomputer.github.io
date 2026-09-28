@@ -958,6 +958,58 @@ Each ROM is written to the matching folder of the build, such as
 ``build/cc65/debug/src/setup/setup.rp6502``.
 
 
+.. _sdk-basic:
+
+BASIC Programs
+==============
+
+``rp6502_basic()`` packages BASIC, ``tools/basic.rp6502``, with BASIC
+programs into one ROM, which runs on every Picocomputer and in the
+emulator:
+
+.. code-block:: cmake
+
+  cmake_minimum_required(VERSION 3.21)
+
+  include(${CMAKE_CURRENT_LIST_DIR}/tools/rp6502.cmake)
+
+  project(trek BASIC)
+
+  rp6502_basic(trek src/instructions.bas src/game.bas)
+
+The project is built with a ``basic`` preset, which sets
+``RP6502_BASIC``:
+
+.. code-block:: json
+
+  {
+      "name": "basic",
+      "binaryDir": "${sourceDir}/build/basic",
+      "cacheVariables": {
+          "RP6502_BASIC": "ON"
+      }
+  }
+
+Each program is an asset of the ROM under its file name, so a program
+opens another as ``ROM:`` followed by the file name, in any case. When
+no program is named in its arguments, BASIC loads and runs
+``ROM:AUTORUN.BAS``, which ``rp6502_basic()`` writes to run the first
+program. In the example above, BASIC starts ``instructions.bas``, which
+ends with:
+
+.. code-block:: text
+
+  2010 RUN "ROM:GAME.BAS"
+
+``tools/basic.rp6502`` is committed with the project, so it can be
+replaced with another build of BASIC. When it is missing, the configure
+downloads the latest release of `BASIC
+<https://github.com/picocomputer/msbasic>`__. The BASIC program is a
+CMake launch target, as a C program is, so F5 runs it in the emulator.
+`Super Star Trek <https://github.com/rumbledethumps/trek>`__ is a complete
+BASIC project.
+
+
 Command Line
 ============
 

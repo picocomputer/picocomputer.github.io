@@ -130,9 +130,10 @@ A program keeps high scores and saved games in files on the ``SAVE:``
 drive, as described in :ref:`Saves <port-save>`. In a browser, those
 files are stored in an IndexedDB database, and ``db`` is the name of
 that database. A browser holds one set of IndexedDB databases for each
-web site, and every game on itch.io is on one site, as is every project
-site of one GitHub account. So name the database with your full user
-name and the full project name, such as ``rumbledethumps-flappycoo``.
+web site. Every game on itch.io is on one site, so there, name the
+database with your full user name and the full project name, such as
+``rumbledethumps-flappycoo``. A GitHub Pages site, ``<user>.github.io``,
+holds only your own projects, so there the full project name is enough.
 With ``db`` blank, saves last until the page closes.
 
 .. _web-overlay:
@@ -288,86 +289,106 @@ ones from a newer itch.io zip, keep ``index.html``, and upload a new zip.
 GitHub Pages
 ============
 
-GitHub Pages publishes a web page from a GitHub repository, so a link in
-the README of a game can open a web player for it. This workflow builds the ROM on every
-push to ``main``, takes ``rp6502.js`` and ``rp6502.wasm`` from the latest
-release, and publishes the page.
+GitHub Pages publishes web pages from a GitHub repository, so a link in
+the README of a game can open a web player for it. The players are named
+in the markdown of the repository, and a workflow from
+`picocomputer/.github <https://github.com/picocomputer/.github>`__ builds
+each one and publishes it on every push to ``main``, with ``rp6502.js``
+and ``rp6502.wasm`` from the latest release. The repository needs no
+``index.html``.
 
-1. Put ``index.html`` in the root of the repository, next to
-   ``CMakeLists.txt``, with ``overlay`` set.
-2. On GitHub, open Settings > Pages, and set Source to GitHub Actions.
-3. Add this workflow as ``.github/workflows/pages.yml``, with the ROM's
-   name in place of ``game.rp6502``.
+1. On GitHub, open Settings > Pages, and set Source to GitHub Actions.
+2. Put this comment above the play link in ``README.md``, or in any other
+   markdown file of the repository. GitHub does not show it.
 
-.. code-block:: yaml
+   .. code-block:: text
 
-  name: Pages
+     <!-- rp6502
+     preset: cc65/Release
+     target: game
+     -->
+     [Play My Game](https://username.github.io/mygame/game/)
 
-  on:
-    push:
-      branches: [main]
-    workflow_dispatch:
+3. Add ``.github/workflows/web.yml``:
 
-  permissions:
-    contents: read
-    pages: write
-    id-token: write
+   .. code-block:: yaml
 
-  concurrency:
-    group: pages
-    cancel-in-progress: false
+     name: Web
+     on:
+       push:
+         branches: [main]
+       workflow_dispatch:
+     jobs:
+       web:
+         uses: picocomputer/.github/.github/workflows/web.yml@main
+         permissions:
+           contents: read
+           pages: write
+           id-token: write
 
-  jobs:
-    pages:
-      runs-on: ubuntu-24.04
-      environment:
-        name: github-pages
-        url: ${{ steps.deploy.outputs.page_url }}
-      steps:
-        - uses: actions/checkout@v7
+4. Push. Each player is at ``https://<user>.github.io/<repository>/<target>/``,
+   and ``https://<user>.github.io/<repository>/`` lists them.
 
-        - name: Install cc65
-          run: |
-            curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/cc65.sh | sh
-            echo "$HOME/.rp6502/cc65/bin" >> "$GITHUB_PATH"
+A repository can have a comment for each of its ROMs, such as one for
+each example in a collection. Each line of a comment is a key and a
+value:
 
-        - name: Build
-          run: |
-            cmake --preset cc65/Release
-            cmake --build --preset cc65/Release
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
 
-        - name: Make the site
-          env:
-            GH_TOKEN: ${{ github.token }}
-          run: |
-            gh release download --repo picocomputer/rp6502 --pattern '*-itch.io.zip' --output web.zip
-            mkdir site
-            unzip -j web.zip rp6502.js rp6502.wasm -d site
-            cp index.html build/cc65/release/game.rp6502 site/
+   * - Key
+     - Description
+   * - ``preset``
+     - The CMake preset that builds the ROM, such as ``cc65/Release``,
+       ``llvm-mos/Release`` or ``basic``. Required.
+   * - ``target``
+     - The CMake target. The ROM is ``<target>.rp6502``, and the player is
+       published at ``<target>/``. Required.
+   * - ``folder``
+     - The folder of the CMake project, when it is not the root of the
+       repository.
+   * - ``title``, ``args``, ``install``, ``image``, ``db``, ``bg``,
+       ``filter``
+     - The settings of `The Page`_. A list is separated by spaces, and a
+       path is relative to ``folder``.
+   * - ``overlay``
+     - ``no`` turns off the click-to-play overlay, for a program without
+       sound. The default is ``yes``, because a browser plays no sound
+       until the player clicks the page or presses a key.
+   * - ``frames``
+     - The number of frames, 60 a second, that the program runs before
+       the screenshot. Default 120.
+   * - ``footer``
+     - A line of plain text under the game, such as the controls. Repeat
+       it for more lines. A last line links to the repository.
 
-        - uses: actions/upload-pages-artifact@v5
-          with:
-            path: site
+The workflow also runs each ROM in the emulator and publishes the screen
+at ``<target>/screenshot.png``, 640 pixels wide, so that a README can show
+a current picture of the program with no image in the repository.
+``frames`` sets how long the program runs first, such as until its title
+screen. The program gets the same random numbers on every run, so the
+same ``frames`` gives the same picture.
 
-        - id: deploy
-          uses: actions/deploy-pages@v5
-
-4. Push. The page is at ``https://<user>.github.io/<repository>/`` once
-   the workflow has finished.
-
-For llvm-mos, install it with ``llvm-mos.sh`` in place of ``cc65.sh``,
-add ``$HOME/.rp6502/llvm-mos/bin`` to the path, and use the
-``llvm-mos/Release`` preset and ``build/llvm-mos/release/``. Copy any
-other file the page uses, such as the picture, into ``site/`` with the
-ROM. A release tag after ``download``, such as ``gh release download
-v0.35``, keeps the page on that release.
-
-This line in the README shows a screenshot, made as in `Picture`_ and
-committed to the repository, as a link to the player:
+This comment makes a player with saves and a footer, and its link shows
+the screenshot:
 
 .. code-block:: text
 
-  [![Play My Game](play.png)](https://username.github.io/mygame/)
+  <!-- rp6502
+  preset: llvm-mos/Release
+  target: flappycoo
+  title: Flappy Coo
+  db: flappycoo
+  footer: Space or click to flap, P to pause.
+  -->
+  [![Play Flappy Coo](https://rumbledethumps.github.io/flappycoo/flappycoo/screenshot.png)](https://rumbledethumps.github.io/flappycoo/flappycoo/)
+
+The workflow uses the tools committed in ``tools/``, including
+``tools/basic.rp6502`` for a BASIC project. A template, whose tools
+should always be the latest, adds ``update-tools: true`` under ``with:``
+in its workflow. ``rp6502: v0.35`` under ``with:`` keeps the players on
+that release.
 
 
 .. _web-hosts:
