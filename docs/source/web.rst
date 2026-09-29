@@ -388,10 +388,6 @@ of the emulator is for testing: it comes from the CI build of that
 commit, which is kept for 90 days, and the build of a pull request is the
 pull request merged with ``main``.
 
-The workflow uses the tools committed in ``tools/``. A template, whose
-tools should always be the latest, adds ``update-tools: true`` under
-``with:`` in its workflow.
-
 
 .. _web-hosts:
 
