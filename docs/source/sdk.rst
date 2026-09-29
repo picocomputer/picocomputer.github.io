@@ -963,9 +963,9 @@ Each ROM is written to the matching folder of the build, such as
 BASIC Programs
 ==============
 
-``rp6502_basic()`` packages BASIC, ``tools/basic.rp6502``, with BASIC
-programs into one ROM, which runs on every Picocomputer and in the
-emulator:
+``rp6502_basic()`` packages BASIC with BASIC programs into one ROM, which
+runs on every Picocomputer and in the emulator. Each program is an asset,
+added with ``rp6502_asset()`` as for a C program:
 
 .. code-block:: cmake
 
@@ -975,7 +975,10 @@ emulator:
 
   project(trek BASIC)
 
-  rp6502_basic(trek src/instructions.bas src/game.bas)
+  add_executable(trek)
+  rp6502_asset(trek instructions.bas src/instructions.bas)
+  rp6502_asset(trek game.bas src/game.bas)
+  rp6502_basic(trek instructions.bas)
 
 The project is built with a ``basic`` preset, which sets
 ``RP6502_BASIC``:
@@ -990,24 +993,91 @@ The project is built with a ``basic`` preset, which sets
       }
   }
 
-Each program is an asset of the ROM under its file name, so a program
-opens another as ``ROM:`` followed by the file name, in any case. When
-no program is named in its arguments, BASIC loads and runs
-``ROM:AUTORUN.BAS``, which ``rp6502_basic()`` writes to run the first
-program. In the example above, BASIC starts ``instructions.bas``, which
-ends with:
+A program opens another as ``ROM:`` followed by its asset name, in any
+case. The name after the target, ``instructions.bas`` above, is the
+program that runs at start: ``rp6502_basic()`` adds an asset
+``autorun.bas`` that runs it, and BASIC loads and runs ``ROM:AUTORUN.BAS``
+when no program is named in its arguments. Without that name, BASIC
+starts at its prompt. In the example above, BASIC starts
+``instructions.bas``, which ends with:
 
 .. code-block:: text
 
   2010 RUN "ROM:GAME.BAS"
 
-``tools/basic.rp6502`` is committed with the project, so it can be
-replaced with another build of BASIC. When it is missing, the configure
-downloads the latest release of `BASIC
-<https://github.com/picocomputer/msbasic>`__. The BASIC program is a
-CMake launch target, as a C program is, so F5 runs it in the emulator.
-`Super Star Trek <https://github.com/rumbledethumps/trek>`__ is a complete
-BASIC project.
+BASIC is the latest release of `picocomputer/msbasic
+<https://github.com/picocomputer/msbasic>`__, or the one that ``BASIC``
+names, in the forms of `Fetching BASIC and the Emulator`_:
+
+.. code-block:: cmake
+
+  rp6502_basic(trek BASIC build-96e229e instructions.bas)
+
+The BASIC program is a CMake launch target, as a C program is, so F5 runs
+it in the emulator. `Super Star Trek <https://github.com/rumbledethumps/trek>`__
+is a complete BASIC project.
+
+
+Web Players
+===========
+
+``rp6502_web()`` packages a ROM with the emulator and a page into a zip
+that plays the program in a browser:
+
+.. code-block:: cmake
+
+  rp6502_web(hello)
+
+The zip is ``web/hello.zip`` in the build folder, and the same files are
+unpacked in ``web/hello/``. In VS Code, choose "RP6502 (Web)" in the Run
+and Debug side panel and press F5: the project is built, and the browser
+opens a page with a link to every web player in the build folder. The
+settings, the page and the emulator of a zip are in :ref:`Building with
+CMake <web-cmake>`.
+
+
+.. _sdk-fetch:
+
+Fetching BASIC and the Emulator
+===============================
+
+``rp6502_basic()`` and ``rp6502_web()`` fetch BASIC and the web zip of the
+emulator when the project is configured, and keep them in the build
+folder. Without ``BASIC`` or ``EMULATOR``, each is the latest release of
+its official repository, ``picocomputer/msbasic`` or
+``picocomputer/rp6502``. ``BASIC`` and ``EMULATOR`` name another in one
+of these forms:
+
+.. list-table::
+   :widths: 30 70
+   :header-rows: 1
+
+   * - Form
+     - Description
+   * - ``v0.36``
+     - A release tag or a commit of the official repository.
+   * - ``owner/repo``
+     - The latest release of a repository on GitHub.
+   * - ``owner/repo/ref``
+     - A release tag, or else a branch or a commit, of a repository on
+       GitHub.
+   * - ``tools/basic.rp6502``
+     - A file of the project, ending in ``.rp6502`` for BASIC or ``.zip``
+       for the emulator.
+
+A release lists its files with their hashes in a ``SHA256SUMS`` file,
+which the download is checked against. A commit that is not a release
+comes from the CI build of that commit. That is for testing: it needs a
+GitHub token in ``GITHUB_TOKEN`` or ``GH_TOKEN``, and the build is kept for
+90 days.
+
+The configure stops when a download fails. To work without a network,
+download the file, commit it with the project, and name it:
+
+.. code-block:: cmake
+
+  rp6502_basic(trek BASIC tools/basic.rp6502 instructions.bas)
+  rp6502_web(trek EMULATOR tools/rp6502-0.36-web.zip)
 
 
 Command Line

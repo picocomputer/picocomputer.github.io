@@ -19,12 +19,14 @@ A web player is four files, served together from one folder:
 - ``rp6502.js`` and ``rp6502.wasm``, the emulator.
 - The ROM, such as ``game.rp6502``.
 
-``rp6502.js`` and ``rp6502.wasm`` are in the itch.io zip on the `releases
-page <https://github.com/picocomputer/rp6502/releases/latest>`__, and they
-are always replaced as a pair. ``index.html`` is not tied to a release:
-the ``index.html`` described here needs release 0.35 or later, and it
-works with the ``rp6502.js`` and ``rp6502.wasm`` of every later release.
-Any change to the settings is listed in the release notes.
+``rp6502.js`` and ``rp6502.wasm`` are in the web zip on the `releases
+page <https://github.com/picocomputer/rp6502/releases/latest>`__, with a
+sample ``index.html`` and program, and they are always replaced as a
+pair. In a CMake project, ``rp6502_web()`` builds all four files into a
+zip, as described in `Building with CMake`_. ``index.html`` is not tied to
+a release: the ``index.html`` described here needs release 0.36 or later,
+and it works with the ``rp6502.js`` and ``rp6502.wasm`` of every later
+release. Any change to the settings is listed in the release notes.
 
 
 .. _web-page:
@@ -103,13 +105,15 @@ open http://localhost:8000.
        smooths.
    * - ``overlay``
      - ``'overlay'``
-     - The ``id`` of the click-to-play template. See `Click to Play`_.
+     - The ``id`` of the template shown while there is no sound. See
+       `Click to Play`_.
+   * - ``run``
+     - ``'always'``
+     - When the program starts: ``always``, ``onaudio`` or ``onclick``.
+       Default ``always``. See `Click to Play`_.
    * - ``footer``
      - ``'footer'``
      - The ``id`` of the footer template. See `Footer`_.
-   * - ``image``
-     - ``'play.png'``
-     - A picture shown until the game starts. See `Picture`_.
 
 A setting that is left out, or left blank, is off or takes its default.
 For example, Microsoft BASIC loads and runs a program named as an
@@ -130,11 +134,12 @@ A program keeps high scores and saved games in files on the ``SAVE:``
 drive, as described in :ref:`Saves <port-save>`. In a browser, those
 files are stored in an IndexedDB database, and ``db`` is the name of
 that database. A browser holds one set of IndexedDB databases for each
-web site. Every game on itch.io is on one site, so there, name the
-database with your full user name and the full project name, such as
-``rumbledethumps-flappycoo``. A GitHub Pages site, ``<user>.github.io``,
-holds only your own projects, so there the full project name is enough.
-With ``db`` blank, saves last until the page closes.
+web site. A site that holds the games of many people shares that set
+among them, so there, name the database with your full user name and the
+full project name, such as ``rumbledethumps-flappycoo``. A site of your
+own, such as a GitHub Pages site, ``<user>.github.io``, holds only your
+projects, so there the full project name is enough. With ``db`` blank,
+saves last until the page closes.
 
 .. _web-overlay:
 
@@ -142,11 +147,10 @@ Click to Play
 -------------
 
 A browser plays no sound on a page until the player clicks the page or
-presses a key, and a page shown inside another page, in an
-``<iframe>``, gets no key presses until it is clicked. The click-to-play
-overlay covers the game with a play button, so that the player knows to
-click it. The game runs silently under the overlay, and the click, or any
-key press, removes the overlay and turns the sound on.
+presses a key. While there is no sound, the click-to-play overlay covers
+the game with a play button, so that the player knows to click it. The
+click turns the sound on and removes the overlay. Where the browser plays
+sound at once, there is no overlay.
 
 The overlay is a ``<template>`` in ``index.html``. The browser keeps the
 HTML in a template without showing it. ``overlay`` names the template by
@@ -176,8 +180,8 @@ Then turn it on in ``CONFIG``:
 
   overlay: 'overlay',
 
-The ``index.html`` in the itch.io zip has a round play button in its
-overlay template, with settings at the top of its style:
+The ``index.html`` in the web zip has a round play button in its overlay
+template, with settings at the top of its style:
 
 .. code-block:: css
 
@@ -187,8 +191,16 @@ overlay template, with settings at the top of its style:
     --shade: rgba(0, 0, 0, .45);           /* over the game */
 
 ``--y: 70%`` moves the button lower, over an empty part of a title
-screen. The overlay is off in that file, because itch.io shows a launch
-button before the game, and that click turns the sound on.
+screen.
+
+``run`` sets when the program starts:
+
+- ``always``, the default: at once, under the overlay while there is no
+  sound.
+- ``onaudio``: when there is sound, so the program starts from the
+  beginning with sound.
+- ``onclick``: at a click on the overlay or a key press, even where the
+  browser plays sound at once.
 
 .. _web-footer:
 
@@ -225,27 +237,6 @@ those of the overlay:
 Give a link in the footer ``target="_blank"``, so that it opens in a new
 tab instead of in place of the game.
 
-.. _web-picture:
-
-Picture
--------
-
-``image`` names a picture shown in place of the game until it starts.
-With the overlay, the game starts at the click, so the picture is under
-the play button until then, and the emulator is already loaded when the
-player clicks. Without the overlay, the game starts at once, and the
-picture shows only while the emulator loads.
-
-A screenshot of the title screen works well. This command runs the ROM
-for 120 frames and writes the screen to ``play.png``:
-
-.. code-block:: text
-
-  rp6502-emu game.rp6502 --screenshot play.png
-
-The picture is scaled to fit, keeping its shape, and its pixels stay
-square when it is enlarged.
-
 License Notices
 ---------------
 
@@ -254,34 +245,53 @@ With ``?credits`` at the end of its address, such as
 of the components in ``rp6502.js`` and ``rp6502.wasm``.
 
 
-.. _web-itch:
+.. _web-cmake:
 
-itch.io
-=======
+Building with CMake
+===================
 
-itch.io publishes browser games for free, and it is the quickest way to
-share a program.
+In a CMake project, ``rp6502_web()`` packages a ROM with the emulator and
+a page into a zip, ready to upload. This line builds ``web/game.zip`` in
+the build folder from the ROM of the ``game`` target, with the page from
+the web zip and the emulator of the latest release:
 
-1. Download ``rp6502-<version>-itch.io.zip`` from the `releases page
-   <https://github.com/picocomputer/rp6502/releases/latest>`__ and unpack
-   it. The folder holds ``index.html``, ``rp6502.js``, ``rp6502.wasm``,
-   the sample program ``adventure.rp6502`` and a ``README.txt``.
-2. Put your ROM in the folder and delete ``adventure.rp6502``.
-3. In ``index.html``, set ``title``, ``rom`` and ``db`` in ``CONFIG``.
-   Leave ``overlay`` blank.
-4. Zip the contents of the folder, so that ``index.html`` is at the root
-   of the zip, not in a subfolder.
-5. On itch.io, create a project, set the kind of project to HTML, upload
-   the zip, and tick "This file will be played in the browser".
-6. In the embed options, set the size manually to 640x480 or 640x360,
-   and leave scrollbars and SharedArrayBuffer support off. A program with
-   a 320-pixel-wide canvas is enlarged to fit.
+.. code-block:: cmake
 
-Please tag your project **RP6502**, so that it is listed with the other
-Picocomputer software at https://itch.io/games/tag-rp6502.
+  rp6502_web(game)
 
-To update the emulator, replace ``rp6502.js`` and ``rp6502.wasm`` with the
-ones from a newer itch.io zip, keep ``index.html``, and upload a new zip.
+The same files are unpacked next to it in ``web/game/``. ``CONFIG`` sets
+settings of the page, as JavaScript, with a comma after each one:
+
+.. code-block:: cmake
+
+  rp6502_web(game CONFIG [[
+      title: 'My Game',
+      db: 'username-mygame',
+  ]])
+
+The settings replace the same settings in the page, and the others are
+added. ``rom`` is always the ROM of the target. ``PAGE`` gives a page of
+your own, and ``OUTPUT`` names the zip, so one ROM can be packaged for
+several sites:
+
+.. code-block:: cmake
+
+  rp6502_web(game OUTPUT pages.zip PAGE web/pages.html)
+  rp6502_web(game OUTPUT arcade.zip PAGE web/arcade)
+
+A file after ``PAGE`` is stored in the zip as ``index.html``. A folder is
+copied into the zip with its subfolders, and an ``index.html`` at its
+root is the page. ``EMULATOR`` names the web zip that ``rp6502.js`` and
+``rp6502.wasm`` come from, in the forms of :ref:`Fetching BASIC and the
+Emulator <sdk-fetch>`:
+
+.. code-block:: cmake
+
+  rp6502_web(game EMULATOR v0.36)
+
+In VS Code, choose "RP6502 (Web)" in the Run and Debug side panel and
+press F5. The project is built, and the browser opens a page with a link
+to every web player in the build folder.
 
 
 .. _web-github:
@@ -293,9 +303,8 @@ GitHub Pages publishes web pages from a GitHub repository, so a link in
 the README of a game can open a web player for it. The players are named
 in the markdown of the repository, and a workflow from
 `picocomputer/.github <https://github.com/picocomputer/.github>`__ builds
-each one and publishes it on every push to ``main``, with ``rp6502.js``
-and ``rp6502.wasm`` from the latest release. The repository needs no
-``index.html``.
+each one with ``rp6502_web()`` and publishes it on every push to
+``main``.
 
 1. On GitHub, open Settings > Pages, and set Source to GitHub Actions.
 2. Put this comment above the play link in ``README.md``, or in any other
@@ -305,7 +314,7 @@ and ``rp6502.wasm`` from the latest release. The repository needs no
 
      <!-- rp6502
      preset: cc65/Release
-     target: game
+     publish: game.zip
      -->
      [Play My Game](https://username.github.io/mygame/game/)
 
@@ -318,18 +327,27 @@ and ``rp6502.wasm`` from the latest release. The repository needs no
        push:
          branches: [main]
        workflow_dispatch:
+         inputs:
+           source:
+             description: Branch, tag or commit to build
+           emulator:
+             description: Emulator, such as v0.36
      jobs:
        web:
          uses: picocomputer/.github/.github/workflows/web.yml@main
+         with:
+           source: ${{ inputs.source }}
+           emulator: ${{ inputs.emulator }}
          permissions:
            contents: read
            pages: write
            id-token: write
 
-4. Push. Each player is at ``https://<user>.github.io/<repository>/<target>/``,
-   and ``https://<user>.github.io/<repository>/`` lists them.
+4. Push. Each player is at ``https://<user>.github.io/<repository>/<name>/``,
+   where ``<name>`` is the zip without ``.zip``, and
+   ``https://<user>.github.io/<repository>/`` lists them.
 
-A repository can have a comment for each of its ROMs, such as one for
+A repository can have a comment for each of its zips, such as one for
 each example in a collection. Each line of a comment is a key and a
 value:
 
@@ -340,55 +358,45 @@ value:
    * - Key
      - Description
    * - ``preset``
-     - The CMake preset that builds the ROM, such as ``cc65/Release``,
+     - The CMake preset that builds the zip, such as ``cc65/Release``,
        ``llvm-mos/Release`` or ``basic``. Required.
-   * - ``target``
-     - The CMake target. The ROM is ``<target>.rp6502``, and the player is
-       published at ``<target>/``. Required.
+   * - ``publish``
+     - The zip that ``rp6502_web()`` makes, such as ``game.zip``. It is
+       published at ``game/``. Required.
    * - ``folder``
      - The folder of the CMake project, when it is not the root of the
        repository.
-   * - ``title``, ``args``, ``install``, ``image``, ``db``, ``bg``,
-       ``filter``
-     - The settings of `The Page`_. A list is separated by spaces, and a
-       path is relative to ``folder``.
-   * - ``overlay``
-     - ``no`` turns off the click-to-play overlay, for a program without
-       sound. The default is ``yes``, because a browser plays no sound
-       until the player clicks the page or presses a key.
    * - ``frames``
      - The number of frames, 60 a second, that the program runs before
        the screenshot. Default 120.
-   * - ``footer``
-     - A line of plain text under the game, such as the controls. Repeat
-       it for more lines. A last line links to the repository.
 
 The workflow also runs each ROM in the emulator and publishes the screen
-at ``<target>/screenshot.png``, 640 pixels wide, so that a README can show
+at ``<name>/screenshot.png``, 640 pixels wide, so that a README can show
 a current picture of the program with no image in the repository.
 ``frames`` sets how long the program runs first, such as until its title
 screen. The program gets the same random numbers on every run, so the
-same ``frames`` gives the same picture.
-
-This comment makes a player with saves and a footer, and its link shows
-the screenshot:
+same ``frames`` gives the same picture. This comment and link show the
+screenshot:
 
 .. code-block:: text
 
   <!-- rp6502
   preset: llvm-mos/Release
-  target: flappycoo
-  title: Flappy Coo
-  db: flappycoo
-  footer: Space or click to flap, P to pause.
+  publish: flappycoo.zip
   -->
   [![Play Flappy Coo](https://rumbledethumps.github.io/flappycoo/flappycoo/screenshot.png)](https://rumbledethumps.github.io/flappycoo/flappycoo/)
 
-The workflow uses the tools committed in ``tools/``, including
-``tools/basic.rp6502`` for a BASIC project. A template, whose tools
-should always be the latest, adds ``update-tools: true`` under ``with:``
-in its workflow. ``rp6502: v0.35`` under ``with:`` keeps the players on
-that release.
+"Run workflow" on the Actions tab of the repository runs the workflow by
+hand. ``source`` builds another branch, tag or commit of the repository,
+and ``emulator`` replaces the ``EMULATOR`` of every ``rp6502_web()``, in
+the forms of :ref:`Fetching BASIC and the Emulator <sdk-fetch>`. A commit
+of the emulator is for testing: it comes from the CI build of that
+commit, which is kept for 90 days, and the build of a pull request is the
+pull request merged with ``main``.
+
+The workflow uses the tools committed in ``tools/``. A template, whose
+tools should always be the latest, adds ``update-tools: true`` under
+``with:`` in its workflow.
 
 
 .. _web-hosts:
@@ -397,9 +405,9 @@ Other Web Servers
 =================
 
 Any web server that serves plain files can host a web player: copy the
-four files into one folder. ``rp6502.wasm`` is loaded from the folder of
-``rp6502.js``, and the ROM and the picture are loaded from paths
-relative to ``index.html``.
+files of the zip into one folder. ``rp6502.wasm`` is loaded from the
+folder of ``rp6502.js``, and the ROM is loaded from a path relative to
+``index.html``.
 
 A web player can be shown inside another page with an ``<iframe>``:
 
@@ -408,6 +416,5 @@ A web player can be shown inside another page with an ``<iframe>``:
   <iframe src="game/index.html" width="640" height="480"
           allow="autoplay; fullscreen; gamepad"></iframe>
 
-Turn the overlay on for a player in an ``<iframe>``, because the frame
-gets no key presses until it is clicked. The game on the :doc:`home page
-<index>` of this site is a web player in an ``<iframe>``.
+The game on the :doc:`home page <index>` of this site is a web player in
+an ``<iframe>``.

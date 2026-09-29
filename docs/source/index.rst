@@ -78,8 +78,8 @@ stack. No hardware, and nothing to buy.
 You write in C or 6502 assembly, with either compiler, cc65 or llvm-mos.
 The template comes with a hello world in each.
 
-When it's good, edit a couple of lines and upload it to itch.io, where
-anyone can play it in a browser. The steps are in :doc:`web`. For the
+When it's good, add a line to build it as a web page, where anyone can
+play it in a browser. The steps are in :doc:`web`. For the
 ultimate flex, build a :doc:`pico`.
 
 :doc:`sdk` has the details, from installing a compiler to debugging on
@@ -141,7 +141,7 @@ You already have one. Games and applications are distributed as
   and you don't even have to solder, but you will plug eight ICs into
   their sockets. Usually under $100 USD.
 - :doc:`emu` — Windows, macOS, Linux, and RetroArch.
-- :doc:`web` — publish on itch.io, playable in the browser.
+- :doc:`web` — your program on a web page, playable in the browser.
 - :doc:`fpga` — the whole machine in gates, on an Analogue Pocket today
   and MiSTer next.
 

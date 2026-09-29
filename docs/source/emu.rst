@@ -91,12 +91,11 @@ In a Browser
 ============
 
 The emulator also runs on a web page that plays one ROM, so anyone can
-play a program without installing anything. The quickest way to share a
-program this way is itch.io: the itch.io zip on the `releases page
-<https://github.com/picocomputer/rp6502/releases/latest>`__ is a
-ready-to-upload project, and only the ROM and a few lines of
-``index.html`` change. The steps, and those for GitHub Pages and other
-web servers, are in :doc:`web`.
+play a program without installing anything. ``rp6502_web()`` builds the
+page and the emulator into a zip, ready to upload, and the web zip on the
+`releases page <https://github.com/picocomputer/rp6502/releases/latest>`__
+is a sample. The steps, and those for GitHub Pages and other web
+servers, are in :doc:`web`.
 
 
 RetroArch
