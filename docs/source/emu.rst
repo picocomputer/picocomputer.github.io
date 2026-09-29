@@ -199,8 +199,8 @@ work.
      - all
    * - ``--phi2``
      - kHz
-     - 6502 clock, 100 to 8000. Default 8000. ``0`` runs unpaced: the
-       machine goes as fast as the host can take it.
+     - 6502 clock, 100 to 8000. Default 8000. ``0`` is for
+       ``--headless``, and runs the 6502 with no speed limit.
      - all
    * - ``--cp``
      - number
@@ -334,6 +334,8 @@ display. The program's ``stdout`` and ``stderr`` reach the Debug Console
 as output events of those two categories, so VS Code shows ``stderr`` in
 red.
 
+
+.. _emu-scripting:
 
 Scripting
 =========

@@ -35,7 +35,7 @@ with either compiler, and in each compiler's assembly syntax.
    build/cc65/debug/hello.rp6502
               │
         ┌─────┴──────────────────────────┐
-        ▼ RP6502 (Emulator)              ▼ RP6502 (Hardware)
+        ▼ RP6502-EMU                     ▼ RP6502-PICO
    tools/rp6502-emu, with            a Picocomputer, over
    breakpoints and stepping          USB serial or telnet
 
@@ -200,6 +200,9 @@ Code's Debug Console. The session stays open after the program ends so
 the screen can be read. Stop it with Shift+F5. The emulator window may
 open behind VS Code.
 
+.. Stale: first-run-*.png show RP6502 (Emulator) in the status bar.
+   Retake them with the entry named RP6502-EMU.
+
 .. image:: _static/sdk/first-run-light.png
    :class: only-light
    :width: 700
@@ -277,28 +280,34 @@ update. Build the emulator from the `rp6502 repository
 Running and Debugging
 =====================
 
-"Start Debugging" (F5) runs one of two launch configurations. Choose
+"Start Debugging" (F5) runs one of three launch configurations. Choose
 which in the Run and Debug side panel.
+
+.. Stale: configs-*.png show RP6502 (Emulator) and RP6502 (Hardware)
+   only. Retake them with RP6502-EMU, RP6502-PICO and RP6502-WEB.
 
 .. image:: _static/sdk/configs-light.png
    :class: only-light
    :width: 400
-   :alt: The Run and Debug configuration list with RP6502 (Emulator) and
-         RP6502 (Hardware).
+   :alt: The Run and Debug configuration list with RP6502-EMU,
+         RP6502-PICO and RP6502-WEB.
 
 .. image:: _static/sdk/configs-dark.png
    :class: only-dark
    :width: 400
-   :alt: The Run and Debug configuration list with RP6502 (Emulator) and
-         RP6502 (Hardware).
+   :alt: The Run and Debug configuration list with RP6502-EMU,
+         RP6502-PICO and RP6502-WEB.
 
-**RP6502 (Emulator)** is the default. It builds the project and runs it
+**RP6502-EMU** is the default. It builds the project and runs it
 in the :doc:`emu` with source-level debugging: breakpoints, stepping, the
 call stack, variables and watch expressions, all of which need a Debug
 preset. With llvm-mos, variables show their C types, and structures and
 arrays expand. With cc65, variables have no types, and each variable's
 size comes from where its symbol sits in memory.
 :ref:`Debugging <emu-debugging>` in the emulator's datasheet covers both.
+
+.. Stale: breakpoint-*.png show RP6502 (Emulator) in the status bar and
+   the Run and Debug header. Retake them with the entry named RP6502-EMU.
 
 .. image:: _static/sdk/breakpoint-light.png
    :class: only-light
@@ -312,7 +321,7 @@ size comes from where its symbol sits in memory.
    :alt: VS Code stopped at a breakpoint in main.c, with the Variables and
          Call Stack panels.
 
-**RP6502 (Hardware)** builds the project and runs it on an :doc:`pico`.
+**RP6502-PICO** builds the project and runs it on an :doc:`pico`.
 The connection is USB, through the USB port on the Picocomputer's VGA
 module, or telnet with an :doc:`ria_w`. First set ``device``, and ``key``
 for telnet, as `The .rp6502 Settings File`_ describes.
@@ -324,6 +333,10 @@ plugged in. The copy replaces any file with the same name. The program's
 console opens in a VS Code terminal. There are no breakpoints or stepping
 on hardware. In the terminal, Ctrl-A then X exits, and Ctrl-A then B
 sends a break. A break stops the program and returns to the monitor.
+
+**RP6502-WEB** builds the project and opens a page in a browser with a
+link to every web player that ``rp6502_web()`` makes, as `Web Players`_
+describes.
 
 
 The .rp6502 Settings File
@@ -993,6 +1006,10 @@ The project is built with a ``basic`` preset, which sets
       }
   }
 
+A project that also has C or assembly lists BASIC after them, as in
+``project(hello C ASM BASIC)``, and has no ``basic`` preset. The cc65 and
+llvm-mos presets build the BASIC programs with the C and assembly ones.
+
 A program opens another as ``ROM:`` followed by its asset name, in any
 case. The name after the target, ``instructions.bas`` above, is the
 program that runs at start: ``rp6502_basic()`` adds an asset
@@ -1029,7 +1046,7 @@ that plays the program in a browser:
   rp6502_web(hello)
 
 The zip is ``web/hello.zip`` in the build folder, and the same files are
-unpacked in ``web/hello/``. In VS Code, choose "RP6502 (Web)" in the Run
+unpacked in ``web/hello/``. In VS Code, choose "RP6502-WEB" in the Run
 and Debug side panel and press F5: the project is built, and the browser
 opens a page with a link to every web player in the build folder. The
 settings, the page and the emulator of a zip are in :ref:`Building with
@@ -1110,8 +1127,8 @@ Running on Hardware
 ``rp6502.py run`` copies the ROM to the current folder of the monitor, or
 to the ``workdir`` folder, loads it, and opens a terminal on the console.
 In the terminal, Ctrl-A then X exits, and Ctrl-A then B sends a break.
-Options go before the subcommand, and ``-c .rp6502`` uses the settings
-file that VS Code uses.
+The options of ``rp6502.py``, such as ``-c``, go before the subcommand,
+and ``-c .rp6502`` uses the settings file that VS Code uses.
 
 .. code-block:: text
 
@@ -1127,8 +1144,10 @@ in the file take precedence over these options.
   python3 tools/rp6502.py -d 192.168.1.20 -k secret run build/cc65/debug/hello.rp6502
 
 Words after the ROM's file name are passed to the ROM as its arguments.
-``rp6502.py`` has these subcommands, and ``python3 tools/rp6502.py
---help`` lists every option.
+``rp6502.py`` has these subcommands. ``python3 tools/rp6502.py --help``
+lists the options that go before a subcommand, and ``--help`` after a
+subcommand, as in ``python3 tools/rp6502.py execute --help``, lists the
+options of that subcommand.
 
 .. list-table::
    :widths: 20 80
@@ -1153,6 +1172,10 @@ Words after the ROM's file name are passed to the ROM as its arguments.
        this.
    * - ``create``
      - Package files into a ROM. See `Packaging a ROM by Hand`_.
+   * - ``web``
+     - Serve the web players in a build folder, and open a page in a
+       browser with a link to each one. VS Code uses this. See `Web
+       Players`_.
 
 ``run``, ``upload``, ``term`` and ``basic`` send a break first, which
 stops the program running on the Picocomputer.
@@ -1175,6 +1198,22 @@ command's exit code, so a ROM can run as a step in a script or a test.
 .. code-block:: text
 
   python3 tools/rp6502.py -c .rp6502 execute build/cc65/debug/hello.rp6502
+
+``--script`` runs the ROM with an emulator :ref:`script <emu-scripting>`
+of input and expected output instead, so a program that reads the
+keyboard can be tested. The output of the ROM then goes to the script
+instead of standard output, and the exit code is 0 when the script
+passes and 1 when it fails. This command runs the play test of `Super
+Star Trek <https://github.com/rumbledethumps/trek>`__:
+
+.. code-block:: text
+
+  python3 tools/rp6502.py -c .rp6502 execute --script tests/play.txt --seed 1 build/basic/trek.rp6502
+
+``--seed`` fixes the random numbers, so every run is the same.
+``--save-dir`` names the folder used as ``SAVE:``, so a test can start
+with no saved files. ``--phi2`` sets the 6502 clock in kHz. Without
+``--script``, the default is 0, which runs the 6502 with no speed limit.
 
 Another editor can debug with the emulator through the :ref:`Debug
 Adapter Protocol <emu-dap>`.

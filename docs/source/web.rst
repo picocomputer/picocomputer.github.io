@@ -283,7 +283,7 @@ Emulator <sdk-fetch>`:
 
   rp6502_web(game EMULATOR v0.36)
 
-In VS Code, choose "RP6502 (Web)" in the Run and Debug side panel and
+In VS Code, choose "RP6502-WEB" in the Run and Debug side panel and
 press F5. The project is built, and the browser opens a page with a link
 to every web player in the build folder.
 
