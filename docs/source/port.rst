@@ -403,9 +403,7 @@ machine:
 - On Linux, macOS and Windows, written data survives a crash of the
   emulator, and syncfs keeps it through a crash of the whole computer.
 - In a browser, close queues a save to the browser's storage, and syncfs
-  waits until the save is stored. Why a game runs in only one window at a
-  time is covered in :ref:`Saves and browser storage
-  <emu-browser-storage>`.
+  waits until the save is stored.
 - In RetroArch, a save is as durable as on the system RetroArch runs on.
 - On the Pocket, a successful syncfs does not mean the data is on the
   card, because the Pocket sends no reply once the data is written.
@@ -418,12 +416,15 @@ Installed ROMs
 
 The null drive, ``:``, holds ROMs that come from outside the filesystem.
 On an :doc:`pico`, the monitor's INSTALL command puts a ROM in flash,
-where it stays. On a desktop, ``--install`` puts a ROM there for one run
-of the emulator. The emulators also run a ROM from the null drive when no
-program could name its path, as when the path is longer than 255 bytes or
-has a character that the code page cannot hold or that FAT refuses. A
-program runs an installed ROM with EXEC and the name ``:name``, and every
-other call on a ``:`` path fails with ENODEV.
+where it stays. On a desktop, ``--install`` puts a file there for one run
+of the emulator, and in a browser, so does the ``install`` setting of the
+page, as described in :doc:`web`. The emulators also run a ROM from the
+null drive when no program could name its path, as when the path is
+longer than 255 bytes or has a character that the code page cannot hold
+or that FAT refuses. A program runs an installed ROM with EXEC and the
+name ``:name``. On the emulators, a program can also open an installed
+file for reading, such as a BASIC program. Case does not matter in an
+installed name. Every other call on a ``:`` path fails with ENODEV.
 
 argv[0] is the absolute path of the ROM, with its drive, however the ROM
 was started: ``MSC0:/games/hopper.rp6502``, ``C:/games/hopper.rp6502`` or
@@ -489,7 +490,7 @@ error for a full card.
    * - Installed ROMs
      - INSTALL, kept in flash
      - ``--install``, for one run
-     - none
+     - ``install``, for one visit
      - none
    * - Volume label
      - the FAT label

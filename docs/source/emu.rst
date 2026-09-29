@@ -87,89 +87,15 @@ Start the emulator with a ROM, or drag one onto the window.
   rp6502-emu game.rp6502
 
 
-.. _emu-web-builds:
+In a Browser
+============
 
-Web Builds
-==========
-
-The itch.io package in the `releases
-<https://github.com/picocomputer/rp6502/releases/latest>`__ is a ready-to-publish
-HTML5 project that plays one Picocomputer ROM in a browser. The zip file
-is deliberately correct for itch.io but is generic enough to use anywhere.
-The game on the :doc:`home page <index>` is this package.
-
-Unpack it to get the three matched files plus a sample program.
-Everything you change lives in one block near the top of ``index.html``:
-
-.. code-block:: text
-
-  var CONFIG = {
-    rom:    'adventure.rp6502',          // change to your program
-    title:  'Colossal Cave Adventure',   // browser tab title
-    bg:     '000000',                    // letterbox fill, no '#'
-    filter: 'sharp',                     // nearest | linear | sharp
-    db:     '',                          // save database name; blank = the rom filename
-  };
-
-Neither the package nor the tester works from a ``file://`` URL. The
-browser needs an HTTP origin to fetch a ROM or stream the WebAssembly.
-Any local server will do.
-
-.. code-block:: text
-
-  python3 -m http.server 8000
-
-Publishing to itch.io
----------------------
-
-Zip the *contents* of the folder so ``index.html`` sits at the root of the
-archive, not inside a subfolder. Create a project, set the kind to HTML,
-upload the zip, and tick "This file will be played in the browser".
-
-For the embed settings, set the size manually to 640x480 or 640x360 — 320
-wide programs scale up. Leave scrollbars off and leave SharedArrayBuffer
-off.
-
-Please tag your project **RP6502** so it turns up alongside everything
-else at https://itch.io/games/tag-rp6502.
-
-.. _emu-browser-storage:
-
-Saves and browser storage
--------------------------
-
-A program saves through ``SAVE:``, as shown in :ref:`Saves <port-save>`,
-and the page keeps those files in ``/saves``, which is stored in an
-IndexedDB database in the player's browser. That is how players keep
-saved games and high scores.
-
-The ROM is written to ``/roms``, so argv[0] is ``FS:/roms/`` plus the
-file name from ``rom``. The working directory starts at the root, ``/``,
-and the page never changes it. Everything outside ``/saves`` is memory
-that is gone when the page closes.
-
-Closing a file after writing to it queues a save of ``/saves`` to
-IndexedDB, which finishes a moment later, and syncfs returns only once
-that save has finished. A save still queued when the player closes the
-page can be lost, so a program calls syncfs before it closes a file it
-must not lose.
-
-The database is named by ``db``, or, when ``db`` is blank, by the file
-name from ``rom``, such as ``game.rp6502``. One window at a time can use
-a database. A second window of a page with the same ``db`` shows a
-message that the game is running in another window, and it starts once
-the first window closes. Pages with different ``db`` names always run
-side by side.
-
-itch.io serves every HTML game from one shared origin, and IndexedDB is
-per-origin, so your database name shares a namespace with every other
-itch.io game the player runs. Two unrelated games that both ship
-``game.rp6502`` will read and write each other's saves. Set ``db`` to
-something unique, such as ``yourname-yourgame``, to avoid this.
-
-The same behavior is useful deliberately. Give each episode of a game the
-same ``db``, and every episode reads and writes the same saves. Only one
-episode runs at a time, since they share one database.
+The emulator also runs on a web page that plays one ROM, so anyone can
+play a program without installing anything. ``rp6502_web()`` builds the
+page and the emulator into a zip, ready to upload, and the web zip on the
+`releases page <https://github.com/picocomputer/rp6502/releases/latest>`__
+is a sample. The steps, and those for GitHub Pages and other web
+servers, are in :doc:`web`.
 
 
 RetroArch
@@ -254,8 +180,10 @@ work.
      - desktop
    * - ``--install``
      - ``file``
-     - Install a ROM on the null drive, reached as ``:basename``.
-       Repeatable to sixteen. When no ROM is named, the first one boots.
+     - Install a file on the null drive, reached as ``:basename``. A
+       program runs an installed ROM with EXEC and opens any other
+       installed file for reading. Repeatable to sixteen. When no ROM is
+       named, the first one boots.
      - all
    * - ``--save-dir``
      - ``folder``
@@ -271,8 +199,8 @@ work.
      - all
    * - ``--phi2``
      - kHz
-     - 6502 clock, 100 to 8000. Default 8000. ``0`` runs unpaced: the
-       machine goes as fast as the host can take it.
+     - 6502 clock, 100 to 8000. Default 8000. ``0`` is for
+       ``--headless``, and runs the 6502 with no speed limit.
      - all
    * - ``--cp``
      - number
@@ -407,6 +335,8 @@ as output events of those two categories, so VS Code shows ``stderr`` in
 red.
 
 
+.. _emu-scripting:
+
 Scripting
 =========
 
@@ -498,7 +428,10 @@ MOS-style ``$FF``.
      - Work the absolute pointer, including multi-touch up to eight
        contacts. The buttons are the same bits as the mouse. A pointer
        placed with ``at`` always reports hover, and a ``touch`` never
-       does.
+       does. Each ``at`` moves the pointer in a single update, so a
+       program that reads during that update can get the old X with the
+       new Y. With a real pointer that is imperceptible lag, so it is
+       not a program bug.
    * - ``expect "text"``,
        ``expect-not "text"``
      - Check the console since the last check. A match consumes up to and
@@ -527,8 +460,8 @@ MOS-style ``$FF``.
      - Print the seed this run filled memory with.
    * - ``install "path" [NAME]``,
        ``remove <NAME>``
-     - Install a ROM on the null drive as ``:NAME``, and remove it again.
-       The default name is the file's own basename.
+     - Install a file on the null drive as ``:NAME``, and remove it
+       again. The default name is the basename of the file.
    * - ``load "path"``
      - Boot a program. The machine must be stopped, since loading writes
        the memory a running program is using.

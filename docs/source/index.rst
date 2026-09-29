@@ -18,6 +18,7 @@
 
    RP6502-PICO <pico>
    RP6502-EMU <emu>
+   RP6502-WEB <web>
    RP6502-FPGA <fpga>
 
 .. toctree::
@@ -77,8 +78,9 @@ stack. No hardware, and nothing to buy.
 You write in C or 6502 assembly, with either compiler, cc65 or llvm-mos.
 The template comes with a hello world in each.
 
-When it's good, edit a couple of lines and upload it to itch.io, where
-anyone can play it in a browser. For the ultimate flex, build a :doc:`pico`.
+When it's good, add a line to build it as a web page, where anyone can
+play it in a browser. The steps are in :doc:`web`. For the
+ultimate flex, build a :doc:`pico`.
 
 :doc:`sdk` has the details, from installing a compiler to debugging on
 real hardware.
@@ -114,7 +116,7 @@ Read the Manual
 
 Start with the :doc:`sdk`. The datasheets after it are for the parts of
 the machine. Read the datasheet for a part when a program starts to use
-that part, and read :doc:`port` before the program is published.
+that part. Read :doc:`port` before the program is published.
 
 - :doc:`sdk`: writing software, from a new project to a running program.
 - :doc:`ria`: the register map and every device reached through it. The
@@ -138,7 +140,8 @@ You already have one. Games and applications are distributed as
 - :doc:`pico` — the one you build. 100% through-hole, no IC programmer,
   and you don't even have to solder, but you will plug eight ICs into
   their sockets. Usually under $100 USD.
-- :doc:`emu` — the browser, Windows, macOS, Linux, and RetroArch.
+- :doc:`emu` — Windows, macOS, Linux, and RetroArch.
+- :doc:`web` — your program on a web page, playable in the browser.
 - :doc:`fpga` — the whole machine in gates, on an Analogue Pocket today
   and MiSTer next.
 

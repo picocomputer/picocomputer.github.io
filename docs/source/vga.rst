@@ -428,31 +428,31 @@ page.
           uint16_t xram_data_ptr;
           uint16_t xram_palette_ptr;
           uint16_t xram_font_ptr;
-      } mode1_config_t;
+      } mode1_config_t; /* layout */
 
       typedef struct
       {
           uint8_t glyph_code;
-      } mode1_1bpp_data_t;
+      } mode1_1bpp_data_t; /* layout */
 
       typedef struct
       {
           uint8_t glyph_code;
           uint8_t fg_bg_index;
-      } mode1_4bppr_data_t;
+      } mode1_4bppr_data_t; /* layout */
 
       typedef struct
       {
           uint8_t glyph_code;
           uint8_t bg_fg_index;
-      } mode1_4bpp_data_t;
+      } mode1_4bpp_data_t; /* layout */
 
       typedef struct
       {
           uint8_t glyph_code;
           uint8_t fg_index;
           uint8_t bg_index;
-      } mode1_8bpp_data_t;
+      } mode1_8bpp_data_t; /* layout */
 
       typedef struct
       {
@@ -460,7 +460,7 @@ page.
           uint8_t attributes;
           uint16_t fg_color;
           uint16_t bg_color;
-      } mode1_16bpp_data_t;
+      } mode1_16bpp_data_t; /* layout */
 
 .. tab:: ca65
 
@@ -680,7 +680,7 @@ data would extend past the end of XRAM are drawn as transparent black.
           uint16_t xram_data_ptr;
           uint16_t xram_palette_ptr;
           uint16_t xram_tile_ptr;
-      } mode2_config_t;
+      } mode2_config_t; /* layout */
 
 .. tab:: ca65
 
@@ -846,7 +846,7 @@ manipulation code slightly smaller and faster.
           int16_t height_px;
           uint16_t xram_data_ptr;
           uint16_t xram_palette_ptr;
-      } mode3_config_t;
+      } mode3_config_t; /* layout */
 
 .. tab:: ca65
 
@@ -1013,7 +1013,7 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
           uint16_t xram_sprite_ptr;
           uint8_t log_size;
           bool has_opacity_metadata;
-      } mode4_sprite_t;
+      } mode4_sprite_t; /* layout */
 
       typedef struct
       {
@@ -1023,7 +1023,7 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
           uint16_t xram_sprite_ptr;
           uint8_t log_size;
           bool has_opacity_metadata;
-      } mode4_asprite_t;
+      } mode4_asprite_t; /* layout */
 
 .. tab:: ca65
 
@@ -1254,7 +1254,7 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
           int16_t y_pos_px;
           uint16_t xram_sprite_ptr;
           uint16_t palette_ptr;
-      } mode5_sprite_t;
+      } mode5_sprite_t; /* layout */
 
       typedef struct
       {
@@ -1264,7 +1264,7 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
           uint16_t palette_ptr;
           uint8_t width_height;
           uint8_t options;
-      } mode5_csprite_t;
+      } mode5_csprite_t; /* layout */
 
 .. tab:: ca65
 

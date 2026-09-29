@@ -211,6 +211,11 @@ access compared to 6502 system RAM.
   RIA.rw0 = 0x12; /* $1000 */
   RIA.rw0 = 0x34; /* $1001 */
 
+An interrupt handler that uses the same portal as the main program must
+save the ADDR and STEP registers of that portal when it starts, and
+restore them before it returns. When the handler and the main program use
+different portals, no registers have to be saved.
+
 Extended Stack (XSTACK)
 -----------------------
 
@@ -343,7 +348,7 @@ four keycodes are special:
       typedef struct
       {
           uint8_t keys[32];
-      } keyboard_t;
+      } keyboard_t; /* layout */
 
 .. tab:: ca65
 
@@ -1170,7 +1175,7 @@ Mouse buttons are a bitfield:
           uint8_t wheel;
           uint8_t pan;
           uint8_t pad; // alignment, unused
-      } mouse_t;
+      } mouse_t; /* layout */
 
 .. tab:: ca65
 
@@ -1244,10 +1249,12 @@ mouse's: subtract the previous reading to get the change. Reading them
 once per VSYNC is enough for normal use.
 
 Each axis is a set of single-byte *windows*: exactly one is non-zero, and it
-alone carries the value. Decode by taking the first non-zero byte. This unusal
+alone carries the value. Decode by taking the first non-zero byte. This unusual
 decode is because XRAM is atomic for 8-bits only. The single retry is enough
 to guarantee safety because updates are 1ms or more apart while the retry
-happens in a few microseconds.
+happens in a few microseconds. A read that overlaps an update can also return
+one axis from the previous update and the other axis from the new one. That is
+imperceptible, so it needs no handling.
 
 .. code-block:: C
 
@@ -1278,7 +1285,7 @@ The application and the RIA exchange pointer preferences through the header.
 for the application, which is the :doc:`emu` with a mouse, in a window or a
 browser. The bit is always clear on real hardware and for touch input.
 ``control`` selects the host cursor shape, or hides the cursor so the
-application can draw its own.
+application can draw its own. Mapping the tablet sets it to ARROW.
 
 - 0 - OFF (host cursor hidden; the application draws its own pointer)
 - 1 - ARROW
@@ -1319,17 +1326,19 @@ pointer, and ``control`` has no effect.
 
       typedef struct
       {
+          uint8_t flags;
+          uint8_t x0, x1, x2;
+          uint8_t y0, y1;
+      } tablet_contact_t;
+
+      typedef struct
+      {
           uint8_t control;
           uint8_t status;
           uint8_t wheel;
           uint8_t pan;
-          struct
-          {
-              uint8_t flags;
-              uint8_t x0, x1, x2;
-              uint8_t y0, y1;
-          } contact[TABLET_CONTACTS];
-      } tablet_t;
+          tablet_contact_t contact[TABLET_CONTACTS];
+      } tablet_t; /* layout */
 
 .. tab:: ca65
 
@@ -1600,20 +1609,22 @@ and R2 should expect analog values of just 0 or 255.
 
       typedef struct
       {
-          struct
-          {
-              uint8_t dpad;
-              uint8_t sticks;
-              uint8_t btn0;
-              uint8_t btn1;
-              int8_t lx;
-              int8_t ly;
-              int8_t rx;
-              int8_t ry;
-              uint8_t l2;
-              uint8_t r2;
-          } player[GAMEPAD_PLAYERS];
-      } gamepad_t;
+          uint8_t dpad;
+          uint8_t sticks;
+          uint8_t btn0;
+          uint8_t btn1;
+          int8_t lx;
+          int8_t ly;
+          int8_t rx;
+          int8_t ry;
+          uint8_t l2;
+          uint8_t r2;
+      } gamepad_player_t;
+
+      typedef struct
+      {
+          gamepad_player_t player[GAMEPAD_PLAYERS];
+      } gamepad_t; /* layout */
 
 .. tab:: ca65
 
@@ -1767,7 +1778,8 @@ the oscillator array is a bit shift.
 
 Enable and disable the PSG by setting its extended register. The value
 is the XRAM start address for the 64 bytes of config; it must be
-int-aligned and must not cross a page boundary.
+int-aligned and must not cross a page boundary. Only one sound generator
+plays at a time, so enabling the PSG disables the OPL2.
 
 .. code-block:: C
 
@@ -1790,19 +1802,19 @@ panning, slide instruments, and other CPU-driven shenanigans.
    * - duty
      - 0-255 (0-100%) Duty cycle of oscillator. This affects all
        waveforms.
-   * - vol_attack
+   * - attack
      - Attack phase volume and rate.
 
        * bits 7-4 - 0-15 volume attenuation.
        * bits 3-0 - 0-15 attack rate.
 
-   * - vol_decay
+   * - decay
      - Decay phase volume and rate.
 
        * bits 7-4 - 0-15 volume attenuation.
        * bits 3-0 - 0-15 decay rate.
 
-   * - wave_release
+   * - release_wave
      - Waveform and release rate.
 
        * bits 7-4 - 0=sine, 1=square, 2=sawtooth, 3=triangle,
@@ -1913,17 +1925,19 @@ Volume attenuation is logarithmic.
 
       typedef struct
       {
-          struct
-          {
-              uint16_t freq;
-              uint8_t duty;
-              uint8_t vol_attack;
-              uint8_t vol_decay;
-              uint8_t wave_release;
-              uint8_t pan_gate;
-              uint8_t reserved;
-          } channel[PSG_CHANNELS];
-      } psg_t;
+          uint16_t freq;
+          uint8_t duty;
+          uint8_t attack;
+          uint8_t decay;
+          uint8_t release_wave;
+          uint8_t pan_gate;
+          uint8_t reserved;
+      } psg_channel_t;
+
+      typedef struct
+      {
+          psg_channel_t channel[PSG_CHANNELS];
+      } psg_t; /* layout */
 
 .. tab:: ca65
 
@@ -1948,9 +1962,9 @@ Volume attenuation is logarithmic.
           channel .struct
               freq         .word
               duty         .byte
-              vol_attack   .byte
-              vol_decay    .byte
-              wave_release .byte
+              attack       .byte
+              decay        .byte
+              release_wave .byte
               pan_gate     .byte
               reserved     .byte
           .endstruct
@@ -1981,9 +1995,9 @@ Volume attenuation is logarithmic.
 
       PSG_CHANNEL_FREQ         = 0
       PSG_CHANNEL_DUTY         = 2
-      PSG_CHANNEL_VOL_ATTACK   = 3
-      PSG_CHANNEL_VOL_DECAY    = 4
-      PSG_CHANNEL_WAVE_RELEASE = 5
+      PSG_CHANNEL_ATTACK       = 3
+      PSG_CHANNEL_DECAY        = 4
+      PSG_CHANNEL_RELEASE_WAVE = 5
       PSG_CHANNEL_PAN_GATE     = 6
       PSG_CHANNEL_RESERVED     = 7
       PSG_CHANNEL_SIZE         = 8
@@ -2000,7 +2014,7 @@ extended register device 0, channel 1, address 0x01.
 Enable and disable the OPL2 by setting its extended register. The value
 is the XRAM start address for the 256 OPL2 registers, which must begin
 on a page boundary. So if xaddr is 0x4200, the 256 OPL2 registers map into
-XRAM from 0x4200 to 0x42FF.
+XRAM from 0x4200 to 0x42FF. Enabling the OPL2 disables the PSG.
 
 .. code-block:: C
 
@@ -2023,7 +2037,7 @@ the era had their own timers and rarely used the chip's.
       typedef struct
       {
           uint8_t reg[256];
-      } opl_t;
+      } opl_t; /* layout */
 
 .. tab:: ca65
 
