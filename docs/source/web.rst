@@ -98,6 +98,11 @@ open http://localhost:8000.
      - ``'000000'``
      - The color around the picture when the page and the canvas have
        different shapes, as six hex digits, RRGGBB. Default ``000000``.
+   * - ``border``
+     - ``'8px'``
+     - Space around the game, in the ``bg`` color, as a CSS length such as
+       ``8px`` or ``1em``. It keeps text on the edge of the canvas apart
+       from the page around it.
    * - ``filter``
      - ``'sharp'``
      - How pixels are scaled: ``nearest``, ``linear`` or ``sharp``.
@@ -112,8 +117,11 @@ open http://localhost:8000.
      - When the program starts: ``always``, ``onaudio`` or ``onclick``.
        Default ``always``. See `Click to Play`_.
    * - ``footer``
-     - ``'footer'``
-     - The ``id`` of the footer template. See `Footer`_.
+     - ``'Arrows to move.'``
+     - A line of HTML under the game, with links under it. See `Footer`_.
+   * - ``github``
+     - ``'user/mygame'``
+     - The GitHub repository linked under the footer.
 
 A setting that is left out, or left blank, is off or takes its default.
 For example, Microsoft BASIC loads and runs a program named as an
@@ -207,35 +215,19 @@ screen.
 Footer
 ------
 
-A footer is a line or two under the game, such as the controls and the
-credits. Like the overlay, it is a template, named by ``footer``, and its
-one element is placed under the game. The game is scaled to the space
-above it. This style and template add a footer, in the same places as
-those of the overlay:
-
-.. code-block:: html
-
-  <style>
-    .footer {
-      padding: 8px; border-top: 1px solid #303335; text-align: center;
-      color: #9ca0a5; font: 13px system-ui, sans-serif;
-    }
-    .footer p { margin: 0; }
-  </style>
-
-  <template id="footer">
-    <div class="footer">
-      <p>Arrows to move, Space to fire.</p>
-      <p>By Your Name</p>
-    </div>
-  </template>
+``footer`` is a line under the game, such as the controls. Under it, a
+second line links to the GitHub repository in ``github``, to the ROM for
+download, and to this site:
 
 .. code-block:: javascript
 
-  footer: 'footer',
+  footer: 'Arrows to move, Space to fire.',
+  github: 'user/mygame',
 
-Give a link in the footer ``target="_blank"``, so that it opens in a new
-tab instead of in place of the game.
+The footer is HTML, so it can include a link, which opens in a new tab with
+``target="_blank"`` instead of in place of the game. The game is scaled
+to the space above the footer. Without ``footer``, there is no footer; a
+page of your own can put any HTML after the script instead.
 
 License Notices
 ---------------
@@ -266,11 +258,13 @@ settings of the page, as JavaScript, with a comma after each one:
 
   rp6502_web(game CONFIG [[
       title: 'My Game',
-      db: 'username-mygame',
+      footer: 'Arrows to move, Space to fire.',
   ]])
 
 The settings replace the same settings in the page, and the others are
-added. ``rom`` is always the ROM of the target. ``PAGE`` gives a page of
+added. ``rom`` is always the ROM of the target, and ``github`` is the
+GitHub repository that the git remote of the project names, unless
+``CONFIG`` names another. ``PAGE`` gives a page of
 your own, and ``OUTPUT`` names the zip, so one ROM can be packaged for
 several sites:
 
