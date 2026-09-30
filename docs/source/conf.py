@@ -33,6 +33,7 @@ html_favicon = '_static/favicon.ico'
 c_id_attributes = ['ABI', 'lib']
 
 html_static_path = ['_static']
+html_extra_path = ['_extra']
 
 # The icons are files so the sidebar links in custom.css can draw them too.
 def icon(name):

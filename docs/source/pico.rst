@@ -2,16 +2,16 @@
 RP6502-PICO
 ============================
 
-RP6502 - Picocomputer 6502
+RP6502 - Standalone Machine
 
-The RP6502-PICO is the original Picocomputer, a real 6502 computer you
-build yourself, for under $100 in the US. The machine is one circuit
-board with a WDC 65C02, a WDC 65C22, a RAM chip, three logic chips and
-two Raspberry Pi Pico 2 boards, which are the entire modern side of the
-machine. One Pico runs the :doc:`ria`
-for USB, storage and sound, and a Pico 2 W in that socket adds Wi-Fi and
-Bluetooth as the :doc:`ria_w`. The other Pico runs the :doc:`vga` video
-system.
+The RP6502-PICO is the standalone machine, a 6502 computer you build
+yourself for under $100 in the US. It is the original Picocomputer, and
+the project is named after the Raspberry Pi Pico it was first built on.
+The machine is one circuit board with a WDC 65C02, a WDC 65C22, a RAM
+chip, three logic chips and two Raspberry Pi Pico 2 boards, which are the
+entire modern side of the machine. One Pico runs the :doc:`ria` for USB,
+storage and sound, and a Pico 2 W in that socket adds Wi-Fi and Bluetooth
+as the :doc:`ria_w`. The other Pico runs the :doc:`vga` video system.
 
 Programs run on the 65C02 at up to 8 MHz. The finished machine plugs into
 a VGA monitor, or into an HDMI display with a VGA-to-HDMI cable.
@@ -25,9 +25,9 @@ solder, but you will need to plug the eight ICs into their sockets. Every
 part is currently in production, and the Raspberry Pi Pico 2 is slated to
 stay that way until at least `January 2040
 <https://www.raspberrypi.com/products/raspberry-pi-pico-2/>`_. The design
-was already updated once, from the Pico 1 to the Pico 2, and it does not
-depend on any one of these parts staying in production because the whole
-machine also runs in gates on the :doc:`fpga`.
+was already updated once, from the Pico 1 to the Pico 2. The project does
+not depend on any one of these parts staying in production, because the
+:doc:`fpga`, the machine in fabric, uses none of them.
 
 .. image:: _static/ria-w-sandwich.jpg
    :width: 600
@@ -37,10 +37,10 @@ machine also runs in gates on the :doc:`fpga`.
 Schematic
 =========
 
-`Picocomputer 6502 <_static/2026-01-26-rp6502.pdf>`_ (pdf)
+`RP6502-PICO <_static/2026-01-26-rp6502.pdf>`_ (pdf)
 
 
-Buying a Picocomputer
+Buying an RP6502-PICO
 =====================
 
 You'll place two orders: one for the printed circuit board (PCB), and one for
@@ -63,7 +63,7 @@ Rev. A and Rev. B boards are identical except for the debug connectors under
 the RIA. They do nothing even when connected, so they were removed — mostly so
 folks would stop asking about them.
 
-Most VGA-to-HDMI cables can draw power straight from the Picocomputer; a few
+Most VGA-to-HDMI cables can draw power straight from the RP6502-PICO; a few
 need external power. None of them add lag, which matters on a machine built for
 games. All VGA output uses HDMI-compatible timings, so these cables are an
 ideal solution.
@@ -164,7 +164,7 @@ Download the `pico zip
 <https://github.com/picocomputer/rp6502/releases/latest>`_ and unpack the UF2 files
 inside it.
 
-Every Picocomputer needs both Picos flashed with two different files. The VGA
+Every RP6502-PICO needs both Picos flashed with two different files. The VGA
 file is the same for everyone. The RIA file depends on which Pi Pico you have.
 Use the "-w" if you have a Pi Pico 2 W.
 
@@ -174,8 +174,8 @@ The Pico 2 mounts as a storage device. Copy the RIA-W UF2 file to make a
 seconds, and the LED turns on when it's done.
 
 Once you have a machine running, later upgrades don't need BOOTSEL. Put the
-UF2 files on a USB drive, plug it into your Picocomputer, and flash both from
-the monitor. The system reboots after each one.
+UF2 files on a USB drive, plug it into the RIA, and flash both from the
+monitor. The system reboots after each one.
 
 .. code-block:: text
 
@@ -194,9 +194,12 @@ Console
 
 The standard setup is a VGA monitor and a USB keyboard plugged into the RIA.
 5V Power is applied to the VGA module, enough for all your devices plus one
-watt for the Picocomputer itself. You may also connect the VGA module to a
+watt for the RP6502-PICO itself. You may also connect the VGA module to a
 computer where it will present a serial port attached to the console — no
 driver needed. An :doc:`ria_w` adds telnet.
+
+Inside the machine, the console is a UART between the RIA and the VGA
+module: 115200 bps, 8-bit words, no parity, 1 stop bit.
 
 Monitor
 -------
@@ -238,7 +241,8 @@ Storage and ROMs
 ----------------
 
 Files live on a USB flash drive. Any USB flash or floppy drive is read and
-written as FAT. 1 MB of flash holds the ROMs you ``install``, and
+written as FAT. ExFAT is ready to go and will be enabled when the patents
+expire. 1 MB of flash holds the ROMs you ``install``, and
 ``set boot`` picks one to load at power-on. ROMs do not need to be installed,
 they are intended to be loaded directly from mass storage devices.
 USB drives are named ``MSC0:`` to ``MSC9:``, or ``0:`` to ``9:`` for

@@ -16,10 +16,10 @@ on the network, and build and run a project from VS Code. A 6502 program
 can call a BBS through an emulated Hayes modem, or answer incoming calls
 as a BBS.
 
-The :doc:`pico` is the only host with a radio today. The radio is part
-of the Raspberry Pi Pico 2 W, which the parts list specifies for the RIA.
-Support is planned for other hosts. Everything on the RIA page applies
-here, and this page covers only the wireless part.
+The :doc:`pico` is the only machine with a radio today. The radio is
+part of the Raspberry Pi Pico 2 W, which the parts list specifies for the
+RIA. Support is planned for other machines. Everything on the RIA page
+applies here, and this page covers only the wireless part.
 
 
 Wi-Fi Setup

@@ -1,265 +1,39 @@
 ============================
-RP6502-OS
+RP6502-API
 ============================
 
-RP6502 - Operating System
+RP6502 - Application Programming Interface
 
 
 Introduction
 ============
 
-The RP6502-OS gives a 6502 program files and a clock through calls that
-C programmers already know. A program opens, reads, writes and seeks
-files with ``open()``, ``read()``, ``write()`` and ``lseek()``, and it
-reads local time with ``time()`` and ``localtime()``. A C program makes these calls through its standard
-library, and an assembly program makes them through a few registers of
-the :doc:`ria`.
+The RP6502 Interface Adapter (RIA) connects the 6502 to a modern
+processor through 32 registers, and that processor runs an operating
+system (OS). The OS provides a 6502 program with files and a clock
+through calls that C programmers already know. A program opens, reads,
+writes and seeks files with ``open()``, ``read()``, ``write()`` and
+``lseek()``, and it reads local time with ``time()`` and
+``localtime()``.
+
+This page covers the Application Programming Interface (API) that a C
+program calls through its standard library, and the Application Binary
+Interface (ABI) underneath it. An assembly program uses the ABI
+directly, through a few registers of the :doc:`ria`. The OS is
+POSIX-like, and the ABI is modeled on `cc65's fastcall
+<https://cc65.github.io/doc/cc65-intern.html>`__. The API offers
+``stdio.h`` and ``unistd.h`` services to both the `cc65
+<https://cc65.github.io>`__ and `llvm-mos <https://llvm-mos.org/>`_
+compilers, plus calls that control RP6502 features and manage the
+filesystem.
 
 The OS runs on the RIA processor, protected from the 6502, and uses no
 6502 RAM. All of RAM remains available to the program, and that program
 can be a native 6502 operating system of your own.
 
-The OS is POSIX-like, with an Application Binary Interface (ABI) modeled
-on `cc65's fastcall <https://cc65.github.io/doc/cc65-intern.html>`__. It
-offers ``stdio.h`` and ``unistd.h`` services to both the `cc65
-<https://cc65.github.io>`__ and `llvm-mos <https://llvm-mos.org/>`_
-compilers, plus calls that control RP6502 features and manage the
-filesystem.
 
-.. note::
-
-   ExFAT is ready to go and will be enabled when the patents expire.
-
-
-.. _os-memory-map:
-
-Memory Map
-==========
-
-Everything below $FF00 is RAM, and nothing in zero page is used or
-reserved. The Picocomputer starts every project as a clean slate. VGA,
-audio, storage, keyboards, mice, gamepads, the RTC, and networking are
-all reached through just the 32 registers of the RIA.
-
-.. list-table::
-   :widths: 25 75
-   :header-rows: 1
-
-   * - Address
-     - Description
-   * - $0000-$FEFF
-     - RAM, 63.75 KB
-   * - $FF00-$FFCF
-     - Unassigned
-   * - $FFD0-$FFDF
-     - VIA, see the `WDC datasheet
-       <https://www.westerndesigncenter.com/wdc/w65c22-chip.php>`_
-   * - $FFE0-$FFFF
-     - RIA, see the :doc:`RP6502-RIA datasheet <ria>`
-   * - $10000-$1FFFF
-     - XRAM, 64 KB for :doc:`ria` and :doc:`vga`
-
-The unassigned space is open for hardware experimenters. Design your own
-chip-select logic to use it. Add more VIAs downward and other hardware
-upward, for example VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and
-SID1 at $FF20.
-
-Your program's own layout of RAM and XRAM is set up in the SDK's
-:ref:`RAM Memory Map <sdk-ram-memory-map>` and
-:ref:`XRAM Memory Map <sdk-xram-memory-map>`.
-
-
-Application Binary Interface
-============================
-
-.. seealso::
-
-   :doc:`ria` — the hardware register map referenced throughout this section.
-
-A C program does none of this, because the compiler's library is the
-implementation. What follows is for assembly programs and for anyone
-bringing another compiler to the Picocomputer.
-
-The ABI for calling the operating system is based on fastcall from the
-`cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The OS
-itself uses nothing from cc65, so assembly calls it the same way C
-does. The compiler is a convenience here, not a dependency.
-
-At its core, the ABI is four rules:
-
-* Stack arguments are pushed left to right.
-* Last argument passed by register A, AX, or AXSREG.
-* Return value in register AX or AXSREG.
-* May return data on the stack.
-
-A and X are the 6502 registers. The pseudo-register AX combines them
-into 16 bits, and AXSREG extends that to 32 bits with the 16 SREG bits.
-Every OS call is specified as a C declaration, like so:
-
-.. c:function:: int doit(int arg0, int arg1);
-   :no-index-entry:
-   :no-contents-entry:
-
-The RIA has registers called ``RIA_A``, ``RIA_X``, and ``RIA_SREG``. An
-int is 16 bits, so arg1 goes into the ``RIA_A`` and ``RIA_X``
-registers. Throughout this explanation, "A" means the 6502 register and
-"RIA_A" means the RIA register.
-
-arg0 goes on the XSTACK. Reading ``RIA_XSTACK`` pops bytes; writing
-pushes them. It's a top-down stack, so push the arguments left to right,
-and push each value high byte first so that it lies in memory low byte
-first.
-
-To execute the call, store the operation ID in ``RIA_OP``; the operation
-begins immediately. You can keep the 6502 busy with other work, such as a
-loading animation, by polling ``RIA_BUSY``, or just JSR to ``RIA_SPIN``
-to block until it's done.
-
-``JSR RIA_SPIN`` can unblock within 3 clock cycles and loads A and X for
-you. Sequential operations run fastest this way. Under the hood, you're
-jumping into a self-modifying program that runs out of the RIA registers.
-
-.. code-block:: asm
-
-   FFF1: BRA #$??   ; RIA_BUSY {-2 or 0}
-   FFF3: LDA #$??   ; RIA_A
-   FFF5: LDX #$??   ; RIA_X
-   FFF7: RTS
-
-Polling is just snooping on that same program. The ``RIA_BUSY`` register
-is the -2 or 0 in the BRA above. Per the RIA datasheet, bit 7 signals
-busy, which the 6502 can test quickly with the BIT operator to set flag
-N. Once it clears, read ``RIA_A`` and ``RIA_X`` with absolute instructions.
-
-.. code-block:: asm
-
-   wait: BIT RIA_BUSY
-         BMI wait
-         LDA RIA_A
-         LDX RIA_X
-
-Any operation that returns ``RIA_A`` also returns ``RIA_X`` to help with
-C integer promotion. Loading X last allows fast testing for negative
-return values. ``RIA_SREG`` is updated only for 32-bit returns, and
-``RIA_ERRNO`` only when there's an error.
-
-Some operations return strings or structures on the stack. Pull the
-entire stack before the next call, or use `ria_drop() <DROP_XSTACK_>`_
-to abandon the stack in O(1) time without a loop. One operation's output
-can also be the next one's input. `read_xstack() <READ_XSTACK_>`_ leaves
-its data on the XSTACK where `write_xstack() <WRITE_XSTACK_>`_ takes it,
-so the two copy a file without touching any RAM or XRAM.
-
-The time operations chain the same way, without cycling the XSTACK:
-`TIME_GET`_ returns seconds positioned as the input to `GMTIME`_,
-`LOCALTIME`_, or `TIME_SET`_; their struct tm feeds `MKTIME`_ directly,
-or `STRFTIME`_ after pushing only the zero-terminated format on top;
-and `MKTIME`_ returns seconds ready for another conversion.
-
-Short Stacking
---------------
-
-In the pursuit of saving every cycle, you can trim a few off the stack
-push when you don't need the full range. This applies only to the first
-stack argument pushed. Take `LSEEK`_:
-
-.. code-block:: C
-
-   ABI long f_lseek(long offset, unsigned char whence, int fildes)
-
-Here you push a 32-bit value, and — not by coincidence — it sits in the
-right position for short stacking. If the offset always fits in 16 bits,
-push two bytes instead of four.
-
-Signed arguments are sign-extended, so two bytes carry -32768 to 32767.
-Unsigned arguments are zero-filled.
-
-.. warning::
-
-   Size a short push by the signed range. An offset of 200 pushed as the
-   single byte 0xC8 arrives as -56, because the top bit of 0xC8 is the
-   sign. Push 0x00 and then 0xC8 to send 200.
-
-Shorter AX
-----------
-
-A program can save a few cycles by leaving ``RIA_X`` alone. Returned
-integers are always at least 16 bits, to help with C integer promotion,
-but many operations ignore ``RIA_X`` on the way in and keep their return
-value within ``RIA_A``. Those are listed below under ``a regs``.
-
-Bulk Data
----------
-
-Functions that move bulk data come in two flavors, depending on where
-the data lives. A RAM pointer means nothing to the RIA, since it can't
-touch 6502 RAM, so bulk data moves through the XSTACK or XRAM instead.
-
-Bulk XSTACK Operations
-~~~~~~~~~~~~~~~~~~~~~~
-
-These work only for sizes of 512 bytes or less — the size of the XSTACK
-they pass data on. A pointer in the C prototype marks the type and
-direction (to or from the OS) of the data. A few examples:
-
-.. code-block:: C
-
-   int open(const char *path, int oflag);
-
-Send ``oflag`` in ``RIA_A``; per the `OPEN`_ docs, ``RIA_X`` doesn't need
-to be set. Send the path on the XSTACK by pushing the string from its
-last character backward. You can skip the terminating zero, but strings
-are capped at 255 bytes. From the C SDK, the implementation pushes the
-string for you.
-
-.. code-block:: C
-
-   int read_xstack(void *buf, unsigned count, int fildes)
-
-Send ``count`` as a short stack and ``fildes`` in ``RIA_A``; per the
-`READ_XSTACK`_ docs, ``RIA_X`` doesn't need to be set. The value returned
-in AX is the number of bytes to pull from the stack. From the C SDK, it
-copies the XSTACK into buf[] for you.
-
-.. code-block:: C
-
-   int write_xstack(const void *buf, unsigned count, int fildes)
-
-Send ``fildes`` in ``RIA_A``; per the `WRITE_XSTACK`_ docs, ``RIA_X``
-doesn't need to be set. Push the buf data onto the XSTACK. Don't send
-``count``; the OS takes it from the XSTACK pointer. From the C SDK, it
-copies count bytes of buf[] onto the XSTACK for you.
-
-Note that read() and write() are part of the C SDK, not OS operations. C
-requires them to handle counts larger than the XSTACK can return, so the
-implementation makes as many OS calls as it takes.
-
-Bulk XRAM Operations
-~~~~~~~~~~~~~~~~~~~~
-
-These load and save XRAM directly through `READ_XRAM`_ and `WRITE_XRAM`_,
-so you can pull assets straight in without routing them through 6502 RAM.
-
-.. code-block:: C
-
-   int read_xram(unsigned buf, unsigned count, int fildes)
-   int write_xram(unsigned buf, unsigned count, int fildes)
-
-The OS takes ``buf`` and ``count`` on the XSTACK as integers, with
-``fildes`` in ``RIA_A``. The 6502 reads and writes XRAM through
-``RIA_RW0`` or ``RIA_RW1``.
-
-These operations stand out for their speed and for running in the
-background while the 6502 does other work. Depending on the request size,
-expect up to 800 KB/sec. A full 64 KB of XRAM loads or saves multiple times
-per second with no wait states or 6502 work.
-
-Bulk XRAM operations are why the Picocomputer 6502 has no paged memory.
-You don't need it when "disk" access has zero seek time and DMA to XRAM.
-
-
-Application Programmer Interface
-================================
+Application Programming Interface
+=================================
 
 .. seealso::
 
@@ -345,7 +119,7 @@ IRQ
    :param mask: Signals to enable.
 
 
-.. _os-extended-memory:
+.. _api-extended-memory:
 
 Extended Memory
 ---------------
@@ -365,7 +139,7 @@ DROP_XSTACK
    :C proto: rp6502.h
 
 
-.. _os-xreg:
+.. _api-xreg:
 
 XREG
 ~~~~
@@ -411,7 +185,8 @@ XRAM_READ
 
    Copy ``count`` bytes from XRAM to 6502 RAM, like ``memcpy``.
    ``xram0_read()`` copies through portal 0 and ``xram1_read()`` through
-   portal 1. The other portal is not touched. A count of 0 copies nothing.
+   portal 1, the two :ref:`XRAM portals <ria-xram-portals>` of the RIA.
+   The other portal is not touched. A count of 0 copies nothing.
 
    The call changes the portal's address register and sets its step
    register to 1.
@@ -514,7 +289,7 @@ XRAM_POKE
 Process
 -------
 
-.. _os-argv:
+.. _api-argv:
 
 ARGV
 ~~~~
@@ -660,7 +435,7 @@ TIME_SET
 
 .. c:function:: int time_set (long long time)
 
-   Sets the clock to seconds since the Unix epoch. Supported only on
+   Sets the clock to seconds since the Unix epoch. Supported only on the
    :doc:`pico`.
 
    :Op code: RIA_OP_TIME_SET 0x3E
@@ -771,7 +546,7 @@ STRFTIME
 Files
 -----
 
-.. _os-open:
+.. _api-open:
 
 OPEN
 ~~~~
@@ -871,7 +646,7 @@ READ_XSTACK
    :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
 
 
-.. _os-read-xram:
+.. _api-read-xram:
 
 READ_XRAM
 ~~~~~~~~~
@@ -1336,7 +1111,7 @@ CHDRIVE
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT
 
 
-.. _os-getcwd:
+.. _api-getcwd:
 
 GETCWD
 ~~~~~~
@@ -1422,7 +1197,7 @@ GETFREE
 Line Editor
 -----------
 
-.. _os-rln-lastkey:
+.. _api-rln-lastkey:
 
 RLN_LASTKEY
 ~~~~~~~~~~~
@@ -1449,7 +1224,7 @@ RLN_LASTKEY
    :errno: EINVAL
 
 
-.. _os-rln-peek:
+.. _api-rln-peek:
 
 RLN_PEEK
 ~~~~~~~~
@@ -1472,7 +1247,7 @@ RLN_PEEK
    :errno: EINVAL
 
 
-.. _os-rln-poke:
+.. _api-rln-poke:
 
 RLN_POKE
 ~~~~~~~~
@@ -1508,8 +1283,8 @@ on, the process manager automatically re-executes the launcher ROM whenever
 any ROM it launched stops. When the launcher ROM itself stops, the chain
 ends, the registration clears, and control returns to the machine. Where
 the chain ends depends on which machine: an :doc:`pico` returns to its
-monitor, the :doc:`emu` exits unless debugging, and the :doc:`fpga` stops
-until you load a new ROM with the host menu.
+monitor, the :doc:`fpga` stops until you load a new ROM with the host
+menu, and the :doc:`emu` exits unless debugging.
 
 The launcher ROM runs the next one by calling `EXEC`_, optionally
 passing arguments to it through argv. The launched ROM reads those
@@ -1542,7 +1317,7 @@ argv, such as the ``SAVE:`` name of a save slot or a difficulty setting,
 and the ROM just calls `EXIT`_ when it's done.
 
 
-.. _os-ria-attributes:
+.. _api-ria-attributes:
 
 RIA Attributes
 ==============
@@ -1830,3 +1605,194 @@ before any OS call that can fail.
    * - EUNKNOWN
      - 18
      - 85
+
+
+Application Binary Interface
+============================
+
+.. seealso::
+
+   :doc:`ria` — the hardware register map referenced throughout this section.
+
+A C program does none of this, because the compiler's library is the
+implementation. What follows is for assembly programs and for anyone
+bringing another compiler to the Picocomputer.
+
+The ABI for calling the operating system is based on fastcall from the
+`cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The OS
+itself uses nothing from cc65, so assembly calls it the same way C
+does. The compiler is a convenience here, not a dependency.
+
+At its core, the ABI is four rules:
+
+* Stack arguments are pushed left to right.
+* Last argument passed by register A, AX, or AXSREG.
+* Return value in register AX or AXSREG.
+* May return data on the stack.
+
+A and X are the 6502 registers. The pseudo-register AX combines them
+into 16 bits, and AXSREG extends that to 32 bits with the 16 SREG bits.
+Every OS call is specified as a C declaration, like so:
+
+.. c:function:: int doit(int arg0, int arg1);
+   :no-index-entry:
+   :no-contents-entry:
+
+The RIA has registers called ``RIA_A``, ``RIA_X``, and ``RIA_SREG``. An
+int is 16 bits, so arg1 goes into the ``RIA_A`` and ``RIA_X``
+registers. Throughout this explanation, "A" means the 6502 register and
+"RIA_A" means the RIA register.
+
+arg0 goes on the extended stack (XSTACK), 512 bytes of memory in the
+RIA. Reading ``RIA_XSTACK`` pops bytes; writing pushes them. It's a
+top-down stack, so push the arguments left to right, and push each value
+high byte first so that it lies in memory low byte first.
+
+To execute the call, store the operation ID in ``RIA_OP``; the operation
+begins immediately. You can keep the 6502 busy with other work, such as a
+loading animation, by polling ``RIA_BUSY``, or just JSR to ``RIA_SPIN``
+to block until it's done.
+
+``JSR RIA_SPIN`` can unblock within 3 clock cycles and loads A and X for
+you. Sequential operations run fastest this way. Under the hood, you're
+jumping into a self-modifying program that runs out of the RIA registers.
+
+.. code-block:: asm
+
+   FFF1: BRA #$??   ; RIA_BUSY {-2 or 0}
+   FFF3: LDA #$??   ; RIA_A
+   FFF5: LDX #$??   ; RIA_X
+   FFF7: RTS
+
+Polling is just snooping on that same program. The ``RIA_BUSY`` register
+is the -2 or 0 in the BRA above. Per the :ref:`RIA registers
+<ria-registers>`, bit 7 signals busy, which the 6502 can test quickly
+with the BIT operator to set flag N. Once it clears, read ``RIA_A`` and
+``RIA_X`` with absolute instructions.
+
+.. code-block:: asm
+
+   wait: BIT RIA_BUSY
+         BMI wait
+         LDA RIA_A
+         LDX RIA_X
+
+Any operation that returns ``RIA_A`` also returns ``RIA_X`` to help with
+C integer promotion. Loading X last allows fast testing for negative
+return values. ``RIA_SREG`` is updated only for 32-bit returns, and
+``RIA_ERRNO`` only when there's an error.
+
+Some operations return strings or structures on the stack. Pull the
+entire stack before the next call, or use `ria_drop() <DROP_XSTACK_>`_
+to abandon the stack in O(1) time without a loop. One operation's output
+can also be the next one's input. `read_xstack() <READ_XSTACK_>`_ leaves
+its data on the XSTACK where `write_xstack() <WRITE_XSTACK_>`_ takes it,
+so the two copy a file without touching any RAM or XRAM.
+
+The time operations chain the same way, without cycling the XSTACK:
+`TIME_GET`_ returns seconds positioned as the input to `GMTIME`_,
+`LOCALTIME`_, or `TIME_SET`_; their struct tm feeds `MKTIME`_ directly,
+or `STRFTIME`_ after pushing only the zero-terminated format on top;
+and `MKTIME`_ returns seconds ready for another conversion.
+
+Short Stacking
+--------------
+
+In the pursuit of saving every cycle, you can trim a few off the stack
+push when you don't need the full range. This applies only to the first
+stack argument pushed. Take `LSEEK`_:
+
+.. code-block:: C
+
+   ABI long f_lseek(long offset, unsigned char whence, int fildes)
+
+Here you push a 32-bit value, and — not by coincidence — it sits in the
+right position for short stacking. If the offset always fits in 16 bits,
+push two bytes instead of four.
+
+Signed arguments are sign-extended, so two bytes carry -32768 to 32767.
+Unsigned arguments are zero-filled.
+
+.. warning::
+
+   Size a short push by the signed range. An offset of 200 pushed as the
+   single byte 0xC8 arrives as -56, because the top bit of 0xC8 is the
+   sign. Push 0x00 and then 0xC8 to send 200.
+
+Shorter AX
+----------
+
+A program can save a few cycles by leaving ``RIA_X`` alone. Returned
+integers are always at least 16 bits, to help with C integer promotion,
+but many operations ignore ``RIA_X`` on the way in and keep their return
+value within ``RIA_A``. Those are listed under ``a regs`` in each
+operation of the `Application Programming Interface`_.
+
+Bulk Data
+---------
+
+Functions that move bulk data come in two flavors, depending on where
+the data lives. A RAM pointer means nothing to the RIA, since it can't
+touch 6502 RAM, so bulk data moves through the XSTACK or XRAM instead.
+
+Bulk XSTACK Operations
+~~~~~~~~~~~~~~~~~~~~~~
+
+These work only for sizes of 512 bytes or less — the size of the XSTACK
+they pass data on. A pointer in the C prototype marks the type and
+direction (to or from the OS) of the data. A few examples:
+
+.. code-block:: C
+
+   int open(const char *path, int oflag);
+
+Send ``oflag`` in ``RIA_A``; per the `OPEN`_ docs, ``RIA_X`` doesn't need
+to be set. Send the path on the XSTACK by pushing the string from its
+last character backward. You can skip the terminating zero, but strings
+are capped at 255 bytes. From the C SDK, the implementation pushes the
+string for you.
+
+.. code-block:: C
+
+   int read_xstack(void *buf, unsigned count, int fildes)
+
+Send ``count`` as a short stack and ``fildes`` in ``RIA_A``; per the
+`READ_XSTACK`_ docs, ``RIA_X`` doesn't need to be set. The value returned
+in AX is the number of bytes to pull from the stack. From the C SDK, it
+copies the XSTACK into buf[] for you.
+
+.. code-block:: C
+
+   int write_xstack(const void *buf, unsigned count, int fildes)
+
+Send ``fildes`` in ``RIA_A``; per the `WRITE_XSTACK`_ docs, ``RIA_X``
+doesn't need to be set. Push the buf data onto the XSTACK. Don't send
+``count``; the OS takes it from the XSTACK pointer. From the C SDK, it
+copies count bytes of buf[] onto the XSTACK for you.
+
+Note that read() and write() are part of the C SDK, not OS operations. C
+requires them to handle counts larger than the XSTACK can return, so the
+implementation makes as many OS calls as it takes.
+
+Bulk XRAM Operations
+~~~~~~~~~~~~~~~~~~~~
+
+These load and save XRAM directly through `READ_XRAM`_ and `WRITE_XRAM`_,
+so you can pull assets straight in without routing them through 6502 RAM.
+
+.. code-block:: C
+
+   int read_xram(unsigned buf, unsigned count, int fildes)
+   int write_xram(unsigned buf, unsigned count, int fildes)
+
+The OS takes ``buf`` and ``count`` on the XSTACK as integers, with
+``fildes`` in ``RIA_A``. The 6502 reads and writes XRAM through
+``RIA_RW0`` or ``RIA_RW1``.
+
+These operations stand out for their speed and for running in the
+background while the 6502 does other work. Depending on the request size,
+expect up to 800 KB/sec. A full 64 KB of XRAM loads or saves multiple times
+per second with no wait states or 6502 work.
+
+Bulk XRAM operations are why the Picocomputer 6502 has no paged memory.
+You don't need it when "disk" access has zero seek time and DMA to XRAM.

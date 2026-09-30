@@ -8,11 +8,11 @@ RP6502 - Emulator
 Introduction
 ============
 
-The RP6502-EMU is a Picocomputer 6502 hosted on a desktop or laptop
-computer running Windows, macOS or Linux. It plays ``.rp6502`` games and
-applications in a window, with the keyboard, mouse and gamepads of that
-computer. A RetroArch core of the emulator adds save states, rewind and
-netplay.
+The RP6502-EMU is the machine on the device you use every day, a
+Picocomputer 6502 hosted on a desktop or laptop running Windows, macOS or
+Linux. It plays ``.rp6502`` games and applications in a window, with the
+keyboard, mouse and gamepads of that computer. A RetroArch core of the
+emulator adds save states, rewind and netplay.
 
 The emulator is also the development machine. A project made from the
 :doc:`sdk` template runs in it from VS Code, with breakpoints, stepping
@@ -69,18 +69,19 @@ Start the emulator with a ROM, or drag one onto the window.
 In a Browser
 ============
 
-The emulator also runs on a web page that plays one ROM, so anyone can
-play a program without installing anything. ``rp6502_web()`` builds the
-page and the emulator into a zip, ready to upload, and the web zip on the
-`releases page <https://github.com/picocomputer/rp6502/releases/latest>`__
-is a sample. The steps, and those for GitHub Pages and other web
-servers, are in :doc:`web`.
+The RP6502-WEB is the machine for the web. It plays one ROM on a web
+page, so anyone can play the program without installing anything.
+``rp6502_web()`` builds a web player into a zip, ready to upload, and the
+web zip on the `releases page
+<https://github.com/picocomputer/rp6502/releases/latest>`__ is a sample.
+The steps, and those for GitHub Pages and other web servers, are in
+:doc:`web`.
 
 
 RetroArch
 =========
 
-The Picocomputer is also a libretro core. Install it from Online Updater >
+The RP6502-EMU is also a libretro core. Install it from Online Updater >
 Core Downloader, under "Picocomputer 6502", then load a ``.rp6502`` ROM
 the way you would a cartridge.
 
@@ -459,7 +460,7 @@ MOS-style ``$FF``.
 
 A failed check names the script and the line it was on, then exits 1.
 
-Memory starts random, as it often does on real hardware. This will catch
+Memory starts random, as it often does on the :doc:`pico`. This will catch
 uninitialized memory usage... eventually. ``--fill 00`` gives a test
 known memory when it needs it.
 
@@ -511,7 +512,7 @@ character and the keys that have an escape sequence. ``+shift`` types the
 shifted character, ``+alt`` prefixes ESC, and ``+ctrl`` sends the control
 byte, which makes ``key c+ctrl`` Ctrl-C and ``key leftbracket+ctrl`` an
 ESC. Those characters are a US keyboard's, whatever layout the machine is
-set to, because a script has to send the same bytes on every machine.
+set to, so that a script sends the same bytes under every layout.
 
 A key that types nothing is an error, which
 covers ``capslock``, ``numlock``, ``scrolllock``, ``printscreen``,

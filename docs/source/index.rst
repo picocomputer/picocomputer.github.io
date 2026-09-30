@@ -1,15 +1,15 @@
-:og:description: Write games for a real 6502 computer. Run them in your browser, or build the hardware for under $100.
+:og:description: Write games for a real 6502 computer. Run them in your browser, or build the standalone machine for under $100.
 
 .. toctree::
    :hidden:
    :caption: Manual
 
    RP6502-SDK <sdk>
+   RP6502-API <api>
    RP6502-RIA <ria>
    RP6502-RIA-W <ria_w>
    RP6502-VGA <vga>
    RP6502-TERM <term>
-   RP6502-OS <os>
    RP6502-PORT <port>
 
 .. toctree::
@@ -17,9 +17,9 @@
    :caption: Machine
 
    RP6502-PICO <pico>
+   RP6502-FPGA <fpga>
    RP6502-EMU <emu>
    RP6502-WEB <web>
-   RP6502-FPGA <fpga>
 
 .. toctree::
    :hidden:
@@ -79,24 +79,30 @@ You write in C or 6502 assembly, with either compiler, cc65 or llvm-mos,
 or in Microsoft BASIC. The template comes with a hello world in each.
 
 When it's good, publish it as a web page, where anyone can play it in a
-browser. The steps are in :doc:`web`. For the ultimate flex, build a
+browser. The steps are in :doc:`web`. For the ultimate flex, build an
 :doc:`pico`.
 
-:doc:`sdk` has the details, from installing a compiler to debugging on
-real hardware.
+:doc:`sdk` has the details, from installing a compiler to running a
+program on the RP6502-PICO.
 
 
 The Machine
 ===========
+
+A Picocomputer is any machine where a 6502 has access to a host that
+handles modern I/O. The first host was built on the very affordable
+Raspberry Pi Pico, which gave the project its name, but a Picocomputer
+can exist on any host.
+
+These are the features of the standalone machine, the :doc:`pico`:
 
 - **CPU** — WDC 65C02 and a 65C22 VIA, 0.1 to 8.0 MHz, cycle accurate on
   every host
 - **Memory** — 64 KB of RAM and 64 KB of XRAM, loaded by DMA at up to
   800 KB/sec while the 6502 keeps running. Nothing in RAM is reserved,
   not even zero page
-- **I/O** — 32 registers, and that's all of them. A modern processor
-  sits behind them running the USB, the files, and the network, so the
-  6502 never has to
+- **I/O** — 32 registers, and that's all of them. Through them the 6502
+  has access to the host, which handles USB, files, and the network
 - **Video** — three planes of tiles, bitmaps, and sprites in RGB555,
   programmable per scanline, with affine transforms on 16-bit sprites
 - **Sound** — eight oscillators with ADSR and stereo panning, or
@@ -114,11 +120,13 @@ All of it is documented on this site, down to the register.
 Read the Manual
 ===============
 
-Start with the :doc:`sdk`. The datasheets after it are for the parts of
-the machine. Read the datasheet for a part when a program starts to use
-that part. Read :doc:`port` before the program is published.
+Start with the :doc:`sdk`, then the :doc:`api`. The datasheets after
+them are for the parts of a Picocomputer. Read the datasheet for a part
+when a program starts to use that part. Read :doc:`port` before the
+program is published.
 
 - :doc:`sdk`: writing software, from a new project to a running program.
+- :doc:`api`: the system calls, the ABI, and the C library built on them.
 - :doc:`ria`: the register map and every device reached through it. The
   interface adapter, in the spirit of the classic CIA, VIA, and ACIA
   chips.
@@ -126,7 +134,6 @@ that part. Read :doc:`port` before the program is published.
 - :doc:`vga`: canvases, video modes, sprites, and the scanline
   programming underneath.
 - :doc:`term`: the console, its escape sequences, and the line editor.
-- :doc:`os`: the system calls, the ABI, and the C library sitting on them.
 - :doc:`port`: writing a program that works the same on every machine,
   from gamepads to saves.
 
@@ -134,16 +141,18 @@ that part. Read :doc:`port` before the program is published.
 Get a Machine
 =============
 
-You already have one. Games and applications are distributed as
-``.rp6502`` ROM files, and every machine runs them.
+The standalone machine, the machine in fabric, the machine on the
+device you use every day, and the machine for the web are all
+Picocomputers.
 
-- :doc:`pico` — the one you build. 100% through-hole, no IC programmer,
-  and you don't even have to solder, but you will plug eight ICs into
-  their sockets.
-- :doc:`emu` — Windows, macOS, Linux, and RetroArch.
-- :doc:`web` — your program on a web page, playable in the browser.
-- :doc:`fpga` — the whole machine in gates, on an Analogue Pocket today
-  and MiSTer next.
+- :doc:`pico` — the standalone machine, which you build yourself. 100%
+  through-hole, no IC programmer, and you don't even have to solder.
+- :doc:`fpga` — the machine in fabric, on an Analogue Pocket today and
+  MiSTer next.
+- :doc:`emu` — the machine on the device you use every day, for
+  Windows, macOS, Linux, and RetroArch.
+- :doc:`web` — the machine for the web. Your program on a web page,
+  playable in the browser.
 
 
 Community

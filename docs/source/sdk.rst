@@ -18,10 +18,11 @@ audio your game needs.
 If this sounds a lot like the cartridge ROM of a game console, or the
 BASIC ROM in your 8-bit home computer, that's not a coincidence.
 
-The SDK builds a ROM, runs it on a Picocomputer or in the emulator, and
-debugs it while it runs. A project starts as a copy of the `RP6502
-project template <https://github.com/picocomputer/rp6502-sdk>`__, which
-builds with either of two 6502 compilers, cc65 or llvm-mos. The template
+The SDK builds a ROM, runs it with the :doc:`emu`, an :doc:`pico` or the
+:doc:`web`, and debugs it in the :doc:`emu` while it runs. A project
+starts as a copy of the `RP6502 project template
+<https://github.com/picocomputer/rp6502-sdk>`__, which builds with
+either of two 6502 compilers, cc65 or llvm-mos. The template
 includes the same "Hello, world!" program four times: in C, which builds
 with either compiler; in the assembly syntax of each compiler; and in
 BASIC.
@@ -34,11 +35,11 @@ BASIC.
          program with cc65 or llvm-mos, and rp6502.py packages it with
          its assets into the ROM, such as build/cc65/debug/hello.rp6502,
          in the build folder of the preset. With the basic preset, a
-         BASIC program is packaged with BASIC, not compiled. The ROM is
-         run with RP6502-EMU, the emulator in tools/ with breakpoints and
-         stepping; RP6502-PICO, a Picocomputer over USB serial or telnet;
-         or RP6502-WEB, web/hello.zip from rp6502_web(), a web player in
-         a browser.
+         BASIC program is packaged with BASIC. The ROM is run with
+         RP6502-EMU, the emulator in tools/ with breakpoints and stepping;
+         RP6502-PICO, a standalone machine over USB serial or telnet; or
+         RP6502-WEB, web/hello.zip from rp6502_web(), a web player in a
+         browser.
 
 .. image:: _static/sdk/build-dark.svg
    :class: only-dark
@@ -48,11 +49,11 @@ BASIC.
          program with cc65 or llvm-mos, and rp6502.py packages it with
          its assets into the ROM, such as build/cc65/debug/hello.rp6502,
          in the build folder of the preset. With the basic preset, a
-         BASIC program is packaged with BASIC, not compiled. The ROM is
-         run with RP6502-EMU, the emulator in tools/ with breakpoints and
-         stepping; RP6502-PICO, a Picocomputer over USB serial or telnet;
-         or RP6502-WEB, web/hello.zip from rp6502_web(), a web player in
-         a browser.
+         BASIC program is packaged with BASIC. The ROM is run with
+         RP6502-EMU, the emulator in tools/ with breakpoints and stepping;
+         RP6502-PICO, a standalone machine over USB serial or telnet; or
+         RP6502-WEB, web/hello.zip from rp6502_web(), a web player in a
+         browser.
 
 
 .. _sdk-install:
@@ -157,7 +158,7 @@ and install it from the folder it was saved in:
 
    sudo apt install ./code_*.deb
 
-Give your account access to the Picocomputer's USB serial port, and
+Give your account access to the USB serial port of an RP6502-PICO, and
 install the compilers:
 
 .. code-block:: sh
@@ -166,7 +167,7 @@ install the compilers:
    curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/cc65.sh | sh
    curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.sh | sh
 
-Restart the computer, so the new group and PATH take effect. Other
+Restart your session, so the new group and PATH take effect. Other
 distributions have the same tools under other package names. On Arch,
 the serial port group is ``uucp`` instead of ``dialout``.
 
@@ -184,8 +185,8 @@ with a copy of the template. Clone it and open the folder in VS Code.
 
 - the C/C++ Extension Pack, which includes CMake Tools, to build;
 - LLDB DAP, to debug in the emulator;
-- Python Debugger, to run the Python tool that sends a ROM to a
-  Picocomputer.
+- Python Debugger, to run the Python tool that sends a ROM to an
+  RP6502-PICO or serves web players to a browser.
 
 **3. Choose a configure preset.** The first time the project opens,
 CMake Tools lists five presets. Four are for C, one for each combination
@@ -342,17 +343,17 @@ size comes from where its symbol sits in memory.
          Call Stack panels.
 
 **RP6502-PICO** builds the project and runs it on an :doc:`pico`.
-The connection is USB, through the USB port on the Picocomputer's VGA
-module, or telnet with an :doc:`ria_w`. First set ``device``, and ``key``
-for telnet, as `The .rp6502 Settings File`_ describes.
+The connection is USB, through the USB port on the VGA module, or telnet
+with an :doc:`ria_w`. First set ``device``, and ``key`` for telnet, as
+`The .rp6502 Settings File`_ describes.
 
 The ROM is copied to the current drive and folder of the monitor, the
-Picocomputer's command prompt, or to the ``workdir`` folder when the
+command prompt of the RP6502-PICO, or to the ``workdir`` folder when the
 settings file sets one. It is loaded from there, so a USB drive must be
 plugged in. The copy replaces any file with the same name. The program's
 console opens in a VS Code terminal. There are no breakpoints or stepping
-on hardware. In the terminal, Ctrl-A then X exits, and Ctrl-A then B
-sends a break. A break stops the program and returns to the monitor.
+on the RP6502-PICO. In the terminal, Ctrl-A then X exits, and Ctrl-A then
+B sends a break. A break stops the program and returns to the monitor.
 
 **RP6502-WEB** builds the project and opens a page in a browser with a
 link to every web player that ``rp6502_web()`` makes, as `Web Players`_
@@ -369,7 +370,7 @@ The .rp6502 Settings File
 
 The settings file is named ``.rp6502`` and is in the project folder. It is
 not a ROM, although it has the same extension. It is created the first
-time the tools run. To run on a Picocomputer, set ``device`` in the
+time the tools run. To run on an RP6502-PICO, set ``device`` in the
 ``[RP6502][Launch]`` section, and ``key`` as well for telnet.
 
 .. code-block:: text
@@ -394,13 +395,13 @@ time the tools run. To run on a Picocomputer, set ``device`` in the
        resolved against the settings file's folder. A bare name that isn't
        there, such as ``rp6502-emu``, is looked up on the PATH.
    * - ``device``
-     - The Picocomputer's serial port. A new settings file sets it to the
-       usual port for your system: ``/dev/ttyACM0`` on Linux, the first
-       ``/dev/cu.usbmodem`` device on macOS, or ``COM1`` on Windows. On
-       Windows the Picocomputer is usually on a higher COM number, shown
-       in Device Manager. When ``key`` is set,
-       ``device`` is the Picocomputer's hostname or IP address for telnet,
-       with an optional ``:port`` (23 by default).
+     - The serial port of the RP6502-PICO. A new settings file sets it to
+       the usual port for your system: ``/dev/ttyACM0`` on Linux, the
+       first ``/dev/cu.usbmodem`` device on macOS, or ``COM1`` on Windows.
+       On Windows the RP6502-PICO is usually on a higher COM number, shown
+       in Device Manager. When ``key`` is set, ``device`` is the hostname
+       or IP address of the RP6502-PICO for telnet, with an optional
+       ``:port`` (23 by default).
    * - ``key``
      - Passkey for telnet. Leave it empty to use a serial port. See
        :ref:`Telnet Console <ria-w-telnet-console>`.
@@ -410,9 +411,9 @@ time the tools run. To run on a Picocomputer, set ``device`` in the
        the current folder of the monitor.
    * - ``args``
      - Arguments for the ROM. The program receives them only when it
-       defines ``__argv_mem()``, as :ref:`ARGV <os-argv>` describes.
+       defines ``__argv_mem()``, as :ref:`ARGV <api-argv>` describes.
    * - ``term``
-     - Open a terminal on the console when running on a Picocomputer.
+     - Open a terminal on the console when running on an RP6502-PICO.
 
 The emulator also saves its debugger window layout in this file, so each
 project reopens with its windows where you left them.
@@ -527,7 +528,7 @@ Any other address is a name, and a named asset is a file the program opens
 while it runs. Prefix the name with ``ROM:`` and open it like any other
 file. Named assets are read-only, and several can be open at once. To
 load one into XRAM, pass its file descriptor to
-:ref:`read_xram() <os-read-xram>`.
+:ref:`read_xram() <api-read-xram>`.
 
 .. code-block:: C
 
@@ -562,17 +563,42 @@ The build fails if two memory chunks overlap ("ROM data already exists")
 or two assets have the same name ("Asset name already exists").
 
 
-.. _sdk-ram-memory-map:
+.. _sdk-memory-map:
 
-RAM Memory Map
-==============
+Memory Map
+==========
 
-RAM is ``$0000-$FEFF``, 63.75 KB. The 256 bytes above it are I/O: the
-registers of the RIA (the RP6502 Interface Adapter), the VIA, and
-unassigned space, as the :ref:`Memory Map <os-memory-map>` of the
-operating system shows. Each compiler includes a linker script that lays
-out zero page and the rest of RAM, so a project does not have to manage
-the layout.
+Everything below $FF00 is RAM, and nothing in zero page is used or
+reserved. The Picocomputer starts every project as a clean slate. VGA,
+audio, storage, keyboards, mice, gamepads, the RTC, and networking are
+all reached through just the 32 registers of the RIA (the RP6502
+Interface Adapter).
+
+.. list-table::
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Address
+     - Description
+   * - $0000-$FEFF
+     - RAM, 63.75 KB
+   * - $FF00-$FFCF
+     - Unassigned
+   * - $FFD0-$FFDF
+     - VIA, see the `WDC datasheet
+       <https://www.westerndesigncenter.com/wdc/w65c22-chip.php>`_
+   * - $FFE0-$FFFF
+     - RIA, see the :doc:`RP6502-RIA datasheet <ria>`
+   * - $10000-$1FFFF
+     - XRAM, 64 KB, see `XRAM Memory Map`_
+
+The unassigned space is open for hardware experimenters. Design your own
+chip-select logic to use it. Add more VIAs downward and other hardware
+upward, for example VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and
+SID1 at $FF20.
+
+Each compiler includes a linker script that lays out zero page and the
+rest of RAM, so a project does not have to manage the layout.
 
 Most projects keep the default layout. For a different one, copy the
 compiler's script into the project, change the copy, and pass it to the
@@ -601,7 +627,7 @@ XRAM Memory Map
 
 XRAM is 64 KB of memory outside the 6502's address space. The preferred
 way to read and write it from C is with the XRAM functions of the
-:doc:`os`, such as :c:func:`xram0_read`, :c:func:`xram0_write` and
+:doc:`api`, such as :c:func:`xram0_read`, :c:func:`xram0_write` and
 :c:func:`xram0_peek8`. The 0 or 1 in a name selects which of the two
 :ref:`XRAM portals <ria-xram-portals>` of the RIA the call uses, and the
 two portals can point to different addresses.
@@ -610,7 +636,7 @@ XRAM holds the data for the virtual devices: keyboard, mouse, tablet and
 gamepad input, the PSG and OPL2 sound generators, VGA mode configurations,
 and the pixels, tiles and sprites the modes draw. XRAM has no fixed map.
 You choose an address for each device's data, and set it in the device's
-extended register (XREG) with :ref:`xreg() <os-xreg>`.
+extended register (XREG) with :ref:`xreg() <api-xreg>`.
 
 A ROM's map is usually kept in one file, ``xram.h`` for C or ``xram.inc``
 for assembly. It holds the structure of each device the program uses, and a
@@ -1211,9 +1237,9 @@ that break an older project.
        ``ria_set_axsreg``, ``ria_set_ax``, ``ria_set_a``,
        ``ria_call_int``, ``ria_call_long``
      - None. Call the C function of the OS operation, listed in
-       :doc:`os`. The ARGV arguments are passed to ``main()`` as ``argc``
+       :doc:`api`. The ARGV arguments are passed to ``main()`` as ``argc``
        and ``argv`` when the program defines ``__argv_mem()``. See
-       :ref:`ARGV <os-argv>`.
+       :ref:`ARGV <api-argv>`.
    * - ``RIA_READY_TX_BIT``, ``RIA_READY_RX_BIT``, ``RIA_BUSY_BIT``
      - None.
    * - ``RIA_OP_ZXSTACK``
@@ -1332,8 +1358,8 @@ The ROM is ``build/cc65/debug/hello.rp6502``. The configure step
 downloads the emulator when ``tools/`` has none, so the first configure
 of a fresh copy needs a network connection.
 
-Running on Hardware
--------------------
+Running on an RP6502-PICO
+-------------------------
 
 ``rp6502.py run`` copies the ROM to the current folder of the monitor, or
 to the ``workdir`` folder, loads it, and opens a terminal on the console.
@@ -1374,7 +1400,7 @@ options of that subcommand.
    * - ``term``
      - Open a terminal on the console.
    * - ``basic``
-     - Type a BASIC program into the BASIC installed on the Picocomputer,
+     - Type a BASIC program into the BASIC installed on the RP6502-PICO,
        and run it.
    * - ``execute``
      - Run a ROM in the emulator. See `Running in the Emulator`_.
@@ -1389,7 +1415,7 @@ options of that subcommand.
        Players`_.
 
 ``run``, ``upload``, ``term`` and ``basic`` send a break first, which
-stops the program running on the Picocomputer.
+stops the program running on the RP6502-PICO.
 
 Running in the Emulator
 -----------------------

@@ -12,11 +12,12 @@ RP6502 - Field Programmable Gate Array
 Introduction
 ============
 
-The RP6502-FPGA is the Picocomputer 6502 in programmable logic. The
-65C02, the 65C22, the :doc:`ria`, and the :doc:`vga` video system are RTL,
-and the operating system runs on a Hazard3 RISC-V soft CPU executing
-the same C firmware that all other machines run. It keeps the same split between
-a 6502 and a modern processor, which is what defines a Picocomputer.
+The RP6502-FPGA is the machine in fabric, a Picocomputer 6502 in
+programmable logic. The 65C02, the 65C22, the :doc:`ria`, and the
+:doc:`vga` video system are RTL, and the operating system runs on a
+Hazard3 RISC-V soft CPU executing the same C firmware that all other
+machines run. It keeps the same split between a 6502 and a host that
+handles modern I/O, which is what defines a Picocomputer.
 
 
 The Analogue Pocket Core

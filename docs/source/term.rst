@@ -71,7 +71,7 @@ Locking the Size
 ----------------
 
 A ROM can pin a fixed terminal size by writing non-zero values to
-:ref:`RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT <os-ria-attributes>`.
+:ref:`RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT <api-ria-attributes>`.
 With both axes pinned, the auto-detect handshake is skipped entirely.
 Writing 0 returns the channel to auto-detect, and both attributes revert
 to 0 when the ROM stops.
@@ -118,8 +118,8 @@ Non-blocking Read Line
 Between the activating read and the line flush, the application
 can inspect and modify the editor's state. That is what makes features
 like history recall, tab completion, and multi-field form navigation
-possible. The hooks are :ref:`RLN_LASTKEY <os-rln-lastkey>`,
-:ref:`RLN_PEEK <os-rln-peek>`, and :ref:`RLN_POKE <os-rln-poke>`.
+possible. The hooks are :ref:`RLN_LASTKEY <api-rln-lastkey>`,
+:ref:`RLN_PEEK <api-rln-peek>`, and :ref:`RLN_POKE <api-rln-poke>`.
 
 The basic pattern:
 
@@ -171,7 +171,7 @@ Terminal
 The :doc:`vga` specification includes a color terminal that attaches to
 the console manifold. It implements the Linux console subset of
 ECMA-48 / VT102 with xterm-color extensions. The terminal does not
-require flow control to keep up with 115200 bps.
+require flow control.
 
 Compatibility and Limits
 ------------------------

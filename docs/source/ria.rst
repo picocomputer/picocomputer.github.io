@@ -34,16 +34,18 @@ Implementations
 - :doc:`web` — The RIA software and the software 65C02 and 65C22, built
   as WebAssembly and run in a browser.
 
-A Picocomputer always has a companion CPU and Operating System. For example,
+A Picocomputer always has a companion CPU and operating system. For example,
 one :doc:`emu` runs on Linux with an ARM processor. The :doc:`pico` is
-special because it hosts itself. The :doc:`os` is an abstraction on all
-other hosts, but it is the native Operating System on the :doc:`pico`.
+special because it hosts itself. The RIA runs an operating system, and a
+6502 program calls it through the :doc:`api`. That operating system is an
+abstraction on all other hosts, but it is the native operating system on
+the :doc:`pico`.
 
 One other special feature of the :doc:`pico` is its monitor. Every
 ``load``, ``reset``, ``set``, and ``status`` command on this page applies
-only to an :doc:`pico`. The :doc:`emu` takes command-line arguments
-instead, the :doc:`web` takes settings in its page, and the :doc:`fpga`
-uses the Pocket's own menus.
+only to an :doc:`pico`. The :doc:`fpga` uses the Pocket's own menus
+instead, the :doc:`emu` takes command-line arguments, and the :doc:`web`
+takes settings in its page.
 
 
 Reset
@@ -52,8 +54,8 @@ Reset
 Think of reset as two states rather than a pulse on RESB. While reset
 is low, the 6502 is stopped. On an :doc:`pico`, the monitor is connected
 to the console while in reset. On the Pocket, the system waits for a new
-ROM to be loaded from the settings menu. On :doc:`emu`, some hosts wait
-for a new ROM to load while others exit the host process.
+ROM to be loaded from the settings menu. On the :doc:`emu`, some hosts
+wait for a new ROM to load while others exit the host process.
 
 Reset is mostly handled automatically and this works well for all hosts
 except the :doc:`pico`. Here we need a way to stop a wedged 6502. The monitor
@@ -132,7 +134,7 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
      - Ensures errno is optionally a 16-bit int.
    * - $FFEF
      - OP
-     - Write the :doc:`OS <os>` operation id here to begin an OS call.
+     - Write an :doc:`api` operation id here to begin an OS call.
    * - $FFF0
      - IRQ
      - Interrupt enable mask. Reading returns the triggered signals
@@ -192,9 +194,9 @@ UART
 
 The UART behind $FFE0-$FFE2 is reached directly through these registers,
 and the ready flags on bits 6-7 let you test with the BIT operator. Use
-these or the :doc:`os` stdio, but not both at once. Driving the UART
-directly while a stdio OS function is in progress is undefined behavior.
-The line runs at 115200 bps, 8-bit words, no parity, 1 stop bit.
+these or the stdio functions of the :doc:`api`, but not both at once.
+Driving the UART directly while a stdio OS function is in progress is
+undefined behavior.
 
 .. _ria-xram-portals:
 
@@ -250,7 +252,7 @@ through portal 0:
       sta RIA_RW0 ; $1001
 
 C programs use the ``xram0_`` and ``xram1_`` functions documented in the
-:doc:`os`, such as :c:func:`xram0_read` and :c:func:`xram0_poke16`. The 0
+:doc:`api`, such as :c:func:`xram0_read` and :c:func:`xram0_poke16`. The 0
 or 1 in a function name selects the portal. This is the same write in C,
 with the value stored low byte first:
 
@@ -267,7 +269,7 @@ Extended Stack (XSTACK)
 -----------------------
 
 This is a 512-byte, top-down, last-in-first-out stack used by the
-fastcall mechanism described in the :doc:`os`. Reading past the end is
+fastcall mechanism described in the :doc:`api`. Reading past the end is
 guaranteed to return zeros. Write to push, read to pull.
 
 
@@ -306,7 +308,7 @@ configuration structure at the given address.
 
 Extended registers are outside the 6502's address space, so a load or a
 store cannot access one, and no extended register can be read back. A C
-program sets them with the :ref:`xreg() <os-xreg>` OS call, which is made
+program sets them with the :ref:`xreg() <api-xreg>` OS call, which is made
 through the RIA registers like every other OS call, and an assembly
 program with the ``xreg`` macro in ``rp6502.inc``. Both take the device,
 the channel, the address, and then one or more 16-bit values, which are
@@ -1328,9 +1330,10 @@ always set for a mouse, set for a pen while the pen is in range, and clear
 for a touchscreen.
 
 The application and the RIA exchange pointer preferences through the header.
-``status`` bit 0 (host cursor) is set only when the host can draw a cursor
-for the application, which is the :doc:`emu` with a mouse, in a window or a
-browser. The bit is always clear on real hardware and for touch input.
+``status`` bit 0 (host cursor) is set only for a mouse on the :doc:`emu`
+in a window or on the :doc:`web`, where the host can draw a cursor for the
+application. The bit is always clear on the :doc:`pico` and the
+:doc:`fpga`, and for touch input.
 ``control`` selects the host cursor shape, or hides the cursor so the
 application can draw its own. Mapping the tablet sets it to ARROW.
 
@@ -1482,7 +1485,7 @@ pointer, and ``control`` has no effect.
 Gamepads
 ========
 
-The RIA supports up to four gamepads. :doc:`pico` firmware carries drivers
+The RIA supports up to four gamepads. :doc:`pico` firmware includes drivers
 for Generic HID, XInput, and PlayStation controllers. Where the layout
 comes from, and how a game works with nearly every gamepad, is covered in
 :ref:`Gamepads <port-gamepads>` in RP6502-PORT.
@@ -2127,7 +2130,7 @@ Virtual COM Port
 
 If you need serial ports beyond the console UART, USB adapters are
 available for CMOS/TTL, RS-232, RS-422, and RS-485, and each one appears
-as a Virtual COM Port (VCP). :doc:`pico` firmware carries drivers for FTDI,
+as a Virtual COM Port (VCP). :doc:`pico` firmware includes drivers for FTDI,
 CP210X, CH34X, PL2303, and CDC ACM.
 
 The ``status`` command lists any connected VCP devices. Open one like a
@@ -2151,7 +2154,7 @@ MIDI
 ====
 
 MIDI instruments attached to the machine appear as devices, and the
-``status`` command lists them. :doc:`pico` firmware carries a USB MIDI
+``status`` command lists them. :doc:`pico` firmware includes a USB MIDI
 host driver, so a USB instrument plugs right in. Each virtual cable is
 its own device — ``"MIDI0:"`` onward, assigned in the order cables
 appear, up to four at a time. A simple keyboard is one cable (1X1); a

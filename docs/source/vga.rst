@@ -1551,7 +1551,7 @@ applications are denied access to them.
    * - $1:F:01
      - CODE_PAGE
      - Set code page for built-in font. Matches
-       :ref:`RIA_ATTR_CODE_PAGE <os-ria-attributes>`.
+       :ref:`RIA_ATTR_CODE_PAGE <api-ria-attributes>`.
    * - $1:F:02
      - SUPPRESS_TERM_REPLY
      - Used by the telnet server to suppress term responses.
@@ -1577,9 +1577,10 @@ applications are denied access to them.
 Backchannel
 ===========
 
-The :doc:`pico` hardware is constrained by GPIO pins, which is why two
-are needed for a Picocomputer. This is a hack to recover a single pin.
-The 6502 programmer never has to think about any of this.
+The :doc:`pico` hardware is constrained by GPIO pins, which is why it
+uses two Raspberry Pi Pico 2 boards. The backchannel is a hack to
+recover a single pin. The 6502 programmer never has to think about any
+of this.
 
 Because the PIX bus is unidirectional, the VGA system can't send data
 straight back to the RIA. The UART Rx path won't do either — it would
