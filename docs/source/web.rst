@@ -112,13 +112,13 @@ open http://localhost:8000.
    * - ``db``
      - ``'username-mygame'``
      - The name of the IndexedDB database for saves. See `Saves`_.
-   * - ``bg``
+   * - ``bgcolor``
      - ``'000000'``
      - The color around the picture when the page and the canvas have
        different shapes, as six hex digits, RRGGBB. Default ``000000``.
    * - ``border``
      - ``'8px'``
-     - Space around the game, in the ``bg`` color, as a CSS length such as
+     - Space around the game, in the ``bgcolor`` color, as a CSS length such as
        ``8px`` or ``1em``. It keeps text on the edge of the canvas apart
        from the page around it.
    * - ``filter``

@@ -11,8 +11,9 @@ Introduction
 The RP6502-EMU is the machine on the device you use every day, a
 Picocomputer 6502 hosted on a desktop or laptop running Windows, macOS or
 Linux. It plays ``.rp6502`` games and applications in a window, with the
-keyboard, mouse and gamepads of that computer. A RetroArch core of the
-emulator adds save states, rewind and netplay.
+keyboard, mouse and gamepads of that computer. The same emulator is a
+RetroArch core, which reaches Android phones, tablets and TVs, and
+iPhone, iPad and Apple TV, and adds save states, rewind and netplay.
 
 The emulator is also the development machine. A project made from the
 :doc:`sdk` template runs in it from VS Code, with breakpoints, stepping
@@ -66,26 +67,16 @@ Start the emulator with a ROM, or drag one onto the window.
   rp6502-emu game.rp6502
 
 
-In a Browser
-============
-
-The RP6502-WEB is the machine for the web. It plays one ROM on a web
-page, so anyone can play the program without installing anything.
-``rp6502_web()`` builds a web player into a zip, ready to upload, and the
-web zip on the `releases page
-<https://github.com/picocomputer/rp6502/releases/latest>`__ is a sample.
-The steps, and those for GitHub Pages and other web servers, are in
-:doc:`web`.
-
-
 .. _emu-retroarch:
 
 RetroArch
 =========
 
-The RP6502-EMU is also a libretro core. Install it from Online Updater >
-Core Downloader, under "Picocomputer 6502", then load a ``.rp6502`` ROM
-the way you would a cartridge. Save states are deterministic, so rewind,
+The RP6502-EMU is also a libretro core. RetroArch reaches devices that a
+dedicated emulator would make no sense for: Android phones, tablets and
+TVs, iPhone, iPad and Apple TV, and Linux on ARM boards. Install the core
+from Online Updater > Core Downloader, under "Picocomputer 6502", then
+load a ``.rp6502`` ROM the way you would a cartridge. Save states are deterministic, so rewind,
 run-ahead and netplay all work.
 
 The core runs the ROM by its full path, so argv[0] is the absolute path
@@ -157,65 +148,54 @@ There are no short options. Both ``--opt value`` and ``--opt=value``
 work.
 
 .. list-table::
-   :widths: 20 25 45 10
+   :widths: 20 25 55
    :header-rows: 1
 
    * - Option
      - Value
      - Description
-     - Hosts
    * - ``--help``
      - \-
      - Print the options and the script commands, then exit.
-     - all
    * - ``--screenshot``
      - ``file.png``
      - Run headlessly, render the frames to PNG, and exit.
-     - all
    * - ``--crc``
      - \-
      - Run headlessly, render the frames, print the canvas as a CRC-32
        on stdout, and exit.
-     - all
    * - ``--frames``
      - number
      - Frames to run before the screenshot or the CRC. Default 120.
-     - all
    * - ``--scale``
      - number
      - Window scale, fractional allowed. Default 1.5.
-     - desktop
    * - ``--filter``
      - ``nearest``,
        ``linear``,
        ``sharp``
      - How pixels are scaled to the window. Default ``sharp``, which
        prescales by an integer and then interpolates.
-     - all
    * - ``--script``
      - ``file``, or
        ``-``
      - See `Scripting`_.
-     - desktop
    * - ``--headless``
      - \-
      - No window and no picture. The program reads and writes the host's
        stdin, stdout and stderr, and its exit code becomes the emulator's.
        Implies ``--stdin``.
-     - desktop
    * - ``--stdin``
      - \-
      - The host's stdin becomes the machine's console input. A terminal
        there becomes the console itself. Implied by ``--headless``. See
        `In a Toolchain`_.
-     - desktop
    * - ``--install``
      - ``file``
      - Install a file on the null drive, reached as ``:basename``. A
        program runs an installed ROM with EXEC and opens any other
        installed file for reading. Repeatable to sixteen. When no ROM is
        named, the first one boots.
-     - all
    * - ``--save-dir``
      - ``folder``
      - The folder that holds ``SAVE:`` files. It is created the first
@@ -223,62 +203,49 @@ work.
        ``$XDG_DATA_HOME/rp6502``, or ``~/.local/share/rp6502``, on Linux,
        ``~/Library/Application Support/io.github.picocomputer.rp6502-emu``
        on macOS, and ``Saved Games\rp6502`` on Windows.
-     - all
    * - ``--bgcolor``
      - ``RRGGBB``
      - Letterbox and pillarbox fill. Default ``000000``.
-     - all
    * - ``--phi2``
      - kHz
      - 6502 clock, 100 to 8000. Default 8000. ``0`` is for
        ``--headless``, and runs the 6502 with no speed limit.
-     - all
    * - ``--cp``
      - number
      - OEM code page. 437, 720, 737, 771, 775, 850, 852, 855, 857,
        860-866, or 869. Default 437.
-     - all
    * - ``--seed``
      - number
      - Fixed seed for the run, covering both the memory fill and the
        random numbers a program draws, so a run repeats exactly.
-     - all
    * - ``--fill``
      - ``random``,
        or a byte
      - What RAM and XRAM hold before anything writes them. The default
        is ``random``. Supply a byte, as ``$00`` or ``0``, to start with
        known memory.
-     - all
    * - ``--mute``
      - \-
      - No synthesis and no audio device opened at all.
-     - all
    * - ``--debug``
      - \-
      - The on-screen machine debugger. It also holds the window open
        after the program exits, so you can examine where it stopped.
-     - desktop
    * - ``--dap``
      - \-
      - Act as a DAP debug adapter on stdio. Implies ``--debug``.
-     - desktop
    * - ``--ini``
      - ``file``
      - Where the debugger keeps its window layout.
-     - desktop
    * - ``--credits``
      - \-
      - Print third-party credits and licenses, then exit.
-     - all
    * - ``--version``
      - \-
      - Print the version and exit.
-     - all
    * - ``--``
      - words
      - Pass everything after this to the ROM as ``argv[1..]``.
-     - all
 
 
 .. _emu-debugging:
@@ -483,9 +450,13 @@ MOS-style ``$FF``.
 
 A failed check names the script and the line it was on, then exits 1.
 
-Memory starts random, as it often does on the :doc:`pico`. This will catch
-uninitialized memory usage... eventually. ``--fill 00`` gives a test
-known memory when it needs it.
+A program must treat RAM and XRAM as uninitialized, because they hold
+unknown values until the program writes them. To help find a program that
+reads memory before writing it, the emulator fills RAM and XRAM from a new
+random seed on every run, so a program that gets lucky with an
+uninitialized value on one run is not lucky on the next. For a test,
+``--seed`` repeats a run exactly, and ``--fill`` starts with a known byte,
+such as ``--fill 00``.
 
 
 Key Names
