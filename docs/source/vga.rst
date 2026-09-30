@@ -1,8 +1,8 @@
 ==================================
-RP6502-VGA
+VGA
 ==================================
 
-RP6502 - Video Graphics Array
+Video Graphics Array
 
 Introduction
 ============
@@ -69,10 +69,10 @@ the data, its size, and its position on the canvas. Each mode has its
 own, given in its section below.
 
 You program the VGA device with :ref:`PIX extended registers <ria-xreg>`
-(XREGs). VGA is PIX device ID 1. Registers are 16-bit values addressed as
-$device:$channel:register — for example, $1:0:0F. ``xaddr`` in the
-examples below is the XRAM address of that mode's configuration
-structure.
+(XREGs). The VGA is PIX device ID 1. Registers are 16-bit values
+addressed as $device:$channel:register — for example, $1:0:0F.
+``xaddr`` in the examples below is the XRAM address of that mode's
+configuration structure.
 
 .. code-block:: C
 

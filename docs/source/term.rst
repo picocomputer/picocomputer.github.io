@@ -1,8 +1,8 @@
 ==================================
-RP6502-TERM
+TERM
 ==================================
 
-RP6502 - Terminal
+Terminal
 
 
 Introduction
@@ -168,7 +168,7 @@ move on, entering the next field with a fresh ``read()`` and
 Terminal
 ========
 
-The :doc:`vga` specification includes a color terminal that attaches to
+The :doc:`vga` video system includes a color terminal that attaches to
 the console manifold. It implements the Linux console subset of
 ECMA-48 / VT102 with xterm-color extensions. The terminal does not
 require flow control.

@@ -1,8 +1,8 @@
 ============================
-RP6502-SDK
+SDK
 ============================
 
-RP6502 - Software Development Kit
+Software Development Kit
 
 
 Introduction
@@ -343,7 +343,7 @@ size comes from where its symbol sits in memory.
 
 **RP6502-PICO** builds the project and runs it on an :doc:`pico`.
 The connection is USB, through the USB port on the VGA module, or telnet
-with an :doc:`ria_w`. First set ``device``, and ``key`` for telnet, as
+with a :doc:`ria_w`. First set ``device``, and ``key`` for telnet, as
 `The .rp6502 Settings File`_ describes.
 
 The ROM is copied to the current drive and folder of the monitor, the
@@ -587,7 +587,7 @@ Interface Adapter).
      - VIA, see the `WDC datasheet
        <https://www.westerndesigncenter.com/wdc/w65c22-chip.php>`_
    * - $FFE0-$FFFF
-     - RIA, see the :doc:`RP6502-RIA datasheet <ria>`
+     - RIA, see the :doc:`RIA datasheet <ria>`
    * - $10000-$1FFFF
      - XRAM, 64 KB, see `XRAM Memory Map`_
 
@@ -1214,14 +1214,15 @@ that break an older project.
        layout.
    * - ``xreg_ria_keyboard``, ``xreg_ria_mouse``, ``xreg_ria_gamepad``,
        ``xreg_ria_tablet``
-     - The same macros from :doc:`ria`, copied into ``xram.h``.
+     - The same macros from the :doc:`ria` datasheet, copied into
+       ``xram.h``.
    * - ``xreg_vga_canvas``
      - The same macro from :ref:`vga-key-registers`, copied into
        ``xram.h``.
    * - ``xreg_vga_mode(n, ...)``
-     - One macro per mode from :doc:`vga`, ``xreg_vga_mode0`` to
-       ``xreg_vga_mode5``. ``xreg_vga_mode(3, ...)`` becomes
-       ``xreg_vga_mode3(...)``.
+     - One macro per mode from the :doc:`vga` datasheet,
+       ``xreg_vga_mode0`` to ``xreg_vga_mode5``. ``xreg_vga_mode(3, ...)``
+       becomes ``xreg_vga_mode3(...)``.
    * - ``phi2()``
      - ``ria_attr_get(RIA_ATTR_PHI2_KHZ)``
    * - ``code_page(cp)``
@@ -1233,8 +1234,9 @@ that break an older project.
        ``ria_pop_long``, ``ria_pop_int``, ``ria_pop_char``,
        ``ria_set_axsreg``, ``ria_set_ax``, ``ria_set_a``,
        ``ria_call_int``, ``ria_call_long``
-     - None. Each API call has a C function, listed in :doc:`api`. The ARGV arguments are passed to ``main()`` as ``argc``
-       and ``argv`` when the program defines ``__argv_mem()``. See
+     - None. Each API call has a C function, listed in the :doc:`api`.
+       The ARGV arguments are passed to ``main()`` as ``argc`` and
+       ``argv`` when the program defines ``__argv_mem()``. See
        :ref:`ARGV <api-argv>`.
    * - ``RIA_READY_TX_BIT``, ``RIA_READY_RX_BIT``, ``RIA_BUSY_BIT``
      - None.

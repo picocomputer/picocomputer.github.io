@@ -253,9 +253,10 @@ work.
 Debugging
 =========
 
-The emulator is a DAP debug adapter, so any editor that speaks the Debug
-Adapter Protocol can do source-level debugging of 6502 code. :doc:`sdk`
-covers the VS Code side, which is already wired up.
+The emulator is a DAP debug adapter, so any editor that supports the Debug
+Adapter Protocol can do source-level debugging of 6502 code. The
+:doc:`sdk` covers the VS Code side, which the project template already
+configures.
 
 Both compilers support breakpoints on a source line, conditional and
 hit-count breakpoints, logpoints, breakpoints on a function or an

@@ -4,13 +4,13 @@
    :hidden:
    :caption: Manual
 
-   RP6502-SDK <sdk>
-   RP6502-API <api>
-   RP6502-RIA <ria>
-   RP6502-RIA-W <ria_w>
-   RP6502-VGA <vga>
-   RP6502-TERM <term>
-   RP6502-PORT <port>
+   SDK <sdk>
+   API <api>
+   RIA <ria>
+   RIA-W <ria_w>
+   VGA <vga>
+   TERM <term>
+   PORT <port>
 
 .. toctree::
    :hidden:
@@ -82,7 +82,7 @@ When it's good, publish it as a web page, where anyone can play it in a
 browser. The steps are in :doc:`web`. For the ultimate flex, build an
 :doc:`pico`.
 
-:doc:`sdk` has the details, from installing a compiler to running a
+The :doc:`sdk` has the details, from installing a compiler to running a
 program on the RP6502-PICO.
 
 
@@ -128,8 +128,8 @@ program is published.
 - :doc:`sdk`: writing software, from a new project to a running program.
 - :doc:`api`: the system calls, the ABI, and the C library built on them.
 - :doc:`ria`: the register map and every device reached through it. The
-  interface adapter, in the spirit of the classic CIA, VIA, and ACIA
-  chips.
+  RP6502 Interface Adapter, in the spirit of the classic CIA, VIA, and
+  ACIA chips.
 - :doc:`ria_w`: setting up Wi-Fi, Bluetooth, telnet, and the Hayes modem.
 - :doc:`vga`: canvases, video modes, sprites, and the scanline
   programming underneath.

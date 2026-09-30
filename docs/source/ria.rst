@@ -1,8 +1,8 @@
 ====================
-RP6502-RIA
+RIA
 ====================
 
-RP6502 - RP6502 Interface Adapter
+RP6502 Interface Adapter
 
 
 Introduction
@@ -14,7 +14,8 @@ stores to those registers, a 6502 program calls a POSIX-like operating
 system to open, read and write files, and uses a second 64 KB of memory,
 the extended RAM (XRAM). In XRAM, a program reads keyboard, mouse, tablet
 and gamepad input, programs the PSG or the OPL2 sound generator, and
-writes the tiles, bitmaps and sprites that the :doc:`vga` displays.
+writes the tiles, bitmaps and sprites that the :doc:`vga` video system
+displays.
 
 The RIA must be at $FFE0-$FFFF and must control RESB and PHI2, the reset
 and the clock of the 6502. Those are the only hard requirements.
@@ -192,8 +193,8 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
 UART
 ----
 
-The UART behind $FFE0-$FFE2 is reached directly through these registers,
-and the ready flags on bits 6-7 let you test with the BIT operator. Use
+A program uses the UART directly through the registers at $FFE0-$FFE2,
+and the ready flags on bits 6-7 can be tested with the BIT operator. Use
 these or the stdio functions of the :doc:`api`, but not both at once.
 Driving the UART directly while a stdio API call is in progress is
 undefined behavior.
@@ -251,10 +252,10 @@ through portal 0:
       lda #$34
       sta RIA_RW0 ; $1001
 
-C programs use the ``xram0_`` and ``xram1_`` functions documented in the
-:doc:`api`, such as :c:func:`xram0_read` and :c:func:`xram0_poke16`. The 0
-or 1 in a function name selects the portal. This is the same write in C,
-with the value stored low byte first:
+C programs use the ``xram0_`` and ``xram1_`` functions of the :doc:`api`,
+such as :c:func:`xram0_read` and :c:func:`xram0_poke16`. The 0 or 1 in a
+function name selects the portal. This is the same write in C, with the
+value stored low byte first:
 
 .. code-block:: C
 
@@ -269,8 +270,8 @@ Extended Stack (XSTACK)
 -----------------------
 
 This is a 512-byte, top-down, last-in-first-out stack used by the
-fastcall mechanism described in the :doc:`api`. Reading past the end is
-guaranteed to return zeros. Write to push, read to pull.
+fastcall mechanism of the :doc:`api`. Reading past the end is guaranteed
+to return zeros. Write to push, read to pull.
 
 
 Peripheral Information Exchange (PIX)
@@ -1488,7 +1489,7 @@ Gamepads
 The RIA supports up to four gamepads. :doc:`pico` firmware includes drivers
 for Generic HID, XInput, and PlayStation controllers. Where the layout
 comes from, and how a game works with nearly every gamepad, is covered in
-:ref:`Gamepads <port-gamepads>` in RP6502-PORT.
+the :ref:`Gamepads <port-gamepads>` section of :doc:`port`.
 
 Enable and disable the RIA gamepad data by setting its extended
 register. The register value is the XRAM start address of the gamepad
@@ -2119,11 +2120,11 @@ the era had their own timers and rarely used the chip's.
 Console
 =======
 
-The system console is the terminal the RIA and the 6502 talk to, and the
+The system console is the terminal connected to the RIA, and the
 `UART`_ registers above are its rawest form. The OS wraps that same port as
 ``stdin``, ``stdout``, ``stderr``, and the ``CON:`` and ``TTY:`` device
 names. See :doc:`term` for cooked and raw reads, the non-blocking
-variants, and the line editor behind them.
+variants, and the line editor.
 
 Virtual COM Port
 ================
@@ -2431,16 +2432,16 @@ PIX Physical Layer
 None of this is needed to program the machine. What follows is the bus
 itself, for anyone building a device to put on it.
 
-On the :doc:`pico`, PIX is a physical bus between the RIA and the VGA.
-High-bandwidth devices like video systems need a bus of their own. PIX
-is that bus: an addressable broadcast system that any number of devices
-can receive, narrow enough to fit the GPIO budget of a Raspberry Pi
-Pico, wide enough to move data as fast as the 6502 writes.
+On the :doc:`pico`, PIX is a physical bus between the RP6502-RIA and the
+RP6502-VGA. High-bandwidth devices like video systems need a bus of their
+own. PIX is that bus: an addressable broadcast system that any number of
+devices can receive, narrow enough to fit the GPIO budget of a Raspberry
+Pi Pico, wide enough to move data as fast as the 6502 writes.
 
 The signals are PHI2 and PIX0-3. This is a double-data-rate bus. It
 shifts PIX0-3 left on both transitions of PHI2, so a 32-bit frame is
-sent in just 4 PHI2 cycles. A PIO block on the Pico decodes it, since
-PIO is essentially a shift register.
+sent in just 4 PHI2 cycles. A PIO block on a Raspberry Pi Pico decodes
+it, since PIO is essentially a shift register.
 
 Bit 28 (0x10000000) is the framing bit, set in every message. When the
 bus is idle, an all-zero payload repeats on device ID 7. A receiver

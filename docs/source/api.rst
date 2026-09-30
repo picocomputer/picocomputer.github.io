@@ -1,8 +1,8 @@
 ============================
-RP6502-API
+API
 ============================
 
-RP6502 - Application Programming Interface
+Application Programming Interface
 
 
 Introduction
@@ -160,7 +160,7 @@ XREG
    channel, which the RIA manages.
 
    This is how you add virtual hardware to extended RAM. Both the :doc:`ria`
-   and :doc:`vga` ship with virtual devices you can install, and you can
+   and the :doc:`vga` include virtual devices you can install, and you can
    build your own hardware for the PIX bus and configure it with this same
    call.
 
@@ -561,10 +561,11 @@ OPEN
    a file before opening that file again, as described in
    :ref:`Files and Folders <port-files>`.
 
-   A path can also name a device: ``CON:`` and ``TTY:`` in :doc:`term`,
-   ``ROM:`` followed by an asset name in :doc:`sdk`, ``SAVE:`` followed by
-   a save name in :ref:`RP6502-PORT <port-save>`, ``VCP0:``, ``MIDI0:``
-   and ``NFC:`` in :doc:`ria`, and ``AT:`` in :doc:`ria_w`.
+   A path can also name a device. See :doc:`term` for ``CON:`` and
+   ``TTY:``, the :doc:`sdk` for ``ROM:`` followed by an asset name, and
+   :ref:`PORT <port-save>` for ``SAVE:`` followed by a save name. See the
+   :doc:`ria` datasheet for ``VCP0:``, ``MIDI0:`` and ``NFC:``, and the
+   :doc:`ria_w` datasheet for ``AT:``.
 
    :Op code: RIA_OP_OPEN 0x14
    :C proto: fcntl.h
@@ -1612,7 +1613,8 @@ Application Binary Interface
 
 .. seealso::
 
-   :doc:`ria` — the hardware register map referenced throughout this section.
+   :ref:`RIA registers <ria-registers>` — the hardware register map
+   referenced throughout this section.
 
 A C program does none of this, because the compiler's library is the
 implementation. What follows is for assembly programs and for anyone
@@ -1749,8 +1751,7 @@ direction (to or from the OS) of the data. A few examples:
 Send ``oflag`` in ``RIA_A``; per the `OPEN`_ docs, ``RIA_X`` doesn't need
 to be set. Send the path on the XSTACK by pushing the string from its
 last character backward. You can skip the terminating zero, but strings
-are capped at 255 bytes. From the C SDK, the implementation pushes the
-string for you.
+are capped at 255 bytes. In C, the library pushes the string for you.
 
 .. code-block:: C
 
@@ -1758,7 +1759,7 @@ string for you.
 
 Send ``count`` as a short stack and ``fildes`` in ``RIA_A``; per the
 `READ_XSTACK`_ docs, ``RIA_X`` doesn't need to be set. The value returned
-in AX is the number of bytes to pull from the stack. From the C SDK, it
+in AX is the number of bytes to pull from the stack. In C, the library
 copies the XSTACK into buf[] for you.
 
 .. code-block:: C
@@ -1767,10 +1768,10 @@ copies the XSTACK into buf[] for you.
 
 Send ``fildes`` in ``RIA_A``; per the `WRITE_XSTACK`_ docs, ``RIA_X``
 doesn't need to be set. Push the buf data onto the XSTACK. Don't send
-``count``; the OS takes it from the XSTACK pointer. From the C SDK, it
+``count``; the OS takes it from the XSTACK pointer. In C, the library
 copies count bytes of buf[] onto the XSTACK for you.
 
-Note that read() and write() are part of the C SDK, not API calls. C
+Note that read() and write() are part of the C library, not API calls. C
 requires them to handle counts larger than the XSTACK can return, so the
 implementation makes as many API calls as it takes.
 

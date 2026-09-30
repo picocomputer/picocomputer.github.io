@@ -9,9 +9,10 @@ yourself for under $100 in the US. It is the original Picocomputer, and
 the project is named after the Raspberry Pi Pico it was first built on.
 The machine is one circuit board with a WDC 65C02, a WDC 65C22, a RAM
 chip, three logic chips and two Raspberry Pi Pico 2 boards, which are the
-entire modern side of the machine. One Pico runs the :doc:`ria` for USB,
-storage and sound, and a Pico 2 W in that socket adds Wi-Fi and Bluetooth
-as the :doc:`ria_w`. The other Pico runs the :doc:`vga` video system.
+entire modern side of the machine. One Pico runs the RP6502 Interface
+Adapter (:doc:`ria`) for USB, storage and sound, and a Pico 2 W in that
+socket adds Wi-Fi and Bluetooth as the :doc:`ria_w`. The other Pico runs
+the video system, the RP6502 Video Graphics Array (:doc:`vga`).
 
 Programs run on the 65C02 at up to 8 MHz. The finished machine plugs into
 a VGA monitor, or into an HDMI display with a VGA-to-HDMI cable.
@@ -169,9 +170,12 @@ file is the same for everyone. The RIA file depends on which Pi Pico you have.
 Use the "-w" if you have a Pi Pico 2 W.
 
 To flash a Pi Pico, hold its BOOTSEL button while plugging it into a computer.
-The Pico 2 mounts as a storage device. Copy the RIA-W UF2 file to make a
-:doc:`ria_w`, or the VGA UF2 file to make a :doc:`vga`. The copy takes under 30
-seconds, and the LED turns on when it's done.
+The Pico 2 mounts as a storage device. Copy the RIA or VGA UF2 file to it. The
+copy takes under 30 seconds, and the LED turns on when it's done.
+
+Formally, a Pi Pico flashed with the RIA firmware is an RP6502-RIA, a Pi
+Pico 2 W flashed with the RIA-W firmware is an RP6502-RIA-W, and a Pi Pico
+flashed with the VGA firmware is an RP6502-VGA.
 
 Once you have a machine running, later upgrades don't need BOOTSEL. Put the
 UF2 files on a USB drive, plug it into the RIA, and flash both from the
@@ -196,7 +200,7 @@ The standard setup is a VGA monitor and a USB keyboard plugged into the RIA.
 5V Power is applied to the VGA module, enough for all your devices plus one
 watt for the RP6502-PICO itself. You may also connect the VGA module to a
 computer where it will present a serial port attached to the console — no
-driver needed. An :doc:`ria_w` adds telnet.
+driver needed. A :doc:`ria_w` adds telnet.
 
 Inside the machine, the console is a UART between the RIA and the VGA
 module: 115200 bps, 8-bit words, no parity, 1 stop bit.
@@ -225,8 +229,8 @@ files are built with the :doc:`sdk`, where the :ref:`ROM File Format
 <sdk-rom-file-format>` is documented.
 
 A few monitor commands, such as ``upload`` and ``binary``, exist for
-developer tools rather than for people. See :doc:`sdk` for what drives
-them.
+developer tools rather than for people. See the :doc:`sdk` for the tools
+that use them.
 
 Peripherals
 -----------
@@ -290,7 +294,7 @@ Pi Picos Parts List
 ===================
 
 Alternative part numbers for the Pi Picos. These require soldering the
-headers youself.
+headers yourself.
 
 `Pi Picos CSV <_static/rp6502-revb-picos.csv>`_
 

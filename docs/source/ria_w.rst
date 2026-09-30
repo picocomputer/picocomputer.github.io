@@ -1,20 +1,20 @@
 =================================
-RP6502-RIA-W
+RIA-W
 =================================
 
-RP6502 - RP6502 Interface Adapter W
+RP6502 Interface Adapter W
 
 
 Introduction
 ============
 
-The **RP6502 Interface Adapter W** is the :doc:`ria` with a radio for
-Wi-Fi and Bluetooth LE. Keyboards, mice, and gamepads connect without a
-cable. The real-time clock is set from internet time servers. Over
-telnet, you can use the monitor and a running program from any computer
-on the network, and build and run a project from VS Code. A 6502 program
-can call a BBS through an emulated Hayes modem, or answer incoming calls
-as a BBS.
+The **RP6502 Interface Adapter W** (RIA-W) is the :doc:`ria` with a
+radio for Wi-Fi and Bluetooth LE. Keyboards, mice, and gamepads connect
+without a cable. The real-time clock is set from internet time servers.
+Over telnet, you can use the monitor and a running program from any
+computer on the network, and build and run a project from VS Code. A
+6502 program can call a BBS through an emulated Hayes modem, or answer
+incoming calls as a BBS.
 
 The :doc:`pico` is the only machine with a radio today. The radio is
 part of the Raspberry Pi Pico 2 W, which the parts list specifies for the
@@ -91,7 +91,7 @@ non-zero.
 Modem Emulation
 ===============
 
-The RP6502-RIA-W emulates a Hayes modem — the classic AT command set —
+The RIA-W emulates a Hayes modem — the classic AT command set —
 for reaching BBSes (bulletin board systems). It places outgoing calls
 and answers incoming ones over either raw TCP or telnet. As with the
 telnet console, the connection is unencrypted.
@@ -148,7 +148,7 @@ which modem device is open.
 Bluetooth
 =========
 
-The RP6502-RIA-W supports Bluetooth LE (BLE) keyboards, mice, and
+The RIA-W supports Bluetooth LE (BLE) keyboards, mice, and
 gamepads. Bluetooth Classic (BR/EDR) is not supported. BLE has been
 everywhere since Bluetooth 4.0 (June 2010), so compatible devices are
 easy to find, though the occasional oddball still turns up.

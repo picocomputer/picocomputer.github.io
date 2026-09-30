@@ -1,8 +1,8 @@
 ============================
-RP6502-PORT
+PORT
 ============================
 
-RP6502 - Portability
+Portability
 
 
 Introduction
@@ -15,7 +15,7 @@ game keeps high scores and save slots on a ``SAVE:`` path with open, read
 and write, and the program names no folder, because the folder differs
 by host.
 
-An :doc:`pico` reads gamepads over USB, or over Bluetooth with an
+An :doc:`pico` reads gamepads over USB, or over Bluetooth with a
 :doc:`ria_w`, and stores files on USB drives. The :doc:`fpga` uses the
 buttons, the dock and the microSD card of an Analogue Pocket. The
 :doc:`emu` uses the gamepads and files of Linux, macOS, Windows or

@@ -99,7 +99,7 @@ Internals
    │ │ src/core — the machine, platform independent                    │ │
    │ │                                                                 │ │
    │ │  ┌────────┐       ┌────────┐   w65c22 VIA at $FFD0-$FFDF        │ │
-   │ │  │ w65c02 ├───────┤ w65c22 │   RP6502-RIA at $FFE0-$FFFF        │ │
+   │ │  │ w65c02 ├───────┤ w65c22 │          RIA at $FFE0-$FFFF        │ │
    │ │  └───┬────┘       └────────┘                                    │ │
    │ │      │                                                          │ │
    │ │  ┌───┴────┐                                                     │ │
