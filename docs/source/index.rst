@@ -75,12 +75,12 @@ Start from the project template, open it in VS Code, and press F5. Hello
 world builds and runs in the emulator, with breakpoints and a call
 stack. No hardware, and nothing to buy.
 
-You write in C or 6502 assembly, with either compiler, cc65 or llvm-mos.
-The template comes with a hello world in each.
+You write in C or 6502 assembly, with either compiler, cc65 or llvm-mos,
+or in Microsoft BASIC. The template comes with a hello world in each.
 
-When it's good, add a line to build it as a web page, where anyone can
-play it in a browser. The steps are in :doc:`web`. For the
-ultimate flex, build a :doc:`pico`.
+When it's good, publish it as a web page, where anyone can play it in a
+browser. The steps are in :doc:`web`. For the ultimate flex, build a
+:doc:`pico`.
 
 :doc:`sdk` has the details, from installing a compiler to debugging on
 real hardware.

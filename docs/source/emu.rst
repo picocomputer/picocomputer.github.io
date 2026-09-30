@@ -8,9 +8,27 @@ RP6502 - Emulator
 Introduction
 ============
 
-An emulator is a first-class Picocomputer rather than a facsimile.
-It runs the same 6502 code, responds to the same registers, and maps its
-own errors onto the same errno values every other host reports.
+The RP6502-EMU is a Picocomputer 6502 hosted on a desktop or laptop
+computer running Windows, macOS or Linux. It plays ``.rp6502`` games and
+applications in a window, with the keyboard, mouse and gamepads of that
+computer. A RetroArch core of the emulator adds save states, rewind and
+netplay.
+
+The emulator is also the development machine. A project made from the
+:doc:`sdk` template runs in it from VS Code, with breakpoints, stepping
+and variables in the C or assembly source. ``--debug`` opens a debugger
+for the whole machine over the emulated screen. A script works the
+keyboard, gamepads and pointer and checks the results, and a headless run
+puts a 6502 program in a shell pipeline.
+
+The debug adapter, a script read from ``-`` and a headless run all use
+standard input and output. With the SDK, they give an AI assistant a full
+path down to the 6502: the assistant can build a program, run it, stop it
+at a breakpoint, read its memory and check the screen.
+
+
+Hosts
+=====
 
 What differs between the software hosts:
 
@@ -114,6 +132,8 @@ ROM starts if RetroArch has no save folder. The core never changes the
 working directory, so a program starts in the working directory of
 RetroArch.
 
+
+.. _emu-arguments:
 
 Arguments
 =========

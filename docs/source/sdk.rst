@@ -22,22 +22,37 @@ The SDK builds a ROM, runs it on a Picocomputer or in the emulator, and
 debugs it while it runs. A project starts as a copy of the `RP6502
 project template <https://github.com/picocomputer/rp6502-sdk>`__, which
 builds with either of two 6502 compilers, cc65 or llvm-mos. The template
-includes the same "Hello, world!" program three times: in C, which builds
-with either compiler, and in each compiler's assembly syntax.
+includes the same "Hello, world!" program four times: in C, which builds
+with either compiler; in the assembly syntax of each compiler; and in
+BASIC.
 
-.. code-block:: text
+.. image:: _static/sdk/build-light.svg
+   :class: only-light
+   :width: 700
+   :alt: The sources: src/main.c (or an assembly file), src/main.bas,
+         src/xram.h, src/help.txt and CMakeLists.txt. CMake builds the
+         program with cc65 or llvm-mos, and rp6502.py packages it with
+         its assets into the ROM, such as build/cc65/debug/hello.rp6502,
+         in the build folder of the preset. With the basic preset, a
+         BASIC program is packaged with BASIC, not compiled. The ROM is
+         run with RP6502-EMU, the emulator in tools/ with breakpoints and
+         stepping; RP6502-PICO, a Picocomputer over USB serial or telnet;
+         or RP6502-WEB, web/hello.zip from rp6502_web(), a web player in
+         a browser.
 
-   src/main.c, src/xram.h,
-   src/help.txt, CMakeLists.txt
-              │
-              │  CMake builds the program with the compiler,
-              ▼  and rp6502.py packages it with its assets
-   build/cc65/debug/hello.rp6502
-              │
-        ┌─────┴──────────────────────────┐
-        ▼ RP6502-EMU                     ▼ RP6502-PICO
-   tools/rp6502-emu, with            a Picocomputer, over
-   breakpoints and stepping          USB serial or telnet
+.. image:: _static/sdk/build-dark.svg
+   :class: only-dark
+   :width: 700
+   :alt: The sources: src/main.c (or an assembly file), src/main.bas,
+         src/xram.h, src/help.txt and CMakeLists.txt. CMake builds the
+         program with cc65 or llvm-mos, and rp6502.py packages it with
+         its assets into the ROM, such as build/cc65/debug/hello.rp6502,
+         in the build folder of the preset. With the basic preset, a
+         BASIC program is packaged with BASIC, not compiled. The ROM is
+         run with RP6502-EMU, the emulator in tools/ with breakpoints and
+         stepping; RP6502-PICO, a Picocomputer over USB serial or telnet;
+         or RP6502-WEB, web/hello.zip from rp6502_web(), a web player in
+         a browser.
 
 
 .. _sdk-install:
@@ -59,7 +74,9 @@ compiler goes in the ``.rp6502`` folder in your home folder, and its
 ``bin`` folder is added to PATH, the list of folders where programs are
 looked up. Running the same command again updates the compiler, and it
 also switches between upstream and the fork when the recommendation on the
-GitHub page changes.
+GitHub page changes. These compilers have a changed ``rp6502.h``, so a
+project written for an older one may need the changes in `Updating an
+Older Project`_.
 
 Windows
 -------
@@ -171,25 +188,30 @@ with a copy of the template. Clone it and open the folder in VS Code.
   Picocomputer.
 
 **3. Choose a configure preset.** The first time the project opens,
-CMake Tools lists four presets, one for each combination of compiler and
-build type. Choose a Debug preset, because breakpoints and stepping need
-the debug information it builds. Release is the optimized build for a
-ROM you share. The preset can be changed later from the Configure row of
-the CMake side panel.
+CMake Tools lists five presets. Four are for C, one for each combination
+of compiler and build type. Choose a Debug preset, because breakpoints
+and stepping require debug information. Release is the optimized build
+for a ROM you share. The fifth, ``basic``, is for BASIC: choose it, and
+write the program in ``src/main.bas``. The preset can be changed later
+from the Configure row of the CMake side panel.
+
+.. SCREENSHOT: preset-*.png show four presets. Retake them with all
+   five: cc65/Debug, cc65/Release, llvm-mos/Debug, llvm-mos/Release and
+   basic.
 
 .. image:: _static/sdk/preset-light.png
    :class: only-light
    :width: 700
    :alt: The CMake Tools configure preset list with cc65/Debug,
-         cc65/Release, llvm-mos/Debug and llvm-mos/Release, above the
-         CMake side panel's Configure row.
+         cc65/Release, llvm-mos/Debug, llvm-mos/Release and basic, above
+         the CMake side panel's Configure row.
 
 .. image:: _static/sdk/preset-dark.png
    :class: only-dark
    :width: 700
    :alt: The CMake Tools configure preset list with cc65/Debug,
-         cc65/Release, llvm-mos/Debug and llvm-mos/Release, above the
-         CMake side panel's Configure row.
+         cc65/Release, llvm-mos/Debug, llvm-mos/Release and basic, above
+         the CMake side panel's Configure row.
 
 The first configure downloads the tools into ``tools/``: the CMake
 functions, ``rp6502.py``, and the emulator for your system.
@@ -200,7 +222,7 @@ Code's Debug Console. The session stays open after the program ends so
 the screen can be read. Stop it with Shift+F5. The emulator window may
 open behind VS Code.
 
-.. Stale: first-run-*.png show RP6502 (Emulator) in the status bar.
+.. SCREENSHOT: first-run-*.png show RP6502 (Emulator) in the status bar.
    Retake them with the entry named RP6502-EMU.
 
 .. image:: _static/sdk/first-run-light.png
@@ -221,13 +243,15 @@ The project now looks like this:
 
    my-project/
    ├── CMakeLists.txt         the ROMs this project builds
-   ├── CMakePresets.json      the four configure presets
-   ├── README.md              requirements and updating
+   ├── CMakePresets.json      the five configure presets
+   ├── README.md              web player link, requirements, updating
+   ├── .github/               GitHub Pages workflows
    ├── .vscode/               F5 configurations, tasks, extensions
    ├── src/
    │   ├── main.c             Hello, world! in C
    │   ├── main-cc65.s        the same in cc65 assembly
    │   ├── main-llvm-mos.s    the same in llvm-mos assembly
+   │   ├── main.bas           the same in BASIC
    │   ├── xram.h             the XRAM layout
    │   └── help.txt           the help asset
    ├── tools/                 commit these
@@ -239,26 +263,20 @@ The project now looks like this:
    ├── build/                 build output, ignored by git
    └── .rp6502                the settings file, ignored by git
 
-On Windows and WSL, the emulator is ``rp6502-emu.exe``.
+On Windows and WSL, the emulator is ``rp6502-emu.exe``. The web player
+linked in ``README.md`` is published to GitHub Pages by
+``.github/workflows/web.yml``, as described in :ref:`GitHub Pages
+<web-github>`.
 
-To start from assembly, replace ``src/main.c`` in ``CMakeLists.txt`` with
-``src/main-cc65.s`` or ``src/main-llvm-mos.s``, and delete the two source
-files you don't use. An assembly project builds only with its compiler's
-presets.
+To choose C, assembly or BASIC for the project, edit ``CMakeLists.txt``.
+Its ``if(RP6502_BASIC)`` has a branch for BASIC and a branch for C. Keep
+the branch you want, and delete the other branch and the ``if()``. For
+assembly, keep the C branch and replace ``src/main.c`` in it with
+``src/main-cc65.s`` or ``src/main-llvm-mos.s``.
 
-.. warning::
-
-   ``volatile`` has no effect on the cc65 optimizer, so wrap C code that
-   accesses RIA or VIA registers directly in an optimize pragma:
-
-   .. code-block:: C
-
-      #pragma optimize (push, off)
-      static void timer_start(void)
-      {
-          VIA.acr = 0x40;
-      }
-      #pragma optimize (pop)
+Then delete the presets and source files you do not use. In
+``README.md``, set ``preset:`` in the ``<!-- rp6502`` comment to a preset
+you keep.
 
 Commit the ``tools/`` folder, so every clone of the project builds with
 the same tools. The tools change only when you update them, with the
@@ -283,8 +301,9 @@ Running and Debugging
 "Start Debugging" (F5) runs one of three launch configurations. Choose
 which in the Run and Debug side panel.
 
-.. Stale: configs-*.png show RP6502 (Emulator) and RP6502 (Hardware)
-   only. Retake them with RP6502-EMU, RP6502-PICO and RP6502-WEB.
+.. SCREENSHOT: configs-*.png show RP6502 (Emulator) and RP6502
+   (Hardware) only. Retake them with RP6502-EMU, RP6502-PICO and
+   RP6502-WEB.
 
 .. image:: _static/sdk/configs-light.png
    :class: only-light
@@ -306,8 +325,9 @@ arrays expand. With cc65, variables have no types, and each variable's
 size comes from where its symbol sits in memory.
 :ref:`Debugging <emu-debugging>` in the emulator's datasheet covers both.
 
-.. Stale: breakpoint-*.png show RP6502 (Emulator) in the status bar and
-   the Run and Debug header. Retake them with the entry named RP6502-EMU.
+.. SCREENSHOT: breakpoint-*.png show RP6502 (Emulator) in the status bar
+   and the Run and Debug header. Retake them with the entry named
+   RP6502-EMU.
 
 .. image:: _static/sdk/breakpoint-light.png
    :class: only-light
@@ -337,6 +357,11 @@ sends a break. A break stops the program and returns to the monitor.
 **RP6502-WEB** builds the project and opens a page in a browser with a
 link to every web player that ``rp6502_web()`` makes, as `Web Players`_
 describes.
+
+All three configurations work with the ``basic`` preset as well. The
+source-level debugging of RP6502-EMU applies to C and assembly only:
+breakpoints, stepping and variables are not available for the lines of a
+BASIC program.
 
 
 The .rp6502 Settings File
@@ -396,8 +421,9 @@ project reopens with its windows where you left them.
 Building a ROM
 ==============
 
-``CMakeLists.txt`` describes the ROMs a project builds. This is the
-template's:
+``CMakeLists.txt`` describes the ROMs a project builds. This listing is
+the C branch of the template's ``CMakeLists.txt``, without the ``if()``.
+BASIC projects are described in `BASIC Programs`_.
 
 .. code-block:: cmake
 
@@ -411,6 +437,7 @@ template's:
   rp6502_map(hello src/xram.h "XRAM_.*")
   rp6502_asset(hello help src/help.txt)
   rp6502_executable(hello DATA default RESET default)
+  rp6502_web(hello)
   target_sources(hello PRIVATE
       src/main.c
   )
@@ -423,18 +450,22 @@ template's:
 - ``rp6502_asset()`` adds an asset to the ROM. See `Adding Assets`_.
 - ``rp6502_executable()`` packages the program and its assets into
   ``hello.rp6502``, named after the target.
+- ``rp6502_web()`` packages the ROM into a web player. See `Web Players`_.
 - ``target_sources()`` lists the program's source files.
 
 ``rp6502_map()`` and every ``rp6502_asset()`` come after
 ``add_executable()`` and before ``rp6502_executable()``. ``rp6502_map()``
 also comes before any ``rp6502_asset()`` that uses its names.
+``rp6502_web()`` comes after ``rp6502_executable()``, because it packages
+the ROM that ``rp6502_executable()`` defines.
 ``target_sources()`` can go anywhere after ``add_executable()``.
 
-The ROM is written to the preset's build folder,
-``build/<compiler>/<debug or release>/``, so the cc65 Debug build is
-``build/cc65/debug/hello.rp6502``. To share a program, build it with a
-Release preset and share that file. It runs on every Picocomputer and in
-the emulator, including in a web browser, as described in :doc:`web`.
+The ROM is written to the preset's build folder:
+``build/<compiler>/<debug or release>/``, or ``build/basic/`` for the
+``basic`` preset. The cc65 Debug build is ``build/cc65/debug/hello.rp6502``.
+To share a program, build it with a Release preset, or the ``basic`` preset
+for BASIC, and share that file, or its web player as described in
+:doc:`web`.
 
 ``rp6502_executable()`` takes these keywords:
 
@@ -474,29 +505,23 @@ Adding Assets
 =============
 
 Graphics, level data, help text and any other files the program uses are
-packaged into the same ``.rp6502`` file with ``rp6502_asset()``.
-
-.. code-block:: cmake
-
-  rp6502_asset(hello 0x10000 img/intro.bin)
-  rp6502_asset(hello help src/help.txt)
-
-An asset with a numeric address is a memory chunk. Before the 6502
-starts, the file is loaded to that address in RAM (``$0000-$FEFF``) or in
-XRAM (``$10000-$1FFFF``). XRAM is 64 KB of extended memory outside the
-6502's address space, described in `XRAM Memory Map`_.
-
-An address can also be written as ``RAM(addr)`` or ``XRAM(addr)``. Both
-check that the address is inside RAM or XRAM and stop CMake with an error
-if it is not. The file's length is not checked. ``XRAM()`` takes an
-address within XRAM, the number the program uses, so ``XRAM(0x1000)``
-loads at ``0x11000``.
+packaged into the same ``.rp6502`` file with ``rp6502_asset()``. BASIC
+programs are assets as well, as described in `BASIC Programs`_.
 
 .. code-block:: cmake
   :force:
 
   rp6502_asset(hello RAM(0x00F0) bin/f0.bin)
   rp6502_asset(hello XRAM(0x1000) img/tiles.bin)
+  rp6502_asset(hello help src/help.txt)
+
+An asset with an address in ``RAM()`` or ``XRAM()`` is a memory chunk.
+Before the 6502 starts, the file is loaded to that address in RAM, or in
+XRAM, the 64 KB of extended memory outside the 6502's address space
+described in `XRAM Memory Map`_. ``XRAM()`` takes the address the program
+uses, and the bit that marks the address as XRAM is set automatically.
+Inside the parentheses, the address is a number, the name of a CMake
+variable, or a name read by ``rp6502_map()`` (see `Addresses in CMake`_).
 
 Any other address is a name, and a named asset is a file the program opens
 while it runs. Prefix the name with ``ROM:`` and open it like any other
@@ -546,31 +571,8 @@ RAM is ``$0000-$FEFF``, 63.75 KB. The 256 bytes above it are I/O: the
 registers of the RIA (the RP6502 Interface Adapter), the VIA, and
 unassigned space, as the :ref:`Memory Map <os-memory-map>` of the
 operating system shows. Each compiler includes a linker script that lays
-out RAM for a program:
-
-.. code-block:: text
-
-            cc65                         llvm-mos
-   $0000  ┌────────────────────────┐   ┌────────────────────────┐
-          │ zero page              │   │ $00-$1F registers      │
-          │                        │   │ $20-$FF zero page      │
-   $0100  ├────────────────────────┤   ├────────────────────────┤
-          │ 6502 stack             │   │ 6502 stack             │
-   $0200  ├────────────────────────┤   ├────────────────────────┤
-          │ program, data, heap ↑  │   │ program, data, heap ↑  │
-          │                        │   │                        │
-   $F700  ├────────────────────────┤   │                        │
-          │ C stack ↓              │   │ C stack ↓              │
-   $FF00  └────────────────────────┘   └────────────────────────┘
-
-The llvm-mos registers are zero page locations the compiler uses as
-extra registers. The 6502 stack is the processor's own 256-byte stack. It
-holds return addresses and is too small for C, so each compiler keeps a
-second stack, the C stack, at the top of RAM. cc65 keeps local variables
-and most function arguments there, and reserves 2 KB for it. llvm-mos
-passes arguments in registers when it can, so its C stack is used less.
-The llvm-mos heap is limited to 4 KB by default, and a program raises the
-limit with ``__set_heap_limit()``.
+out zero page and the rest of RAM, so a project does not have to manage
+the layout.
 
 Most projects keep the default layout. For a different one, copy the
 compiler's script into the project, change the copy, and pass it to the
@@ -597,14 +599,18 @@ describes the cc65 script format, and the llvm-mos wiki page `Linker Script
 XRAM Memory Map
 ===============
 
-XRAM is 64 KB of memory outside the 6502's address space. A program reads
-and writes it through the :ref:`XRAM portals <ria-xram-portals>` of the
-RIA, the RP6502 Interface Adapter. XRAM holds the data for the virtual
-devices: keyboard, mouse, tablet and gamepad input, the PSG and OPL2 sound
-generators, VGA mode configurations, and the pixels, tiles and sprites the
-modes draw. XRAM has no fixed map. You choose an address for each
-device's data, and your program gives the device that address by setting
-its extended register (XREG) with :ref:`xreg() <os-xreg>`.
+XRAM is 64 KB of memory outside the 6502's address space. The preferred
+way to read and write it from C is with the XRAM functions of the
+:doc:`os`, such as :c:func:`xram0_read`, :c:func:`xram0_write` and
+:c:func:`xram0_peek8`. The 0 or 1 in a name selects which of the two
+:ref:`XRAM portals <ria-xram-portals>` of the RIA the call uses, and the
+two portals can point to different addresses.
+
+XRAM holds the data for the virtual devices: keyboard, mouse, tablet and
+gamepad input, the PSG and OPL2 sound generators, VGA mode configurations,
+and the pixels, tiles and sprites the modes draw. XRAM has no fixed map.
+You choose an address for each device's data, and set it in the device's
+extended register (XREG) with :ref:`xreg() <os-xreg>`.
 
 A ROM's map is usually kept in one file, ``xram.h`` for C or ``xram.inc``
 for assembly. It holds the structure of each device the program uses, and a
@@ -620,9 +626,12 @@ constants and XREG macros. Choose the C, ca65 or llvm-mc tab, then use the
 block into ``xram.h`` or ``xram.inc``.
 
 The structures are not part of ``rp6502.h`` or ``rp6502.inc``. The copy
-in ``xram.h`` is the only definition the program uses. Register numbers,
-field offsets and sizes never change. Only names can change in the docs,
-and a name in the copy can be changed without affecting anything else.
+in ``xram.h`` is the only definition the program uses. This approach is
+unusual, but the project depends on no submodule or shared header for
+these structures, so changes to the SDK do not break its build, and the
+whole map is in one file. Register numbers, field offsets and sizes never
+change. Only names can change in the docs, and a name in the copy can be
+changed without affecting anything else.
 
 This example is for a program that uses only the keyboard. The keyboard
 definitions are the :ref:`Keyboard <ria-keyboard>` block from the
@@ -719,10 +728,6 @@ places in ``xram_layout_t`` and gives to an XREG.
       XRAM_KEYBOARD = 0
 
       .endif
-
-The llvm-mc tab has no structures, so each address is a number. A second
-device goes at the previous address plus its size, such as
-``XRAM_KEYBOARD + KEYBOARD_SIZE``.
 
 Each ``XRAM_`` name is the address of one part of the layout, and the
 program uses these names for every XRAM address. This code maps the
@@ -828,8 +833,9 @@ fails as well, so no ROM is written from an address that was not read.
 The configure step still completes. Configure again once the problem is
 fixed.
 
-``rp6502_map()`` reads C headers only. For an assembly project, pass
-``rp6502_asset()`` the address as a number, or set a CMake variable to it.
+``rp6502_map()`` reads C headers only. For an assembly project, write the
+address in ``RAM()`` or ``XRAM()`` as a number or as the name of a CMake
+variable.
 
 Alignment
 ---------
@@ -857,10 +863,46 @@ the check, pass a second regular expression:
 The build also fails if the layout is larger than the 64 KB of XRAM, or
 if an address does not fit in 16 bits.
 
-Two requirements are not checked, so check them yourself. The 64 bytes of
+Two requirements of the sound generators are not checked. The 64 bytes of
 the PSG must not cross a page boundary, and the OPL2 registers must start
-on one. A page is 256 bytes, so a page boundary is an address ending in
-``00``.
+on one. A page is 256 bytes. To check them, copy the line for each sound
+generator the program uses into ``xram.h``, after the ``XRAM_`` names:
+
+.. code-block:: C
+
+  _Static_assert(XRAM_PSG % 256 + sizeof(psg_t) <= 256, "XRAM_PSG crosses a page.");
+  _Static_assert(XRAM_OPL % 256 == 0, "XRAM_OPL is not on a page boundary.");
+
+The lines use the ``_Static_assert`` keyword because the ``assert.h`` of
+llvm-mos has no ``static_assert`` macro.
+
+The :doc:`fpga` has a 1 KB palette cache for paletted sprites, so it is
+generally better to keep all sprite palettes within 1 KB. This matters
+only near the performance limit; see :ref:`Sprite Limits
+<vga-sprite-limits>` in the :doc:`vga` datasheet. To keep them within
+1 KB, put the sprite palettes in a structure of their own, place it in
+the layout, and check its size. Only the changed part of ``xram.h`` is
+shown.
+
+.. code-block:: C
+
+  typedef struct
+  {
+      uint16_t player[16];
+      uint16_t enemies[4][16];
+  } palettes_t;
+
+  typedef struct
+  {
+      keyboard_t keyboard;
+      palettes_t palettes;
+  } xram_layout_t;
+
+  #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
+  #define XRAM_PLAYER_PALETTE offsetof(xram_layout_t, palettes.player)
+  #define XRAM_ENEMY_PALETTES offsetof(xram_layout_t, palettes.enemies)
+
+  _Static_assert(sizeof(palettes_t) <= 1024, "palettes_t is larger than 1 KB.");
 
 
 Multiple Compiler Artifacts
@@ -899,6 +941,7 @@ output. The three real files are declared as byproducts, added as memory
 chunks at their addresses, and packaged:
 
 .. code-block:: cmake
+  :force:
 
   rp6502_byproducts(basic
       ${CMAKE_CURRENT_BINARY_DIR}/basic.00E8
@@ -906,9 +949,9 @@ chunks at their addresses, and packaged:
       ${CMAKE_CURRENT_BINARY_DIR}/basic.C000
   )
   rp6502_asset(basic help src/help.txt)
-  rp6502_asset(basic 0x00E8 ${CMAKE_CURRENT_BINARY_DIR}/basic.00E8)
-  rp6502_asset(basic 0x1000 ${CMAKE_CURRENT_BINARY_DIR}/basic.1000)
-  rp6502_asset(basic 0xC000 ${CMAKE_CURRENT_BINARY_DIR}/basic.C000)
+  rp6502_asset(basic RAM(0x00E8) ${CMAKE_CURRENT_BINARY_DIR}/basic.00E8)
+  rp6502_asset(basic RAM(0x1000) ${CMAKE_CURRENT_BINARY_DIR}/basic.1000)
+  rp6502_asset(basic RAM(0xC000) ${CMAKE_CURRENT_BINARY_DIR}/basic.C000)
   rp6502_executable(basic RESET 0x1000)
 
 ``rp6502_executable()`` has no ``DATA`` here, because the linker output
@@ -976,9 +1019,9 @@ Each ROM is written to the matching folder of the build, such as
 BASIC Programs
 ==============
 
-``rp6502_basic()`` packages BASIC with BASIC programs into one ROM, which
-runs on every Picocomputer and in the emulator. Each program is an asset,
-added with ``rp6502_asset()`` as for a C program:
+``rp6502_basic()`` packages BASIC and the BASIC programs into one ROM.
+Each program is an asset, added with ``rp6502_asset()`` as for a C
+program:
 
 .. code-block:: cmake
 
@@ -993,38 +1036,44 @@ added with ``rp6502_asset()`` as for a C program:
   rp6502_asset(trek game.bas src/game.bas)
   rp6502_basic(trek instructions.bas)
 
-The project is built with a ``basic`` preset, which sets
-``RP6502_BASIC``:
+A project like this one is built with the template's ``basic`` preset.
 
-.. code-block:: json
-
-  {
-      "name": "basic",
-      "binaryDir": "${sourceDir}/build/basic",
-      "cacheVariables": {
-          "RP6502_BASIC": "ON"
-      }
-  }
-
-A project that also has C or assembly lists BASIC after them, as in
-``project(hello C ASM BASIC)``, and has no ``basic`` preset. The cc65 and
-llvm-mos presets build the BASIC programs with the C and assembly ones.
-
-A program opens another as ``ROM:`` followed by its asset name, in any
-case. The name after the target, ``instructions.bas`` above, is the
-program that runs at start: ``rp6502_basic()`` adds an asset
-``autorun.bas`` that runs it, and BASIC loads and runs ``ROM:AUTORUN.BAS``
-when no program is named in its arguments. Without that name, BASIC
-starts at its prompt. In the example above, BASIC starts
-``instructions.bas``, which ends with:
+At start, the asset ``autorun.bas`` is run if the ROM has one. Otherwise
+BASIC starts at the ``OK`` prompt. The optional name after the target in
+``rp6502_basic()``, ``instructions.bas`` above, is written into an
+``autorun.bas`` asset:
 
 .. code-block:: text
 
-  2010 RUN "ROM:GAME.BAS"
+  10 RUN "ROM:INSTRUCTIONS.BAS"
 
-BASIC is the latest release of `picocomputer/msbasic
-<https://github.com/picocomputer/msbasic>`__, or the one that ``BASIC``
-names, in the forms of `Fetching BASIC and the Emulator`_:
+``RUN`` with ``ROM:`` and an asset name loads and runs that program. The
+name can be written in any case.
+
+A project can add its own ``autorun.bas`` asset instead, and give
+``rp6502_basic()`` no name. That file is the place to set the input caps
+mode with ``CAPS``, and to print a message while a large program loads:
+
+.. code-block:: text
+
+  10 CAPS 0
+  20 PRINT "Loading..."
+  30 RUN "ROM:GAME.BAS"
+
+.. code-block:: cmake
+
+  rp6502_asset(trek autorun.bas src/autorun.bas)
+  rp6502_basic(trek)
+
+``CAPS 0`` leaves typed letters as they are, ``CAPS 1`` makes them upper
+case, and ``CAPS 2`` swaps upper and lower case. ``CAPS 1`` is the
+default. With both a name in ``rp6502_basic()`` and an ``autorun.bas``
+asset, the build fails with "Asset name already exists".
+
+The BASIC interpreter comes from the latest release of
+`picocomputer/msbasic <https://github.com/picocomputer/msbasic>`__. To
+use a specific version instead, name it with ``BASIC``, in any form
+listed in `Fetching BASIC and the Emulator`_:
 
 .. code-block:: cmake
 
@@ -1058,12 +1107,11 @@ CMake <web-cmake>`.
 Fetching BASIC and the Emulator
 ===============================
 
-``rp6502_basic()`` and ``rp6502_web()`` fetch BASIC and the web zip of the
-emulator when the project is configured, and keep them in the build
-folder. Without ``BASIC`` or ``EMULATOR``, each is the latest release of
-its official repository, ``picocomputer/msbasic`` or
-``picocomputer/rp6502``. ``BASIC`` and ``EMULATOR`` name another in one
-of these forms:
+BASIC for ``rp6502_basic()``, and :doc:`RP6502-WEB <web>` for
+``rp6502_web()``, are downloaded into the build folder when the project is
+configured. Each is the latest release of its official repository,
+``picocomputer/msbasic`` or ``picocomputer/rp6502``, unless ``BASIC`` or
+``EMULATOR`` names another in one of these forms:
 
 .. list-table::
    :widths: 30 70
@@ -1072,29 +1120,192 @@ of these forms:
    * - Form
      - Description
    * - ``v0.36``
-     - A release tag or a commit of the official repository.
+     - A release tag of the official repository.
    * - ``owner/repo``
      - The latest release of a repository on GitHub.
-   * - ``owner/repo/ref``
-     - A release tag, or else a branch or a commit, of a repository on
-       GitHub.
+   * - ``owner/repo/tag``
+     - A release tag of a repository on GitHub.
    * - ``tools/basic.rp6502``
      - A file of the project, ending in ``.rp6502`` for BASIC or ``.zip``
-       for the emulator.
+       for RP6502-WEB.
 
-A release lists its files with their hashes in a ``SHA256SUMS`` file,
-which the download is checked against. A commit that is not a release
-comes from the CI build of that commit. That is for testing: it needs a
-GitHub token in ``GITHUB_TOKEN`` or ``GH_TOKEN``, and the build is kept for
-90 days.
-
-The configure stops when a download fails. To work without a network,
+A failed download is a configure error. To work without a network,
 download the file, commit it with the project, and name it:
 
 .. code-block:: cmake
 
   rp6502_basic(trek BASIC tools/basic.rp6502 instructions.bas)
   rp6502_web(trek EMULATOR tools/rp6502-0.36-web.zip)
+
+
+Registers and ``volatile``
+==========================
+
+Direct Register Access
+----------------------
+
+``volatile`` has no effect on the cc65 optimizer, so wrap C code that
+accesses RIA or VIA registers directly in an optimize pragma:
+
+.. code-block:: C
+
+  #pragma optimize (push, off)
+  static void timer_start(void)
+  {
+      VIA.acr = 0x40;
+  }
+  #pragma optimize (pop)
+
+
+.. _sdk-updating:
+
+Updating an Older Project
+-------------------------
+
+Because ``volatile`` has no effect on the cc65 optimizer, the macros of
+``rp6502.h`` that accessed RIA registers directly were replaced by
+library functions. The compilers installed by the commands in
+`Installing the Tools`_ have the change. This table lists the changes
+that break an older project.
+
+.. list-table::
+   :widths: 40 60
+   :header-rows: 1
+
+   * - Old
+     - New
+   * - ``xram0_struct_set(addr, type, member, val)``,
+       ``xram1_struct_set``
+     - ``xram0_poke8`` or ``xram0_poke16`` at
+       ``addr + offsetof(type, member)``, and the ``xram1_`` versions. A
+       4-byte member takes two ``xram0_poke16`` calls.
+   * - ``vga_mode1_config_t``, ``vga_mode2_config_t``,
+       ``vga_mode3_config_t``
+     - ``mode1_config_t``, ``mode2_config_t`` and ``mode3_config_t`` from
+       :ref:`vga-mode-1`, :ref:`vga-mode-2` and :ref:`vga-mode-3`, with
+       the same layout.
+   * - ``vga_mode4_sprite_t``, ``vga_mode4_asprite_t``,
+       ``vga_mode5_sprite_t``
+     - ``mode4_sprite_t`` and ``mode4_asprite_t`` from :ref:`vga-mode-4`,
+       and ``mode5_sprite_t`` from :ref:`vga-mode-5`, with the same
+       layout.
+   * - ``xreg_ria_keyboard``, ``xreg_ria_mouse``, ``xreg_ria_gamepad``,
+       ``xreg_ria_tablet``
+     - The same macros from :doc:`ria`, copied into ``xram.h``.
+   * - ``xreg_vga_canvas``
+     - The same macro from :ref:`vga-key-registers`, copied into
+       ``xram.h``.
+   * - ``xreg_vga_mode(n, ...)``
+     - One macro per mode from :doc:`vga`, ``xreg_vga_mode0`` to
+       ``xreg_vga_mode5``. ``xreg_vga_mode(3, ...)`` becomes
+       ``xreg_vga_mode3(...)``.
+   * - ``phi2()``
+     - ``ria_attr_get(RIA_ATTR_PHI2_KHZ)``
+   * - ``code_page(cp)``
+     - ``ria_attr_set(cp, RIA_ATTR_CODE_PAGE)`` when ``cp`` is not 0, then
+       ``ria_attr_get(RIA_ATTR_CODE_PAGE)`` for the page in use.
+   * - ``lrand()``
+     - ``ria_attr_get(RIA_ATTR_LRAND)``
+   * - ``ria_push_long``, ``ria_push_int``, ``ria_push_char``,
+       ``ria_pop_long``, ``ria_pop_int``, ``ria_pop_char``,
+       ``ria_set_axsreg``, ``ria_set_ax``, ``ria_set_a``,
+       ``ria_call_int``, ``ria_call_long``
+     - None. Call the C function of the OS operation, listed in
+       :doc:`os`. The ARGV arguments are passed to ``main()`` as ``argc``
+       and ``argv`` when the program defines ``__argv_mem()``. See
+       :ref:`ARGV <os-argv>`.
+   * - ``RIA_READY_TX_BIT``, ``RIA_READY_RX_BIT``, ``RIA_BUSY_BIT``
+     - None.
+   * - ``RIA_OP_ZXSTACK``
+     - ``RIA_OP_DROP_XSTACK``, or ``ria_drop()`` in C.
+   * - An assembly macro, or a ca65 label, named ``xreg``
+     - ``xreg`` is now a macro in ``rp6502.inc``. Rename or remove the
+       one in the project.
+
+For an older C project, save this header in the project, and include
+``"rp6502-compat.h"`` in place of ``<rp6502.h>``:
+
+.. code-block:: C
+  :caption: rp6502-compat.h
+
+  #ifndef RP6502_COMPAT_H
+  #define RP6502_COMPAT_H
+
+  #include <rp6502.h>
+  #include <stddef.h>
+
+  #define RIA_READY_TX_BIT 0x80
+  #define RIA_READY_RX_BIT 0x40
+  #define RIA_BUSY_BIT 0x80
+  #define RIA_OP_ZXSTACK RIA_OP_DROP_XSTACK
+
+  #define phi2() ((int)ria_attr_get(RIA_ATTR_PHI2_KHZ))
+  #define code_page(cp)                                                    \
+      ((cp) ? (void)ria_attr_set((cp), RIA_ATTR_CODE_PAGE) : (void)0,      \
+       (int)ria_attr_get(RIA_ATTR_CODE_PAGE))
+  #define lrand() ria_attr_get(RIA_ATTR_LRAND)
+
+  #define xreg_ria_keyboard(...) xreg(0, 0, 0, __VA_ARGS__)
+  #define xreg_ria_mouse(...) xreg(0, 0, 1, __VA_ARGS__)
+  #define xreg_ria_gamepad(...) xreg(0, 0, 2, __VA_ARGS__)
+  #define xreg_ria_tablet(...) xreg(0, 0, 3, __VA_ARGS__)
+  #define xreg_vga_canvas(...) xreg(1, 0, 0, __VA_ARGS__)
+  #define xreg_vga_mode(...) xreg(1, 0, 1, __VA_ARGS__)
+
+  /* Bit tests, not ==, avoid a cc65 warning about constant comparisons.
+     The casts avoid conversion warnings from the unused branches. */
+  #define xram_struct_set_(n, a, size, v)                                  \
+      ((size) & 1 ? xram##n##_poke8(a, (unsigned char)(v))                 \
+       : (size) & 2 ? xram##n##_poke16(a, (unsigned)(v))                  \
+       : (xram##n##_poke16(a, (unsigned)(v)),                              \
+          xram##n##_poke16((a) + 2, (unsigned)((unsigned long)(v) >> 16))))
+  #define xram0_struct_set(addr, type, member, val)                        \
+      xram_struct_set_(0, (unsigned)(addr) + offsetof(type, member),       \
+                       sizeof(((type *)0)->member), val)
+  #define xram1_struct_set(addr, type, member, val)                        \
+      xram_struct_set_(1, (unsigned)(addr) + offsetof(type, member),       \
+                       sizeof(((type *)0)->member), val)
+
+  typedef struct {
+      unsigned char x_wrap, y_wrap;
+      int x_pos_px, y_pos_px, width_chars, height_chars;
+      unsigned xram_data_ptr, xram_palette_ptr, xram_font_ptr;
+  } vga_mode1_config_t;
+
+  typedef struct {
+      unsigned char x_wrap, y_wrap;
+      int x_pos_px, y_pos_px, width_tiles, height_tiles;
+      unsigned xram_data_ptr, xram_palette_ptr, xram_tile_ptr;
+  } vga_mode2_config_t;
+
+  typedef struct {
+      unsigned char x_wrap, y_wrap;
+      int x_pos_px, y_pos_px, width_px, height_px;
+      unsigned xram_data_ptr, xram_palette_ptr;
+  } vga_mode3_config_t;
+
+  typedef struct {
+      int x_pos_px, y_pos_px;
+      unsigned xram_sprite_ptr;
+      unsigned char log_size, has_opacity_metadata;
+  } vga_mode4_sprite_t;
+
+  typedef struct {
+      int transform[6];
+      int x_pos_px, y_pos_px;
+      unsigned xram_sprite_ptr;
+      unsigned char log_size, has_opacity_metadata;
+  } vga_mode4_asprite_t;
+
+  typedef struct {
+      int x_pos_px, y_pos_px;
+      unsigned xram_sprite_ptr, palette_ptr;
+  } vga_mode5_sprite_t;
+
+  #endif /* RP6502_COMPAT_H */
+
+The header does not replace ``ria_push_*``, ``ria_pop_*``, ``ria_set_*``
+and ``ria_call_*``. Change those calls as the table shows.
 
 
 Command Line
@@ -1107,9 +1318,9 @@ in another editor, or with a 6502 program from another toolchain.
 Building
 --------
 
-Each CMake preset is a compiler and a build type. These commands list the
-presets, then configure and build ``cc65/Debug``, the same as choosing
-that preset in VS Code.
+Each C preset is a compiler and a build type, and ``basic`` is for BASIC.
+These commands list the presets, then configure and build ``cc65/Debug``,
+the same as choosing that preset in VS Code.
 
 .. code-block:: text
 
@@ -1183,37 +1394,41 @@ stops the program running on the Picocomputer.
 Running in the Emulator
 -----------------------
 
-To run a ROM in a window, pass it to the emulator, ``rp6502-emu.exe`` on
-Windows and WSL:
+The emulator is ``tools/rp6502-emu``, or ``tools/rp6502-emu.exe`` on
+Windows and WSL. With no options, the ROM runs in a window.
+:ref:`Arguments <emu-arguments>` in the emulator's datasheet lists every
+option.
 
 .. code-block:: text
 
   tools/rp6502-emu build/cc65/debug/hello.rp6502
+  tools/rp6502-emu --headless --phi2 0 build/cc65/debug/hello.rp6502
+  tools/rp6502-emu --script tests/play.txt --seed 1 build/basic/trek.rp6502
 
-``rp6502.py execute`` runs a ROM in the emulator with no window and no
-speed limit. The ROM's output goes to standard output. Its standard input
-is empty, so a read returns end of file. The ROM's exit code becomes the
-command's exit code, so a ROM can run as a step in a script or a test.
+With ``--headless``, there is no window. The ROM's console is the
+terminal's standard input and output, and the ROM's exit code becomes the
+emulator's, so a ROM can run as a step in a script or a test.
+``--phi2 0`` removes the speed limit.
+
+With ``--script``, the input comes from an emulator :ref:`script
+<emu-scripting>`, and the ROM's output is checked against the script
+instead of being written to standard output, so a program that reads the
+keyboard can be tested. The exit code is 0 when the script passes and 1
+when it fails. A BASIC ROM does not exit when its program ends, so run it
+with ``--script``.
+
+``rp6502.py execute`` is a wrapper for ``rp6502-emu --headless`` or
+``rp6502-emu --script`` that uses the ``emulator`` setting of
+`The .rp6502 Settings File`_, so ``-c`` is required. ``--phi2``, ``--seed`` and
+``--save-dir`` are passed to the emulator. The ROM's standard input is
+empty, and the emulator's exit code becomes the command's exit code. The
+second command below runs the play test of `Super Star Trek
+<https://github.com/rumbledethumps/trek>`__:
 
 .. code-block:: text
 
   python3 tools/rp6502.py -c .rp6502 execute build/cc65/debug/hello.rp6502
-
-``--script`` runs the ROM with an emulator :ref:`script <emu-scripting>`
-of input and expected output instead, so a program that reads the
-keyboard can be tested. The output of the ROM then goes to the script
-instead of standard output, and the exit code is 0 when the script
-passes and 1 when it fails. This command runs the play test of `Super
-Star Trek <https://github.com/rumbledethumps/trek>`__:
-
-.. code-block:: text
-
   python3 tools/rp6502.py -c .rp6502 execute --script tests/play.txt --seed 1 build/basic/trek.rp6502
-
-``--seed`` fixes the random numbers, so every run is the same.
-``--save-dir`` names the folder used as ``SAVE:``, so a test can start
-with no saved files. ``--phi2`` sets the 6502 clock in kHz. Without
-``--script``, the default is 0, which runs the 6502 with no speed limit.
 
 Another editor can debug with the emulator through the :ref:`Debug
 Adapter Protocol <emu-dap>`.

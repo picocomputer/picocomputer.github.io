@@ -5,6 +5,25 @@ RP6502-TERM
 RP6502 - Terminal
 
 
+Introduction
+============
+
+Text input and output on a Picocomputer uses the standard C library.
+``printf()`` prints to the console, and ``fgets()`` returns a line that
+the user typed and edited with the arrow keys, Home, End, Insert, Delete
+and Emacs-style keys such as Ctrl-A and Ctrl-K, with no editing code in
+the program. A game can keep running while the player types, and a
+program adds history, tab completion or a form with several fields to the
+same editor with three calls.
+
+On a display, the console is a color terminal in the :doc:`vga` video
+system, 80 or 40 columns wide, and its text can be placed over a picture
+on another plane. The terminal implements the escape sequences of the
+Linux console with the 256-color and 24-bit color codes of xterm, so a
+program can color its text, draw boxes with the DEC line-drawing
+characters, and switch to an alternate screen and back.
+
+
 .. _term-console-manifold:
 
 Console Manifold

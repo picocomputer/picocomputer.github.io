@@ -8,10 +8,28 @@ RP6502 - Web Player
 Introduction
 ============
 
-A web player is a web page that plays one Picocomputer program. It is the
-:doc:`emu` built for a browser, so the program runs the same as on every
-other machine, and anyone with a browser can play it without installing
-anything.
+With the RP6502-WEB, you can put a playable game on the GitHub page of
+your project, upload it to itch.io, or put it on your blog. One click on
+the link starts the game in the browser of a desktop, laptop or tablet,
+with no download and no emulator to install.
+
+The RP6502-WEB is a Picocomputer hosted in a web browser, with sound, a
+keyboard, a mouse or touch screen, and up to four gamepads. The browser
+can keep high scores and saved games between visits, as described in
+`Saves`_.
+
+A web player is the game, the emulator and a page, which ``rp6502_web()``
+builds into one zip. For :ref:`GitHub Pages <web-github>`, a workflow
+builds and publishes the web players of a repository on every push to
+``main``, with a screenshot for the README. The same zip can be
+uploaded to itch.io, and :ref:`any web server that serves plain files
+<web-hosts>` can host its files.
+
+
+.. _web-files:
+
+The Files
+=========
 
 A web player is four files, served together from one folder:
 
@@ -398,6 +416,10 @@ Any web server that serves plain files can host a web player: copy the
 files of the zip into one folder. ``rp6502.wasm`` is loaded from the
 folder of ``rp6502.js``, and the ROM is loaded from a path relative to
 ``index.html``.
+
+On itch.io, the zip is uploaded as it is, to a project of the HTML kind,
+and marked to be played in the browser. itch.io serves the games of many
+people from one site, so name ``db`` as described in `Saves`_.
 
 A web player can be shown inside another page with an ``<iframe>``:
 

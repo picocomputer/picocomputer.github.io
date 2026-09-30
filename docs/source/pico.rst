@@ -4,16 +4,30 @@ RP6502-PICO
 
 RP6502 - Picocomputer 6502
 
-The Picocomputer 6502 is a homebrew computer you build yourself. You don't
-need to understand the electronics, and you don't even need to solder, but
-you will need to plug the eight ICs into their sockets.
+The RP6502-PICO is the original Picocomputer, a real 6502 computer you
+build yourself, usually for under $100 USD. The machine is one circuit
+board with a WDC 65C02, a WDC 65C22, a RAM chip, three logic chips and
+two Raspberry Pi Pico 2 boards. The Picos cost a few dollars each and
+are the entire modern side of the machine. One Pico runs the :doc:`ria`
+for USB, storage and sound, and a Pico 2 W in that socket adds Wi-Fi and
+Bluetooth as the :doc:`ria_w`. The other Pico runs the :doc:`vga` video
+system.
 
-Every part is currently in production, and the Raspberry Pi Pico 2 is slated
-to stay that way until at least `January 2040
-<https://www.raspberrypi.com/products/raspberry-pi-pico-2/>`_.
-The design has already survived the Pico 1 to Pico 2 transition, and it does
-not depend on any one of these parts staying in production because
-the whole machine also runs in gates on the :doc:`fpga`.
+Programs run on the 65C02 at up to 8 MHz. The finished machine plugs into
+a VGA monitor, or into an HDMI display with a VGA-to-HDMI cable.
+Keyboards, mice, gamepads, flash drives, floppy drives and MIDI
+instruments plug into the USB port of the RIA, directly or through a hub.
+In VS Code, the RP6502-PICO launch configuration of the :doc:`sdk` builds
+a program and runs it on the machine over USB or telnet.
+
+You don't need to understand the electronics, and you don't even need to
+solder, but you will need to plug the eight ICs into their sockets. Every
+part is currently in production, and the Raspberry Pi Pico 2 is slated to
+stay that way until at least `January 2040
+<https://www.raspberrypi.com/products/raspberry-pi-pico-2/>`_. The design
+was already updated once, from the Pico 1 to the Pico 2, and it does not
+depend on any one of these parts staying in production because the whole
+machine also runs in gates on the :doc:`fpga`.
 
 .. image:: _static/ria-w-sandwich.jpg
    :width: 600

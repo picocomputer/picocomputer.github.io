@@ -8,10 +8,17 @@ RP6502 - Operating System
 Introduction
 ============
 
-The :doc:`ria` runs a 32-bit operating system that the 6502 can call
-into. It lives entirely on the RIA's own processor — protected from the
-6502 and using none of its system RAM — so it never gets in the way of
-developing a native 6502 OS of your own.
+The RP6502-OS gives a 6502 program files, a clock and a line editor
+through calls that C programmers already know. A program opens, reads,
+writes and seeks files with ``open()``, ``read()``, ``write()`` and
+``lseek()``, and it reads local time with ``time()`` and
+``localtime()``. A C program makes these calls through its standard
+library, and an assembly program makes them through a few registers of
+the :doc:`ria`.
+
+The OS runs on the RIA processor, protected from the 6502, and uses no
+6502 RAM. All of RAM remains available to the program, and that program
+can be a native 6502 operating system of your own.
 
 The OS is POSIX-like, with an Application Binary Interface (ABI) modeled
 on `cc65's fastcall <https://cc65.github.io/doc/cc65-intern.html>`__. It
@@ -151,7 +158,7 @@ or `STRFTIME`_ after pushing only the zero-terminated format on top;
 and `MKTIME`_ returns seconds ready for another conversion.
 
 Short Stacking
----------------
+--------------
 
 In the pursuit of saving every cycle, you can trim a few off the stack
 push when you don't need the full range. This applies only to the first
@@ -1333,7 +1340,7 @@ CHDRIVE
 .. _os-getcwd:
 
 GETCWD
-~~~~~~~
+~~~~~~
 
 .. c:function:: int f_getcwd (char* name, int size)
 

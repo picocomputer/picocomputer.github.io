@@ -8,14 +8,19 @@ RP6502 - Portability
 Introduction
 ============
 
-A ROM runs unchanged on every Picocomputer: an :doc:`pico`, the
-:doc:`emu` on a desktop, in a browser or in RetroArch, and the
-:doc:`fpga` on an Analogue Pocket. The 6502, its memory, the video and the
-sound are the same on all of them. Gamepads and filesystems vary, because
-they come from the hardware and the operating system under each machine.
-How a program handles both so that it works the same way everywhere is
-covered below, and the filesystem differences that remain are listed in a
-table at the end.
+Gamepads and filesystems come from the host of a Picocomputer, and this
+page shows how a program handles both. A few lines of C make a game that
+uses one stick and one or two buttons work with nearly every gamepad. A
+game keeps high scores and save slots on a ``SAVE:`` path with open, read
+and write, and the program names no folder, because the folder differs
+by host.
+
+An :doc:`pico` reads gamepads over USB, or over Bluetooth with an
+:doc:`ria_w`, and stores files on USB drives. The :doc:`emu` uses the gamepads and files of Linux, macOS,
+Windows or RetroArch, the :doc:`web` uses those of a browser, and the
+:doc:`fpga` uses the buttons, the dock and the microSD card of an
+Analogue Pocket. The filesystem differences that remain are listed in the
+table under `Compatibility`_.
 
 
 .. _port-gamepads:
@@ -62,10 +67,11 @@ A game that uses one stick and one or two buttons works with nearly every
 gamepad when it merges the d-pad with the left stick and gives each action
 more than one face button. The low four bits of DPAD and of STICKS are up,
 down, left and right in the same order, so a bitwise OR merges them. A
-game can map both A and X to jump and both B and Y to fire, because each
-of those pairs sits side by side on every layout. After
-``xreg(0, 0, 2, 0xFF00)``, the RIA writes the report to ``$FF00`` in
-extended RAM (XRAM), and this function reads player 1 from there:
+game can map both A and X to jump and both B and Y to fire, because the
+two buttons of each pair are side by side on every layout. After
+``xreg(0, 0, 2, 0xFF00)``, the report of player 1 is kept current at
+``$FF00`` in extended RAM (XRAM), and its first three bytes are DPAD,
+STICKS and BTN0. This function reads them with ``xram0_peek8()``:
 
 .. code-block:: C
 
@@ -75,12 +81,9 @@ extended RAM (XRAM), and this function reads player 1 from there:
 
    void read_player1(void)
    {
-       unsigned char dpad, sticks, btn0;
-       RIA.addr0 = 0xFF00;
-       RIA.step0 = 1;
-       dpad = RIA.rw0;
-       sticks = RIA.rw0;
-       btn0 = RIA.rw0;
+       unsigned char dpad = xram0_peek8(0xFF00);
+       unsigned char sticks = xram0_peek8(0xFF01);
+       unsigned char btn0 = xram0_peek8(0xFF02);
        dirs = (dpad | sticks) & 0x0F; /* up 1, down 2, left 4, right 8 */
        jump = btn0 & 0x09;            /* A or X */
        fire = btn0 & 0x12;            /* B or Y */

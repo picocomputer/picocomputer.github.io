@@ -5,18 +5,26 @@ RP6502-VGA
 RP6502 - Video Graphics Array
 
 Introduction
-=============
+============
 
-The RP6502 Video Graphics Array is a specification for a video system
-connected by PIX and programmed with extended registers (XREGs). Its
-data connection is to a :doc:`ria` over a 5-wire PIX bus.
+The RP6502 Video Graphics Array (VGA) gives a 6502 program three planes
+of graphics in 32,768 colors plus transparency. Each plane has a fill
+layer of text, tiles or a bitmap, with a sprite layer drawn over it. A
+program can scroll a tile map under a text status bar, rotate and scale
+16-bit sprites, and switch a plane to a different mode partway down the
+canvas without an interrupt. A program writes images and settings into
+XRAM, and the VGA redraws the screen from them every frame with no
+further work from the 6502.
 
-More than one VGA device can sit on a PIX bus, but all of them share the
-same 64 KB of XRAM, and only the first generates frame numbers and VSYNC
-interrupts.
+The VGA is a specification for a video system that is connected to the
+:doc:`ria` by PIX and programmed with extended registers (XREGs). On the
+:doc:`pico`, the VGA is a second Raspberry Pi Pico 2, connected to the
+RIA by a 5-wire PIX bus. More than one VGA device can be connected to a
+PIX bus, but all of them share the same 64 KB of XRAM, and only the
+first generates frame numbers and VSYNC interrupts.
 
 Video Programming
-==================
+=================
 
 The VGA system provides virtual video hardware modeled on the home
 computers and arcades of the 8-bit and early-16-bit era. Applications mix
@@ -1393,6 +1401,8 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
       MODE5_CSPRITE_OPTIONS         = 9
       MODE5_CSPRITE_SIZE            = 10
 
+
+.. _vga-sprite-limits:
 
 Sprite Limits
 -------------

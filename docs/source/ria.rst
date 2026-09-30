@@ -8,14 +8,18 @@ RP6502 - RP6502 Interface Adapter
 Introduction
 ============
 
-The RP6502 Interface Adapter (RIA) is the interface between a host and a
-WDC W65C02S microprocessor. It provides every essential service needed to
-run: the clock, reset, file and I/O services, and another 64K (XRAM) that
-services video, audio, and direct access to peripherals.
+The RP6502 Interface Adapter (RIA) connects a WDC W65C02S microprocessor
+to modern hardware through 32 registers at $FFE0-$FFFF. With loads and
+stores to those registers, a 6502 program calls a POSIX-like operating
+system to open, read and write files, and uses a second 64 KB of memory,
+the extended RAM (XRAM). In XRAM, a program reads keyboard, mouse, tablet
+and gamepad input, programs the PSG or the OPL2 sound generator, and
+writes the tiles, bitmaps and sprites that the :doc:`vga` displays.
 
-The RIA must live at $FFE0-$FFFF and must control RESB and PHI2. Those
-are the only hard requirements. Everything else is yours to customize if
-you're designing your own hardware.
+The RIA must be at $FFE0-$FFFF and must control RESB and PHI2, the reset
+and the clock of the 6502. Those are the only hard requirements.
+Everything else is yours to customize if you're designing your own
+hardware.
 
 
 Implementations
@@ -24,19 +28,22 @@ Implementations
 - :doc:`pico` — The RIA software fits entirely on a Raspberry Pi Pico 2.
   Registers are implemented in PIO for connecting to a 65C02.
 - :doc:`fpga` — The same software on a Hazard3 RISC-V soft CPU. The 65C02,
-   65C22, and registers are in fabric.
-- :doc:`emu` — RIA software runs natively on the host CPU along with a
+  65C22, and registers are in fabric.
+- :doc:`emu` — The RIA software runs natively on the host CPU along with
   a 65C02 and 65C22 software emulator.
+- :doc:`web` — The RIA software and the software 65C02 and 65C22, built
+  as WebAssembly and run in a browser.
 
 A Picocomputer always has a companion CPU and Operating System. For example,
 one :doc:`emu` runs on Linux with an ARM processor. The :doc:`pico` is
 special because it hosts itself. The :doc:`os` is an abstraction on all
 other hosts, but it is the native Operating System on the :doc:`pico`.
 
-One other special feature of the :doc:`pico` is its monitor. Every ``load``,
-``install``, ``set``, ``status``, and ``help`` command on this page applies
-only to an :doc:`pico`. The :doc:`emu` takes command-line arguments instead,
-and the :doc:`fpga` uses the Pocket's own menus.
+One other special feature of the :doc:`pico` is its monitor. Every
+``load``, ``reset``, ``set``, and ``status`` command on this page applies
+only to an :doc:`pico`. The :doc:`emu` takes command-line arguments
+instead, the :doc:`web` takes settings in its page, and the :doc:`fpga`
+uses the Pocket's own menus.
 
 
 Reset
@@ -194,27 +201,67 @@ The line runs at 115200 bps, 8-bit words, no parity, 1 stop bit.
 XRAM Portals
 ------------
 
-RW0 and RW1 are two portals into the same 64 KB of XRAM. A single
-portal would make moving XRAM slow, since data would have to buffer
-through 6502 RAM. Ideally you won't move XRAM at all and can use the
+The two XRAM portals are independent pointers into the same 64 KB of XRAM.
+Portal 0 consists of the registers RW0, STEP0 and ADDR0, and portal 1 of
+RW1, STEP1 and ADDR1. A read or write of RW0 accesses the XRAM byte at
+ADDR0, and then STEP0 is added to ADDR0. Portal 1 works the same way. A
+single portal would make moving XRAM slow, since data would have to be
+buffered in 6502 RAM. Ideally you won't move XRAM at all and can use the
 pair for smarter optimizations.
 
 STEP0 and STEP1 default to 1 after reset. Both are signed, so negative
-values walk XRAM in reverse. These auto-increment adders make sequential
-access very fast — more than enough to offset the slightly slower random
-access compared to 6502 system RAM.
+values step through XRAM in reverse. These auto-increment adders make
+sequential access very fast — more than enough to offset the slightly
+slower random access compared to 6502 system RAM.
+
+Assembly programs use these registers directly, with the names from
+``rp6502.inc``. In this example, $12 is written to $1000 and $34 to $1001
+through portal 0:
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+      lda #<$1000
+      sta RIA_ADDR0
+      lda #>$1000
+      sta RIA_ADDR0+1
+      lda #1
+      sta RIA_STEP0
+      lda #$12
+      sta RIA_RW0 ; $1000
+      lda #$34
+      sta RIA_RW0 ; $1001
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      lda #<$1000
+      sta RIA_ADDR0
+      lda #>$1000
+      sta RIA_ADDR0+1
+      lda #1
+      sta RIA_STEP0
+      lda #$12
+      sta RIA_RW0 ; $1000
+      lda #$34
+      sta RIA_RW0 ; $1001
+
+C programs use the ``xram0_`` and ``xram1_`` functions documented in the
+:doc:`os`, such as :c:func:`xram0_read` and :c:func:`xram0_poke16`. The 0
+or 1 in a function name selects the portal. This is the same write in C,
+with the value stored low byte first:
 
 .. code-block:: C
 
-  RIA.addr0 = 0x1000;
-  RIA.step0 = 1;
-  RIA.rw0 = 0x12; /* $1000 */
-  RIA.rw0 = 0x34; /* $1001 */
+  xram0_poke16(0x1000, 0x3412);
 
-An interrupt handler that uses the same portal as the main program must
-save the ADDR and STEP registers of that portal when it starts, and
-restore them before it returns. When the handler and the main program use
-different portals, no registers have to be saved.
+When an interrupt handler and the main program use the same portal, the
+ADDR and STEP registers of that portal must be saved when the handler
+starts and restored before it returns. When the two use different
+portals, no registers have to be saved.
 
 Extended Stack (XSTACK)
 -----------------------
@@ -1761,7 +1808,7 @@ and R2 should expect analog values of just 0 or 255.
 
 
 Programmable Sound Generator
-=============================
+============================
 
 The RIA includes a Programmable Sound Generator (PSG), configured
 through extended register device 0, channel 1, address 0x00.
