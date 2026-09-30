@@ -27,45 +27,6 @@ path down to the 6502: the assistant can build a program, run it, stop it
 at a breakpoint, read its memory and check the screen.
 
 
-Hosts
-=====
-
-What differs between the software hosts:
-
-.. list-table::
-   :widths: 28 22 18 16
-   :header-rows: 1
-
-   * -
-     - Linux, macOS, Windows
-     - Browser
-     - RetroArch
-   * - On-screen debugger
-     - yes
-     - no
-     - no
-   * - DAP debug adapter
-     - yes
-     - no
-     - no
-   * - Scripting
-     - yes
-     - no
-     - no
-   * - Arguments
-     - command line
-     - config block
-     - none
-   * - Drop a ROM on the window
-     - yes
-     - no
-     - no
-   * - Save states
-     - by script
-     - no
-     - yes, with rewind and netplay
-
-
 Install
 =======
 
@@ -133,6 +94,32 @@ working directory, so a program starts in the working directory of
 RetroArch.
 
 
+.. _emu-toolchain:
+
+In a Toolchain
+==============
+
+With ``--headless``, a ROM runs as a command-line program on the host, so
+a 6502 program can be one step of a build, a script or a test. The
+program reads the host's stdin and writes the host's stdout and stderr,
+and its exit code becomes the exit code of the emulator. Errors from the
+host's filesystem are mapped to the ``errno`` values of the program's C
+library, cc65 or llvm-mos, so the program's error handling needs no
+change. ``--phi2 0`` removes the speed limit.
+
+.. code-block:: text
+
+  rp6502-emu --headless --phi2 0 tool.rp6502 < input.txt > output.txt
+  rp6502-emu --headless adventure.rp6502
+  rp6502-emu --stdin game.rp6502           # a window, and the terminal too
+
+With a window, ``stdout`` and ``stderr`` go to the host's streams and
+also show on the VGA terminal, so an error is on the screen even when the
+streams are redirected. ``--stdin`` makes the host's stdin the console
+input while the window stays open. Once the input is gone, a read of
+``stdin`` returns 0 bytes.
+
+
 .. _emu-arguments:
 
 Arguments
@@ -196,7 +183,7 @@ work.
      - \-
      - The host's stdin becomes the machine's console input. A terminal
        there becomes the console itself. Implied by ``--headless``. See
-       `Standard Streams`_.
+       `In a Toolchain`_.
      - desktop
    * - ``--install``
      - ``file``
@@ -268,27 +255,6 @@ work.
      - words
      - Pass everything after this to the ROM as ``argv[1..]``.
      - all
-
-
-Standard Streams
-----------------
-
-A program's ``stdout`` and ``stderr`` both show on the VGA
-terminal, so someone at the screen sees an error even when the streams
-are redirected somewhere else. On the desktop hosts they also reach
-the process. ``stdout`` goes to the host's stdout and ``stderr`` to
-the host's stderr, so a console program written for the Picocomputer
-runs in a shell pipeline.
-
-Host stdin becomes the machine's console input under ``--stdin``, which
-``--headless`` implies. Once the input is gone, a read of ``stdin``
-returns 0 bytes.
-
-.. code-block:: text
-
-  rp6502-emu --headless --phi2 0 tool.rp6502 < input.txt > output.txt
-  rp6502-emu --headless adventure.rp6502
-  rp6502-emu --stdin game.rp6502           # a window, and the terminal too
 
 
 .. _emu-debugging:

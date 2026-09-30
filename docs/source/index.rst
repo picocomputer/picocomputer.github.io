@@ -139,7 +139,7 @@ You already have one. Games and applications are distributed as
 
 - :doc:`pico` — the one you build. 100% through-hole, no IC programmer,
   and you don't even have to solder, but you will plug eight ICs into
-  their sockets. Usually under $100 USD.
+  their sockets.
 - :doc:`emu` — Windows, macOS, Linux, and RetroArch.
 - :doc:`web` — your program on a web page, playable in the browser.
 - :doc:`fpga` — the whole machine in gates, on an Analogue Pocket today

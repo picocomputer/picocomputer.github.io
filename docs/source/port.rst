@@ -188,11 +188,12 @@ Working Directory
 
 A relative path starts from the current directory of the current drive.
 Where that is when a machine starts differs: the root of ``MSC0:`` on an
-:doc:`pico`, the folder the emulator was started from on a desktop, the
-working directory of RetroArch when the core runs there, the root,
-``FS:/``, in a browser, and ``FS:/Assets/rp6502/common`` on the Pocket.
+:doc:`pico`, the folder the :doc:`emu` was started from, the working
+directory of RetroArch when the core runs there, the root, ``FS:/``, on
+an :doc:`web`, and ``FS:/Assets/rp6502/common`` on the Pocket.
 
-The emulators never change the current drive or directory themselves.
+The :doc:`emu` and the :doc:`web` never change the current drive or
+directory themselves.
 Only CHDIR and CHDRIVE from a program change them, and a ROM starts with
 the drive and directory that the ROM before it left. The one exception is
 an NFC card on an :doc:`pico`: the ROM it names starts in the folder that
@@ -385,7 +386,7 @@ shipped with the core. The save folder on each machine is:
   ``~/Library/Application Support/io.github.picocomputer.rp6502-emu/``.
 - On Windows, the folder given with ``--save-dir``, else
   ``Saved Games\rp6502\``.
-- In a browser, ``/saves/``.
+- On an :doc:`web`, ``/saves/``.
 - In RetroArch, ``rp6502/`` in the RetroArch save folder, or the working
   directory when the ROM starts if RetroArch has no save folder.
 - On the Pocket, ``/Saves/rp6502/common/``.
@@ -405,8 +406,8 @@ machine:
   to reach for and remove a USB drive.
 - On Linux, macOS and Windows, written data survives a crash of the
   emulator, and syncfs keeps it through a crash of the whole computer.
-- In a browser, close queues a save to the browser's storage, and syncfs
-  waits until the save is stored.
+- On an :doc:`web`, close queues a save to the browser's storage, and
+  syncfs waits until the save is stored.
 - In RetroArch, a save is as durable as on the system RetroArch runs on.
 - On the Pocket, a successful syncfs does not mean the data is on the
   card, because the Pocket sends no reply once the data is written.
@@ -419,14 +420,14 @@ Installed ROMs
 
 The null drive, ``:``, holds ROMs that come from outside the filesystem.
 On an :doc:`pico`, the monitor's INSTALL command puts a ROM in flash,
-where it stays. On a desktop, ``--install`` puts a file there for one run
-of the emulator, and in a browser, so does the ``install`` setting of the
-page, as described in :doc:`web`. The emulators also run a ROM from the
-null drive when no program could name its path, as when the path is
+where it stays. On an :doc:`emu`, ``--install`` puts a file there for one
+run, and on an :doc:`web`, the ``install`` setting of the page puts one
+there for one visit. The RP6502-EMU and the RP6502-WEB also run a ROM
+from the null drive when no program could name its path, as when the path is
 longer than 255 bytes or has a character that the code page cannot hold
 or that FAT refuses. A program runs an installed ROM with EXEC and the
-name ``:name``. On the emulators, a program can also open an installed
-file for reading, such as a BASIC program. Case does not matter in an
+name ``:name``. On the RP6502-EMU and the RP6502-WEB, a program can also
+open an installed file for reading, such as a BASIC program. Case does not matter in an
 installed name. Every other call on a ``:`` path fails with ENODEV.
 
 argv[0] is the absolute path of the ROM, with its drive, however the ROM
@@ -446,7 +447,7 @@ directory is.
 
 Files beside the ROM are less portable. A program can open them by
 replacing the file name at the end of argv[0], but a ROM from the null
-drive has no folder, and a browser page holds only the ROM file.
+drive has no folder, and a web player has only the ROM file.
 
 
 .. _port-compatibility:
@@ -456,10 +457,9 @@ Compatibility
 
 Every rule above holds on every machine, apart from the Pocket
 exceptions listed in the next paragraph. The rows of the table below
-differ, because the machines differ. The Desktop column is the emulator
-on Linux, macOS and Windows. RetroArch runs on those systems too, and the
-Desktop column holds for it, except that its working directory at start
-is the working directory of RetroArch and it has no installed ROMs.
+differ, because the machines differ. The RP6502-EMU column holds for
+RetroArch too, except that its working directory at start is the working
+directory of RetroArch and it has no installed ROMs.
 
 On the Pocket, files are opened by path, but there are no folder
 operations and no listing. STAT, UNLINK, RENAME, MKDIR, CHDIR, CHMOD,
@@ -476,10 +476,10 @@ error for a full card.
    :widths: 20 20 20 20 20
 
    * -
-     - Pico
-     - Desktop
-     - Browser
-     - Pocket
+     - RP6502-PICO
+     - RP6502-EMU
+     - RP6502-WEB
+     - RP6502-FPGA
    * - Drive names
      - ``MSC0:``–``MSC9:``, or ``0:``–``9:``
      - ``FS:``, or ``A:``–``Z:`` on Windows

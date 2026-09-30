@@ -10,11 +10,11 @@ Introduction
 
 With the RP6502-WEB, you can put a playable game on the GitHub page of
 your project, upload it to itch.io, or put it on your blog. One click on
-the link starts the game in the browser of a desktop, laptop or tablet,
-with no download and no emulator to install.
+the link starts the game in a web browser, with no download and no
+emulator to install.
 
 The RP6502-WEB is a Picocomputer hosted in a web browser, with sound, a
-keyboard, a mouse or touch screen, and up to four gamepads. The browser
+keyboard, a mouse, and up to four gamepads. The browser
 can keep high scores and saved games between visits, as described in
 `Saves`_.
 

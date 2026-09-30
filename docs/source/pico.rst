@@ -5,10 +5,10 @@ RP6502-PICO
 RP6502 - Picocomputer 6502
 
 The RP6502-PICO is the original Picocomputer, a real 6502 computer you
-build yourself, usually for under $100 USD. The machine is one circuit
+build yourself, for under $100 in the US. The machine is one circuit
 board with a WDC 65C02, a WDC 65C22, a RAM chip, three logic chips and
-two Raspberry Pi Pico 2 boards. The Picos cost a few dollars each and
-are the entire modern side of the machine. One Pico runs the :doc:`ria`
+two Raspberry Pi Pico 2 boards, which are the entire modern side of the
+machine. One Pico runs the :doc:`ria`
 for USB, storage and sound, and a Pico 2 W in that socket adds Wi-Fi and
 Bluetooth as the :doc:`ria_w`. The other Pico runs the :doc:`vga` video
 system.

@@ -6,7 +6,7 @@ RP6502 - Field Programmable Gate Array
 
 .. note::
 
-   FPGA is new and will have better documentation later.
+   The FPGA is new and will have better documentation later.
 
 
 Introduction
@@ -15,7 +15,7 @@ Introduction
 The RP6502-FPGA is the Picocomputer 6502 in programmable logic. The
 65C02, the 65C22, the :doc:`ria`, and the :doc:`vga` video system are RTL,
 and the operating system runs on a Hazard3 RISC-V soft CPU executing
-the same C firmware all other machines run. It keeps the same split between
+the same C firmware that all other machines run. It keeps the same split between
 a 6502 and a modern processor, which is what defines a Picocomputer.
 
 
@@ -31,7 +31,7 @@ Install
 -------
 
 Copy ``Cores``, ``Platforms``, ``Saves``, and ``Assets`` onto the microSD
-card in the same folder structure. They merge with what's already there
+card in the same folder structure. They merge with what's already there,
 and nothing replaces another core's files. Then open the core from the
 Pocket menu under openFPGA.
 
@@ -130,8 +130,8 @@ Internals
    └──────────────┘
 
 The RISC-V runs at half speed because its frontend is the one block
-that can't make 50.4 MHz. Performance of this processor is not
-critical - it only needs to keep up with IO to the Pocket.
+that can't make 50.4 MHz. The performance of this processor is not
+critical, because it only has to keep up with I/O to the Pocket.
 
 
 MiSTer

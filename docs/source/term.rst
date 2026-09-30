@@ -35,10 +35,10 @@ to ``stdin``, ``stdout``, ``stderr``, ``CON:``, and ``TTY:``. The
 **monitor** is the system program an :doc:`pico` runs on the console to
 assist with configuration and ROM loading.
 
-The console is not tied to a single physical device. Multiple terminals
-can be attached at once and fanned in to one console; this is the
-**console manifold**. Each machine attaches terminals its own way. An
-:doc:`pico` attaches one three ways:
+The console is not tied to a single physical device. Several terminals
+can be attached at once, and their input and output are combined into
+one console; this is the **console manifold**. On an :doc:`pico`, a
+terminal can be attached in three ways:
 
 * **VGA and USB keyboard.** In the standard configuration with a
   :doc:`vga` module, the console is accessed with a VGA monitor and a

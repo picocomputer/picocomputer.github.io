@@ -8,11 +8,10 @@ RP6502 - Operating System
 Introduction
 ============
 
-The RP6502-OS gives a 6502 program files, a clock and a line editor
-through calls that C programmers already know. A program opens, reads,
-writes and seeks files with ``open()``, ``read()``, ``write()`` and
-``lseek()``, and it reads local time with ``time()`` and
-``localtime()``. A C program makes these calls through its standard
+The RP6502-OS gives a 6502 program files and a clock through calls that
+C programmers already know. A program opens, reads, writes and seeks
+files with ``open()``, ``read()``, ``write()`` and ``lseek()``, and it
+reads local time with ``time()`` and ``localtime()``. A C program makes these calls through its standard
 library, and an assembly program makes them through a few registers of
 the :doc:`ria`.
 
@@ -24,8 +23,8 @@ The OS is POSIX-like, with an Application Binary Interface (ABI) modeled
 on `cc65's fastcall <https://cc65.github.io/doc/cc65-intern.html>`__. It
 offers ``stdio.h`` and ``unistd.h`` services to both the `cc65
 <https://cc65.github.io>`__ and `llvm-mos <https://llvm-mos.org/>`_
-compilers, plus calls that control RP6502 features and manage FAT
-filesystems.
+compilers, plus calls that control RP6502 features and manage the
+filesystem.
 
 .. note::
 
