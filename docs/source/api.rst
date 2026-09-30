@@ -565,7 +565,7 @@ OPEN
    ``TTY:``, the :doc:`sdk` for ``ROM:`` followed by an asset name, and
    :ref:`PORT <port-save>` for ``SAVE:`` followed by a save name. See the
    :doc:`ria` datasheet for ``VCP0:``, ``MIDI0:`` and ``NFC:``, and the
-   :doc:`ria_w` datasheet for ``AT:``.
+   :doc:`ria_w` page for ``AT:``.
 
    :Op code: RIA_OP_OPEN 0x14
    :C proto: fcntl.h

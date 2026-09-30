@@ -343,7 +343,7 @@ size comes from where its symbol sits in memory.
 
 **RP6502-PICO** builds the project and runs it on an :doc:`pico`.
 The connection is USB, through the USB port on the VGA module, or telnet
-with a :doc:`ria_w`. First set ``device``, and ``key`` for telnet, as
+with an :doc:`ria_w`. First set ``device``, and ``key`` for telnet, as
 `The .rp6502 Settings File`_ describes.
 
 The ROM is copied to the current drive and folder of the monitor, the

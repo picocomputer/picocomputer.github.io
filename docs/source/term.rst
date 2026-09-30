@@ -46,7 +46,7 @@ terminal can be attached in three ways:
 * **USB CDC ACM.** Connect the USB port on the VGA module to a computer
   and access the console over the USB CDC ACM serial port that appears.
   No driver is needed.
-* **Telnet.** The :doc:`ria_w` exposes the console over the network. See
+* **Telnet.** On an :doc:`ria_w`, the console is also on the network. See
   :ref:`Telnet Console <ria-w-telnet-console>` for setup.
 
 Any terminal on the console manifold can be used for development and

@@ -7,7 +7,6 @@
    SDK <sdk>
    API <api>
    RIA <ria>
-   RIA-W <ria_w>
    VGA <vga>
    TERM <term>
    PORT <port>
@@ -17,6 +16,7 @@
    :caption: Machine
 
    RP6502-PICO <pico>
+   RP6502-PICO-W <ria_w>
    RP6502-FPGA <fpga>
    RP6502-EMU <emu>
    RP6502-WEB <web>
@@ -130,7 +130,6 @@ program is published.
 - :doc:`ria`: the register map and every device reached through it. The
   RP6502 Interface Adapter, in the spirit of the classic CIA, VIA, and
   ACIA chips.
-- :doc:`ria_w`: setting up Wi-Fi, Bluetooth, telnet, and the Hayes modem.
 - :doc:`vga`: canvases, video modes, sprites, and the scanline
   programming underneath.
 - :doc:`term`: the console, its escape sequences, and the line editor.
@@ -147,6 +146,8 @@ Picocomputers.
 
 - :doc:`pico` — the standalone machine, which you build yourself. 100%
   through-hole, no IC programmer, and you don't even have to solder.
+  Built with a Pi Pico 2 W, it is the :doc:`ria_w`, with Wi-Fi and
+  Bluetooth.
 - :doc:`fpga` — the machine in fabric, on an Analogue Pocket today and
   MiSTer next.
 - :doc:`emu` — the machine on the device you use every day, for

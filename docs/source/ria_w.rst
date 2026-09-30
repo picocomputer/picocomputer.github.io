@@ -1,25 +1,26 @@
-=================================
-RIA-W
-=================================
+============================
+RP6502-PICO-W
+============================
 
-RP6502 Interface Adapter W
+RP6502 - Standalone Machine with Wireless
 
 
 Introduction
 ============
 
-The **RP6502 Interface Adapter W** (RIA-W) is the :doc:`ria` with a
-radio for Wi-Fi and Bluetooth LE. Keyboards, mice, and gamepads connect
+The RP6502-PICO-W is the :doc:`pico` built with a Raspberry Pi Pico 2 W
+for the RIA, which the parts list specifies. The radio of the Pico 2 W
+adds Wi-Fi and Bluetooth LE. Keyboards, mice, and gamepads connect
 without a cable. The real-time clock is set from internet time servers.
 Over telnet, you can use the monitor and a running program from any
 computer on the network, and build and run a project from VS Code. A
 6502 program can call a BBS through an emulated Hayes modem, or answer
 incoming calls as a BBS.
 
-The :doc:`pico` is the only machine with a radio today. The radio is
-part of the Raspberry Pi Pico 2 W, which the parts list specifies for the
-RIA. Support is planned for other machines. Everything on the RIA page
-applies here, and this page covers only the wireless part.
+The other machines use the Bluetooth of their host. Networking is only
+on the RP6502-PICO-W today, and support for other machines is planned.
+Everything on the RP6502-PICO page applies here, and this page covers
+only the wireless features.
 
 
 Wi-Fi Setup
@@ -91,7 +92,7 @@ non-zero.
 Modem Emulation
 ===============
 
-The RIA-W emulates a Hayes modem — the classic AT command set —
+The RP6502-PICO-W emulates a Hayes modem — the classic AT command set —
 for reaching BBSes (bulletin board systems). It places outgoing calls
 and answers incoming ones over either raw TCP or telnet. As with the
 telnet console, the connection is unencrypted.
@@ -148,7 +149,7 @@ which modem device is open.
 Bluetooth
 =========
 
-The RIA-W supports Bluetooth LE (BLE) keyboards, mice, and
+The RP6502-PICO-W supports Bluetooth LE (BLE) keyboards, mice, and
 gamepads. Bluetooth Classic (BR/EDR) is not supported. BLE has been
 everywhere since Bluetooth 4.0 (June 2010), so compatible devices are
 easy to find, though the occasional oddball still turns up.

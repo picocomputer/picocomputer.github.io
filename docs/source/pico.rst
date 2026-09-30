@@ -11,7 +11,7 @@ The machine is one circuit board with a WDC 65C02, a WDC 65C22, a RAM
 chip, three logic chips and two Raspberry Pi Pico 2 boards, which are the
 entire modern side of the machine. One Pico runs the RP6502 Interface
 Adapter (:doc:`ria`) for USB, storage and sound, and a Pico 2 W in that
-socket adds Wi-Fi and Bluetooth as the :doc:`ria_w`. The other Pico runs
+socket adds Wi-Fi and Bluetooth and makes the machine an :doc:`ria_w`. The other Pico runs
 the video system, the RP6502 Video Graphics Array (:doc:`vga`).
 
 Programs run on the 65C02 at up to 8 MHz. The finished machine plugs into
@@ -200,7 +200,7 @@ The standard setup is a VGA monitor and a USB keyboard plugged into the RIA.
 5V Power is applied to the VGA module, enough for all your devices plus one
 watt for the RP6502-PICO itself. You may also connect the VGA module to a
 computer where it will present a serial port attached to the console — no
-driver needed. A :doc:`ria_w` adds telnet.
+driver needed. An :doc:`ria_w` adds telnet.
 
 Inside the machine, the console is a UART between the RIA and the VGA
 module: 115200 bps, 8-bit words, no parity, 1 stop bit.
@@ -238,7 +238,7 @@ Peripherals
 The RIA is a USB host. It drives keyboards, mice, gamepads, hubs, UART serial
 adapters, MIDI instruments, NFC readers, and floppy and flash drives.
 
-A :doc:`ria_w` adds Bluetooth LE for keyboards, mice, and gamepads. Wi-Fi 4
+An :doc:`ria_w` adds Bluetooth LE for keyboards, mice, and gamepads. Wi-Fi 4
 (802.11n) adds networking for modem emulation and NTP.
 
 Storage and ROMs
