@@ -185,8 +185,7 @@ with a copy of the template. Clone it and open the folder in VS Code.
 
 - the C/C++ Extension Pack, which includes CMake Tools, to build;
 - LLDB DAP, to debug in the emulator;
-- Python Debugger, to run the Python tool that sends a ROM to an
-  RP6502-PICO or serves web players to a browser.
+- Python Debugger, to run ``tools/rp6502.py``.
 
 **3. Choose a configure preset.** The first time the project opens,
 CMake Tools lists five presets. Four are for C, one for each combination
@@ -592,10 +591,8 @@ Interface Adapter).
    * - $10000-$1FFFF
      - XRAM, 64 KB, see `XRAM Memory Map`_
 
-The unassigned space is open for hardware experimenters. Design your own
-chip-select logic to use it. Add more VIAs downward and other hardware
-upward, for example VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and
-SID1 at $FF20.
+The unassigned space is open for experimenters. Design your own
+chip-select logic to use it.
 
 Each compiler includes a linker script that lays out zero page and the
 rest of RAM, so a project does not have to manage the layout.

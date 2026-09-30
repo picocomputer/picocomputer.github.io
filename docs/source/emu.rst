@@ -78,12 +78,15 @@ The steps, and those for GitHub Pages and other web servers, are in
 :doc:`web`.
 
 
+.. _emu-retroarch:
+
 RetroArch
 =========
 
 The RP6502-EMU is also a libretro core. Install it from Online Updater >
 Core Downloader, under "Picocomputer 6502", then load a ``.rp6502`` ROM
-the way you would a cartridge.
+the way you would a cartridge. Save states are deterministic, so rewind,
+run-ahead and netplay all work.
 
 The core runs the ROM by its full path, so argv[0] is the absolute path
 of the file. A ROM whose path no program could name runs from the null
@@ -93,6 +96,26 @@ inside the RetroArch save folder, or in the working directory when the
 ROM starts if RetroArch has no save folder. The core never changes the
 working directory, so a program starts in the working directory of
 RetroArch.
+
+Each of the four ports is a **Gamepad** by default. **Gamepad (Analog)**
+adds the analog sticks. **Lightgun** is the Picocomputer's tablet,
+because a lightgun is libretro's only absolute pointing device.
+
+libretro was built for consoles with gamepads, and a core cannot work
+around these limits:
+
+- **Keyboard** — RetroArch maps the keys to its virtual RetroPad and its
+  own hotkeys, so typing reaches the program only with Game Focus on.
+  Game Focus is the Scroll Lock key by default. The core cannot turn Game
+  Focus on or ask whether it is on, so it shows "Enable Game Focus for
+  Keyboard and Mouse." the first time a program asks for the keyboard.
+  Settings > Input > Auto Enable 'Game Focus' Mode > Detect turns Game
+  Focus on whenever the core is loaded.
+- **Mouse** — libretro has no way to share the host's cursor, so the
+  core reports no host cursor and the program draws its own. With Game
+  Focus off, RetroArch shows its own cursor as well. With Game Focus on,
+  RetroArch captures the mouse, and the edges of the screen are hard to
+  reach.
 
 
 .. _emu-toolchain:

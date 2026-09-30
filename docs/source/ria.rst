@@ -1331,9 +1331,9 @@ for a touchscreen.
 
 The application and the RIA exchange pointer preferences through the header.
 ``status`` bit 0 (host cursor) is set only for a mouse on the :doc:`emu`
-in a window or on the :doc:`web`, where the host can draw a cursor for the
+or on the :doc:`web`, where the host can draw a cursor for the
 application. The bit is always clear on the :doc:`pico` and the
-:doc:`fpga`, and for touch input.
+:doc:`fpga`, in :ref:`RetroArch <emu-retroarch>`, and for touch input.
 ``control`` selects the host cursor shape, or hides the cursor so the
 application can draw its own. Mapping the tablet sets it to ARROW.
 
