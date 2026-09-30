@@ -1233,8 +1233,7 @@ that break an older project.
        ``ria_pop_long``, ``ria_pop_int``, ``ria_pop_char``,
        ``ria_set_axsreg``, ``ria_set_ax``, ``ria_set_a``,
        ``ria_call_int``, ``ria_call_long``
-     - None. Call the C function of the OS operation, listed in
-       :doc:`api`. The ARGV arguments are passed to ``main()`` as ``argc``
+     - None. Each API call has a C function, listed in :doc:`api`. The ARGV arguments are passed to ``main()`` as ``argc``
        and ``argv`` when the program defines ``__argv_mem()``. See
        :ref:`ARGV <api-argv>`.
    * - ``RIA_READY_TX_BIT``, ``RIA_READY_RX_BIT``, ``RIA_BUSY_BIT``

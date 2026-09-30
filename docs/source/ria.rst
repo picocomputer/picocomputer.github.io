@@ -134,7 +134,7 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
      - Ensures errno is optionally a 16-bit int.
    * - $FFEF
      - OP
-     - Write an :doc:`api` operation id here to begin an OS call.
+     - Write an :doc:`api` op here to begin an API call.
    * - $FFF0
      - IRQ
      - Interrupt enable mask. Reading returns the triggered signals
@@ -147,25 +147,25 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
    * - $FFF1
      - SPIN
      - Always $80 (the BRA opcode). JSR here to spin-wait
-       for an OS call. The CPU loops on this BRA until BUSY clears, then
+       for an API call. The CPU loops on this BRA until BUSY clears, then
        falls through to LDA and LDX below.
    * - $FFF2
      - BUSY
-     - Bit 7 high while OS operation is running.
+     - Bit 7 high while an API call is running.
    * - $FFF3
      - LDA
      - Always $A9 (the LDA immediate opcode). Part of the
        spin-loop return sequence.
    * - $FFF4
      - A
-     - OS call register A.
+     - API call register A.
    * - $FFF5
      - LDX
      - Always $A2 (the LDX immediate opcode). Part of the
        spin-loop return sequence.
    * - $FFF6
      - X
-     - OS call register X.
+     - API call register X.
    * - $FFF7
      - RTS
      - Always $60 (the RTS opcode). Ends the spin-loop return
@@ -195,7 +195,7 @@ UART
 The UART behind $FFE0-$FFE2 is reached directly through these registers,
 and the ready flags on bits 6-7 let you test with the BIT operator. Use
 these or the stdio functions of the :doc:`api`, but not both at once.
-Driving the UART directly while a stdio OS function is in progress is
+Driving the UART directly while a stdio API call is in progress is
 undefined behavior.
 
 .. _ria-xram-portals:
@@ -308,8 +308,8 @@ configuration structure at the given address.
 
 Extended registers are outside the 6502's address space, so a load or a
 store cannot access one, and no extended register can be read back. A C
-program sets them with the :ref:`xreg() <api-xreg>` OS call, which is made
-through the RIA registers like every other OS call, and an assembly
+program sets them with the :ref:`xreg() <api-xreg>` API call, which is made
+through the RIA registers like every other API call, and an assembly
 program with the ``xreg`` macro in ``rp6502.inc``. Both take the device,
 the channel, the address, and then one or more 16-bit values, which are
 set starting at that address.

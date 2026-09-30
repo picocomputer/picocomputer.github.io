@@ -1521,9 +1521,10 @@ cleared at the start of every row. Keep all palettes together in XRAM so
 they don't collide in the cache. 16-bit and affine sprites have no
 palette and don't use the cache.
 
-These limits are for the FPGA. The :doc:`pico` and :doc:`emu` hosts have
-far more time per row, so in practice the limits are the 8 MHz 6502 and
-the 64 KB of XRAM.
+These limits are for the :doc:`fpga`, where the video system is a
+hardware renderer built in programmable logic, a real video chip. The
+:doc:`pico`, :doc:`emu` and :doc:`web` render in software, which modern
+CPUs can do significantly faster than an affordable FPGA.
 
 
 Control Channel $F

@@ -86,7 +86,7 @@ SPIN
 
 .. c:function:: lib int ria_spin (void)
 
-   Waits for the running OS operation to finish and returns ``RIA_A`` and
+   Waits for the running API call to finish and returns ``RIA_A`` and
    ``RIA_X`` as an int. A call to ``ria_spin()`` is a ``JSR RIA_SPIN``, as
    described under `Application Binary Interface`_.
 
@@ -310,7 +310,7 @@ ARGV
    memory, or dynamically allocated memory you can free afterward. You can
    also reject an oversized argv by returning NULL. The argv data is on
    the XSTACK while ``__argv_mem()`` runs, so ``__argv_mem()`` must not
-   make an OS call, not even through printf().
+   make an API call, not even through printf().
 
    .. code-block:: c
 
@@ -1338,7 +1338,7 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
      - Errno mapping option. Selects which set of errno constants the OS
        uses. The cc65 and llvm-mos C runtimes set it at startup whenever
        the program links ``errno``; assembly programs must set it before
-       making OS calls that can fail. See `ERRNO_OPT Compiler Constants`_
+       making API calls that can fail. See `ERRNO_OPT Compiler Constants`_
        for option values.
    * - | 0x01
        | ``RIA_ATTR_PHI2_KHZ``
@@ -1528,12 +1528,12 @@ no column. The calls it lacks are listed under
 ERRNO_OPT Compiler Constants
 ============================
 
-OS calls set ``RIA_ERRNO`` when an error occurs. Because cc65 and llvm-mos
+API calls set ``RIA_ERRNO`` when an error occurs. Because cc65 and llvm-mos
 each define their own errno constants, the errno option selects which set
 of numeric values to use. In C, ``errno`` maps directly to ``RIA_ERRNO``,
 and both C runtimes set the option at startup whenever the program links
 ``errno``. Assembly programs must set ``RIA_ATTR_ERRNO_OPT`` themselves
-before any OS call that can fail.
+before any API call that can fail.
 
 .. list-table::
    :header-rows: 1
@@ -1632,7 +1632,7 @@ At its core, the ABI is four rules:
 
 A and X are the 6502 registers. The pseudo-register AX combines them
 into 16 bits, and AXSREG extends that to 32 bits with the 16 SREG bits.
-Every OS call is specified as a C declaration, like so:
+Every API call is specified as a C declaration, like so:
 
 .. c:function:: int doit(int arg0, int arg1);
    :no-index-entry:
@@ -1770,9 +1770,9 @@ doesn't need to be set. Push the buf data onto the XSTACK. Don't send
 ``count``; the OS takes it from the XSTACK pointer. From the C SDK, it
 copies count bytes of buf[] onto the XSTACK for you.
 
-Note that read() and write() are part of the C SDK, not OS operations. C
+Note that read() and write() are part of the C SDK, not API calls. C
 requires them to handle counts larger than the XSTACK can return, so the
-implementation makes as many OS calls as it takes.
+implementation makes as many API calls as it takes.
 
 Bulk XRAM Operations
 ~~~~~~~~~~~~~~~~~~~~
