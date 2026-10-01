@@ -6,17 +6,18 @@ RP6502 - Field Programmable Gate Array
 
 .. note::
 
-   FPGA is new and will have better doccumentation later.
+   The FPGA is new and will have better documentation later.
 
 
 Introduction
 ============
 
-The RP6502-FPGA is the Picocomputer 6502 in programmable logic. The
-65C02, the 65C22, the :doc:`ria`, and the :doc:`vga` video system are RTL,
-and the operating system runs on a Hazard3 RISC-V soft CPU executing
-the same C firmware all other machines run. It keeps the same split between
-a 6502 and a modern processor, which is what defines a Picocomputer.
+The RP6502-FPGA is the machine in fabric, a Picocomputer 6502 in
+programmable logic. The 65C02, the 65C22, the registers of the
+:doc:`ria`, the :doc:`vga` video renderer and the sound generators are
+RTL. The rest of the RIA is software, which runs on a Hazard3 RISC-V soft
+CPU. It keeps the split between a 6502 and a host that handles modern
+I/O, which is what defines a Picocomputer.
 
 
 The Analogue Pocket Core
@@ -31,7 +32,7 @@ Install
 -------
 
 Copy ``Cores``, ``Platforms``, ``Saves``, and ``Assets`` onto the microSD
-card in the same folder structure. They merge with what's already there
+card in the same folder structure. They merge with what's already there,
 and nothing replaces another core's files. Then open the core from the
 Pocket menu under openFPGA.
 
@@ -72,7 +73,7 @@ The Dock
 ========
 
 The Pocket supports four controller slots, and the core passes all
-four to the firmware as HID reports of buttons and axes. Keyboard and
+four to the RIA software as HID reports of buttons and axes. Keyboard and
 mouse is fully supported as well.
 
 
@@ -98,7 +99,7 @@ Internals
    │ │ src/core — the machine, platform independent                    │ │
    │ │                                                                 │ │
    │ │  ┌────────┐       ┌────────┐   w65c22 VIA at $FFD0-$FFDF        │ │
-   │ │  │ w65c02 ├───────┤ w65c22 │   RP6502-RIA at $FFE0-$FFFF        │ │
+   │ │  │ w65c02 ├───────┤ w65c22 │          RIA at $FFE0-$FFFF        │ │
    │ │  └───┬────┘       └────────┘                                    │ │
    │ │      │                                                          │ │
    │ │  ┌───┴────┐                                                     │ │
@@ -107,7 +108,7 @@ Internals
    │ │      │                                                          │ │
    │ │  ┌───┴─────────────────────────────────┐  clk_rv 25.2 MHz —     │ │
    │ │  │ rv_soc — Hazard3 RISC-V, 96 KB TCM  │  half clk_sys, off the │ │
-   │ │  │ a trimmed build of the RIA firmware │  PLL, rising with it   │ │
+   │ │  │ a trimmed build of the RIA software │  PLL, rising with it   │ │
    │ │  └───┬─────────────────────────────────┘                        │ │
    │ │      │ one system bus, one master                               │ │
    │ │  xram      vid_timing  vid_prog  vid_sched  vid_fill  vid_mode  │ │
@@ -130,8 +131,8 @@ Internals
    └──────────────┘
 
 The RISC-V runs at half speed because its frontend is the one block
-that can't make 50.4 MHz. Performance of this processor is not
-critical - it only needs to keep up with IO to the Pocket.
+that can't make 50.4 MHz. The performance of this processor is not
+critical, because it only has to keep up with I/O to the Pocket.
 
 
 MiSTer

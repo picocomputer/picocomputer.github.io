@@ -1,8 +1,27 @@
 ==================================
-RP6502-TERM
+TERM
 ==================================
 
-RP6502 - Terminal
+Terminal
+
+
+Introduction
+============
+
+Text input and output on a Picocomputer uses the standard C library.
+``printf()`` prints to the console, and ``fgets()`` returns a line that
+the user typed and edited with the arrow keys, Home, End, Insert, Delete
+and Emacs-style keys such as Ctrl-A and Ctrl-K, with no editing code in
+the program. A game can keep running while the player types, and a
+program adds history, tab completion or a form with several fields to the
+same editor with three calls.
+
+On a display, the console is a color terminal in the :doc:`vga` video
+system, 80 or 40 columns wide, and its text can be placed over a picture
+on another plane. The terminal implements the escape sequences of the
+Linux console with the 256-color and 24-bit color codes of xterm, so a
+program can color its text, draw boxes with the DEC line-drawing
+characters, and switch to an alternate screen and back.
 
 
 .. _term-console-manifold:
@@ -16,10 +35,10 @@ to ``stdin``, ``stdout``, ``stderr``, ``CON:``, and ``TTY:``. The
 **monitor** is the system program an :doc:`pico` runs on the console to
 assist with configuration and ROM loading.
 
-The console is not tied to a single physical device. Multiple terminals
-can be attached at once and fanned in to one console; this is the
-**console manifold**. Each machine attaches terminals its own way. An
-:doc:`pico` attaches one three ways:
+The console is not tied to a single physical device. Several terminals
+can be attached at once, and their input and output are combined into
+one console; this is the **console manifold**. On an :doc:`pico`, a
+terminal can be attached in three ways:
 
 * **VGA and USB keyboard.** In the standard configuration with a
   :doc:`vga` module, the console is accessed with a VGA monitor and a
@@ -27,7 +46,7 @@ can be attached at once and fanned in to one console; this is the
 * **USB CDC ACM.** Connect the USB port on the VGA module to a computer
   and access the console over the USB CDC ACM serial port that appears.
   No driver is needed.
-* **Telnet.** The :doc:`ria_w` exposes the console over the network. See
+* **Telnet.** On an :doc:`ria_w`, the console is also on the network. See
   :ref:`Telnet Console <ria-w-telnet-console>` for setup.
 
 Any terminal on the console manifold can be used for development and
@@ -52,7 +71,7 @@ Locking the Size
 ----------------
 
 A ROM can pin a fixed terminal size by writing non-zero values to
-:ref:`RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT <os-ria-attributes>`.
+:ref:`RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT <api-ria-attributes>`.
 With both axes pinned, the auto-detect handshake is skipped entirely.
 Writing 0 returns the channel to auto-detect, and both attributes revert
 to 0 when the ROM stops.
@@ -99,8 +118,8 @@ Non-blocking Read Line
 Between the activating read and the line flush, the application
 can inspect and modify the editor's state. That is what makes features
 like history recall, tab completion, and multi-field form navigation
-possible. The hooks are :ref:`RLN_LASTKEY <os-rln-lastkey>`,
-:ref:`RLN_PEEK <os-rln-peek>`, and :ref:`RLN_POKE <os-rln-poke>`.
+possible. The hooks are :ref:`RLN_LASTKEY <api-rln-lastkey>`,
+:ref:`RLN_PEEK <api-rln-peek>`, and :ref:`RLN_POKE <api-rln-poke>`.
 
 The basic pattern:
 
@@ -149,10 +168,10 @@ move on, entering the next field with a fresh ``read()`` and
 Terminal
 ========
 
-The :doc:`vga` specification includes a color terminal that attaches to
+The :doc:`vga` video system includes a color terminal that attaches to
 the console manifold. It implements the Linux console subset of
 ECMA-48 / VT102 with xterm-color extensions. The terminal does not
-require flow control to keep up with 115200 bps.
+require flow control.
 
 Compatibility and Limits
 ------------------------

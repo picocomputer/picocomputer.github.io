@@ -1,18 +1,26 @@
-=================================
-RP6502-RIA-W
-=================================
+============================
+RP6502-PICO-W
+============================
 
-RP6502 - RP6502 Interface Adapter W
+RP6502 - Standalone Machine with Wireless
 
 
 Introduction
 ============
 
-The **RP6502 Interface Adapter W** is the :doc:`ria` with a radio, the
-same specification extended for wireless. Everything on the RIA page
-applies here, and this page covers only the wireless part. The :doc:`pico`
-is the only host that supports this today. Support is planned for other
-hosts.
+The RP6502-PICO-W is the :doc:`pico` built with a Raspberry Pi Pico 2 W
+for the RIA, which the parts list specifies. The radio of the Pico 2 W
+adds Wi-Fi and Bluetooth LE. Keyboards, mice, and gamepads connect
+without a cable. The real-time clock is set from internet time servers.
+Over telnet, you can use the monitor and a running program from any
+computer on the network, and build and run a project from VS Code. A
+6502 program can call a BBS through an emulated Hayes modem, or answer
+incoming calls as a BBS.
+
+The other machines use the Bluetooth of their host. Networking is only
+on the RP6502-PICO-W today, and support for other machines is planned.
+Everything on the RP6502-PICO page applies here, and this page covers
+only the wireless features.
 
 
 Wi-Fi Setup
@@ -84,7 +92,7 @@ non-zero.
 Modem Emulation
 ===============
 
-The RP6502-RIA-W emulates a Hayes modem — the classic AT command set —
+The RP6502-PICO-W emulates a Hayes modem — the classic AT command set —
 for reaching BBSes (bulletin board systems). It places outgoing calls
 and answers incoming ones over either raw TCP or telnet. As with the
 telnet console, the connection is unencrypted.
@@ -141,7 +149,7 @@ which modem device is open.
 Bluetooth
 =========
 
-The RP6502-RIA-W supports Bluetooth LE (BLE) keyboards, mice, and
+The RP6502-PICO-W supports Bluetooth LE (BLE) keyboards, mice, and
 gamepads. Bluetooth Classic (BR/EDR) is not supported. BLE has been
 everywhere since Bluetooth 4.0 (June 2010), so compatible devices are
 easy to find, though the occasional oddball still turns up.

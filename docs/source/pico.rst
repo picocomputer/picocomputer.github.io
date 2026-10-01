@@ -2,18 +2,33 @@
 RP6502-PICO
 ============================
 
-RP6502 - Picocomputer 6502
+RP6502 - Standalone Machine
 
-The Picocomputer 6502 is a homebrew computer you build yourself. You don't
-need to understand the electronics, and you don't even need to solder, but
-you will need to plug the eight ICs into their sockets.
+The RP6502-PICO is the standalone machine, a 6502 computer you build
+yourself for under $100 in the US. It is the original Picocomputer, and
+the project is named after the Raspberry Pi Pico it was first built on.
+The machine is one circuit board with a WDC 65C02, a WDC 65C22, a RAM
+chip, three logic chips and two Raspberry Pi Pico 2 boards, which are the
+entire modern side of the machine. One Pico runs the RP6502 Interface
+Adapter (:doc:`ria`) for USB, storage and sound, and a Pico 2 W in that
+socket adds Wi-Fi and Bluetooth and makes the machine an :doc:`ria_w`. The other Pico runs
+the video system, the RP6502 Video Graphics Array (:doc:`vga`).
 
-Every part is currently in production, and the Raspberry Pi Pico 2 is slated
-to stay that way until at least `January 2040
-<https://www.raspberrypi.com/products/raspberry-pi-pico-2/>`_.
-The design has already survived the Pico 1 to Pico 2 transition, and it does
-not depend on any one of these parts staying in production because
-the whole machine also runs in gates on the :doc:`fpga`.
+Programs run on the 65C02 at up to 8 MHz. The finished machine plugs into
+a VGA monitor, or into an HDMI display with a VGA-to-HDMI cable.
+Keyboards, mice, gamepads, flash drives, floppy drives and MIDI
+instruments plug into the USB port of the RIA, directly or through a hub.
+In VS Code, the RP6502-PICO launch configuration of the :doc:`sdk` builds
+a program and runs it on the machine over USB or telnet.
+
+You don't need to understand the electronics, and you don't even need to
+solder, but you will need to plug the eight ICs into their sockets. Every
+part is currently in production, and the Raspberry Pi Pico 2 is slated to
+stay that way until at least `January 2040
+<https://www.raspberrypi.com/products/raspberry-pi-pico-2/>`_. The design
+was already updated once, from the Pico 1 to the Pico 2. The project does
+not depend on any one of these parts staying in production, because the
+:doc:`fpga`, the machine in fabric, uses none of them.
 
 .. image:: _static/ria-w-sandwich.jpg
    :width: 600
@@ -23,10 +38,10 @@ the whole machine also runs in gates on the :doc:`fpga`.
 Schematic
 =========
 
-`Picocomputer 6502 <_static/2026-01-26-rp6502.pdf>`_ (pdf)
+`RP6502-PICO <_static/2026-01-26-rp6502.pdf>`_ (pdf)
 
 
-Buying a Picocomputer
+Buying an RP6502-PICO
 =====================
 
 You'll place two orders: one for the printed circuit board (PCB), and one for
@@ -49,7 +64,7 @@ Rev. A and Rev. B boards are identical except for the debug connectors under
 the RIA. They do nothing even when connected, so they were removed — mostly so
 folks would stop asking about them.
 
-Most VGA-to-HDMI cables can draw power straight from the Picocomputer; a few
+Most VGA-to-HDMI cables can draw power straight from the RP6502-PICO; a few
 need external power. None of them add lag, which matters on a machine built for
 games. All VGA output uses HDMI-compatible timings, so these cables are an
 ideal solution.
@@ -150,18 +165,21 @@ Download the `pico zip
 <https://github.com/picocomputer/rp6502/releases/latest>`_ and unpack the UF2 files
 inside it.
 
-Every Picocomputer needs both Picos flashed with two different files. The VGA
+Every RP6502-PICO needs both Picos flashed with two different files. The VGA
 file is the same for everyone. The RIA file depends on which Pi Pico you have.
 Use the "-w" if you have a Pi Pico 2 W.
 
 To flash a Pi Pico, hold its BOOTSEL button while plugging it into a computer.
-The Pico 2 mounts as a storage device. Copy the RIA-W UF2 file to make a
-:doc:`ria_w`, or the VGA UF2 file to make a :doc:`vga`. The copy takes under 30
-seconds, and the LED turns on when it's done.
+The Pico 2 mounts as a storage device. Copy the RIA or VGA UF2 file to it. The
+copy takes under 30 seconds, and the LED turns on when it's done.
+
+Formally, a Pi Pico flashed with the RIA firmware is an RP6502-RIA, a Pi
+Pico 2 W flashed with the RIA-W firmware is an RP6502-RIA-W, and a Pi Pico
+flashed with the VGA firmware is an RP6502-VGA.
 
 Once you have a machine running, later upgrades don't need BOOTSEL. Put the
-UF2 files on a USB drive, plug it into your Picocomputer, and flash both from
-the monitor. The system reboots after each one.
+UF2 files on a USB drive, plug it into the RIA, and flash both from the
+monitor. The system reboots after each one.
 
 .. code-block:: text
 
@@ -180,9 +198,12 @@ Console
 
 The standard setup is a VGA monitor and a USB keyboard plugged into the RIA.
 5V Power is applied to the VGA module, enough for all your devices plus one
-watt for the Picocomputer itself. You may also connect the VGA module to a
+watt for the RP6502-PICO itself. You may also connect the VGA module to a
 computer where it will present a serial port attached to the console — no
 driver needed. An :doc:`ria_w` adds telnet.
+
+Inside the machine, the console is a UART between the RIA and the VGA
+module: 115200 bps, 8-bit words, no parity, 1 stop bit.
 
 Monitor
 -------
@@ -208,8 +229,8 @@ files are built with the :doc:`sdk`, where the :ref:`ROM File Format
 <sdk-rom-file-format>` is documented.
 
 A few monitor commands, such as ``upload`` and ``binary``, exist for
-developer tools rather than for people. See :doc:`sdk` for what drives
-them.
+developer tools rather than for people. See the :doc:`sdk` for the tools
+that use them.
 
 Peripherals
 -----------
@@ -217,14 +238,15 @@ Peripherals
 The RIA is a USB host. It drives keyboards, mice, gamepads, hubs, UART serial
 adapters, MIDI instruments, NFC readers, and floppy and flash drives.
 
-A :doc:`ria_w` adds Bluetooth LE for keyboards, mice, and gamepads. Wi-Fi 4
+An :doc:`ria_w` adds Bluetooth LE for keyboards, mice, and gamepads. Wi-Fi 4
 (802.11n) adds networking for modem emulation and NTP.
 
 Storage and ROMs
 ----------------
 
 Files live on a USB flash drive. Any USB flash or floppy drive is read and
-written as FAT. 1 MB of flash holds the ROMs you ``install``, and
+written as FAT. ExFAT is ready to go and will be enabled when the patents
+expire. 1 MB of flash holds the ROMs you ``install``, and
 ``set boot`` picks one to load at power-on. ROMs do not need to be installed,
 they are intended to be loaded directly from mass storage devices.
 USB drives are named ``MSC0:`` to ``MSC9:``, or ``0:`` to ``9:`` for
@@ -272,7 +294,7 @@ Pi Picos Parts List
 ===================
 
 Alternative part numbers for the Pi Picos. These require soldering the
-headers youself.
+headers yourself.
 
 `Pi Picos CSV <_static/rp6502-revb-picos.csv>`_
 

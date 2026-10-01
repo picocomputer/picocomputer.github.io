@@ -1,22 +1,30 @@
 ==================================
-RP6502-VGA
+VGA
 ==================================
 
-RP6502 - Video Graphics Array
+Video Graphics Array
 
 Introduction
-=============
+============
 
-The RP6502 Video Graphics Array is a specification for a video system
-connected by PIX and programmed with extended registers (XREGs). Its
-data connection is to a :doc:`ria` over a 5-wire PIX bus.
+The RP6502 Video Graphics Array (VGA) gives a 6502 program three planes
+of graphics in 32,768 colors plus transparency. Each plane has a fill
+layer of text, tiles or a bitmap, with a sprite layer drawn over it. A
+program can scroll a tile map under a text status bar, rotate and scale
+16-bit sprites, and switch a plane to a different mode partway down the
+canvas without an interrupt. A program writes images and settings into
+XRAM, and the VGA redraws the screen from them every frame with no
+further work from the 6502.
 
-More than one VGA device can sit on a PIX bus, but all of them share the
-same 64 KB of XRAM, and only the first generates frame numbers and VSYNC
-interrupts.
+The VGA is a specification for a video system that is connected to the
+:doc:`ria` by PIX and programmed with extended registers (XREGs). On the
+:doc:`pico`, the VGA is a second Raspberry Pi Pico 2, connected to the
+RIA by a 5-wire PIX bus. More than one VGA device can be connected to a
+PIX bus, but all of them share the same 64 KB of XRAM, and only the
+first generates frame numbers and VSYNC interrupts.
 
 Video Programming
-==================
+=================
 
 The VGA system provides virtual video hardware modeled on the home
 computers and arcades of the 8-bit and early-16-bit era. Applications mix
@@ -61,10 +69,10 @@ the data, its size, and its position on the canvas. Each mode has its
 own, given in its section below.
 
 You program the VGA device with :ref:`PIX extended registers <ria-xreg>`
-(XREGs). VGA is PIX device ID 1. Registers are 16-bit values addressed as
-$device:$channel:register — for example, $1:0:0F. ``xaddr`` in the
-examples below is the XRAM address of that mode's configuration
-structure.
+(XREGs). The VGA is PIX device ID 1. Registers are 16-bit values
+addressed as $device:$channel:register — for example, $1:0:0F.
+``xaddr`` in the examples below is the XRAM address of that mode's
+configuration structure.
 
 .. code-block:: C
 
@@ -1394,6 +1402,8 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
       MODE5_CSPRITE_SIZE            = 10
 
 
+.. _vga-sprite-limits:
+
 Sprite Limits
 -------------
 
@@ -1511,9 +1521,10 @@ cleared at the start of every row. Keep all palettes together in XRAM so
 they don't collide in the cache. 16-bit and affine sprites have no
 palette and don't use the cache.
 
-These limits are for the FPGA. The :doc:`pico` and :doc:`emu` hosts have
-far more time per row, so in practice the limits are the 8 MHz 6502 and
-the 64 KB of XRAM.
+These limits are for the :doc:`fpga`, where the video system is a
+hardware renderer built in programmable logic, a real video chip. The
+:doc:`pico`, :doc:`emu` and :doc:`web` render in software, which modern
+CPUs can do significantly faster than an affordable FPGA.
 
 
 Control Channel $F
@@ -1541,7 +1552,7 @@ applications are denied access to them.
    * - $1:F:01
      - CODE_PAGE
      - Set code page for built-in font. Matches
-       :ref:`RIA_ATTR_CODE_PAGE <os-ria-attributes>`.
+       :ref:`RIA_ATTR_CODE_PAGE <api-ria-attributes>`.
    * - $1:F:02
      - SUPPRESS_TERM_REPLY
      - Used by the telnet server to suppress term responses.
@@ -1567,9 +1578,10 @@ applications are denied access to them.
 Backchannel
 ===========
 
-The :doc:`pico` hardware is constrained by GPIO pins, which is why two
-are needed for a Picocomputer. This is a hack to recover a single pin.
-The 6502 programmer never has to think about any of this.
+The :doc:`pico` hardware is constrained by GPIO pins, which is why it
+uses two Raspberry Pi Pico 2 boards. The backchannel is a hack to
+recover a single pin. The 6502 programmer never has to think about any
+of this.
 
 Because the PIX bus is unidirectional, the VGA system can't send data
 straight back to the RIA. The UART Rx path won't do either — it would

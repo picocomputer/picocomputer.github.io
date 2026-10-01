@@ -8,44 +8,24 @@ RP6502 - Emulator
 Introduction
 ============
 
-An emulator is a first-class Picocomputer rather than a facsimile.
-It runs the same 6502 code, responds to the same registers, and maps its
-own errors onto the same errno values every other host reports.
+The RP6502-EMU is the machine on the device you use every day, a
+Picocomputer 6502 hosted on a desktop or laptop running Windows, macOS or
+Linux. It plays ``.rp6502`` games and applications in a window, with the
+keyboard, mouse and gamepads of that computer. The same emulator is a
+RetroArch core, which reaches Android phones, tablets and TVs, and
+iPhone, iPad and Apple TV, and adds save states, rewind and netplay.
 
-What differs between the software hosts:
+The emulator is also the development machine. A project made from the
+:doc:`sdk` template runs in it from VS Code, with breakpoints, stepping
+and variables in the C or assembly source. ``--debug`` opens a debugger
+for the whole machine over the emulated screen. A script works the
+keyboard, gamepads and pointer and checks the results, and a headless run
+puts a 6502 program in a shell pipeline.
 
-.. list-table::
-   :widths: 28 22 18 16
-   :header-rows: 1
-
-   * -
-     - Linux, macOS, Windows
-     - Browser
-     - RetroArch
-   * - On-screen debugger
-     - yes
-     - no
-     - no
-   * - DAP debug adapter
-     - yes
-     - no
-     - no
-   * - Scripting
-     - yes
-     - no
-     - no
-   * - Arguments
-     - command line
-     - config block
-     - none
-   * - Drop a ROM on the window
-     - yes
-     - no
-     - no
-   * - Save states
-     - by script
-     - no
-     - yes, with rewind and netplay
+The debug adapter, a script read from ``-`` and a headless run all use
+standard input and output. With the SDK, they give an AI assistant a full
+path down to the 6502: the assistant can build a program, run it, stop it
+at a breakpoint, read its memory and check the screen.
 
 
 Install
@@ -87,23 +67,17 @@ Start the emulator with a ROM, or drag one onto the window.
   rp6502-emu game.rp6502
 
 
-In a Browser
-============
-
-The emulator also runs on a web page that plays one ROM, so anyone can
-play a program without installing anything. ``rp6502_web()`` builds the
-page and the emulator into a zip, ready to upload, and the web zip on the
-`releases page <https://github.com/picocomputer/rp6502/releases/latest>`__
-is a sample. The steps, and those for GitHub Pages and other web
-servers, are in :doc:`web`.
-
+.. _emu-retroarch:
 
 RetroArch
 =========
 
-The Picocomputer is also a libretro core. Install it from Online Updater >
-Core Downloader, under "Picocomputer 6502", then load a ``.rp6502`` ROM
-the way you would a cartridge.
+The RP6502-EMU is also a libretro core. RetroArch reaches devices that a
+dedicated emulator would make no sense for: Android phones, tablets and
+TVs, iPhone, iPad and Apple TV, and Linux on ARM boards. Install the core
+from Online Updater > Core Downloader, under "Picocomputer 6502", then
+load a ``.rp6502`` ROM the way you would a cartridge. Save states are deterministic, so rewind,
+run-ahead and netplay all work.
 
 The core runs the ROM by its full path, so argv[0] is the absolute path
 of the file. A ROM whose path no program could name runs from the null
@@ -114,6 +88,54 @@ ROM starts if RetroArch has no save folder. The core never changes the
 working directory, so a program starts in the working directory of
 RetroArch.
 
+Each of the four ports is a **Gamepad** by default. **Gamepad (Analog)**
+adds the analog sticks. **Lightgun** is the Picocomputer's tablet,
+because a lightgun is libretro's only absolute pointing device.
+
+libretro was built for consoles with gamepads, and a core cannot work
+around these limits:
+
+- **Keyboard** — RetroArch maps the keys to its virtual RetroPad and its
+  own hotkeys, so typing reaches the program only with Game Focus on.
+  Game Focus is the Scroll Lock key by default. The core cannot turn Game
+  Focus on or ask whether it is on, so it shows "Enable Game Focus for
+  Keyboard and Mouse." the first time a program asks for the keyboard.
+  Settings > Input > Auto Enable 'Game Focus' Mode > Detect turns Game
+  Focus on whenever the core is loaded.
+- **Mouse** — libretro has no way to share the host's cursor, so the
+  core reports no host cursor and the program draws its own. With Game
+  Focus off, RetroArch shows its own cursor as well. With Game Focus on,
+  RetroArch captures the mouse, and the edges of the screen are hard to
+  reach.
+
+
+.. _emu-toolchain:
+
+In a Toolchain
+==============
+
+With ``--headless``, a ROM runs as a command-line program on the host, so
+a 6502 program can be one step of a build, a script or a test. The
+program reads the host's stdin and writes the host's stdout and stderr,
+and its exit code becomes the exit code of the emulator. Errors from the
+host's filesystem are mapped to the ``errno`` values of the program's C
+library, cc65 or llvm-mos, so the program's error handling needs no
+change. ``--phi2 0`` removes the speed limit.
+
+.. code-block:: text
+
+  rp6502-emu --headless --phi2 0 tool.rp6502 < input.txt > output.txt
+  rp6502-emu --headless adventure.rp6502
+  rp6502-emu --stdin game.rp6502           # a window, and the terminal too
+
+With a window, ``stdout`` and ``stderr`` go to the host's streams and
+also show on the VGA terminal, so an error is on the screen even when the
+streams are redirected. ``--stdin`` makes the host's stdin the console
+input while the window stays open. Once the input is gone, a read of
+``stdin`` returns 0 bytes.
+
+
+.. _emu-arguments:
 
 Arguments
 =========
@@ -126,65 +148,54 @@ There are no short options. Both ``--opt value`` and ``--opt=value``
 work.
 
 .. list-table::
-   :widths: 20 25 45 10
+   :widths: 20 25 55
    :header-rows: 1
 
    * - Option
      - Value
      - Description
-     - Hosts
    * - ``--help``
      - \-
      - Print the options and the script commands, then exit.
-     - all
    * - ``--screenshot``
      - ``file.png``
      - Run headlessly, render the frames to PNG, and exit.
-     - all
    * - ``--crc``
      - \-
      - Run headlessly, render the frames, print the canvas as a CRC-32
        on stdout, and exit.
-     - all
    * - ``--frames``
      - number
      - Frames to run before the screenshot or the CRC. Default 120.
-     - all
    * - ``--scale``
      - number
      - Window scale, fractional allowed. Default 1.5.
-     - desktop
    * - ``--filter``
      - ``nearest``,
        ``linear``,
        ``sharp``
      - How pixels are scaled to the window. Default ``sharp``, which
        prescales by an integer and then interpolates.
-     - all
    * - ``--script``
      - ``file``, or
        ``-``
      - See `Scripting`_.
-     - desktop
    * - ``--headless``
      - \-
      - No window and no picture. The program reads and writes the host's
        stdin, stdout and stderr, and its exit code becomes the emulator's.
        Implies ``--stdin``.
-     - desktop
    * - ``--stdin``
      - \-
      - The host's stdin becomes the machine's console input. A terminal
        there becomes the console itself. Implied by ``--headless``. See
-       `Standard Streams`_.
-     - desktop
+       `In a Toolchain`_.
    * - ``--install``
      - ``file``
      - Install a file on the null drive, reached as ``:basename``. A
        program runs an installed ROM with EXEC and opens any other
        installed file for reading. Repeatable to sixteen. When no ROM is
        named, the first one boots.
-     - all
    * - ``--save-dir``
      - ``folder``
      - The folder that holds ``SAVE:`` files. It is created the first
@@ -192,83 +203,49 @@ work.
        ``$XDG_DATA_HOME/rp6502``, or ``~/.local/share/rp6502``, on Linux,
        ``~/Library/Application Support/io.github.picocomputer.rp6502-emu``
        on macOS, and ``Saved Games\rp6502`` on Windows.
-     - all
    * - ``--bgcolor``
      - ``RRGGBB``
      - Letterbox and pillarbox fill. Default ``000000``.
-     - all
    * - ``--phi2``
      - kHz
      - 6502 clock, 100 to 8000. Default 8000. ``0`` is for
        ``--headless``, and runs the 6502 with no speed limit.
-     - all
    * - ``--cp``
      - number
      - OEM code page. 437, 720, 737, 771, 775, 850, 852, 855, 857,
        860-866, or 869. Default 437.
-     - all
    * - ``--seed``
      - number
      - Fixed seed for the run, covering both the memory fill and the
        random numbers a program draws, so a run repeats exactly.
-     - all
    * - ``--fill``
      - ``random``,
        or a byte
      - What RAM and XRAM hold before anything writes them. The default
        is ``random``. Supply a byte, as ``$00`` or ``0``, to start with
        known memory.
-     - all
    * - ``--mute``
      - \-
      - No synthesis and no audio device opened at all.
-     - all
    * - ``--debug``
      - \-
      - The on-screen machine debugger. It also holds the window open
        after the program exits, so you can examine where it stopped.
-     - desktop
    * - ``--dap``
      - \-
      - Act as a DAP debug adapter on stdio. Implies ``--debug``.
-     - desktop
    * - ``--ini``
      - ``file``
      - Where the debugger keeps its window layout.
-     - desktop
    * - ``--credits``
      - \-
      - Print third-party credits and licenses, then exit.
-     - all
    * - ``--version``
      - \-
      - Print the version and exit.
-     - all
    * - ``--``
      - words
      - Pass everything after this to the ROM as ``argv[1..]``.
-     - all
-
-
-Standard Streams
-----------------
-
-A program's ``stdout`` and ``stderr`` both show on the VGA
-terminal, so someone at the screen sees an error even when the streams
-are redirected somewhere else. On the desktop hosts they also reach
-the process. ``stdout`` goes to the host's stdout and ``stderr`` to
-the host's stderr, so a console program written for the Picocomputer
-runs in a shell pipeline.
-
-Host stdin becomes the machine's console input under ``--stdin``, which
-``--headless`` implies. Once the input is gone, a read of ``stdin``
-returns 0 bytes.
-
-.. code-block:: text
-
-  rp6502-emu --headless --phi2 0 tool.rp6502 < input.txt > output.txt
-  rp6502-emu --headless adventure.rp6502
-  rp6502-emu --stdin game.rp6502           # a window, and the terminal too
 
 
 .. _emu-debugging:
@@ -276,9 +253,10 @@ returns 0 bytes.
 Debugging
 =========
 
-The emulator is a DAP debug adapter, so any editor that speaks the Debug
-Adapter Protocol can do source-level debugging of 6502 code. :doc:`sdk`
-covers the VS Code side, which is already wired up.
+The emulator is a DAP debug adapter, so any editor that supports the Debug
+Adapter Protocol can do source-level debugging of 6502 code. The
+:doc:`sdk` covers the VS Code side, which the project template already
+configures.
 
 Both compilers support breakpoints on a source line, conditional and
 hit-count breakpoints, logpoints, breakpoints on a function or an
@@ -473,9 +451,13 @@ MOS-style ``$FF``.
 
 A failed check names the script and the line it was on, then exits 1.
 
-Memory starts random, as it often does on real hardware. This will catch
-uninitialized memory usage... eventually. ``--fill 00`` gives a test
-known memory when it needs it.
+A program must treat RAM and XRAM as uninitialized, because they hold
+unknown values until the program writes them. To help find a program that
+reads memory before writing it, the emulator fills RAM and XRAM from a new
+random seed on every run, so a program that gets lucky with an
+uninitialized value on one run is not lucky on the next. For a test,
+``--seed`` repeats a run exactly, and ``--fill`` starts with a known byte,
+such as ``--fill 00``.
 
 
 Key Names
@@ -525,7 +507,7 @@ character and the keys that have an escape sequence. ``+shift`` types the
 shifted character, ``+alt`` prefixes ESC, and ``+ctrl`` sends the control
 byte, which makes ``key c+ctrl`` Ctrl-C and ``key leftbracket+ctrl`` an
 ESC. Those characters are a US keyboard's, whatever layout the machine is
-set to, because a script has to send the same bytes on every machine.
+set to, so that a script sends the same bytes under every layout.
 
 A key that types nothing is an error, which
 covers ``capslock``, ``numlock``, ``scrolllock``, ``printscreen``,

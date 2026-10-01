@@ -1,282 +1,62 @@
 ============================
-RP6502-OS
+API
 ============================
 
-RP6502 - Operating System
+Application Programming Interface
 
 
 Introduction
 ============
 
-The :doc:`ria` runs a 32-bit operating system that the 6502 can call
-into. It lives entirely on the RIA's own processor — protected from the
-6502 and using none of its system RAM — so it never gets in the way of
-developing a native 6502 OS of your own.
+The API is how a 6502 program uses the host. A call such as ``open()``
+or ``time()`` is passed through the registers of the :doc:`ria` to the
+host, which does the work and passes the result back, much like a remote
+procedure call. The host runs outside the 6502 and uses none of its RAM,
+so all of RAM remains available to the program, and that program can
+even be a 6502 operating system of your own.
 
-The OS is POSIX-like, with an Application Binary Interface (ABI) modeled
-on `cc65's fastcall <https://cc65.github.io/doc/cc65-intern.html>`__. It
-offers ``stdio.h`` and ``unistd.h`` services to both the `cc65
-<https://cc65.github.io>`__ and `llvm-mos <https://llvm-mos.org/>`_
-compilers, plus calls that control RP6502 features and manage FAT
-filesystems.
+The API comes with the compilers. It is part of the C libraries of cc65
+and llvm-mos, so a program needs nothing else to use it. This is the
+"Hello, world!" program of the :doc:`sdk` template:
 
-.. note::
+.. code-block:: C
 
-   ExFAT is ready to go and will be enabled when the patents expire.
+  #include <rp6502.h>
+  #include <stdio.h>
+  #include "xram.h"
 
+  int main(void)
+  {
+      puts("Hello, world!");
+  }
 
-.. _os-memory-map:
+``puts()`` is the standard C function. In both compilers it ends in
+WRITE_XSTACK, an API call that passes the bytes to the RIA, and the host
+writes them to the console. Most of the API is standard C in this way:
+``stdio.h`` and ``unistd.h`` for the console and files, and ``time.h``
+for the clock. ``rp6502.h`` adds what standard C has no call for: access
+to XRAM, the settings of the RIA, the filesystem abstraction, the line
+editor, and starting another ROM.
 
-Memory Map
-==========
+The API does not reach the gamepads, the video or the sound. A program
+drives those through XRAM and extended registers (XREGs), described in
+the :doc:`ria` and :doc:`vga` datasheets. The API provides ``xreg()``
+and the XRAM calls that set them up.
 
-Everything below $FF00 is RAM, and nothing in zero page is used or
-reserved. The Picocomputer starts every project as a clean slate. VGA,
-audio, storage, keyboards, mice, gamepads, the RTC, and networking are
-all reached through just the 32 registers of the RIA.
-
-.. list-table::
-   :widths: 25 75
-   :header-rows: 1
-
-   * - Address
-     - Description
-   * - $0000-$FEFF
-     - RAM, 63.75 KB
-   * - $FF00-$FFCF
-     - Unassigned
-   * - $FFD0-$FFDF
-     - VIA, see the `WDC datasheet
-       <https://www.westerndesigncenter.com/wdc/w65c22-chip.php>`_
-   * - $FFE0-$FFFF
-     - RIA, see the :doc:`RP6502-RIA datasheet <ria>`
-   * - $10000-$1FFFF
-     - XRAM, 64 KB for :doc:`ria` and :doc:`vga`
-
-The unassigned space is open for hardware experimenters. Design your own
-chip-select logic to use it. Add more VIAs downward and other hardware
-upward, for example VIA0 at $FFD0, VIA1 at $FFC0, SID0 at $FF00, and
-SID1 at $FF20.
-
-Your program's own layout of RAM and XRAM is set up in the SDK's
-:ref:`RAM Memory Map <sdk-ram-memory-map>` and
-:ref:`XRAM Memory Map <sdk-xram-memory-map>`.
-
-
-Application Binary Interface
-============================
-
-.. seealso::
-
-   :doc:`ria` — the hardware register map referenced throughout this section.
-
-A C program does none of this, because the compiler's library is the
-implementation. What follows is for assembly programs and for anyone
+Underneath the C functions is the Application Binary Interface (ABI),
+the register-level form of each call. A C program never sees it. The
+ABI is at the end of this page, for assembly programs and for anyone
 bringing another compiler to the Picocomputer.
 
-The ABI for calling the operating system is based on fastcall from the
-`cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The OS
-itself uses nothing from cc65, so assembly calls it the same way C
-does. The compiler is a convenience here, not a dependency.
 
-At its core, the ABI is four rules:
+Application Programming Interface
+=================================
 
-* Stack arguments are pushed left to right.
-* Last argument passed by register A, AX, or AXSREG.
-* Return value in register AX or AXSREG.
-* May return data on the stack.
-
-A and X are the 6502 registers. The pseudo-register AX combines them
-into 16 bits, and AXSREG extends that to 32 bits with the 16 SREG bits.
-Every OS call is specified as a C declaration, like so:
-
-.. c:function:: int doit(int arg0, int arg1);
-   :no-index-entry:
-   :no-contents-entry:
-
-The RIA has registers called ``RIA_A``, ``RIA_X``, and ``RIA_SREG``. An
-int is 16 bits, so arg1 goes into the ``RIA_A`` and ``RIA_X``
-registers. Throughout this explanation, "A" means the 6502 register and
-"RIA_A" means the RIA register.
-
-arg0 goes on the XSTACK. Reading ``RIA_XSTACK`` pops bytes; writing
-pushes them. It's a top-down stack, so push the arguments left to right,
-and push each value high byte first so that it lies in memory low byte
-first.
-
-To execute the call, store the operation ID in ``RIA_OP``; the operation
-begins immediately. You can keep the 6502 busy with other work, such as a
-loading animation, by polling ``RIA_BUSY``, or just JSR to ``RIA_SPIN``
-to block until it's done.
-
-``JSR RIA_SPIN`` can unblock within 3 clock cycles and loads A and X for
-you. Sequential operations run fastest this way. Under the hood, you're
-jumping into a self-modifying program that runs out of the RIA registers.
-
-.. code-block:: asm
-
-   FFF1: BRA #$??   ; RIA_BUSY {-2 or 0}
-   FFF3: LDA #$??   ; RIA_A
-   FFF5: LDX #$??   ; RIA_X
-   FFF7: RTS
-
-Polling is just snooping on that same program. The ``RIA_BUSY`` register
-is the -2 or 0 in the BRA above. Per the RIA datasheet, bit 7 signals
-busy, which the 6502 can test quickly with the BIT operator to set flag
-N. Once it clears, read ``RIA_A`` and ``RIA_X`` with absolute instructions.
-
-.. code-block:: asm
-
-   wait: BIT RIA_BUSY
-         BMI wait
-         LDA RIA_A
-         LDX RIA_X
-
-Any operation that returns ``RIA_A`` also returns ``RIA_X`` to help with
-C integer promotion. Loading X last allows fast testing for negative
-return values. ``RIA_SREG`` is updated only for 32-bit returns, and
-``RIA_ERRNO`` only when there's an error.
-
-Some operations return strings or structures on the stack. Pull the
-entire stack before the next call, or use `ria_drop() <DROP_XSTACK_>`_
-to abandon the stack in O(1) time without a loop. One operation's output
-can also be the next one's input. `read_xstack() <READ_XSTACK_>`_ leaves
-its data on the XSTACK where `write_xstack() <WRITE_XSTACK_>`_ takes it,
-so the two copy a file without touching any RAM or XRAM.
-
-The time operations chain the same way, without cycling the XSTACK:
-`TIME_GET`_ returns seconds positioned as the input to `GMTIME`_,
-`LOCALTIME`_, or `TIME_SET`_; their struct tm feeds `MKTIME`_ directly,
-or `STRFTIME`_ after pushing only the zero-terminated format on top;
-and `MKTIME`_ returns seconds ready for another conversion.
-
-Short Stacking
----------------
-
-In the pursuit of saving every cycle, you can trim a few off the stack
-push when you don't need the full range. This applies only to the first
-stack argument pushed. Take `LSEEK`_:
-
-.. code-block:: C
-
-   ABI long f_lseek(long offset, unsigned char whence, int fildes)
-
-Here you push a 32-bit value, and — not by coincidence — it sits in the
-right position for short stacking. If the offset always fits in 16 bits,
-push two bytes instead of four.
-
-Signed arguments are sign-extended, so two bytes carry -32768 to 32767.
-Unsigned arguments are zero-filled.
-
-.. warning::
-
-   Size a short push by the signed range. An offset of 200 pushed as the
-   single byte 0xC8 arrives as -56, because the top bit of 0xC8 is the
-   sign. Push 0x00 and then 0xC8 to send 200.
-
-Shorter AX
-----------
-
-A program can save a few cycles by leaving ``RIA_X`` alone. Returned
-integers are always at least 16 bits, to help with C integer promotion,
-but many operations ignore ``RIA_X`` on the way in and keep their return
-value within ``RIA_A``. Those are listed below under ``a regs``.
-
-Bulk Data
----------
-
-Functions that move bulk data come in two flavors, depending on where
-the data lives. A RAM pointer means nothing to the RIA, since it can't
-touch 6502 RAM, so bulk data moves through the XSTACK or XRAM instead.
-
-Bulk XSTACK Operations
-~~~~~~~~~~~~~~~~~~~~~~
-
-These work only for sizes of 512 bytes or less — the size of the XSTACK
-they pass data on. A pointer in the C prototype marks the type and
-direction (to or from the OS) of the data. A few examples:
-
-.. code-block:: C
-
-   int open(const char *path, int oflag);
-
-Send ``oflag`` in ``RIA_A``; per the `OPEN`_ docs, ``RIA_X`` doesn't need
-to be set. Send the path on the XSTACK by pushing the string from its
-last character backward. You can skip the terminating zero, but strings
-are capped at 255 bytes. From the C SDK, the implementation pushes the
-string for you.
-
-.. code-block:: C
-
-   int read_xstack(void *buf, unsigned count, int fildes)
-
-Send ``count`` as a short stack and ``fildes`` in ``RIA_A``; per the
-`READ_XSTACK`_ docs, ``RIA_X`` doesn't need to be set. The value returned
-in AX is the number of bytes to pull from the stack. From the C SDK, it
-copies the XSTACK into buf[] for you.
-
-.. code-block:: C
-
-   int write_xstack(const void *buf, unsigned count, int fildes)
-
-Send ``fildes`` in ``RIA_A``; per the `WRITE_XSTACK`_ docs, ``RIA_X``
-doesn't need to be set. Push the buf data onto the XSTACK. Don't send
-``count``; the OS takes it from the XSTACK pointer. From the C SDK, it
-copies count bytes of buf[] onto the XSTACK for you.
-
-Note that read() and write() are part of the C SDK, not OS operations. C
-requires them to handle counts larger than the XSTACK can return, so the
-implementation makes as many OS calls as it takes.
-
-Bulk XRAM Operations
-~~~~~~~~~~~~~~~~~~~~
-
-These load and save XRAM directly through `READ_XRAM`_ and `WRITE_XRAM`_,
-so you can pull assets straight in without routing them through 6502 RAM.
-
-.. code-block:: C
-
-   int read_xram(unsigned buf, unsigned count, int fildes)
-   int write_xram(unsigned buf, unsigned count, int fildes)
-
-The OS takes ``buf`` and ``count`` on the XSTACK as integers, with
-``fildes`` in ``RIA_A``. The 6502 reads and writes XRAM through
-``RIA_RW0`` or ``RIA_RW1``.
-
-These operations stand out for their speed and for running in the
-background while the 6502 does other work. Depending on the request size,
-expect up to 800 KB/sec. A full 64 KB of XRAM loads or saves multiple times
-per second with no wait states or 6502 work.
-
-Bulk XRAM operations are why the Picocomputer 6502 has no paged memory.
-You don't need it when "disk" access has zero seek time and DMA to XRAM.
-
-
-Application Programmer Interface
-================================
-
-.. seealso::
-
-   `FatFs documentation <https://elm-chan.org/fsw/ff/>`__ —
-   many of the filesystem functions below are thin wrappers around FatFs.
-
-Much of this API is based on POSIX and FatFs, so filesystem and console
-access should feel very familiar. A few operations reorder their
-arguments or change their data structures, though. The reason becomes
-clear once you're in assembly, fine-tuning short stacking and integer
-demotion — shrinking a return value to fit in fewer registers. In C you
-may never notice, because the standard library wraps these calls in
-familiar prototypes, and the flags below mark the two forms apart wherever
-they differ.
-
-The OS is built around FAT filesystems, the de facto standard for
-unsecured removable storage such as USB drives and memory cards. POSIX
-filesystems aren't fully compatible with FAT, but there's a solid core of
-basic I/O where the two agree completely. So you'll find familiar POSIX
-functions like ``open()`` alongside others like ``f_stat()`` — close to
-their POSIX cousins, but tailored to FAT. If a true POSIX ``stat()`` is
-ever needed, it can be built in the C standard library or in an
-application by translating ``f_stat()`` data.
+Most calls match their POSIX counterparts. The filesystem calls follow
+FAT, the standard filesystem of USB drives and memory cards, so
+``f_stat()`` stands in for ``stat()`` with FAT's attributes and dates.
+A few calls take their arguments in a different order in the ABI than
+in C. The flags described below mark the two forms where they differ.
 
 Each operation below is one or more C declarations followed by a short
 list of details. Some declarations carry a flag:
@@ -295,18 +75,33 @@ operation. An entry with only ``LIB`` prototypes has no op code.
 ``C proto`` names the header the declaration comes from.
 ``a regs`` names the arguments and the return value that fit in ``RIA_A``
 alone, so a program can leave ``RIA_X`` unset. ``errno`` lists what can
-go wrong, and `ERRNO_OPT Compiler Constants`_ gives the number of each.
+go wrong, and `Errno Translations`_ gives the number of each.
 
 
 Registers
 ---------
+
+DROP
+~~~~
+
+.. c:function:: void ria_drop (void);
+
+   Empty the XSTACK by resetting its pointer. This is the only operation
+   that finishes immediately, so there is no need to wait for it. It is
+   never needed after a failed operation, because a failure already
+   empties the XSTACK. Use it to discard the rest of a returned structure,
+   or arguments already pushed for a call you decide not to make.
+
+   :Op code: RIA_OP_DROP_XSTACK 0x00
+   :C proto: rp6502.h
+
 
 SPIN
 ~~~~
 
 .. c:function:: lib int ria_spin (void)
 
-   Waits for the running OS operation to finish and returns ``RIA_A`` and
+   Waits for the running API call to finish and returns ``RIA_A`` and
    ``RIA_X`` as an int. A call to ``ria_spin()`` is a ``JSR RIA_SPIN``, as
    described under `Application Binary Interface`_.
 
@@ -339,27 +134,12 @@ IRQ
    :param mask: Signals to enable.
 
 
-.. _os-extended-memory:
+.. _api-extended-memory:
 
 Extended Memory
 ---------------
 
-DROP_XSTACK
-~~~~~~~~~~~
-
-.. c:function:: void ria_drop (void);
-
-   Empty the XSTACK by resetting its pointer. This is the only operation
-   that finishes immediately, so there is no need to wait for it. It is
-   never needed after a failed operation, because a failure already
-   empties the XSTACK. Use it to discard the rest of a returned structure,
-   or arguments already pushed for a call you decide not to make.
-
-   :Op code: RIA_OP_DROP_XSTACK 0x00
-   :C proto: rp6502.h
-
-
-.. _os-xreg:
+.. _api-xreg:
 
 XREG
 ~~~~
@@ -380,7 +160,7 @@ XREG
    channel, which the RIA manages.
 
    This is how you add virtual hardware to extended RAM. Both the :doc:`ria`
-   and :doc:`vga` ship with virtual devices you can install, and you can
+   and the :doc:`vga` include virtual devices you can install, and you can
    build your own hardware for the PIX bus and configure it with this same
    call.
 
@@ -405,7 +185,8 @@ XRAM_READ
 
    Copy ``count`` bytes from XRAM to 6502 RAM, like ``memcpy``.
    ``xram0_read()`` copies through portal 0 and ``xram1_read()`` through
-   portal 1. The other portal is not touched. A count of 0 copies nothing.
+   portal 1, the two :ref:`XRAM portals <ria-xram-portals>` of the RIA.
+   The other portal is not touched. A count of 0 copies nothing.
 
    The call changes the portal's address register and sets its step
    register to 1.
@@ -508,7 +289,7 @@ XRAM_POKE
 Process
 -------
 
-.. _os-argv:
+.. _api-argv:
 
 ARGV
 ~~~~
@@ -529,7 +310,7 @@ ARGV
    memory, or dynamically allocated memory you can free afterward. You can
    also reject an oversized argv by returning NULL. The argv data is on
    the XSTACK while ``__argv_mem()`` runs, so ``__argv_mem()`` must not
-   make an OS call, not even through printf().
+   make an API call, not even through printf().
 
    .. code-block:: c
 
@@ -590,182 +371,10 @@ EXIT
    :param status: 0 is success, and any other value is an error.
 
 
-Attributes
-----------
-
-ATTR_GET
-~~~~~~~~
-
-.. c:function:: long ria_attr_get (unsigned char id)
-
-   Returns the current value of a RIA attribute. See `RIA Attributes`_
-   for attribute IDs and descriptions.
-
-   :Op code: RIA_OP_ATTR_GET 0x0A
-   :C proto: rp6502.h
-   :param id: Attribute ID. One of the ``RIA_ATTR_*`` constants.
-   :a regs: id
-   :returns: The attribute value as a 31-bit integer. -1 on error.
-   :errno: EINVAL
-
-
-ATTR_SET
-~~~~~~~~
-
-.. c:function:: int ria_attr_set (long val, unsigned char id)
-
-   Sets the value of a RIA attribute. See `RIA Attributes`_ for
-   attribute IDs and descriptions.
-
-   :Op code: RIA_OP_ATTR_SET 0x0B
-   :C proto: rp6502.h
-   :param id: Attribute ID. One of the ``RIA_ATTR_*`` constants.
-   :param val: New value.
-   :a regs: id
-   :returns: 0 on success
-   :errno: EINVAL
-
-
-Time
-----
-
-TIME_GET
-~~~~~~~~
-
-.. c:function:: ABI int _time (time_t *timep)
-                lib time_t time (time_t *timep)
-
-   Obtains the current time as seconds since the Unix epoch,
-   1970-01-01T00:00:00Z. The operation pushes the seconds to the XSTACK
-   as a 64-bit signed integer and returns 0, or -1 on error. The cc65
-   time_t has 32 bits, so the cc65 time() fails with ERANGE when the
-   seconds do not fit.
-
-   :Op code: RIA_OP_TIME_GET 0x3F
-   :C proto: time.h
-   :returns: The current time, also stored at ``timep`` if it is not
-      NULL. -1 on error.
-   :a regs: return
-   :errno: EINVAL, EIO, ERANGE
-
-
-TIME_SET
-~~~~~~~~
-
-.. c:function:: int time_set (long long time)
-
-   Sets the clock to seconds since the Unix epoch. Supported only on
-   :doc:`pico`.
-
-   :Op code: RIA_OP_TIME_SET 0x3E
-   :C proto: rp6502.h
-   :param time: Seconds since 1970-01-01T00:00:00Z.
-   :returns: 0 on success. -1 on error.
-   :a regs: return
-   :errno: EACCES, EINVAL
-
-
-GMTIME
-~~~~~~
-
-.. c:function:: lib struct tm *gmtime (const time_t *timep)
-
-   Converts seconds since the Unix epoch to UTC broken-down time.
-   Push the seconds as a signed integer of up to 64 bits. The operation
-   pushes this struct tm back to the XSTACK
-   and returns 0, or -1 on error.
-
-   .. code-block:: c
-
-      struct tm {
-         int16_t tm_sec;   /* 0-61 */
-         int16_t tm_min;   /* 0-59 */
-         int16_t tm_hour;  /* 0-23 */
-         int16_t tm_mday;  /* 1-31 */
-         int16_t tm_mon;   /* 0-11 */
-         int16_t tm_year;  /* years since 1900 */
-         int16_t tm_wday;  /* 0-6, Sunday = 0 */
-         int16_t tm_yday;  /* 0-365 */
-         int16_t tm_isdst; /* >0 DST, 0 no DST, <0 unknown */
-      };
-
-   :Op code: RIA_OP_GMTIME 0x3A
-   :C proto: time.h
-   :returns: Pointer to a static struct tm. NULL on error.
-   :a regs: return
-   :errno: EINVAL, ERANGE
-
-
-LOCALTIME
-~~~~~~~~~
-
-.. c:function:: lib struct tm *localtime (const time_t *timep)
-
-   Converts seconds since the Unix epoch to local broken-down time
-   using the configured time zone. Run ``help set tz`` on an :doc:`pico`
-   monitor to learn how to configure your time zone. Push the seconds as a
-   signed integer of up to 64 bits. The
-   operation pushes a struct tm (see `GMTIME`_) back to the XSTACK and
-   returns 0, or -1 on error.
-
-   :Op code: RIA_OP_LOCALTIME 0x3B
-   :C proto: time.h
-   :returns: Pointer to a static struct tm. NULL on error.
-   :a regs: return
-   :errno: EINVAL, ERANGE
-
-
-MKTIME
-~~~~~~
-
-.. c:function:: lib time_t mktime (struct tm *timep)
-
-   Converts local broken-down time to seconds since the Unix epoch.
-   Push a struct tm (see `GMTIME`_) to the XSTACK; fields outside
-   their ranges are normalized. The operation pushes the seconds back as
-   a 64-bit signed integer and returns 0, or -1 on error. The C library
-   mktime() then calls `LOCALTIME`_ to write the normalized struct, with
-   tm_wday and tm_yday set, back to the caller.
-
-   :Op code: RIA_OP_MKTIME 0x3C
-   :C proto: time.h
-   :returns: Seconds since the Unix epoch. -1 on error.
-   :a regs: return
-   :errno: EINVAL, ERANGE
-
-
-STRFTIME
-~~~~~~~~
-
-.. c:function:: lib size_t strftime (char *buf, size_t bufsize, const char *format, const struct tm *tm)
-
-   Formats a broken-down time as a string. Push a struct tm (see
-   `GMTIME`_), then a zero-terminated format string, to the XSTACK.
-   All struct tm fields must be in range, e.g. as returned by
-   `GMTIME`_, `LOCALTIME`_, or `MKTIME`_. The operation pushes the
-   formatted string back without a terminator and returns its length: 0
-   if the result is empty or does not fit, or -1 on error. The format and
-   the result share the XSTACK, which limits the result. The C library
-   strftime() compares the length to its buffer size and abandons an
-   oversized result with `DROP_XSTACK`_.
-
-   ``%a %A %b %B %c %p %r %x %X`` follow the configured locale and
-   ``%z %Z`` the configured time zone. Set both with ``SET LOC`` and
-   ``SET TZ`` on an :doc:`pico`. The format and result are code page
-   text. ``%E`` and ``%O`` modifiers are ignored.
-
-   :Op code: RIA_OP_STRFTIME 0x3D
-   :C proto: time.h
-   :returns: Length of the string in ``buf``, not counting the
-      terminator. 0 on error, or if the result is empty or does not fit.
-   :a regs: return
-   :errno: EINVAL
-
-
 Files
 -----
 
-.. _os-open:
+.. _api-open:
 
 OPEN
 ~~~~
@@ -780,10 +389,11 @@ OPEN
    a file before opening that file again, as described in
    :ref:`Files and Folders <port-files>`.
 
-   A path can also name a device: ``CON:`` and ``TTY:`` in :doc:`term`,
-   ``ROM:`` followed by an asset name in :doc:`sdk`, ``SAVE:`` followed by
-   a save name in :ref:`RP6502-PORT <port-save>`, ``VCP0:``, ``MIDI0:``
-   and ``NFC:`` in :doc:`ria`, and ``AT:`` in :doc:`ria_w`.
+   A path can also name a device. See :doc:`term` for ``CON:`` and
+   ``TTY:``, the :doc:`sdk` for ``ROM:`` followed by an asset name, and
+   :ref:`PORT <port-save>` for ``SAVE:`` followed by a save name. See the
+   :doc:`ria` datasheet for ``VCP0:``, ``MIDI0:`` and ``NFC:``, and the
+   :doc:`ria_w` page for ``AT:``.
 
    :Op code: RIA_OP_OPEN 0x14
    :C proto: fcntl.h
@@ -865,7 +475,7 @@ READ_XSTACK
    :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
 
 
-.. _os-read-xram:
+.. _api-read-xram:
 
 READ_XRAM
 ~~~~~~~~~
@@ -1330,10 +940,10 @@ CHDRIVE
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT
 
 
-.. _os-getcwd:
+.. _api-getcwd:
 
 GETCWD
-~~~~~~~
+~~~~~~
 
 .. c:function:: int f_getcwd (char* name, int size)
 
@@ -1416,7 +1026,7 @@ GETFREE
 Line Editor
 -----------
 
-.. _os-rln-lastkey:
+.. _api-rln-lastkey:
 
 RLN_LASTKEY
 ~~~~~~~~~~~
@@ -1443,7 +1053,7 @@ RLN_LASTKEY
    :errno: EINVAL
 
 
-.. _os-rln-peek:
+.. _api-rln-peek:
 
 RLN_PEEK
 ~~~~~~~~
@@ -1466,7 +1076,7 @@ RLN_PEEK
    :errno: EINVAL
 
 
-.. _os-rln-poke:
+.. _api-rln-poke:
 
 RLN_POKE
 ~~~~~~~~
@@ -1492,51 +1102,179 @@ RLN_POKE
    :errno: EINVAL
 
 
-Launcher
-========
+Time
+----
 
-The launcher is a feature of the RP6502 process manager that lets one ROM
-act as a persistent host for all the others. A ROM registers as the launcher
-by setting ``RIA_ATTR_LAUNCHER`` to 1 via :c:func:`ria_attr_set`. From then
-on, the process manager automatically re-executes the launcher ROM whenever
-any ROM it launched stops. When the launcher ROM itself stops, the chain
-ends, the registration clears, and control returns to the machine. Where
-the chain ends depends on which machine: an :doc:`pico` returns to its
-monitor, the :doc:`emu` exits unless debugging, and the :doc:`fpga` stops
-until you load a new ROM with the host menu.
+TIME_GET
+~~~~~~~~
 
-The launcher ROM runs the next one by calling `EXEC`_, optionally
-passing arguments to it through argv. The launched ROM reads those
-arguments back with `ARGV`_.
+.. c:function:: ABI int _time (time_t *timep)
+                lib time_t time (time_t *timep)
 
-Two keystrokes stop a running ROM. Ctrl-Alt-Del stops it and clears the
-launcher registration at any time, always returning you to the machine,
-which is handy for system maintenance. Alt-F4 stops the running ROM and
-returns to the launcher, or to the machine if the ROM was run from there.
-Pressing Alt-F4 while the registered launcher ROM is itself running does
-nothing; it won't stop it. That makes Alt-F4 the keystroke for ending a
-ROM while staying inside your preferred launcher framework, and
-Ctrl-Alt-Del the one for breaking all the way back out.
+   Obtains the current time as seconds since the Unix epoch,
+   1970-01-01T00:00:00Z. The operation pushes the seconds to the XSTACK
+   as a 64-bit signed integer and returns 0, or -1 on error. The cc65
+   time_t has 32 bits, so the cc65 time() fails with ERANGE when the
+   seconds do not fit.
 
-ROM Cartridge Menu
-------------------
-
-The most natural use of the launcher is a menu-driven ROM selector — much
-like slotting a physical cartridge into a retro console. The launcher ROM
-lists the ``.rp6502`` files in a folder, presents the list, and calls
-`EXEC`_ with the chosen filename. When that ROM stops, whether normally or
-with an error, the process manager re-executes the launcher and the user
-lands back on the menu. Listing a folder is not available on every
-machine, and the machines without it are listed under
-:ref:`Compatibility <port-compatibility>`.
-
-No manual reset is needed between runs. Each ROM is a self-contained binary
-with nothing in it about the menu. The launcher can supply context through
-argv, such as the ``SAVE:`` name of a save slot or a difficulty setting,
-and the ROM just calls `EXIT`_ when it's done.
+   :Op code: RIA_OP_TIME_GET 0x3F
+   :C proto: time.h
+   :returns: The current time, also stored at ``timep`` if it is not
+      NULL. -1 on error.
+   :a regs: return
+   :errno: EINVAL, EIO, ERANGE
 
 
-.. _os-ria-attributes:
+TIME_SET
+~~~~~~~~
+
+.. c:function:: int time_set (long long time)
+
+   Sets the clock to seconds since the Unix epoch. Supported only on the
+   :doc:`pico`.
+
+   :Op code: RIA_OP_TIME_SET 0x3E
+   :C proto: rp6502.h
+   :param time: Seconds since 1970-01-01T00:00:00Z.
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: EACCES, EINVAL
+
+
+GMTIME
+~~~~~~
+
+.. c:function:: lib struct tm *gmtime (const time_t *timep)
+
+   Converts seconds since the Unix epoch to UTC broken-down time.
+   Push the seconds as a signed integer of up to 64 bits. The operation
+   pushes this struct tm back to the XSTACK
+   and returns 0, or -1 on error.
+
+   .. code-block:: c
+
+      struct tm {
+         int16_t tm_sec;   /* 0-61 */
+         int16_t tm_min;   /* 0-59 */
+         int16_t tm_hour;  /* 0-23 */
+         int16_t tm_mday;  /* 1-31 */
+         int16_t tm_mon;   /* 0-11 */
+         int16_t tm_year;  /* years since 1900 */
+         int16_t tm_wday;  /* 0-6, Sunday = 0 */
+         int16_t tm_yday;  /* 0-365 */
+         int16_t tm_isdst; /* >0 DST, 0 no DST, <0 unknown */
+      };
+
+   :Op code: RIA_OP_GMTIME 0x3A
+   :C proto: time.h
+   :returns: Pointer to a static struct tm. NULL on error.
+   :a regs: return
+   :errno: EINVAL, ERANGE
+
+
+LOCALTIME
+~~~~~~~~~
+
+.. c:function:: lib struct tm *localtime (const time_t *timep)
+
+   Converts seconds since the Unix epoch to local broken-down time
+   using the configured time zone. Run ``help set tz`` on an :doc:`pico`
+   monitor to learn how to configure your time zone. Push the seconds as a
+   signed integer of up to 64 bits. The
+   operation pushes a struct tm (see `GMTIME`_) back to the XSTACK and
+   returns 0, or -1 on error.
+
+   :Op code: RIA_OP_LOCALTIME 0x3B
+   :C proto: time.h
+   :returns: Pointer to a static struct tm. NULL on error.
+   :a regs: return
+   :errno: EINVAL, ERANGE
+
+
+MKTIME
+~~~~~~
+
+.. c:function:: lib time_t mktime (struct tm *timep)
+
+   Converts local broken-down time to seconds since the Unix epoch.
+   Push a struct tm (see `GMTIME`_) to the XSTACK; fields outside
+   their ranges are normalized. The operation pushes the seconds back as
+   a 64-bit signed integer and returns 0, or -1 on error. The C library
+   mktime() then calls `LOCALTIME`_ to write the normalized struct, with
+   tm_wday and tm_yday set, back to the caller.
+
+   :Op code: RIA_OP_MKTIME 0x3C
+   :C proto: time.h
+   :returns: Seconds since the Unix epoch. -1 on error.
+   :a regs: return
+   :errno: EINVAL, ERANGE
+
+
+STRFTIME
+~~~~~~~~
+
+.. c:function:: lib size_t strftime (char *buf, size_t bufsize, const char *format, const struct tm *tm)
+
+   Formats a broken-down time as a string. Push a struct tm (see
+   `GMTIME`_), then a zero-terminated format string, to the XSTACK.
+   All struct tm fields must be in range, e.g. as returned by
+   `GMTIME`_, `LOCALTIME`_, or `MKTIME`_. The operation pushes the
+   formatted string back without a terminator and returns its length: 0
+   if the result is empty or does not fit, or -1 on error. The format and
+   the result share the XSTACK, which limits the result. The C library
+   strftime() compares the length to its buffer size and abandons an
+   oversized result with `DROP`_.
+
+   ``%a %A %b %B %c %p %r %x %X`` follow the configured locale and
+   ``%z %Z`` the configured time zone. Set both with ``SET LOC`` and
+   ``SET TZ`` on an :doc:`pico`. The format and result are code page
+   text. ``%E`` and ``%O`` modifiers are ignored.
+
+   :Op code: RIA_OP_STRFTIME 0x3D
+   :C proto: time.h
+   :returns: Length of the string in ``buf``, not counting the
+      terminator. 0 on error, or if the result is empty or does not fit.
+   :a regs: return
+   :errno: EINVAL
+
+
+Attributes
+----------
+
+ATTR_GET
+~~~~~~~~
+
+.. c:function:: long ria_attr_get (unsigned char id)
+
+   Returns the current value of a RIA attribute. See `RIA Attributes`_
+   for attribute IDs and descriptions.
+
+   :Op code: RIA_OP_ATTR_GET 0x0A
+   :C proto: rp6502.h
+   :param id: Attribute ID. One of the ``RIA_ATTR_*`` constants.
+   :a regs: id
+   :returns: The attribute value as a 31-bit integer. -1 on error.
+   :errno: EINVAL
+
+
+ATTR_SET
+~~~~~~~~
+
+.. c:function:: int ria_attr_set (long val, unsigned char id)
+
+   Sets the value of a RIA attribute. See `RIA Attributes`_ for
+   attribute IDs and descriptions.
+
+   :Op code: RIA_OP_ATTR_SET 0x0B
+   :C proto: rp6502.h
+   :param id: Attribute ID. One of the ``RIA_ATTR_*`` constants.
+   :param val: New value.
+   :a regs: id
+   :returns: 0 on success
+   :errno: EINVAL
+
+
+.. _api-ria-attributes:
 
 RIA Attributes
 ==============
@@ -1557,7 +1295,7 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
      - Errno mapping option. Selects which set of errno constants the OS
        uses. The cc65 and llvm-mos C runtimes set it at startup whenever
        the program links ``errno``; assembly programs must set it before
-       making OS calls that can fail. See `ERRNO_OPT Compiler Constants`_
+       making API calls that can fail. See `Errno Translations`_
        for option values.
    * - | 0x01
        | ``RIA_ATTR_PHI2_KHZ``
@@ -1744,15 +1482,15 @@ no column. The calls it lacks are listed under
 :ref:`Compatibility <port-compatibility>`.
 
 
-ERRNO_OPT Compiler Constants
-============================
+Errno Translations
+==================
 
-OS calls set ``RIA_ERRNO`` when an error occurs. Because cc65 and llvm-mos
+API calls set ``RIA_ERRNO`` when an error occurs. Because cc65 and llvm-mos
 each define their own errno constants, the errno option selects which set
 of numeric values to use. In C, ``errno`` maps directly to ``RIA_ERRNO``,
 and both C runtimes set the option at startup whenever the program links
 ``errno``. Assembly programs must set ``RIA_ATTR_ERRNO_OPT`` themselves
-before any OS call that can fail.
+before any API call that can fail.
 
 .. list-table::
    :header-rows: 1
@@ -1824,3 +1562,223 @@ before any OS call that can fail.
    * - EUNKNOWN
      - 18
      - 85
+
+
+Launcher
+========
+
+A ROM is the whole state of the machine as it comes out of reset, like a
+cartridge, so running one normally replaces whatever ran before. A ROM
+also takes arguments through `ARGV`_ and returns an exit status through
+`EXIT`_, like a program. The launcher puts the two together: a ROM that
+starts other ROMs with `EXEC`_ gets control back when each one stops.
+
+A ROM registers as the launcher by setting ``RIA_ATTR_LAUNCHER`` to 1
+with :c:func:`ria_attr_set`. From then on, when a ROM it started stops,
+whether it calls exit(), returns from main() or fails, the launcher ROM
+runs again from the start, and ``RIA_ATTR_EXIT_CODE`` holds the exit
+status of the ROM that stopped. The launcher starts fresh each time, so
+it keeps anything it needs between runs in a file. When the launcher
+itself stops, the registration clears.
+
+For example, a shell ROM can run a compiler, a linker and a packager,
+each a ROM of its own, as three steps. It starts each one with EXEC and
+its arguments, reads the exit code when it runs again, and ends the chain
+when a step fails. The same mechanism serves a menu for an anthology of
+games, which comes back when a game exits. That works best when every
+game in it has a way to exit, such as an Exit item in its menu.
+
+
+Application Binary Interface
+============================
+
+.. seealso::
+
+   :ref:`RIA registers <ria-registers>` — the hardware register map
+   referenced throughout this section.
+
+A compiler turns each call of a C function into machine code in a
+standard way: where each argument goes, in what order, and where the
+result comes back. That byte-level convention is an Application Binary
+Interface (ABI). This section describes the ABI of the API calls: how a
+6502 program passes the arguments to the RIA, starts the call, and reads
+the result back from the host.
+
+The ABI is based on fastcall from the `cc65 internals
+<https://cc65.github.io/doc/cc65-intern.html>`__. The compiler's library
+follows it for every C program, so a C programmer can skip this section.
+An assembly programmer, or anyone bringing another compiler to the
+Picocomputer, needs all of it.
+
+At its core, the ABI is four rules:
+
+* Stack arguments are pushed left to right.
+* Last argument passed by register A, AX, or AXSREG.
+* Return value in register AX or AXSREG.
+* May return data on the stack.
+
+A and X are the 6502 registers. The pseudo-register AX combines them
+into 16 bits, and AXSREG extends that to 32 bits with the 16 SREG bits.
+Every API call is specified as a C declaration, like so:
+
+.. c:function:: int doit(int arg0, int arg1);
+   :no-index-entry:
+   :no-contents-entry:
+
+The RIA has registers called ``RIA_A``, ``RIA_X``, and ``RIA_SREG``. An
+int is 16 bits, so arg1 goes into the ``RIA_A`` and ``RIA_X``
+registers. Throughout this explanation, "A" means the 6502 register and
+"RIA_A" means the RIA register.
+
+arg0 goes on the extended stack (XSTACK), 512 bytes of memory in the
+RIA. Reading ``RIA_XSTACK`` pops bytes; writing pushes them. It's a
+top-down stack, so push the arguments left to right, and push each value
+high byte first so that it lies in memory low byte first.
+
+To execute the call, store the operation ID in ``RIA_OP``; the operation
+begins immediately. You can keep the 6502 busy with other work, such as a
+loading animation, by polling ``RIA_BUSY``, or just JSR to ``RIA_SPIN``
+to block until it's done.
+
+``JSR RIA_SPIN`` can unblock within 3 clock cycles and loads A and X for
+you. Sequential operations run fastest this way. Under the hood, you're
+jumping into a self-modifying program that runs out of the RIA registers.
+
+.. code-block:: asm
+
+   FFF1: BRA #$??   ; RIA_BUSY {-2 or 0}
+   FFF3: LDA #$??   ; RIA_A
+   FFF5: LDX #$??   ; RIA_X
+   FFF7: RTS
+
+Polling is just snooping on that same program. The ``RIA_BUSY`` register
+is the -2 or 0 in the BRA above. Per the :ref:`RIA registers
+<ria-registers>`, bit 7 signals busy, which the 6502 can test quickly
+with the BIT operator to set flag N. Once it clears, read ``RIA_A`` and
+``RIA_X`` with absolute instructions.
+
+.. code-block:: asm
+
+   wait: BIT RIA_BUSY
+         BMI wait
+         LDA RIA_A
+         LDX RIA_X
+
+Any operation that returns ``RIA_A`` also returns ``RIA_X`` to help with
+C integer promotion. Loading X last allows fast testing for negative
+return values. ``RIA_SREG`` is updated only for 32-bit returns, and
+``RIA_ERRNO`` only when there's an error.
+
+Some operations return strings or structures on the stack. Pull the
+entire stack before the next call, or use `ria_drop() <DROP_>`_
+to abandon the stack in O(1) time without a loop. One operation's output
+can also be the next one's input. `read_xstack() <READ_XSTACK_>`_ leaves
+its data on the XSTACK where `write_xstack() <WRITE_XSTACK_>`_ takes it,
+so the two copy a file without touching any RAM or XRAM.
+
+The time operations chain the same way, without cycling the XSTACK:
+`TIME_GET`_ returns seconds positioned as the input to `GMTIME`_,
+`LOCALTIME`_, or `TIME_SET`_; their struct tm feeds `MKTIME`_ directly,
+or `STRFTIME`_ after pushing only the zero-terminated format on top;
+and `MKTIME`_ returns seconds ready for another conversion.
+
+Short Stacking
+--------------
+
+In the pursuit of saving every cycle, you can trim a few off the stack
+push when you don't need the full range. This applies only to the first
+stack argument pushed. Take `LSEEK`_:
+
+.. code-block:: C
+
+   ABI long f_lseek(long offset, unsigned char whence, int fildes)
+
+Here you push a 32-bit value, and — not by coincidence — it sits in the
+right position for short stacking. If the offset always fits in 16 bits,
+push two bytes instead of four.
+
+Signed arguments are sign-extended, so two bytes carry -32768 to 32767.
+Unsigned arguments are zero-filled.
+
+.. warning::
+
+   Size a short push by the signed range. An offset of 200 pushed as the
+   single byte 0xC8 arrives as -56, because the top bit of 0xC8 is the
+   sign. Push 0x00 and then 0xC8 to send 200.
+
+Shorter AX
+----------
+
+A program can save a few cycles by leaving ``RIA_X`` alone. Returned
+integers are always at least 16 bits, to help with C integer promotion,
+but many operations ignore ``RIA_X`` on the way in and keep their return
+value within ``RIA_A``. Those are listed under ``a regs`` in each
+operation of the `Application Programming Interface`_.
+
+Bulk Data
+---------
+
+Functions that move bulk data come in two flavors, depending on where
+the data lives. A RAM pointer means nothing to the RIA, since it can't
+touch 6502 RAM, so bulk data moves through the XSTACK or XRAM instead.
+
+Bulk XSTACK Operations
+~~~~~~~~~~~~~~~~~~~~~~
+
+These work only for sizes of 512 bytes or less — the size of the XSTACK
+they pass data on. A pointer in the C prototype marks the type and
+direction (to or from the OS) of the data. A few examples:
+
+.. code-block:: C
+
+   int open(const char *path, int oflag);
+
+Send ``oflag`` in ``RIA_A``; per the `OPEN`_ docs, ``RIA_X`` doesn't need
+to be set. Send the path on the XSTACK by pushing the string from its
+last character backward. You can skip the terminating zero, but strings
+are capped at 255 bytes. In C, the library pushes the string for you.
+
+.. code-block:: C
+
+   int read_xstack(void *buf, unsigned count, int fildes)
+
+Send ``count`` as a short stack and ``fildes`` in ``RIA_A``; per the
+`READ_XSTACK`_ docs, ``RIA_X`` doesn't need to be set. The value returned
+in AX is the number of bytes to pull from the stack. In C, the library
+copies the XSTACK into buf[] for you.
+
+.. code-block:: C
+
+   int write_xstack(const void *buf, unsigned count, int fildes)
+
+Send ``fildes`` in ``RIA_A``; per the `WRITE_XSTACK`_ docs, ``RIA_X``
+doesn't need to be set. Push the buf data onto the XSTACK. Don't send
+``count``; the OS takes it from the XSTACK pointer. In C, the library
+copies count bytes of buf[] onto the XSTACK for you.
+
+Note that read() and write() are part of the C library, not API calls. C
+requires them to handle counts larger than the XSTACK can return, so the
+implementation makes as many API calls as it takes.
+
+Bulk XRAM Operations
+~~~~~~~~~~~~~~~~~~~~
+
+These load and save XRAM directly through `READ_XRAM`_ and `WRITE_XRAM`_,
+so you can pull assets straight in without routing them through 6502 RAM.
+
+.. code-block:: C
+
+   int read_xram(unsigned buf, unsigned count, int fildes)
+   int write_xram(unsigned buf, unsigned count, int fildes)
+
+The OS takes ``buf`` and ``count`` on the XSTACK as integers, with
+``fildes`` in ``RIA_A``. The 6502 reads and writes XRAM through
+``RIA_RW0`` or ``RIA_RW1``.
+
+These operations stand out for their speed and for running in the
+background while the 6502 does other work. Depending on the request size,
+expect up to 800 KB/sec. A full 64 KB of XRAM loads or saves multiple times
+per second with no wait states or 6502 work.
+
+Bulk XRAM operations are why the Picocomputer 6502 has no paged memory.
+You don't need it when "disk" access has zero seek time and DMA to XRAM.

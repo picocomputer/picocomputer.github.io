@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="403" viewBox="0 0 700 403" role="img" aria-labelledby="title desc">
+<title id="title">Building and running a Picocomputer ROM</title>
+<desc id="desc">The sources: src/main.c (or an assembly file), src/main.bas, src/xram.h, src/help.txt and CMakeLists.txt. CMake builds the program with cc65 or llvm-mos, and rp6502.py packages it with its assets into the ROM, such as build/cc65/debug/hello.rp6502, in the build folder of the preset. With the basic preset, a BASIC program is packaged with BASIC. The ROM is run with RP6502-EMU, the emulator in tools/ with breakpoints and stepping; RP6502-PICO, a standalone machine over USB serial or telnet; or RP6502-WEB, web/hello.zip from rp6502_web(), a web player in a browser.</desc>
+<style>
+  text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 13px; fill: #9ca0a5; }
+  .file, .mono { font-family: SFMono-Regular, Menlo, Consolas, Monaco, 'Liberation Mono', 'Lucida Console', monospace; }
+  .file { fill: #cfd0d0; }
+  .head { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; fill: #81868d; }
+  .brand { fill: #3d94ff; }
+  .note { font-size: 12px; fill: #81868d; }
+  .step { text-anchor: middle; }
+  .name { font-size: 14px; font-weight: 600; fill: #cfd0d0; }
+  .strong { fill: #cfd0d0; }
+  .box { fill: #1a1c1e; stroke: #666666; stroke-width: 1; }
+  .rom { fill: #1a1c1e; stroke: #3d94ff; stroke-width: 1.5; }
+  .line { fill: none; stroke: #81868d; stroke-width: 1.5; }
+  .tip { fill: #81868d; }
+</style>
+<rect class="box" x="0.5" y="0.5" width="699" height="82" rx="6"/>
+<text class="head" x="16" y="23">SOURCES</text>
+<text class="file" x="16" y="49">src/main.c</text>
+<text class="file" x="147.8" y="49">src/main.bas</text>
+<text class="file" x="295.2" y="49">src/xram.h</text>
+<text class="file" x="427" y="49">src/help.txt</text>
+<text class="file" x="574.4" y="49">CMakeLists.txt</text>
+<text class="note" x="16" y="68">or the assembly files</text>
+<path class="line" d="M350 82.5V102"/>
+<text class="step" x="350" y="119">CMake builds the program with cc65 or llvm-mos,</text>
+<text class="step" x="350" y="137">and <tspan class="mono">rp6502.py</tspan> packages it with its assets.</text>
+<text class="step" x="350" y="155">With the <tspan class="mono">basic</tspan> preset, a BASIC program is packaged with BASIC.</text>
+<path class="line" d="M350 164V185.5"/>
+<path class="tip" d="M345 184.5L350 192L355 184.5Z"/>
+<rect class="rom" x="200" y="192.5" width="300" height="70" rx="6"/>
+<text class="head brand" x="215.5" y="215">ROM</text>
+<text class="file" x="215.5" y="236">build/cc65/debug/hello.rp6502</text>
+<text class="note" x="215.5" y="253">one build folder for each preset</text>
+<path class="line" d="M350 262.5V293.5"/>
+<path class="line" d="M111 293.5V284.5Q111 278.5 117 278.5H583Q589 278.5 589 284.5V293.5"/>
+<path class="tip" d="M106 292.5L111 300L116 292.5Z"/>
+<path class="tip" d="M345 292.5L350 300L355 292.5Z"/>
+<path class="tip" d="M584 292.5L589 300L594 292.5Z"/>
+<rect class="box" x="0.5" y="300.5" width="221" height="102" rx="6"/>
+<text class="name" x="16" y="326">RP6502-EMU</text>
+<text class="file" x="16" y="350">tools/rp6502-emu</text>
+<text x="16" y="368">the emulator, with</text>
+<text x="16" y="386">breakpoints and stepping</text>
+<rect class="box" x="239.5" y="300.5" width="221" height="102" rx="6"/>
+<text class="name" x="255" y="326">RP6502-PICO</text>
+<text class="strong" x="255" y="350">a standalone machine,</text>
+<text x="255" y="368">over USB serial</text>
+<text x="255" y="386">or telnet</text>
+<rect class="box" x="478.5" y="300.5" width="221" height="102" rx="6"/>
+<text class="name" x="494" y="326">RP6502-WEB</text>
+<text class="file" x="494" y="350">web/hello.zip</text>
+<text x="494" y="368">from <tspan class="mono">rp6502_web()</tspan>,</text>
+<text x="494" y="386">a web player in a browser</text>
+</svg>

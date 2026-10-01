@@ -1,21 +1,18 @@
 ============================
-RP6502-PORT
+PORT
 ============================
 
-RP6502 - Portability
+Portability
 
 
 Introduction
 ============
 
-A ROM runs unchanged on every Picocomputer: an :doc:`pico`, the
-:doc:`emu` on a desktop, in a browser or in RetroArch, and the
-:doc:`fpga` on an Analogue Pocket. The 6502, its memory, the video and the
-sound are the same on all of them. Gamepads and filesystems vary, because
-they come from the hardware and the operating system under each machine.
-How a program handles both so that it works the same way everywhere is
-covered below, and the filesystem differences that remain are listed in a
-table at the end.
+Every player should get a great experience from your game, whatever
+machine they play it on. This page shows how to reach that widest
+audience: gamepad input that works with nearly every gamepad, high scores
+and saved games kept in the right place, and a table of the few file
+differences between machines.
 
 
 .. _port-gamepads:
@@ -62,10 +59,11 @@ A game that uses one stick and one or two buttons works with nearly every
 gamepad when it merges the d-pad with the left stick and gives each action
 more than one face button. The low four bits of DPAD and of STICKS are up,
 down, left and right in the same order, so a bitwise OR merges them. A
-game can map both A and X to jump and both B and Y to fire, because each
-of those pairs sits side by side on every layout. After
-``xreg(0, 0, 2, 0xFF00)``, the RIA writes the report to ``$FF00`` in
-extended RAM (XRAM), and this function reads player 1 from there:
+game can map both A and X to jump and both B and Y to fire, because the
+two buttons of each pair are side by side on every layout. After
+``xreg(0, 0, 2, 0xFF00)``, the report of player 1 is kept current at
+``$FF00`` in extended RAM (XRAM), and its first three bytes are DPAD,
+STICKS and BTN0. This function reads them with ``xram0_peek8()``:
 
 .. code-block:: C
 
@@ -75,12 +73,9 @@ extended RAM (XRAM), and this function reads player 1 from there:
 
    void read_player1(void)
    {
-       unsigned char dpad, sticks, btn0;
-       RIA.addr0 = 0xFF00;
-       RIA.step0 = 1;
-       dpad = RIA.rw0;
-       sticks = RIA.rw0;
-       btn0 = RIA.rw0;
+       unsigned char dpad = xram0_peek8(0xFF00);
+       unsigned char sticks = xram0_peek8(0xFF01);
+       unsigned char btn0 = xram0_peek8(0xFF02);
        dirs = (dpad | sticks) & 0x0F; /* up 1, down 2, left 4, right 8 */
        jump = btn0 & 0x09;            /* A or X */
        fire = btn0 & 0x12;            /* B or Y */
@@ -185,11 +180,12 @@ Working Directory
 
 A relative path starts from the current directory of the current drive.
 Where that is when a machine starts differs: the root of ``MSC0:`` on an
-:doc:`pico`, the folder the emulator was started from on a desktop, the
-working directory of RetroArch when the core runs there, the root,
-``FS:/``, in a browser, and ``FS:/Assets/rp6502/common`` on the Pocket.
+:doc:`pico`, ``FS:/Assets/rp6502/common`` on the Pocket, the folder the
+:doc:`emu` was started from, the working directory of RetroArch when the
+core runs there, and the root, ``FS:/``, on an :doc:`web`.
 
-The emulators never change the current drive or directory themselves.
+The :doc:`emu` and the :doc:`web` never change the current drive or
+directory themselves.
 Only CHDIR and CHDRIVE from a program change them, and a ROM starts with
 the drive and directory that the ROM before it left. The one exception is
 an NFC card on an :doc:`pico`: the ROM it names starts in the folder that
@@ -203,7 +199,7 @@ ENODEV. On a machine with one drive, a CHDRIVE to it succeeds and changes
 nothing. The Pocket has one fixed folder, so CHDIR fails there with
 ENOSYS.
 
-:ref:`GETCWD <os-getcwd>` returns an absolute path that starts with its
+:ref:`GETCWD <api-getcwd>` returns an absolute path that starts with its
 drive, such as ``MSC0:/games``, ``C:/Users/me`` or ``FS:/home/me``. A
 drive is always in its long form, ``MSC0:`` and never ``0:``. Each
 folder name in the path appears as it does in a listing, as described in
@@ -342,7 +338,7 @@ slot then loads as no save, the same as a slot that was never written.
        return size;
    }
 
-A save is opened with :ref:`OPEN <os-open>` and O_RDONLY, O_WRONLY or
+A save is opened with :ref:`OPEN <api-open>` and O_RDONLY, O_WRONLY or
 O_RDWR, plus any of O_CREAT, O_TRUNC, O_EXCL and O_APPEND. The program
 can then read, write, seek within the file, call syncfs and close it.
 Every other call on a ``SAVE:`` path, such as STAT, UNLINK or OPENDIR,
@@ -375,6 +371,7 @@ nothing behind. The Pocket cannot create folders, so its save folder is
 shipped with the core. The save folder on each machine is:
 
 - On an :doc:`pico`, the working directory when the ROM starts.
+- On the Pocket, ``/Saves/rp6502/common/``.
 - On Linux, the folder given with ``--save-dir``, else
   ``$XDG_DATA_HOME/rp6502/``, which is ``~/.local/share/rp6502/`` by
   default.
@@ -382,10 +379,9 @@ shipped with the core. The save folder on each machine is:
   ``~/Library/Application Support/io.github.picocomputer.rp6502-emu/``.
 - On Windows, the folder given with ``--save-dir``, else
   ``Saved Games\rp6502\``.
-- In a browser, ``/saves/``.
 - In RetroArch, ``rp6502/`` in the RetroArch save folder, or the working
   directory when the ROM starts if RetroArch has no save folder.
-- On the Pocket, ``/Saves/rp6502/common/``.
+- On an :doc:`web`, ``/saves/``.
 
 .. _port-durability:
 
@@ -400,14 +396,14 @@ machine:
 - On an :doc:`pico`, close and syncfs write the data to the drive.
   The buffers aren't nearly large enough to survive the time it takes
   to reach for and remove a USB drive.
-- On Linux, macOS and Windows, written data survives a crash of the
-  emulator, and syncfs keeps it through a crash of the whole computer.
-- In a browser, close queues a save to the browser's storage, and syncfs
-  waits until the save is stored.
-- In RetroArch, a save is as durable as on the system RetroArch runs on.
 - On the Pocket, a successful syncfs does not mean the data is on the
   card, because the Pocket sends no reply once the data is written.
   But like the :doc:`pico`, buffers are too small to be of concern.
+- On Linux, macOS and Windows, written data survives a crash of the
+  emulator, and syncfs keeps it through a crash of the whole computer.
+- In RetroArch, a save is as durable as on the system RetroArch runs on.
+- On an :doc:`web`, close queues a save to the browser's storage, and
+  syncfs waits until the save is stored.
 
 .. _port-installed-roms:
 
@@ -416,14 +412,14 @@ Installed ROMs
 
 The null drive, ``:``, holds ROMs that come from outside the filesystem.
 On an :doc:`pico`, the monitor's INSTALL command puts a ROM in flash,
-where it stays. On a desktop, ``--install`` puts a file there for one run
-of the emulator, and in a browser, so does the ``install`` setting of the
-page, as described in :doc:`web`. The emulators also run a ROM from the
-null drive when no program could name its path, as when the path is
+where it stays. On an :doc:`emu`, ``--install`` puts a file there for one
+run, and on an :doc:`web`, the ``install`` setting of the page puts one
+there for one visit. The RP6502-EMU and the RP6502-WEB also run a ROM
+from the null drive when no program could name its path, as when the path is
 longer than 255 bytes or has a character that the code page cannot hold
 or that FAT refuses. A program runs an installed ROM with EXEC and the
-name ``:name``. On the emulators, a program can also open an installed
-file for reading, such as a BASIC program. Case does not matter in an
+name ``:name``. On the RP6502-EMU and the RP6502-WEB, a program can also
+open an installed file for reading, such as a BASIC program. Case does not matter in an
 installed name. Every other call on a ``:`` path fails with ENODEV.
 
 argv[0] is the absolute path of the ROM, with its drive, however the ROM
@@ -443,7 +439,7 @@ directory is.
 
 Files beside the ROM are less portable. A program can open them by
 replacing the file name at the end of argv[0], but a ROM from the null
-drive has no folder, and a browser page holds only the ROM file.
+drive has no folder, and a web player has only the ROM file.
 
 
 .. _port-compatibility:
@@ -453,10 +449,9 @@ Compatibility
 
 Every rule above holds on every machine, apart from the Pocket
 exceptions listed in the next paragraph. The rows of the table below
-differ, because the machines differ. The Desktop column is the emulator
-on Linux, macOS and Windows. RetroArch runs on those systems too, and the
-Desktop column holds for it, except that its working directory at start
-is the working directory of RetroArch and it has no installed ROMs.
+differ, because the machines differ. The RP6502-EMU column holds for
+RetroArch too, except that its working directory at start is the working
+directory of RetroArch and it has no installed ROMs.
 
 On the Pocket, files are opened by path, but there are no folder
 operations and no listing. STAT, UNLINK, RENAME, MKDIR, CHDIR, CHMOD,
@@ -473,48 +468,48 @@ error for a full card.
    :widths: 20 20 20 20 20
 
    * -
-     - Pico
-     - Desktop
-     - Browser
-     - Pocket
+     - RP6502-PICO
+     - RP6502-FPGA
+     - RP6502-EMU
+     - RP6502-WEB
    * - Drive names
      - ``MSC0:``–``MSC9:``, or ``0:``–``9:``
-     - ``FS:``, or ``A:``–``Z:`` on Windows
      - ``FS:``
+     - ``FS:``, or ``A:``–``Z:`` on Windows
      - ``FS:``
    * - Working directory at start
      - ``MSC0:/``
+     - ``FS:/Assets/rp6502/common``
      - the folder the emulator was started from
      - ``FS:/``
-     - ``FS:/Assets/rp6502/common``
    * - Installed ROMs
      - INSTALL, kept in flash
+     - none
      - ``--install``, for one run
      - ``install``, for one visit
-     - none
    * - Volume label
      - the FAT label
-     - EACCES
-     - EACCES
      - ENOSYS
+     - EACCES
+     - EACCES
    * - GETFREE
      - the FAT volume
+     - ENOSYS
      - the host volume
      - the storage estimate of the browser
-     - ENOSYS
    * - Case in names
+     - ignored
      - ignored
      - matters on Linux, ignored on macOS and Windows
      - matters
-     - ignored
    * - Names outside the code page, in a listing or GETCWD
      - the 8.3 name, which opens the file
-     - character 127, and the name cannot be opened
-     - character 127, and the name cannot be opened
      - not applicable
+     - character 127, and the name cannot be opened
+     - character 127, and the name cannot be opened
    * - Durability limit
      - unplugging a drive before close or syncfs loses data
-     - a crash of the computer before syncfs loses data
-     - close queues the save, syncfs waits for it
      - the Pocket sends no reply once data is written, so syncfs cannot
        wait for it
+     - a crash of the computer before syncfs loses data
+     - close queues the save, syncfs waits for it

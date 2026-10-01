@@ -1,21 +1,23 @@
 ====================
-RP6502-RIA
+RIA
 ====================
 
-RP6502 - RP6502 Interface Adapter
+RP6502 Interface Adapter
 
 
 Introduction
 ============
 
-The RP6502 Interface Adapter (RIA) is the interface between a host and a
-WDC W65C02S microprocessor. It provides every essential service needed to
-run: the clock, reset, file and I/O services, and another 64K (XRAM) that
-services video, audio, and direct access to peripherals.
+The RP6502 Interface Adapter (RIA) is the boundary between a WDC W65C02S
+microprocessor and the host. A RIA is 32 registers at $FFE0-$FFFF, and it
+controls RESB and PHI2, the reset and the clock of the 6502. Those are the
+only hard requirements. What is behind the registers depends on the
+implementation.
 
-The RIA must live at $FFE0-$FFFF and must control RESB and PHI2. Those
-are the only hard requirements. Everything else is yours to customize if
-you're designing your own hardware.
+Every call of the :doc:`api` is made through these registers. This page
+describes the registers themselves, the second 64 KB of memory that they
+reach, the extended RAM (XRAM), and the devices that use XRAM: keyboard,
+mouse, tablet and gamepad input, and the PSG and OPL2 sound generators.
 
 
 Implementations
@@ -24,19 +26,24 @@ Implementations
 - :doc:`pico` — The RIA software fits entirely on a Raspberry Pi Pico 2.
   Registers are implemented in PIO for connecting to a 65C02.
 - :doc:`fpga` — The same software on a Hazard3 RISC-V soft CPU. The 65C02,
-   65C22, and registers are in fabric.
-- :doc:`emu` — RIA software runs natively on the host CPU along with a
+  65C22, and registers are in fabric.
+- :doc:`emu` — The RIA software runs natively on the host CPU along with
   a 65C02 and 65C22 software emulator.
+- :doc:`web` — The RIA software and the software 65C02 and 65C22, built
+  as WebAssembly and run in a browser.
 
-A Picocomputer always has a companion CPU and Operating System. For example,
+A Picocomputer always has a companion CPU and operating system. For example,
 one :doc:`emu` runs on Linux with an ARM processor. The :doc:`pico` is
-special because it hosts itself. The :doc:`os` is an abstraction on all
-other hosts, but it is the native Operating System on the :doc:`pico`.
+special because it hosts itself. The RIA runs an operating system, and a
+6502 program calls it through the :doc:`api`. That operating system is an
+abstraction on all other hosts, but it is the native operating system on
+the :doc:`pico`.
 
-One other special feature of the :doc:`pico` is its monitor. Every ``load``,
-``install``, ``set``, ``status``, and ``help`` command on this page applies
-only to an :doc:`pico`. The :doc:`emu` takes command-line arguments instead,
-and the :doc:`fpga` uses the Pocket's own menus.
+One other special feature of the :doc:`pico` is its monitor. Every
+``load``, ``reset``, ``set``, and ``status`` command on this page applies
+only to an :doc:`pico`. The :doc:`fpga` uses the Pocket's own menus
+instead, the :doc:`emu` takes command-line arguments, and the :doc:`web`
+takes settings in its page.
 
 
 Reset
@@ -45,8 +52,8 @@ Reset
 Think of reset as two states rather than a pulse on RESB. While reset
 is low, the 6502 is stopped. On an :doc:`pico`, the monitor is connected
 to the console while in reset. On the Pocket, the system waits for a new
-ROM to be loaded from the settings menu. On :doc:`emu`, some hosts wait
-for a new ROM to load while others exit the host process.
+ROM to be loaded from the settings menu. On the :doc:`emu`, some hosts
+wait for a new ROM to load while others exit the host process.
 
 Reset is mostly handled automatically and this works well for all hosts
 except the :doc:`pico`. Here we need a way to stop a wedged 6502. The monitor
@@ -125,7 +132,7 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
      - Ensures errno is optionally a 16-bit int.
    * - $FFEF
      - OP
-     - Write the :doc:`OS <os>` operation id here to begin an OS call.
+     - Write an :doc:`api` op here to begin an API call.
    * - $FFF0
      - IRQ
      - Interrupt enable mask. Reading returns the triggered signals
@@ -138,25 +145,25 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
    * - $FFF1
      - SPIN
      - Always $80 (the BRA opcode). JSR here to spin-wait
-       for an OS call. The CPU loops on this BRA until BUSY clears, then
+       for an API call. The CPU loops on this BRA until BUSY clears, then
        falls through to LDA and LDX below.
    * - $FFF2
      - BUSY
-     - Bit 7 high while OS operation is running.
+     - Bit 7 high while an API call is running.
    * - $FFF3
      - LDA
      - Always $A9 (the LDA immediate opcode). Part of the
        spin-loop return sequence.
    * - $FFF4
      - A
-     - OS call register A.
+     - API call register A.
    * - $FFF5
      - LDX
      - Always $A2 (the LDX immediate opcode). Part of the
        spin-loop return sequence.
    * - $FFF6
      - X
-     - OS call register X.
+     - API call register X.
    * - $FFF7
      - RTS
      - Always $60 (the RTS opcode). Ends the spin-loop return
@@ -183,45 +190,85 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
 UART
 ----
 
-The UART behind $FFE0-$FFE2 is reached directly through these registers,
-and the ready flags on bits 6-7 let you test with the BIT operator. Use
-these or the :doc:`os` stdio, but not both at once. Driving the UART
-directly while a stdio OS function is in progress is undefined behavior.
-The line runs at 115200 bps, 8-bit words, no parity, 1 stop bit.
+A program uses the UART directly through the registers at $FFE0-$FFE2,
+and the ready flags on bits 6-7 can be tested with the BIT operator. Use
+these or the stdio functions of the :doc:`api`, but not both at once.
+Driving the UART directly while a stdio API call is in progress is
+undefined behavior.
 
 .. _ria-xram-portals:
 
 XRAM Portals
 ------------
 
-RW0 and RW1 are two portals into the same 64 KB of XRAM. A single
-portal would make moving XRAM slow, since data would have to buffer
-through 6502 RAM. Ideally you won't move XRAM at all and can use the
+The two XRAM portals are independent pointers into the same 64 KB of XRAM.
+Portal 0 consists of the registers RW0, STEP0 and ADDR0, and portal 1 of
+RW1, STEP1 and ADDR1. A read or write of RW0 accesses the XRAM byte at
+ADDR0, and then STEP0 is added to ADDR0. Portal 1 works the same way. A
+single portal would make moving XRAM slow, since data would have to be
+buffered in 6502 RAM. Ideally you won't move XRAM at all and can use the
 pair for smarter optimizations.
 
 STEP0 and STEP1 default to 1 after reset. Both are signed, so negative
-values walk XRAM in reverse. These auto-increment adders make sequential
-access very fast — more than enough to offset the slightly slower random
-access compared to 6502 system RAM.
+values step through XRAM in reverse. These auto-increment adders make
+sequential access very fast — more than enough to offset the slightly
+slower random access compared to 6502 system RAM.
+
+Assembly programs use these registers directly, with the names from
+``rp6502.inc``. In this example, $12 is written to $1000 and $34 to $1001
+through portal 0:
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+      lda #<$1000
+      sta RIA_ADDR0
+      lda #>$1000
+      sta RIA_ADDR0+1
+      lda #1
+      sta RIA_STEP0
+      lda #$12
+      sta RIA_RW0 ; $1000
+      lda #$34
+      sta RIA_RW0 ; $1001
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      lda #<$1000
+      sta RIA_ADDR0
+      lda #>$1000
+      sta RIA_ADDR0+1
+      lda #1
+      sta RIA_STEP0
+      lda #$12
+      sta RIA_RW0 ; $1000
+      lda #$34
+      sta RIA_RW0 ; $1001
+
+C programs use the ``xram0_`` and ``xram1_`` functions of the :doc:`api`,
+such as :c:func:`xram0_read` and :c:func:`xram0_poke16`. The 0 or 1 in a
+function name selects the portal. This is the same write in C, with the
+value stored low byte first:
 
 .. code-block:: C
 
-  RIA.addr0 = 0x1000;
-  RIA.step0 = 1;
-  RIA.rw0 = 0x12; /* $1000 */
-  RIA.rw0 = 0x34; /* $1001 */
+  xram0_poke16(0x1000, 0x3412);
 
-An interrupt handler that uses the same portal as the main program must
-save the ADDR and STEP registers of that portal when it starts, and
-restore them before it returns. When the handler and the main program use
-different portals, no registers have to be saved.
+When an interrupt handler and the main program use the same portal, the
+ADDR and STEP registers of that portal must be saved when the handler
+starts and restored before it returns. When the two use different
+portals, no registers have to be saved.
 
 Extended Stack (XSTACK)
 -----------------------
 
 This is a 512-byte, top-down, last-in-first-out stack used by the
-fastcall mechanism described in the :doc:`os`. Reading past the end is
-guaranteed to return zeros. Write to push, read to pull.
+fastcall mechanism of the :doc:`api`. Reading past the end is guaranteed
+to return zeros. Write to push, read to pull.
 
 
 Peripheral Information Exchange (PIX)
@@ -259,8 +306,8 @@ configuration structure at the given address.
 
 Extended registers are outside the 6502's address space, so a load or a
 store cannot access one, and no extended register can be read back. A C
-program sets them with the :ref:`xreg() <os-xreg>` OS call, which is made
-through the RIA registers like every other OS call, and an assembly
+program sets them with the :ref:`xreg() <api-xreg>` API call, which is made
+through the RIA registers like every other API call, and an assembly
 program with the ``xreg`` macro in ``rp6502.inc``. Both take the device,
 the channel, the address, and then one or more 16-bit values, which are
 set starting at that address.
@@ -1281,9 +1328,10 @@ always set for a mouse, set for a pen while the pen is in range, and clear
 for a touchscreen.
 
 The application and the RIA exchange pointer preferences through the header.
-``status`` bit 0 (host cursor) is set only when the host can draw a cursor
-for the application, which is the :doc:`emu` with a mouse, in a window or a
-browser. The bit is always clear on real hardware and for touch input.
+``status`` bit 0 (host cursor) is set only for a mouse on the :doc:`emu`
+or on the :doc:`web`, where the host can draw a cursor for the
+application. The bit is always clear on the :doc:`pico` and the
+:doc:`fpga`, in :ref:`RetroArch <emu-retroarch>`, and for touch input.
 ``control`` selects the host cursor shape, or hides the cursor so the
 application can draw its own. Mapping the tablet sets it to ARROW.
 
@@ -1435,10 +1483,10 @@ pointer, and ``control`` has no effect.
 Gamepads
 ========
 
-The RIA supports up to four gamepads. :doc:`pico` firmware carries drivers
+The RIA supports up to four gamepads. :doc:`pico` firmware includes drivers
 for Generic HID, XInput, and PlayStation controllers. Where the layout
 comes from, and how a game works with nearly every gamepad, is covered in
-:ref:`Gamepads <port-gamepads>` in RP6502-PORT.
+the :ref:`Gamepads <port-gamepads>` section of :doc:`port`.
 
 Enable and disable the RIA gamepad data by setting its extended
 register. The register value is the XRAM start address of the gamepad
@@ -1761,7 +1809,7 @@ and R2 should expect analog values of just 0 or 255.
 
 
 Programmable Sound Generator
-=============================
+============================
 
 The RIA includes a Programmable Sound Generator (PSG), configured
 through extended register device 0, channel 1, address 0x00.
@@ -1939,6 +1987,10 @@ Volume attenuation is logarithmic.
           psg_channel_t channel[PSG_CHANNELS];
       } psg_t; /* layout */
 
+      /* After the XRAM_ names: PSG_PAGE_CHECK(XRAM_PSG); */
+      #define PSG_PAGE_CHECK(addr) \
+          _Static_assert((addr) % 256 + sizeof(psg_t) <= 256, #addr " crosses a page.")
+
 .. tab:: ca65
 
    .. code-block:: ca65
@@ -2039,6 +2091,10 @@ the era had their own timers and rarely used the chip's.
           uint8_t reg[256];
       } opl_t; /* layout */
 
+      /* After the XRAM_ names: OPL_PAGE_CHECK(XRAM_OPL); */
+      #define OPL_PAGE_CHECK(addr) \
+          _Static_assert((addr) % 256 == 0, #addr " does not start a page.")
+
 .. tab:: ca65
 
    .. code-block:: ca65
@@ -2069,18 +2125,18 @@ the era had their own timers and rarely used the chip's.
 Console
 =======
 
-The system console is the terminal the RIA and the 6502 talk to, and the
+The system console is the terminal connected to the RIA, and the
 `UART`_ registers above are its rawest form. The OS wraps that same port as
 ``stdin``, ``stdout``, ``stderr``, and the ``CON:`` and ``TTY:`` device
 names. See :doc:`term` for cooked and raw reads, the non-blocking
-variants, and the line editor behind them.
+variants, and the line editor.
 
 Virtual COM Port
 ================
 
 If you need serial ports beyond the console UART, USB adapters are
 available for CMOS/TTL, RS-232, RS-422, and RS-485, and each one appears
-as a Virtual COM Port (VCP). :doc:`pico` firmware carries drivers for FTDI,
+as a Virtual COM Port (VCP). :doc:`pico` firmware includes drivers for FTDI,
 CP210X, CH34X, PL2303, and CDC ACM.
 
 The ``status`` command lists any connected VCP devices. Open one like a
@@ -2104,7 +2160,7 @@ MIDI
 ====
 
 MIDI instruments attached to the machine appear as devices, and the
-``status`` command lists them. :doc:`pico` firmware carries a USB MIDI
+``status`` command lists them. :doc:`pico` firmware includes a USB MIDI
 host driver, so a USB instrument plugs right in. Each virtual cable is
 its own device — ``"MIDI0:"`` onward, assigned in the order cables
 appear, up to four at a time. A simple keyboard is one cable (1X1); a
@@ -2381,16 +2437,16 @@ PIX Physical Layer
 None of this is needed to program the machine. What follows is the bus
 itself, for anyone building a device to put on it.
 
-On the :doc:`pico`, PIX is a physical bus between the RIA and the VGA.
-High-bandwidth devices like video systems need a bus of their own. PIX
-is that bus: an addressable broadcast system that any number of devices
-can receive, narrow enough to fit the GPIO budget of a Raspberry Pi
-Pico, wide enough to move data as fast as the 6502 writes.
+On the :doc:`pico`, PIX is a physical bus between the RP6502-RIA and the
+RP6502-VGA. High-bandwidth devices like video systems need a bus of their
+own. PIX is that bus: an addressable broadcast system that any number of
+devices can receive, narrow enough to fit the GPIO budget of a Raspberry
+Pi Pico, wide enough to move data as fast as the 6502 writes.
 
 The signals are PHI2 and PIX0-3. This is a double-data-rate bus. It
 shifts PIX0-3 left on both transitions of PHI2, so a 32-bit frame is
-sent in just 4 PHI2 cycles. A PIO block on the Pico decodes it, since
-PIO is essentially a shift register.
+sent in just 4 PHI2 cycles. A PIO block on a Raspberry Pi Pico decodes
+it, since PIO is essentially a shift register.
 
 Bit 28 (0x10000000) is the framing bit, set in every message. When the
 bus is idle, an all-zero payload repeats on device ID 7. A receiver
