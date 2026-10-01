@@ -8,19 +8,11 @@ Portability
 Introduction
 ============
 
-Gamepads and filesystems come from the host of a Picocomputer, and this
-page shows how a program handles both. A few lines of C make a game that
-uses one stick and one or two buttons work with nearly every gamepad. A
-game keeps high scores and save slots on a ``SAVE:`` path with open, read
-and write, and the program names no folder, because the folder differs
-by host.
-
-An :doc:`pico` reads gamepads over USB, and also over Bluetooth on an
-:doc:`ria_w`, and stores files on USB drives. The :doc:`fpga` uses the
-buttons, the dock and the microSD card of an Analogue Pocket. The
-:doc:`emu` uses the gamepads and files of Linux, macOS, Windows or
-RetroArch, and the :doc:`web` uses those of a browser. The filesystem
-differences that remain are listed in the table under `Compatibility`_.
+Every player should get a great experience from your game, whatever
+machine they play it on. This page shows how to reach that widest
+audience: gamepad input that works with nearly every gamepad, high scores
+and saved games kept in the right place, and a table of the few file
+differences between machines.
 
 
 .. _port-gamepads:

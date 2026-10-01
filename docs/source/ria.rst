@@ -8,19 +8,16 @@ RP6502 Interface Adapter
 Introduction
 ============
 
-The RP6502 Interface Adapter (RIA) connects a WDC W65C02S microprocessor
-to modern hardware through 32 registers at $FFE0-$FFFF. With loads and
-stores to those registers, a 6502 program calls a POSIX-like operating
-system to open, read and write files, and uses a second 64 KB of memory,
-the extended RAM (XRAM). In XRAM, a program reads keyboard, mouse, tablet
-and gamepad input, programs the PSG or the OPL2 sound generator, and
-writes the tiles, bitmaps and sprites that the :doc:`vga` video system
-displays.
+The RP6502 Interface Adapter (RIA) is the boundary between a WDC W65C02S
+microprocessor and the host. A RIA is 32 registers at $FFE0-$FFFF, and it
+controls RESB and PHI2, the reset and the clock of the 6502. Those are the
+only hard requirements. What is behind the registers depends on the
+implementation.
 
-The RIA must be at $FFE0-$FFFF and must control RESB and PHI2, the reset
-and the clock of the 6502. Those are the only hard requirements.
-Everything else is yours to customize if you're designing your own
-hardware.
+Every call of the :doc:`api` is made through these registers. This page
+describes the registers themselves, the second 64 KB of memory that they
+reach, the extended RAM (XRAM), and the devices that use XRAM: keyboard,
+mouse, tablet and gamepad input, and the PSG and OPL2 sound generators.
 
 
 Implementations

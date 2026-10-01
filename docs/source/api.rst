@@ -1602,14 +1602,13 @@ standard way: where each argument goes, in what order, and where the
 result comes back. That byte-level convention is an Application Binary
 Interface (ABI). This section describes the ABI of the API calls: how a
 6502 program passes the arguments to the RIA, starts the call, and reads
-the result back from the host. The compiler's library follows it for every
-C program, and an assembly program or another compiler follows the same
-rules.
+the result back from the host.
 
 The ABI is based on fastcall from the `cc65 internals
-<https://cc65.github.io/doc/cc65-intern.html>`__. The OS itself uses
-nothing from cc65, so an assembly program calls it the same way a C
-program does.
+<https://cc65.github.io/doc/cc65-intern.html>`__. The compiler's library
+follows it for every C program, so a C programmer can skip this section.
+An assembly programmer, or anyone bringing another compiler to the
+Picocomputer, needs all of it.
 
 At its core, the ABI is four rules:
 
