@@ -114,8 +114,6 @@ These are the features of the standalone machine, the :doc:`pico`:
 - **Also** — Wi-Fi, MIDI, a real-time clock that handles Daylight
   Saving, and a true random number generator
 
-All of it is documented on this site, down to the register.
-
 
 Read the Manual
 ===============

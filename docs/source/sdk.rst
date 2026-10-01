@@ -96,7 +96,7 @@ install Python, make Ninja the build tool, and install the compilers:
 
 .. code-block:: powershell
 
-   py install default
+   pymanager install default
    setx CMAKE_GENERATOR Ninja
    irm https://raw.githubusercontent.com/picocomputer/.github/main/install/cc65.ps1 | iex
    irm https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.ps1 | iex
