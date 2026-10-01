@@ -130,7 +130,8 @@ program is published.
 - :doc:`vga`: canvases, video modes, sprites, and the scanline
   programming underneath.
 - :doc:`term`: the console, its escape sequences, and the line editor.
-- :doc:`port`: handling gamepads and files, which come from the host.
+- :doc:`port`: the portability guide, covering sprite limits, gamepads and
+  filesystems.
 
 
 Get a Machine

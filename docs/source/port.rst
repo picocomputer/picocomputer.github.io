@@ -10,9 +10,173 @@ Introduction
 
 Every player should get a great experience from your game, whatever
 machine they play it on. This page shows how to reach that widest
-audience: gamepad input that works with nearly every gamepad, high scores
-and saved games kept in the right place, and a table of the few file
-differences between machines.
+audience: the number of sprites that fit on one row on every machine,
+gamepad input that works with nearly every gamepad, high scores and saved
+games kept in the right place, and a table of the few file differences
+between machines.
+
+
+.. _port-sprite-limits:
+
+Sprite Limits
+=============
+
+In practice, the limits of a game are the 6502 at 8 MHz and the 64 KB of
+XRAM, not the sprites. On a 320x240 canvas, the VGA can usually draw more
+sprites than a program can move each frame. Sixty bullets already crowd
+the screen of a bullet-hell game, and moving that many each frame takes
+much of the 6502's time.
+
+The figures below count only the sprites drawn on a single row of the
+canvas. A hundred paletted 32x32 sprites on one row cover 3,200 pixels,
+ten times the width of a 320-wide canvas, and they still fit.
+
+The figures are for the :doc:`fpga`, which has the least time per row of
+any host, so sprites that fit there fit everywhere. They are also the
+easiest to compute. On the FPGA, the video system is a hardware renderer
+built in programmable logic, a real video chip. The :doc:`pico`,
+:doc:`emu` and :doc:`web` render in software, which modern CPUs can do
+significantly faster than an affordable FPGA.
+
+The video logic of the FPGA runs at 50.4 MHz, twice the 25.2 MHz pixel
+clock, and each row of the video signal is 800 pixel clocks long, of
+which 640 are visible. That gives 1,600 clocks per row. A 320-wide canvas
+is shown with every row doubled, so each canvas row gets 3,200 clocks for
+half as many pixels. That extra time is the main reason to use a
+320-wide canvas for a game.
+
+Fill layers and sprites are drawn by separate engines, each with its own
+XRAM read every clock, so fill never takes time from sprites.
+
+To check a row, add up the costs below for every sprite and compare the
+total with 1,600 clocks at 640 wide or 3,200 at 320 wide. The figures
+are measured on the FPGA.
+
+.. list-table::
+   :widths: 40 15 15 15 15
+   :header-rows: 1
+
+   * -
+     - Paletted
+     - Custom
+     - 16-bit
+     - Affine
+   * - Once per row
+     - 9
+     - 9
+     - 9
+     - 9
+   * - Each sprite in the list, on the row or not
+     - 2
+     - 2½
+     - 2
+     - 5
+   * - Each sprite on the row, before its first pixel
+     - 3
+     - 3
+     - 3
+     - 4
+   * - Each pixel drawn
+     - ½
+     - ½
+     - ½
+     - 1 to 2
+   * - Each palette cache miss (loads two colors)
+     - 3
+     - 3
+     -
+     -
+
+The once-per-row cost is for sprites in one plane. Each further plane
+with sprites on the row adds 8 clocks, and each plane without sprites that
+comes before one with sprites adds 2.
+
+Paletted, custom and 16-bit sprites are drawn two pixels per clock.
+Affine sprites are drawn one texel per clock, where a texel is a pixel of
+the source image. The texels along a rotated row are scattered across the
+image, and a texel that straddles two words takes two clocks.
+
+For example, a paletted 16x16 sprite costs 13 clocks on each row it
+covers: 2 for its list entry, 3 before its first pixel, and 8 for 16
+pixels at half a clock each. The row also costs 9 clocks once, and 768
+clocks for 256 palette cache misses, which load all 512 colors of 1 KB of
+palettes. That leaves 823 clocks at 640 wide, room for 63 of these
+sprites on one row, and 2,423 at 320 wide, room for 186. 16-bit sprites
+have no palette, so a row of them has no cache misses.
+
+The next table applies the same calculation to every sprite type, with
+all sprites on the same row. Sprites spread across different rows can
+number far more.
+
+.. list-table:: Maximum sprites with all of them on one row
+   :widths: 40 30 30
+   :header-rows: 1
+
+   * -
+     - 320 wide
+     - 640 wide
+   * - 16-bit, 8x8
+     - 354
+     - 176
+   * - 16-bit, 16x16
+     - 245
+     - 122
+   * - 16-bit, 32x32
+     - 151
+     - 75
+   * - Paletted, 8x8
+     - 269
+     - 91
+   * - Paletted, 16x16
+     - 186
+     - 63
+   * - Paletted, 32x32
+     - 115
+     - 39
+   * - Affine, 8x8
+     - 145
+     - 72
+   * - Affine, 16x16
+     - 83
+     - 41
+   * - Affine, 32x32
+     - 45
+     - 22
+
+A custom sprite costs the same as a paletted sprite of the same size,
+plus half a clock for each entry in the list. The list is read four bytes
+at a time and a custom entry is ten bytes, so entries alternate between
+three reads and two. Doubling adds no cost of its own,
+because a doubled sprite is still drawn two canvas pixels per clock.
+
+The paletted rows assume that all sprite palettes are within 1 KB of
+contiguous XRAM, the size of the palette cache on the FPGA. To keep them
+there, put the sprite palettes in a structure of their own, place it in
+the layout of ``xram.h`` described in :ref:`sdk-xram-memory-map`, and
+check how many colors it holds. A check of colors, not bytes, also holds
+in VS Code, where IntelliSense sizes ``uint16_t`` at 4 bytes. Only the
+changed part of ``xram.h`` is shown.
+
+.. code-block:: C
+
+  typedef struct
+  {
+      uint16_t player[16];
+      uint16_t enemies[4][16];
+  } palettes_t;
+
+  typedef struct
+  {
+      keyboard_t keyboard;
+      palettes_t palettes;
+  } xram_layout_t;
+
+  #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
+  #define XRAM_PLAYER_PALETTE offsetof(xram_layout_t, palettes.player)
+  #define XRAM_ENEMY_PALETTES offsetof(xram_layout_t, palettes.enemies)
+
+  _Static_assert(sizeof(palettes_t) / sizeof(uint16_t) <= 512,
+                 "palettes_t holds more than 512 colors.");
 
 
 .. _port-gamepads:
@@ -447,7 +611,7 @@ drive has no folder, and a web player has only the ROM file.
 Compatibility
 =============
 
-Every rule above holds on every machine, apart from the Pocket
+Every filesystem rule above holds on every machine, apart from the Pocket
 exceptions listed in the next paragraph. The rows of the table below
 differ, because the machines differ. The RP6502-EMU column holds for
 RetroArch too, except that its working directory at start is the working

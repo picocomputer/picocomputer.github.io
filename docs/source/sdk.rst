@@ -872,34 +872,6 @@ line for each sound generator the program uses to ``xram.h``, after the
   PSG_PAGE_CHECK(XRAM_PSG);
   OPL_PAGE_CHECK(XRAM_OPL);
 
-The :doc:`fpga` has a 1 KB palette cache for paletted sprites, so it is
-generally better to keep all sprite palettes within 1 KB. This matters
-only near the performance limit; see :ref:`Sprite Limits
-<vga-sprite-limits>` in the :doc:`vga` datasheet. To keep them within
-1 KB, put the sprite palettes in a structure of their own, place it in
-the layout, and check its size. Only the changed part of ``xram.h`` is
-shown.
-
-.. code-block:: C
-
-  typedef struct
-  {
-      uint16_t player[16];
-      uint16_t enemies[4][16];
-  } palettes_t;
-
-  typedef struct
-  {
-      keyboard_t keyboard;
-      palettes_t palettes;
-  } xram_layout_t;
-
-  #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
-  #define XRAM_PLAYER_PALETTE offsetof(xram_layout_t, palettes.player)
-  #define XRAM_ENEMY_PALETTES offsetof(xram_layout_t, palettes.enemies)
-
-  _Static_assert(sizeof(palettes_t) <= 1024, "palettes_t is larger than 1 KB.");
-
 
 Multiple Compiler Artifacts
 ===========================

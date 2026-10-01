@@ -50,8 +50,8 @@ There is no limit on the number of sprites, only on how many can be drawn
 on one row of the canvas. The video system renders a whole row at a time,
 which keeps power use low on battery-powered hosts. Fill layers never run
 out of time: all three planes can be filled at any color depth on any
-canvas, on every host. `Sprite Limits`_ shows how to count sprites
-against a row's time.
+canvas, on every host. :ref:`Sprite Limits <port-sprite-limits>` in
+:doc:`port` shows how to count sprites against a row's time.
 
 Video modes are programmed into a plane over a range of scanlines, which
 is what the PLANE, BEGIN and END registers do in the mode sections below.
@@ -923,6 +923,9 @@ sprite system used by Pi Pico Playground and Luke Wren's RISCBoy.
 Its appetite for memory is offset by something mode 5 can't do —
 affine transforms.
 
+There is no fixed number of sprites. For a game that may come near the
+limits, see :ref:`Sprite Limits <port-sprite-limits>`.
+
 .. list-table::
    :widths: 5 5 90
    :header-rows: 1
@@ -1142,6 +1145,9 @@ fill plane. For example, you might put affine sprites for explosions and
 the player on one plane, 16x16 4bpp enemy sprites on a second, and 8x8 1bpp
 bullets on the third. Custom sprites, described below, let one plane mix
 sprites of different sizes, color depths and orientations.
+
+There is no fixed number of sprites. For a game that may come near the
+limits, see :ref:`Sprite Limits <port-sprite-limits>`.
 
 .. list-table::
    :widths: 5 5 90
@@ -1401,130 +1407,6 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
       MODE5_CSPRITE_OPTIONS         = 9
       MODE5_CSPRITE_SIZE            = 10
 
-
-.. _vga-sprite-limits:
-
-Sprite Limits
--------------
-
-The :doc:`fpga` has the least time per row of any host, so sprites that
-fit there fit everywhere. Its video logic runs at 50.4 MHz, twice the
-25.2 MHz pixel clock, and each row of the video signal is 800 pixel
-clocks long, of which 640 are visible. That gives 1,600 clocks per row.
-A 320-wide canvas is shown with every row doubled, so each canvas row gets
-3,200 clocks for half as many pixels. That extra time is the main reason
-to use a 320-wide canvas for a game.
-
-Fill layers and sprites are drawn by separate engines, each with its own
-XRAM read every clock, so fill never takes time from sprites.
-
-To check a row, add up the costs below for every sprite and compare the
-total with 1,600 clocks at 640 wide or 3,200 at 320 wide. The figures
-are measured on the FPGA.
-
-.. list-table::
-   :widths: 40 15 15 15 15
-   :header-rows: 1
-
-   * -
-     - Paletted
-     - Custom
-     - 16-bit
-     - Affine
-   * - Once per row
-     - 9
-     - 9
-     - 9
-     - 9
-   * - Each sprite in the list, on the row or not
-     - 2
-     - 2½
-     - 2
-     - 5
-   * - Each sprite on the row, before its first pixel
-     - 3
-     - 3
-     - 3
-     - 4
-   * - Each pixel drawn
-     - ½
-     - ½
-     - ½
-     - 1 to 2
-   * - Each palette cache miss (loads two colors)
-     - 3
-     - 3
-     -
-     -
-
-The once-per-row cost is for sprites in one plane. Each further plane
-with sprites on the row adds 8 clocks, and each plane without sprites that
-comes before one with sprites adds 2.
-
-Paletted, custom and 16-bit sprites are drawn two pixels per clock.
-Affine sprites are drawn one texel per clock, where a texel is a pixel of
-the source image. The texels along a rotated row are scattered across the
-image, and a texel that straddles two words takes two clocks.
-
-For example, a 16x16 sprite in 16-bit color costs 13 clocks on each row
-it covers: 2 for its list entry, 3 before its first pixel, and 8 for 16
-pixels at half a clock each. After the 9-clock overhead, 1,591 clocks
-remain at 640 wide, room for 122 of these sprites on one row, and 3,191
-remain at 320 wide, room for 245.
-
-The next table applies the same calculation to every sprite type, with
-all sprites on the same row. Sprites spread across different rows can
-number far more.
-
-+-----------------------------------+-----------------------+-----------------------+
-| Maximum sprites with all of them on one row                                       |
-+-----------------------------------+-----------------------+-----------------------+
-|                                   | Single palette only   | 100% palette cache    |
-|                                   |                       | misses                |
-|                                   +-----------+-----------+-----------+-----------+
-|                                   | 320 wide  | 640 wide  | 320 wide  | 640 wide  |
-+===================================+===========+===========+===========+===========+
-| 16-bit, 8x8                       | 354       | 176       | 354       | 176       |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-| 16-bit, 16x16                     | 245       | 122       | 245       | 122       |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-| 16-bit, 32x32                     | 151       | 75        | 151       | 75        |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, up to 16 colors, 8x8    | 351       | 174       | 96        | 48        |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, up to 16 colors, 16x16  | 243       | 120       | 86        | 43        |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, up to 16 colors, 32x32  | 150       | 74        | 70        | 35        |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, 256 colors, 8x8         | 311       | 134       | 96        | 48        |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, 256 colors, 16x16       | 215       | 92        | 52        | 26        |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-| Paletted, 256 colors, 32x32       | 133       | 57        | 27        | 13        |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-| Affine, 8x8                       | 145       | 72        | 145       | 72        |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-| Affine, 16x16                     | 83        | 41        | 83        | 41        |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-| Affine, 32x32                     | 45        | 22        | 45        | 22        |
-+-----------------------------------+-----------+-----------+-----------+-----------+
-
-A custom sprite costs the same as a paletted sprite of the same size and
-color depth, plus half a clock for each entry in the list. The list is
-read four bytes at a time and a custom entry is ten bytes, so entries
-alternate between three reads and two. Doubling adds no cost of its own,
-because a doubled sprite is still drawn two canvas pixels per clock.
-
-The two halves of the table differ only in palette cache misses.
-Paletted sprites read colors through a 1 KB direct-mapped cache that is
-cleared at the start of every row. Keep all palettes together in XRAM so
-they don't collide in the cache. 16-bit and affine sprites have no
-palette and don't use the cache.
-
-These limits are for the :doc:`fpga`, where the video system is a
-hardware renderer built in programmable logic, a real video chip. The
-:doc:`pico`, :doc:`emu` and :doc:`web` render in software, which modern
-CPUs can do significantly faster than an affordable FPGA.
 
 
 Control Channel $F
