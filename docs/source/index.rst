@@ -127,14 +127,12 @@ program is published.
 
 - :doc:`sdk`: writing software, from a new project to a running program.
 - :doc:`api`: the system calls, the ABI, and the C library built on them.
-- :doc:`ria`: the register map and every device reached through it. The
-  RP6502 Interface Adapter, in the spirit of the classic CIA, VIA, and
-  ACIA chips.
+- :doc:`ria`: direct access to keyboards, mice and gamepads, and the
+  PSG and OPL2 sound generators.
 - :doc:`vga`: canvases, video modes, sprites, and the scanline
   programming underneath.
 - :doc:`term`: the console, its escape sequences, and the line editor.
-- :doc:`port`: writing a program that works the same on every machine,
-  from gamepads to saves.
+- :doc:`port`: handling gamepads and files, which come from the host.
 
 
 Get a Machine

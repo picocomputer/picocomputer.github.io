@@ -1990,6 +1990,10 @@ Volume attenuation is logarithmic.
           psg_channel_t channel[PSG_CHANNELS];
       } psg_t; /* layout */
 
+      /* After the XRAM_ names: PSG_PAGE_CHECK(XRAM_PSG); */
+      #define PSG_PAGE_CHECK(addr) \
+          _Static_assert((addr) % 256 + sizeof(psg_t) <= 256, #addr " crosses a page.")
+
 .. tab:: ca65
 
    .. code-block:: ca65
@@ -2089,6 +2093,10 @@ the era had their own timers and rarely used the chip's.
       {
           uint8_t reg[256];
       } opl_t; /* layout */
+
+      /* After the XRAM_ names: OPL_PAGE_CHECK(XRAM_OPL); */
+      #define OPL_PAGE_CHECK(addr) \
+          _Static_assert((addr) % 256 == 0, #addr " does not start a page.")
 
 .. tab:: ca65
 

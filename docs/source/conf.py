@@ -41,6 +41,25 @@ def icon(name):
     with open(path) as file:
         return file.read().strip()
 
+from pygments.lexers import CMakeLexer
+from pygments.token import String
+
+
+# The stock lexer reads RAM(<x>) inside a call as a string that ends the call
+# at the inner ")", which breaks the highlighting of rp6502_asset() lines.
+class RP6502CMakeLexer(CMakeLexer):
+    tokens = {
+        'args': [
+            (r'[^()$"# \t\n]+', String) if rule[0] == r'[^)$"# \t\n]+' else rule
+            for rule in CMakeLexer.tokens['args']
+        ],
+    }
+
+
+def setup(app):
+    app.add_lexer('cmake', RP6502CMakeLexer)
+
+
 html_css_files = ['custom.css']
 html_js_files = ['custom.js']
 html_theme_options = {

@@ -1597,14 +1597,19 @@ Application Binary Interface
    :ref:`RIA registers <ria-registers>` — the hardware register map
    referenced throughout this section.
 
-A C program does none of this, because the compiler's library is the
-implementation. What follows is for assembly programs and for anyone
-bringing another compiler to the Picocomputer.
+A compiler turns each call of a C function into machine code in a
+standard way: where each argument goes, in what order, and where the
+result comes back. That byte-level convention is an Application Binary
+Interface (ABI). This section describes the ABI of the API calls: how a
+6502 program passes the arguments to the RIA, starts the call, and reads
+the result back from the host. The compiler's library follows it for every
+C program, and an assembly program or another compiler follows the same
+rules.
 
-The ABI for calling the operating system is based on fastcall from the
-`cc65 internals <https://cc65.github.io/doc/cc65-intern.html>`__. The OS
-itself uses nothing from cc65, so assembly calls it the same way C
-does. The compiler is a convenience here, not a dependency.
+The ABI is based on fastcall from the `cc65 internals
+<https://cc65.github.io/doc/cc65-intern.html>`__. The OS itself uses
+nothing from cc65, so an assembly program calls it the same way a C
+program does.
 
 At its core, the ABI is four rules:
 

@@ -75,7 +75,7 @@ compiler goes in the ``.rp6502`` folder in your home folder, and its
 looked up. Running the same command again updates the compiler, and it
 also switches between upstream and the fork when the recommendation on the
 GitHub page changes. These compilers have a changed ``rp6502.h``, so a
-project written for an older one may need the changes in `Updating an
+project written for an older one may need the changes in `Upgrading an
 Older Project`_.
 
 Windows
@@ -357,11 +357,6 @@ B sends a break. A break stops the program and returns to the monitor.
 link to every web player that ``rp6502_web()`` makes, as `Web Players`_
 describes.
 
-All three configurations work with the ``basic`` preset as well. The
-source-level debugging of RP6502-EMU applies to C and assembly only:
-breakpoints, stepping and variables are not available for the lines of a
-BASIC program.
-
 
 The .rp6502 Settings File
 =========================
@@ -508,7 +503,6 @@ packaged into the same ``.rp6502`` file with ``rp6502_asset()``. BASIC
 programs are assets as well, as described in `BASIC Programs`_.
 
 .. code-block:: cmake
-  :force:
 
   rp6502_asset(hello RAM(0x00F0) bin/f0.bin)
   rp6502_asset(hello XRAM(0x1000) img/tiles.bin)
@@ -540,8 +534,7 @@ An asset can also be made by the build, such as an image converted from a
 PNG. Create it with ``add_custom_command()`` and pass its output file to
 ``rp6502_asset()``. Both calls must be in the same ``CMakeLists.txt``,
 because CMake connects a generated file to the step that uses it only
-within one directory. The paint program in the `examples
-<https://github.com/picocomputer/examples>`__ does this.
+within one directory.
 
 .. code-block:: cmake
 
@@ -822,7 +815,6 @@ is written once, in the header, and never repeated in ``CMakeLists.txt``.
   rp6502_map(<target> <header> <regex> [<unaligned_regex>])
 
 .. code-block:: cmake
-  :force:
 
   rp6502_map(hello src/xram.h "XRAM_.*")
   rp6502_asset(hello XRAM(XRAM_LOGO) img/logo.bin)
@@ -831,15 +823,6 @@ The regular expression selects which ``#define`` names to read, and must
 match the whole name. The value can be any constant expression, including
 one built from another name, such as
 ``#define XRAM_LOGO_ROW_2 (XRAM_LOGO + 64)``.
-
-A define is skipped if it:
-
-- is commented out;
-- is inside an ``#if`` whose condition is false;
-- has no value, such as an include guard;
-- is a function-like macro.
-
-The header can hold any other code the program uses.
 
 A name works only inside ``RAM()`` and ``XRAM()``, in ``rp6502_asset()``
 calls for the target named in ``rp6502_map()``. To read several headers
@@ -863,12 +846,7 @@ Neither compiler pads structures, so each member starts right after the
 one before it. Mode configurations, palettes and the PSG are read as
 16-bit values, so they need an even address. Every address is checked,
 and an odd one fails the build with an error on the line of its
-``#define``. With cc65 the error reads:
-
-.. code-block:: text
-
-  /home/me/hello/src/xram.h:34: error: static_assert failed 'XRAM_LOGO is
-  unaligned. To allow, use the [<unaligned_regex>] in rp6502_map.'
+``#define``.
 
 Pixel data, fonts, tiles, sprite images, and the keyboard, mouse, gamepad
 and tablet blocks work at any address. They are checked anyway, because
@@ -882,18 +860,17 @@ the check, pass a second regular expression:
 The build also fails if the layout is larger than the 64 KB of XRAM, or
 if an address does not fit in 16 bits.
 
-Two requirements of the sound generators are not checked. The 64 bytes of
-the PSG must not cross a page boundary, and the OPL2 registers must start
-on one. A page is 256 bytes. To check them, copy the line for each sound
-generator the program uses into ``xram.h``, after the ``XRAM_`` names:
+Two requirements of the sound generators are not checked by
+``rp6502_map()``. The 64 bytes of the PSG must not cross a page boundary,
+and the OPL2 registers must start on one. A page is 256 bytes. The PSG and
+OPL2 snippets in the :doc:`ria` datasheet each define a check. Add the
+line for each sound generator the program uses to ``xram.h``, after the
+``XRAM_`` names:
 
 .. code-block:: C
 
-  _Static_assert(XRAM_PSG % 256 + sizeof(psg_t) <= 256, "XRAM_PSG crosses a page.");
-  _Static_assert(XRAM_OPL % 256 == 0, "XRAM_OPL is not on a page boundary.");
-
-The lines use the ``_Static_assert`` keyword because the ``assert.h`` of
-llvm-mos has no ``static_assert`` macro.
+  PSG_PAGE_CHECK(XRAM_PSG);
+  OPL_PAGE_CHECK(XRAM_OPL);
 
 The :doc:`fpga` has a 1 KB palette cache for paletted sprites, so it is
 generally better to keep all sprite palettes within 1 KB. This matters
@@ -960,7 +937,6 @@ output. The three real files are declared as byproducts, added as memory
 chunks at their addresses, and packaged:
 
 .. code-block:: cmake
-  :force:
 
   rp6502_byproducts(basic
       ${CMAKE_CURRENT_BINARY_DIR}/basic.00E8
@@ -1013,8 +989,7 @@ CMake side panel.
 different XRAM layouts. Each ROM is built only after the checks pass for
 every header mapped for it.
 
-A larger project can give each ROM a directory of its own, as the
-`examples <https://github.com/picocomputer/examples>`__ do:
+A larger project can give each ROM a directory of its own:
 
 .. code-block:: cmake
 
@@ -1099,8 +1074,7 @@ listed in `Fetching BASIC and the Emulator`_:
   rp6502_basic(trek BASIC build-96e229e instructions.bas)
 
 The BASIC program is a CMake launch target, as a C program is, so F5 runs
-it in the emulator. `Super Star Trek <https://github.com/rumbledethumps/trek>`__
-is a complete BASIC project.
+it in the emulator.
 
 
 Web Players
@@ -1116,9 +1090,12 @@ that plays the program in a browser:
 The zip is ``web/hello.zip`` in the build folder, and the same files are
 unpacked in ``web/hello/``. In VS Code, choose "RP6502-WEB" in the Run
 and Debug side panel and press F5: the project is built, and the browser
-opens a page with a link to every web player in the build folder. The
-settings, the page and the emulator of a zip are in :ref:`Building with
-CMake <web-cmake>`.
+opens a page with a link to every web player in the build folder.
+
+``CONFIG`` in ``rp6502_web()`` sets the title, the footer and the other
+settings of the page, and ``PAGE`` replaces the page with your own
+``index.html``. Every setting, and how to write a page, is in
+:ref:`Building with CMake <web-cmake>` on the :doc:`web` page.
 
 
 .. _sdk-fetch:
@@ -1127,8 +1104,8 @@ Fetching BASIC and the Emulator
 ===============================
 
 BASIC for ``rp6502_basic()``, and :doc:`RP6502-WEB <web>` for
-``rp6502_web()``, are downloaded into the build folder when the project is
-configured. Each is the latest release of its official repository,
+``rp6502_web()``, are downloaded automatically into the build folder when
+the project is configured. Each is the latest release of its official repository,
 ``picocomputer/msbasic`` or ``picocomputer/rp6502``, unless ``BASIC`` or
 ``EMULATOR`` names another in one of these forms:
 
@@ -1149,7 +1126,8 @@ configured. Each is the latest release of its official repository,
        for RP6502-WEB.
 
 A failed download is a configure error. To work without a network,
-download the file, commit it with the project, and name it:
+download the file, commit it with the project, and name it in
+``CMakeLists.txt``:
 
 .. code-block:: cmake
 
@@ -1159,9 +1137,6 @@ download the file, commit it with the project, and name it:
 
 Registers and ``volatile``
 ==========================
-
-Direct Register Access
-----------------------
 
 ``volatile`` has no effect on the cc65 optimizer, so wrap C code that
 accesses RIA or VIA registers directly in an optimize pragma:
@@ -1176,10 +1151,267 @@ accesses RIA or VIA registers directly in an optimize pragma:
   #pragma optimize (pop)
 
 
+Command Line
+============
+
+The sections above use VS Code. This section covers building and running
+without it: on a build server,
+in another editor, or with a 6502 program from another toolchain.
+
+Building
+--------
+
+Each C preset is a compiler and a build type, and ``basic`` is for BASIC.
+These commands list the presets, then configure and build ``cc65/Debug``,
+the same as choosing that preset in VS Code.
+
+.. code-block:: text
+
+  cmake --list-presets
+  cmake --preset cc65/Debug
+  cmake --build --preset cc65/Debug
+
+The ROM is ``build/cc65/debug/hello.rp6502``. The configure step
+downloads the emulator when ``tools/`` has none, so the first configure
+of a fresh copy needs a network connection.
+
+Running on an RP6502-PICO
+-------------------------
+
+``rp6502.py run`` copies the ROM to the current folder of the monitor, or
+to the ``workdir`` folder, loads it, and opens a terminal on the console.
+In the terminal, Ctrl-A then X exits, and Ctrl-A then B sends a break.
+The options of ``rp6502.py``, such as ``-c``, go before the subcommand,
+and ``-c .rp6502`` uses the settings file that VS Code uses.
+
+.. code-block:: text
+
+  python3 tools/rp6502.py -c .rp6502 run build/cc65/debug/hello.rp6502
+
+Without a settings file, name the serial port with ``-d``, or the host
+and passkey for telnet with ``-d`` and ``-k``. With ``-c``, the settings
+in the file take precedence over these options.
+
+.. code-block:: text
+
+  python3 tools/rp6502.py -d /dev/ttyUSB0 run build/cc65/debug/hello.rp6502
+  python3 tools/rp6502.py -d 192.168.1.20 -k secret run build/cc65/debug/hello.rp6502
+
+Words after the ROM's file name are passed to the ROM as its arguments.
+``rp6502.py`` has these subcommands. ``python3 tools/rp6502.py --help``
+lists the options that go before a subcommand, and ``--help`` after a
+subcommand, as in ``python3 tools/rp6502.py execute --help``, lists the
+options of that subcommand.
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Subcommand
+     - Description
+   * - ``run``
+     - Copy a ROM to the USB drive, load it, and open a terminal.
+   * - ``upload``
+     - Copy files to the USB drive. With one file, ``-o`` sets the name
+       it is saved under.
+   * - ``term``
+     - Open a terminal on the console.
+   * - ``basic``
+     - Type a BASIC program into the BASIC installed on the RP6502-PICO,
+       and run it.
+   * - ``execute``
+     - Run a ROM in the emulator. See `Running in the Emulator`_.
+   * - ``emu``
+     - Start the emulator as the debugger for an editor. VS Code uses
+       this.
+   * - ``create``
+     - Package files into a ROM. See `Packaging a ROM by Hand`_.
+   * - ``web``
+     - Serve the web players in a build folder, and open a page in a
+       browser with a link to each one. VS Code uses this. See `Web
+       Players`_.
+
+``run``, ``upload``, ``term`` and ``basic`` send a break first, which
+stops the program running on the RP6502-PICO.
+
+Running in the Emulator
+-----------------------
+
+The emulator is ``tools/rp6502-emu``, or ``tools/rp6502-emu.exe`` on
+Windows and WSL. With no options, the ROM runs in a window.
+:ref:`Arguments <emu-arguments>` in the emulator's datasheet lists every
+option.
+
+.. code-block:: text
+
+  tools/rp6502-emu build/cc65/debug/hello.rp6502
+  tools/rp6502-emu --headless --phi2 0 build/cc65/debug/hello.rp6502
+  tools/rp6502-emu --script tests/play.txt --seed 1 build/basic/trek.rp6502
+
+With ``--headless``, there is no window. The ROM's console is the
+terminal's standard input and output, and the ROM's exit code becomes the
+emulator's, so a ROM can run as a step in a script or a test.
+``--phi2 0`` removes the speed limit.
+
+With ``--script``, the input comes from an emulator :ref:`script
+<emu-scripting>`, and the ROM's output is checked against the script
+instead of being written to standard output, so a program that reads the
+keyboard can be tested. The exit code is 0 when the script passes and 1
+when it fails. A BASIC ROM does not exit when its program ends, so run it
+with ``--script``.
+
+``rp6502.py execute`` is a wrapper for ``rp6502-emu --headless`` or
+``rp6502-emu --script`` that uses the ``emulator`` setting of
+`The .rp6502 Settings File`_, so ``-c`` is required. ``--phi2``, ``--seed`` and
+``--save-dir`` are passed to the emulator. The ROM's standard input is
+empty, and the emulator's exit code becomes the command's exit code. The
+second command below runs a BASIC program with a test script:
+
+.. code-block:: text
+
+  python3 tools/rp6502.py -c .rp6502 execute build/cc65/debug/hello.rp6502
+  python3 tools/rp6502.py -c .rp6502 execute --script tests/play.txt --seed 1 build/basic/trek.rp6502
+
+Another editor can debug with the emulator through the :ref:`Debug
+Adapter Protocol <emu-dap>`.
+
+Packaging a ROM by Hand
+-----------------------
+
+``rp6502.py create`` packages files into a ROM, and
+``rp6502_executable()`` uses it to build every ROM. Use it directly when
+the 6502 program comes from a tool CMake doesn't run, such as an
+assembler that writes a linked binary. The options it takes are:
+
+- ``-a``: the address to load the first file at, or the name of an asset;
+- ``-r``: the reset address, and ``-i`` and ``-n`` for IRQ and NMI;
+- ``-o``: the ROM file to write.
+
+The first file is the data to package. Every file after it must already
+be a ROM, and its contents are merged in. A ROM that holds only named
+assets is an input for merging and can't be run, because it has no reset
+address.
+
+This example packages an assembler's binary that loads at ``$0400``,
+with a help file, a data file, and an image loaded into XRAM.
+
+.. code-block:: text
+
+  # The help text, as a named asset.
+  python3 tools/rp6502.py -a help -o help.rp6502 create plvm.help
+
+  # A data file the program opens as ROM:level1.
+  python3 tools/rp6502.py -a level1 -o level1.rp6502 create level1.dat
+
+  # An image loaded into XRAM before the 6502 starts.
+  python3 tools/rp6502.py -a 0x10000 -o splash.rp6502 create splash.bin
+
+  # The program at $0400 with a reset address, merged with the rest.
+  python3 tools/rp6502.py -a 0x0400 -r 0x0400 -o plvm.rp6502 \
+      create plvm.bin help.rp6502 level1.rp6502 splash.rp6502
+
+The result is ``plvm.rp6502``. It holds memory chunks for the program at
+``$0400``, the reset vector at ``$FFFC``, and the image at ``$10000``. It
+also holds two named assets, ``help`` and ``level1``.
+
+
+.. _sdk-rom-file-format:
+
+ROM File Format
+===============
+
+A ROM file is a shebang line, then one group of memory chunks, then any
+number of named assets. Header lines are text and end with ``\n`` or
+``\r\n``. Numbers may be written in decimal (255), C-style hex (0xFF) or
+MOS-style hex ($FF). This is ``hello.rp6502`` from the template, with the
+binary data left out:
+
+.. code-block:: text
+
+  #!RP6502                         shebang
+  #>$000003AC $FB52BEE0            memory chunks, 0x3AC bytes follow
+  $0200 $37E $07A747B2             chunk: 0x37E bytes of program
+  $FFFC $002 $AFD773D3             chunk: 2 bytes, the reset vector
+  #>$0000006E $E047820E help       named asset: 0x6E bytes of help text
+
+**Shebang** — the first line of every ROM file. The tools write:
+
+.. code-block:: text
+
+  #!RP6502
+
+Any first line that starts with ``#!`` and contains ``rp6502``, in upper
+or lower case, is accepted. The first line can therefore name the program
+that runs the ROM. A ROM file marked executable then runs from a shell
+when that program is on the PATH:
+
+.. code-block:: text
+
+  #!/usr/bin/env rp6502-emu
+
+**Memory chunks** — the line after the shebang starts the group of memory
+chunks, which are loaded into RAM or XRAM before the 6502 starts:
+
+.. code-block:: text
+
+  #>len crc
+
+``len`` is the number of bytes that follow in the group, counting each
+chunk's header line as well as its data, and ``crc`` is the CRC-32 of
+those bytes. Each chunk is a header line followed by its data:
+
+.. code-block:: text
+
+  addr len crc
+
+.. list-table::
+   :widths: 1 20
+   :header-rows: 1
+
+   * - Field
+     - Description
+   * - ``addr``
+     - Destination address in RAM (``$0000-$FEFF``), the 6502 vectors
+       (``$FFFA-$FFFF``), or XRAM (``$10000-$1FFFF``). A ROM must set
+       the reset vector at ``$FFFC-$FFFD`` to be loaded.
+   * - ``len``
+     - Number of bytes of binary data that follow this line. At most
+       1024, and a chunk may not cross a 64 KB boundary.
+   * - ``crc``
+     - CRC-32 of the binary data.
+
+**Named asset** — a file the program opens by name while it runs:
+
+.. code-block:: text
+
+  #>len crc name
+
+The line is followed by ``len`` bytes of binary data. Named assets repeat
+to the end of the file.
+
+.. list-table::
+   :widths: 1 20
+   :header-rows: 1
+
+   * - Field
+     - Description
+   * - ``len``
+     - Number of bytes of binary data that follow this line.
+   * - ``crc``
+     - CRC-32 of the binary data.
+   * - ``name``
+     - The asset's name.
+
+The CRC is CRC-32 as zlib and PNG compute it. The format sets no limit on
+the number or size of named assets. Opening ``ROM:`` plus a name reads
+each asset header in file order and skips its data, so a ROM with many
+assets takes longer to open the last ones.
+
+
 .. _sdk-updating:
 
-Updating an Older Project
--------------------------
+Upgrading an Older Project
+==========================
 
 Because ``volatile`` has no effect on the cc65 optimizer, the macros of
 ``rp6502.h`` that accessed RIA registers directly were replaced by
@@ -1326,261 +1558,3 @@ For an older C project, save this header in the project, and include
 
 The header does not replace ``ria_push_*``, ``ria_pop_*``, ``ria_set_*``
 and ``ria_call_*``. Change those calls as the table shows.
-
-
-Command Line
-============
-
-The sections above use VS Code. This section covers building and running
-without it: on a build server,
-in another editor, or with a 6502 program from another toolchain.
-
-Building
---------
-
-Each C preset is a compiler and a build type, and ``basic`` is for BASIC.
-These commands list the presets, then configure and build ``cc65/Debug``,
-the same as choosing that preset in VS Code.
-
-.. code-block:: text
-
-  cmake --list-presets
-  cmake --preset cc65/Debug
-  cmake --build --preset cc65/Debug
-
-The ROM is ``build/cc65/debug/hello.rp6502``. The configure step
-downloads the emulator when ``tools/`` has none, so the first configure
-of a fresh copy needs a network connection.
-
-Running on an RP6502-PICO
--------------------------
-
-``rp6502.py run`` copies the ROM to the current folder of the monitor, or
-to the ``workdir`` folder, loads it, and opens a terminal on the console.
-In the terminal, Ctrl-A then X exits, and Ctrl-A then B sends a break.
-The options of ``rp6502.py``, such as ``-c``, go before the subcommand,
-and ``-c .rp6502`` uses the settings file that VS Code uses.
-
-.. code-block:: text
-
-  python3 tools/rp6502.py -c .rp6502 run build/cc65/debug/hello.rp6502
-
-Without a settings file, name the serial port with ``-d``, or the host
-and passkey for telnet with ``-d`` and ``-k``. With ``-c``, the settings
-in the file take precedence over these options.
-
-.. code-block:: text
-
-  python3 tools/rp6502.py -d /dev/ttyUSB0 run build/cc65/debug/hello.rp6502
-  python3 tools/rp6502.py -d 192.168.1.20 -k secret run build/cc65/debug/hello.rp6502
-
-Words after the ROM's file name are passed to the ROM as its arguments.
-``rp6502.py`` has these subcommands. ``python3 tools/rp6502.py --help``
-lists the options that go before a subcommand, and ``--help`` after a
-subcommand, as in ``python3 tools/rp6502.py execute --help``, lists the
-options of that subcommand.
-
-.. list-table::
-   :widths: 20 80
-   :header-rows: 1
-
-   * - Subcommand
-     - Description
-   * - ``run``
-     - Copy a ROM to the USB drive, load it, and open a terminal.
-   * - ``upload``
-     - Copy files to the USB drive. With one file, ``-o`` sets the name
-       it is saved under.
-   * - ``term``
-     - Open a terminal on the console.
-   * - ``basic``
-     - Type a BASIC program into the BASIC installed on the RP6502-PICO,
-       and run it.
-   * - ``execute``
-     - Run a ROM in the emulator. See `Running in the Emulator`_.
-   * - ``emu``
-     - Start the emulator as the debugger for an editor. VS Code uses
-       this.
-   * - ``create``
-     - Package files into a ROM. See `Packaging a ROM by Hand`_.
-   * - ``web``
-     - Serve the web players in a build folder, and open a page in a
-       browser with a link to each one. VS Code uses this. See `Web
-       Players`_.
-
-``run``, ``upload``, ``term`` and ``basic`` send a break first, which
-stops the program running on the RP6502-PICO.
-
-Running in the Emulator
------------------------
-
-The emulator is ``tools/rp6502-emu``, or ``tools/rp6502-emu.exe`` on
-Windows and WSL. With no options, the ROM runs in a window.
-:ref:`Arguments <emu-arguments>` in the emulator's datasheet lists every
-option.
-
-.. code-block:: text
-
-  tools/rp6502-emu build/cc65/debug/hello.rp6502
-  tools/rp6502-emu --headless --phi2 0 build/cc65/debug/hello.rp6502
-  tools/rp6502-emu --script tests/play.txt --seed 1 build/basic/trek.rp6502
-
-With ``--headless``, there is no window. The ROM's console is the
-terminal's standard input and output, and the ROM's exit code becomes the
-emulator's, so a ROM can run as a step in a script or a test.
-``--phi2 0`` removes the speed limit.
-
-With ``--script``, the input comes from an emulator :ref:`script
-<emu-scripting>`, and the ROM's output is checked against the script
-instead of being written to standard output, so a program that reads the
-keyboard can be tested. The exit code is 0 when the script passes and 1
-when it fails. A BASIC ROM does not exit when its program ends, so run it
-with ``--script``.
-
-``rp6502.py execute`` is a wrapper for ``rp6502-emu --headless`` or
-``rp6502-emu --script`` that uses the ``emulator`` setting of
-`The .rp6502 Settings File`_, so ``-c`` is required. ``--phi2``, ``--seed`` and
-``--save-dir`` are passed to the emulator. The ROM's standard input is
-empty, and the emulator's exit code becomes the command's exit code. The
-second command below runs the play test of `Super Star Trek
-<https://github.com/rumbledethumps/trek>`__:
-
-.. code-block:: text
-
-  python3 tools/rp6502.py -c .rp6502 execute build/cc65/debug/hello.rp6502
-  python3 tools/rp6502.py -c .rp6502 execute --script tests/play.txt --seed 1 build/basic/trek.rp6502
-
-Another editor can debug with the emulator through the :ref:`Debug
-Adapter Protocol <emu-dap>`.
-
-Packaging a ROM by Hand
------------------------
-
-``rp6502.py create`` packages files into a ROM, and
-``rp6502_executable()`` uses it to build every ROM. Use it directly when
-the 6502 program comes from a tool CMake doesn't run, such as an
-assembler that writes a linked binary. The options it takes are:
-
-- ``-a``: the address to load the first file at, or the name of an asset;
-- ``-r``: the reset address, and ``-i`` and ``-n`` for IRQ and NMI;
-- ``-o``: the ROM file to write.
-
-The first file is the data to package. Every file after it must already
-be a ROM, and its contents are merged in. A ROM that holds only named
-assets is an input for merging and can't be run, because it has no reset
-address.
-
-This example packages an assembler's binary that loads at ``$0400``,
-with a help file, a data file, and an image loaded into XRAM.
-
-.. code-block:: text
-
-  # The help text, as a named asset.
-  python3 tools/rp6502.py -a help -o help.rp6502 create plvm.help
-
-  # A data file the program opens as ROM:level1.
-  python3 tools/rp6502.py -a level1 -o level1.rp6502 create level1.dat
-
-  # An image loaded into XRAM before the 6502 starts.
-  python3 tools/rp6502.py -a 0x10000 -o splash.rp6502 create splash.bin
-
-  # The program at $0400 with a reset address, merged with the rest.
-  python3 tools/rp6502.py -a 0x0400 -r 0x0400 -o plvm.rp6502 \
-      create plvm.bin help.rp6502 level1.rp6502 splash.rp6502
-
-The result is ``plvm.rp6502``. It holds memory chunks for the program at
-``$0400``, the reset vector at ``$FFFC``, and the image at ``$10000``. It
-also holds two named assets, ``help`` and ``level1``.
-
-
-.. _sdk-rom-file-format:
-
-ROM File Format
-===============
-
-A ROM file is a shebang line, then one group of memory chunks, then any
-number of named assets. Header lines are text and end with ``\n`` or
-``\r\n``. Numbers may be written in decimal (255), C-style hex (0xFF) or
-MOS-style hex ($FF). This is ``hello.rp6502`` from the template, with the
-binary data left out:
-
-.. code-block:: text
-
-  #!RP6502                         shebang
-  #>$000003AC $FB52BEE0            memory chunks, 0x3AC bytes follow
-  $0200 $37E $07A747B2             chunk: 0x37E bytes of program
-  $FFFC $002 $AFD773D3             chunk: 2 bytes, the reset vector
-  #>$0000006E $E047820E help       named asset: 0x6E bytes of help text
-
-**Shebang** — the first line of every ROM file. The tools write:
-
-.. code-block:: text
-
-  #!RP6502
-
-Any first line that starts with ``#!`` and contains ``rp6502``, in upper
-or lower case, is accepted. The first line can therefore name the program
-that runs the ROM. A ROM file marked executable then runs from a shell
-when that program is on the PATH:
-
-.. code-block:: text
-
-  #!/usr/bin/env rp6502-emu
-
-**Memory chunks** — the line after the shebang starts the group of memory
-chunks, which are loaded into RAM or XRAM before the 6502 starts:
-
-.. code-block:: text
-
-  #>len crc
-
-``len`` is the number of bytes that follow in the group, counting each
-chunk's header line as well as its data, and ``crc`` is the CRC-32 of
-those bytes. Each chunk is a header line followed by its data:
-
-.. code-block:: text
-
-  addr len crc
-
-.. list-table::
-   :widths: 1 20
-   :header-rows: 1
-
-   * - Field
-     - Description
-   * - ``addr``
-     - Destination address in RAM (``$0000-$FEFF``), the 6502 vectors
-       (``$FFFA-$FFFF``), or XRAM (``$10000-$1FFFF``). A ROM must set
-       the reset vector at ``$FFFC-$FFFD`` to be loaded.
-   * - ``len``
-     - Number of bytes of binary data that follow this line. At most
-       1024, and a chunk may not cross a 64 KB boundary.
-   * - ``crc``
-     - CRC-32 of the binary data.
-
-**Named asset** — a file the program opens by name while it runs:
-
-.. code-block:: text
-
-  #>len crc name
-
-The line is followed by ``len`` bytes of binary data. Named assets repeat
-to the end of the file.
-
-.. list-table::
-   :widths: 1 20
-   :header-rows: 1
-
-   * - Field
-     - Description
-   * - ``len``
-     - Number of bytes of binary data that follow this line.
-   * - ``crc``
-     - CRC-32 of the binary data.
-   * - ``name``
-     - The asset's name.
-
-The CRC is CRC-32 as zlib and PNG compute it. The format sets no limit on
-the number or size of named assets. Opening ``ROM:`` plus a name reads
-each asset header in file order and skips its data, so a ROM with many
-assets takes longer to open the last ones.
