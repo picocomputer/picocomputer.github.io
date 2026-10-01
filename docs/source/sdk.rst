@@ -10,10 +10,9 @@ Introduction
 
 Picocomputer software is distributed as a ROM: one file ending in
 ``.rp6502``, such as ``game.rp6502``. A ROM describes the state of the
-machine as it comes out of reset, and that state is the same every time:
-the program and data are in memory, and the reset vector points to where
-the program begins. A single ROM can hold every piece of code, video and
-audio your game needs.
+machine as it comes out of reset: the program and data are in memory,
+and the reset vector points to where the program begins. A single ROM can
+hold every piece of code, video and audio your game needs.
 
 If this sounds a lot like the cartridge ROM of a game console, or the
 BASIC ROM in your 8-bit home computer, that's not a coincidence.
@@ -149,7 +148,7 @@ On Ubuntu and Debian, install the tools with apt. Ubuntu 22.04 and Debian
 
 .. code-block:: sh
 
-   sudo apt install git cmake build-essential python3
+   sudo apt install git cmake build-essential python3 curl
 
 Download the ``.deb`` of `VS Code <https://code.visualstudio.com/download>`__,
 and install it from the folder it was saved in:
@@ -847,14 +846,11 @@ calls for the target named in ``rp6502_map()``. To read several headers
 for one target, call ``rp6502_map()`` once for each. A name that two of
 the headers define is a configure error.
 
-``rp6502_map()`` compiles the header into a small program and runs it
-in the emulator when CMake configures. Changing the header configures the
-project again on the next build, so the addresses always match it. If the
-header doesn't compile, or the emulator can't run, the build fails with
-the reason. Every ``rp6502_asset()`` that uses one of the header's names
-fails as well, so no ROM is written from an address that was not read.
-The configure step still completes. Configure again once the problem is
-fixed.
+When CMake configures, ``rp6502_map()`` compiles the header to assembly
+with the same compiler as the program and reads each address from the
+result, so the structures are laid out exactly as in the program.
+Changing the header configures the project again on the next build,
+so the addresses always match it.
 
 ``rp6502_map()`` reads C headers only. For an assembly project, write the
 address in ``RAM()`` or ``XRAM()`` as a number or as the name of a CMake
