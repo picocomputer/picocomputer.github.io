@@ -118,9 +118,6 @@ Make and Python 3:
 
    xcode-select --install
 
-.. SCREENSHOT: _static/sdk/macos-clt-light.png and macos-clt-dark.png,
-   the dialog that xcode-select opens, with its Install button.
-
 Download the macOS universal disk image of `CMake
 <https://cmake.org/download/>`__, drag CMake to Applications, and add its
 command-line tools:
@@ -194,10 +191,6 @@ for a ROM you share. The fifth, ``basic``, is for BASIC: choose it, and
 write the program in ``src/main.bas``. The preset can be changed later
 from the Configure row of the CMake side panel.
 
-.. SCREENSHOT: preset-*.png show four presets. Retake them with all
-   five: cc65/Debug, cc65/Release, llvm-mos/Debug, llvm-mos/Release and
-   basic.
-
 .. image:: _static/sdk/preset-light.png
    :class: only-light
    :width: 700
@@ -220,9 +213,6 @@ the emulator. "Hello, world!" appears on the emulator's screen and in VS
 Code's Debug Console. The session stays open after the program ends so
 the screen can be read. Stop it with Shift+F5. The emulator window may
 open behind VS Code.
-
-.. SCREENSHOT: first-run-*.png show RP6502 (Emulator) in the status bar.
-   Retake them with the entry named RP6502-EMU.
 
 .. image:: _static/sdk/first-run-light.png
    :class: only-light
@@ -300,10 +290,6 @@ Running and Debugging
 "Start Debugging" (F5) runs one of three launch configurations. Choose
 which in the Run and Debug side panel.
 
-.. SCREENSHOT: configs-*.png show RP6502 (Emulator) and RP6502
-   (Hardware) only. Retake them with RP6502-EMU, RP6502-PICO and
-   RP6502-WEB.
-
 .. image:: _static/sdk/configs-light.png
    :class: only-light
    :width: 400
@@ -323,10 +309,6 @@ preset. With llvm-mos, variables show their C types, and structures and
 arrays expand. With cc65, variables have no types, and each variable's
 size comes from where its symbol sits in memory.
 :ref:`Debugging <emu-debugging>` in the emulator's datasheet covers both.
-
-.. SCREENSHOT: breakpoint-*.png show RP6502 (Emulator) in the status bar
-   and the Run and Debug header. Retake them with the entry named
-   RP6502-EMU.
 
 .. image:: _static/sdk/breakpoint-light.png
    :class: only-light
