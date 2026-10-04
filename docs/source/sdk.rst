@@ -1069,7 +1069,7 @@ the project is configured. Each is the latest release of its official repository
 
    * - Form
      - Description
-   * - ``v0.36``
+   * - ``tag``
      - A release tag of the official repository.
    * - ``owner/repo``
      - The latest release of a repository on GitHub.
@@ -1086,7 +1086,7 @@ download the file, commit it with the project, and name it in
 .. code-block:: cmake
 
   rp6502_basic(trek BASIC tools/basic.rp6502 instructions.bas)
-  rp6502_web(trek EMULATOR tools/rp6502-0.36-web.zip)
+  rp6502_web(trek EMULATOR tools/rp6502-web.zip)
 
 
 Registers and ``volatile``

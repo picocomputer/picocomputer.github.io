@@ -7,48 +7,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Star Hopper</title>
 <style>
-  .overlay {
-    --y: 84%;                              /* height of the button, from the top */
-    --size: clamp(40px, 16vmin, 96px);     /* width of the button */
-    --shade: rgba(0, 0, 0, .45);           /* over the game */
-    position: absolute; inset: 0; cursor: pointer; background: var(--shade);
-    color: #fff; font: 600 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  }
-  .overlay .play {
-    position: absolute; left: 50%; top: var(--y); transform: translate(-50%, -50%);
-    display: flex; flex-direction: column; align-items: center; gap: 12px;
-  }
-  .overlay .button {
-    width: var(--size); height: var(--size); border-radius: 50%;
-    display: grid; place-items: center; box-sizing: border-box;
-    border: 3px solid #fff; background: rgba(0, 0, 0, .3); backdrop-filter: blur(2px);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, .5); transition: transform .15s ease;
-  }
-  .overlay:hover .button { transform: scale(1.06); }
-  .overlay svg { width: 51%; fill: currentColor; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
-  .overlay .label { padding: 4px 14px; border-radius: 999px; background: rgba(0, 0, 0, .6); }
+  html, body { height: 100%; margin: 0; overflow: hidden; background: #000; }
+  #game { height: 100%; }
+  :root { --rp6502-play-y: 84%; --rp6502-button-size: clamp(40px, 16cqmin, 96px); }
 </style>
 </head>
 <body>
-<template id="overlay">
-  <div class="overlay">
-    <div class="play">
-      <div class="button"><svg viewBox="0 0 24 24"><path d="M8.5 5.5v13l10-6.5z"/></svg></div>
-      <div class="label">Click to play</div>
-    </div>
-  </div>
-</template>
-<script>
-  var CONFIG = {
-    title:   'Star Hopper',             // browser tab title
-    rom:     'starhopper.rp6502',       // the program, next to this file
-    db:      'starhopper',              // saves database, such as 'username-projectname'
-    bg:      '000000',                  // letterbox color, six hex digits
-    filter:  'sharp',                   // nearest | linear | sharp
-    overlay: 'overlay',                 // template shown while there is no sound
-  };
-</script>
+<div id="game"></div>
 <script src="rp6502.js" onerror="document.body.textContent = 'Could not load rp6502.js'"></script>
+<script>
+  rp6502('game', 'starhopper.rp6502', {
+    title:    'Star Hopper',
+    db:       'starhopper',
+    autoplay: 'muted',
+  });
+</script>
 </body>
 </html>

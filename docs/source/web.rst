@@ -41,10 +41,7 @@ A web player is four files, served together from one folder:
 page <https://github.com/picocomputer/rp6502/releases/latest>`__, with a
 sample ``index.html`` and program, and they are always replaced as a
 pair. In a CMake project, ``rp6502_web()`` builds all four files into a
-zip, as described in `Building with CMake`_. ``index.html`` is not tied to
-a release: the ``index.html`` described here needs release 0.36 or later,
-and it works with the ``rp6502.js`` and ``rp6502.wasm`` of every later
-release. Any change to the settings is listed in the release notes.
+zip, as described in `Building with CMake`_.
 
 
 .. _web-page:
@@ -61,22 +58,37 @@ This ``index.html`` plays ``game.rp6502``, which is in the same folder.
   <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Game</title>
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; background: #000; }
+    #game { height: 100%; }
+  </style>
   </head>
   <body>
-  <script>
-    var CONFIG = {
-      title: 'My Game',
-      rom:   'game.rp6502',
-      db:    'username-mygame',
-    };
-  </script>
+  <div id="game"></div>
   <script src="rp6502.js" onerror="document.body.textContent = 'Could not load rp6502.js'"></script>
+  <script>
+    rp6502('game', 'game.rp6502', {
+      title: 'My Game',
+      db:    'username-mygame',
+    });
+  </script>
   </body>
   </html>
 
-The settings are in ``CONFIG``. The ``rp6502.js`` script goes last in
-``<body>``, after everything else on the page, and it builds the page
-around the emulator from those settings.
+``rp6502(container, rom, options)`` puts a player in the page:
+
+- ``container`` is the element for the player, or the ``id`` of an
+  element in the page, such as ``'game'``.
+- ``rom`` is the program that runs, as a path from ``index.html``.
+- ``options`` holds the settings listed below, and can be left out.
+
+``rp6502.js`` defines ``rp6502()``, so a plain ``<script src>``, with no
+``async`` or ``defer``, loads it before the script with the call.
+
+The player is as wide as its container. In a container with no height,
+the screen is 4:3 and the footer goes below it. A container given a
+height is filled, as ``#game`` fills the window here.
 
 A browser does not run a web player opened as a file, from a ``file://``
 address, because the ROM and the WebAssembly load only from a web server.
@@ -94,28 +106,28 @@ open http://localhost:8000.
    * - Setting
      - Example
      - Description
+   * - ``install``
+     - ``'game.bas'``
+     - More files for the program, as a path from ``index.html`` or a
+       list of paths. Each one is installed on the null drive, where the
+       program reads it as ``:`` followed by the file name, in any case.
+       See :ref:`Installed ROMs <port-installed-roms>`.
    * - ``title``
      - ``'My Game'``
-     - The name in the browser tab. Default ``Picocomputer 6502``.
-   * - ``rom``
-     - ``'game.rp6502'``
-     - The ROM, as a path from ``index.html``. Required.
+     - The name in the browser tab while keys go to this player. Without
+       it, the tab shows the ``<title>`` of the page.
    * - ``args``
      - ``['-c1']``
      - The arguments for the program, argv[1] and on.
-   * - ``install``
-     - ``['game.bas']``
-     - Files for the program, as paths from ``index.html``. Each one is
-       installed on the null drive, where the program reads it as ``:``
-       followed by the file name, in any case. See :ref:`Installed ROMs
-       <port-installed-roms>`.
    * - ``db``
      - ``'username-mygame'``
-     - The name of the IndexedDB database for saves. See `Saves`_.
+     - The name of the IndexedDB database for saves. Without it, saves
+       last until the page closes. See `Saves`_.
    * - ``bgcolor``
      - ``'000000'``
-     - The color around the picture when the page and the canvas have
-       different shapes, as six hex digits, RRGGBB. Default ``000000``.
+     - The color around the picture when the player and the canvas have
+       different shapes, as six hex digits, RRGGBB, with or without
+       ``#``. Default ``000000``.
    * - ``border``
      - ``'8px'``
      - Space around the game, in the ``bgcolor`` color, as a CSS length such as
@@ -126,14 +138,15 @@ open http://localhost:8000.
      - How pixels are scaled: ``nearest``, ``linear`` or ``sharp``.
        Default ``sharp``, which enlarges by a whole number and then
        smooths.
+   * - ``autoplay``
+     - ``'muted'``
+     - When the program and the sound start: ``on``, ``auto``, ``off`` or
+       ``muted``. Default ``on``. See `Click to Play`_.
    * - ``overlay``
      - ``'overlay'``
-     - The ``id`` of the template shown while there is no sound. See
-       `Click to Play`_.
-   * - ``run``
-     - ``'always'``
-     - When the program starts: ``always``, ``onaudio`` or ``onclick``.
-       Default ``always``. See `Click to Play`_.
+     - What covers the game while there is no sound: a play button by
+       default, nothing with ``false``, or the ``<template>`` with this
+       ``id``. See `Click to Play`_.
    * - ``footer``
      - ``'Arrows to move.'``
      - A line of HTML under the game, with links under it. See `Footer`_.
@@ -141,15 +154,17 @@ open http://localhost:8000.
      - ``'user/mygame'``
      - The GitHub repository linked under the footer.
 
-A setting that is left out, or left blank, is off or takes its default.
-For example, Microsoft BASIC loads and runs a program named as an
-argument, and ``-c1`` keeps the keyboard in capitals:
+A setting that is left out, or left blank, is off or takes its default,
+except ``autoplay``, which must not be blank. For example, Microsoft
+BASIC loads and runs a program named as an argument, and ``-c1`` keeps
+the keyboard in capitals:
 
 .. code-block:: javascript
 
-  rom:     'basic.rp6502',
-  install: ['game.bas'],
-  args:    ['-c1', ':GAME.BAS'],
+  rp6502('game', 'basic.rp6502', {
+    install: 'game.bas',
+    args:    ['-c1', ':GAME.BAS'],
+  });
 
 .. _web-saves:
 
@@ -172,18 +187,72 @@ saves last until the page closes.
 Click to Play
 -------------
 
-A browser plays no sound on a page until the player clicks the page or
-presses a key. While there is no sound, the click-to-play overlay covers
-the game with a play button, so that the player knows to click it. The
-click turns the sound on and removes the overlay. Where the browser plays
-sound at once, there is no overlay.
+A browser usually plays no sound on a page until a click or a key press
+there, so a player is silent until a click on it or a key that goes to
+it. While a player is silent, an overlay covers the game with a play
+button, and the click starts the sound and removes the overlay.
 
-The overlay is a ``<template>`` in ``index.html``. The browser keeps the
-HTML in a template without showing it. ``overlay`` names the template by
-its ``id``, and the one element in the template is placed over the game.
-Everything about the overlay, from the words to the colors, is in
-``index.html``. To add a simple overlay to the page above, put this
-style in ``<head>`` and this template in ``<body>``, before the scripts:
+A page cannot scroll when it fits in the window, or when ``html`` or
+``body`` has ``overflow: hidden``, as in the page above. On a page that
+cannot scroll, keys go to the player while nothing else in the page has
+the focus. There, the sound starts when the page loads if the browser
+allows sound without a click, and otherwise at the first key. `Autoplay
+policy in Chrome <https://developer.chrome.com/blog/autoplay>`__ lists
+when Chrome allows sound without a click. On a page that scrolls, the
+arrows and Space scroll the page until the player is clicked.
+
+``autoplay`` sets when the program starts, and whether keys and sound
+start before a click:
+
+.. list-table::
+   :widths: 15 85
+   :header-rows: 1
+
+   * - Value
+     - Description
+   * - ``on``
+     - The default. The program starts when the page loads. Before a
+       click, keys and sound start only on a page that cannot scroll.
+   * - ``auto``
+     - The program starts when the sound starts, so it begins with
+       sound. Otherwise the same as ``on``.
+   * - ``off``
+     - The program starts at the first click on the player.
+   * - ``muted``
+     - The program starts when the page loads, without sound and under
+       the overlay. Keys and sound start at a click on the player.
+
+The play button is styled with these CSS custom properties, set on
+``:root`` for every player in the page, or on one container, such as
+``#game``:
+
+.. list-table::
+   :widths: 35 65
+   :header-rows: 1
+
+   * - Property
+     - Description
+   * - ``--rp6502-play-x``, ``--rp6502-play-y``
+     - The position of the button and the "Click to play" label, from
+       the left and from the top. Default ``50%``.
+   * - ``--rp6502-button-size``
+     - The width of the button. Default ``clamp(56px, 18cqmin, 96px)``,
+       where ``1cqmin`` is 1% of the shorter side of the screen.
+   * - ``--rp6502-overlay-background``
+     - The color over the game. Default ``rgba(0, 0, 0, .45)``.
+
+``--rp6502-play-y: 70%`` moves the button lower, over an empty part of a
+title screen:
+
+.. code-block:: css
+
+  #game { --rp6502-play-y: 70%; }
+
+A ``<template>`` in the page can replace the play button. The browser
+keeps the HTML in a template without showing it. ``overlay`` names the
+template by its ``id``, and the first element in the template is placed
+over the game. To add a simple overlay to the page above, put this style
+in ``<head>`` and this template in ``<body>``, before the scripts:
 
 .. code-block:: html
 
@@ -200,33 +269,11 @@ style in ``<head>`` and this template in ``<body>``, before the scripts:
     <div class="overlay">&#9654; Click to play</div>
   </template>
 
-Then turn it on in ``CONFIG``:
+Then name it with ``overlay``:
 
 .. code-block:: javascript
 
-  overlay: 'overlay',
-
-The ``index.html`` in the web zip has a round play button in its overlay
-template, with settings at the top of its style:
-
-.. code-block:: css
-
-  .overlay {
-    --y: 50%;                              /* height of the button, from the top */
-    --size: clamp(56px, 18vmin, 96px);     /* width of the button */
-    --shade: rgba(0, 0, 0, .45);           /* over the game */
-
-``--y: 70%`` moves the button lower, over an empty part of a title
-screen.
-
-``run`` sets when the program starts:
-
-- ``always``, the default: at once, under the overlay while there is no
-  sound.
-- ``onaudio``: when there is sound, so the program starts from the
-  beginning with sound.
-- ``onclick``: at a click on the overlay or a key press, even where the
-  browser plays sound at once.
+  rp6502('game', 'game.rp6502', {overlay: 'overlay'});
 
 .. _web-footer:
 
@@ -245,7 +292,7 @@ download, and to this site:
 The footer is HTML, so it can include a link, which opens in a new tab with
 ``target="_blank"`` instead of in place of the game. The game is scaled
 to the space above the footer. Without ``footer``, there is no footer; a
-page of your own can put any HTML after the script instead.
+page of your own can put any HTML under the container instead.
 
 License Notices
 ---------------
@@ -253,6 +300,99 @@ License Notices
 With ``?credits`` at the end of its address, such as
 ``https://example.com/game/?credits``, the page shows the license notices
 of the components in ``rp6502.js`` and ``rp6502.wasm``.
+
+
+.. _web-players:
+
+Players in a Page
+=================
+
+A page can hold several players, such as a blog post with a game after
+each listing. These lines put two players in a page, with the play
+button of the first one lower:
+
+.. code-block:: html
+
+  <style>
+    #game1 { --rp6502-play-y: 84%; }
+  </style>
+  <div id="game1"></div>
+  <div id="game2"></div>
+  <script src="rp6502.js"></script>
+  <script>
+    rp6502('game1', 'starhopper.rp6502');
+    rp6502('game2', 'adventure.rp6502');
+  </script>
+
+A page loads ``rp6502.js`` once, for any number of players. Each call
+makes a separate player, with a separate program, screen and sound.
+``rp6502()`` returns the player, an object with ``element``, the
+container, and ``destroy()``.
+
+Keys, a paste and gamepads go to the player with the focus, and a click
+on a player moves the focus to it. On a page that cannot scroll, as
+described in `Click to Play`_, keys go to the last player clicked while
+nothing in the page has the focus, and to the first player before any
+click. Players that run at the same time need different ``db`` names,
+because a database is used by one player at a time.
+
+Removing a Player
+-----------------
+
+``destroy()`` stops the program, stores the saves, frees the database for
+another player, and removes everything the player added to the
+container. It returns a Promise that resolves when the saves are stored.
+A new player can go in the same container at once. For a new player with
+the same ``db``, wait for the Promise first, as in this function, which
+changes the program:
+
+.. code-block:: javascript
+
+  let player = rp6502('game', 'one.rp6502', {db: 'me-games'});
+
+  async function change(rom) {
+    await player.destroy();
+    player = rp6502('game', rom, {db: 'me-games'});
+  }
+
+Removing the container from the page does not stop the player, so call
+``destroy()`` first.
+
+In a Web Component
+------------------
+
+A player works in a shadow root, such as in a web component. Pass the
+element itself as ``container``, because an ``id`` is looked up only in
+the document. ``overlay`` can name a ``<template>`` in the same shadow
+root. The style rules of the page do not apply inside a shadow root, but
+the ``--rp6502-*`` properties set on the host element or on ``:root``
+do, so ``my-arcade { --rp6502-play-y: 84%; }`` in the page moves the play
+button of the element below:
+
+.. code-block:: javascript
+
+  class MyArcade extends HTMLElement {
+    #shadow = this.attachShadow({mode: 'closed'});
+    #player;
+
+    connectedCallback() {
+      const screen = document.createElement('div');
+      this.#shadow.replaceChildren(screen);
+      this.#player = rp6502(screen, this.getAttribute('rom'));
+    }
+
+    disconnectedCallback() {
+      this.#player.destroy();
+    }
+  }
+  customElements.define('my-arcade', MyArcade);
+
+.. code-block:: html
+
+  <my-arcade rom="game.rp6502"></my-arcade>
+
+The shadow root is stored in a private field, so the same code works
+for a closed root, where ``this.shadowRoot`` is ``null``.
 
 
 .. _web-cmake:
@@ -270,7 +410,7 @@ the web zip and the emulator of the latest release:
   rp6502_web(game)
 
 The same files are unpacked next to it in ``web/game/``. ``CONFIG`` sets
-settings of the page, as JavaScript, with a comma after each one:
+options, as JavaScript, with a comma after each one:
 
 .. code-block:: cmake
 
@@ -279,12 +419,12 @@ settings of the page, as JavaScript, with a comma after each one:
       footer: 'Arrows to move, Space to fire.',
   ]])
 
-The settings replace the same settings in the page, and the others are
-added. ``rom`` is always the ROM of the target, and ``github`` is the
-GitHub repository that the git remote of the project names, unless
-``CONFIG`` names another. ``PAGE`` gives a page of
-your own, and ``OUTPUT`` names the zip, so one ROM can be packaged for
-several sites:
+The options in ``CONFIG`` replace the same options of each ``rp6502()``
+call in the page, and the others are added. The ``rom`` argument is
+always the ROM of the target, and ``github`` is the GitHub repository
+that the git remote of the project names, unless ``CONFIG`` names
+another. ``PAGE`` gives a page of your own, and ``OUTPUT`` names the zip,
+so one ROM can be packaged for several sites:
 
 .. code-block:: cmake
 
@@ -293,13 +433,17 @@ several sites:
 
 A file after ``PAGE`` is stored in the zip as ``index.html``. A folder is
 copied into the zip with its subfolders, and an ``index.html`` at its
-root is the page. ``EMULATOR`` names the web zip that ``rp6502.js`` and
-``rp6502.wasm`` come from, in the forms of :ref:`Fetching BASIC and the
-Emulator <sdk-fetch>`:
+root is the page. A page of your own holds a container, loads
+``rp6502.js`` with ``<script src="rp6502.js">``, and calls ``rp6502()``
+in a later script, as in `The Page`_.
+
+``EMULATOR`` names the web zip that ``rp6502.js`` and ``rp6502.wasm``
+come from, in the forms of :ref:`Fetching BASIC and the Emulator
+<sdk-fetch>`:
 
 .. code-block:: cmake
 
-  rp6502_web(game EMULATOR v0.36)
+  rp6502_web(game EMULATOR tools/rp6502-web.zip)
 
 In VS Code, choose "RP6502-WEB" in the Run and Debug side panel and
 press F5. The project is built, and the browser opens a page with a link
@@ -343,7 +487,7 @@ each one with ``rp6502_web()`` and publishes it on every push to
            source:
              description: Branch, tag or commit to build
            emulator:
-             description: Emulator, such as v0.36
+             description: Emulator, in the forms EMULATOR takes
      jobs:
        web:
          uses: picocomputer/.github/.github/workflows/web.yml@main

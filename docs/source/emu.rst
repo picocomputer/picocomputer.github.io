@@ -205,7 +205,8 @@ work.
        on macOS, and ``Saved Games\rp6502`` on Windows.
    * - ``--bgcolor``
      - ``RRGGBB``
-     - Letterbox and pillarbox fill. Default ``000000``.
+     - Letterbox and pillarbox fill, with or without ``#``. Default
+       ``000000``.
    * - ``--phi2``
      - kHz
      - 6502 clock, 100 to 8000. Default 8000. ``0`` is for
