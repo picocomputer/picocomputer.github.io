@@ -46,29 +46,6 @@ instead, the :doc:`emu` takes command-line arguments, and the :doc:`web`
 takes settings in its page.
 
 
-Reset
-=====
-
-Think of reset as two states rather than a pulse on RESB. While reset
-is low, the 6502 is stopped. On an :doc:`pico`, the monitor is connected
-to the console while in reset. On the Pocket, the system waits for a new
-ROM to be loaded from the settings menu. On the :doc:`emu`, some hosts
-wait for a new ROM to load while others exit the host process.
-
-Reset is mostly handled automatically and this works well for all hosts
-except the :doc:`pico`. Here we need a way to stop a wedged 6502. The monitor
-also provides two commands that will bring reset high.
-Either ``load`` a ROM that has a reset vector, or use the ``reset`` command
-if you've prepared RAM some other way.
-To drop reset from high to low and return to the monitor, even from a
-wedged 6502, use any terminal on the
-:ref:`console manifold <term-console-manifold>`:
-
-1. Press Ctrl-Alt-Del from a USB keyboard.
-2. Send a break from a serial terminal.
-3. Send a break from a telnet terminal.
-
-
 .. _ria-registers:
 
 Registers
@@ -2429,6 +2406,29 @@ commands or play your own sounds. Typically you request reads on
 can also arm a write after reading and verifying a card. The cached
 tag image is not refreshed by a write, so re-present the card before the
 next ``NFC_CMD_READ`` if you want to read back what you wrote.
+
+
+Reset
+=====
+
+Think of reset as two states rather than a pulse on RESB. While reset
+is low, the 6502 is stopped. On an :doc:`pico`, the monitor is connected
+to the console while in reset. On the Pocket, the system waits for a new
+ROM to be loaded from the settings menu. On the :doc:`emu`, some hosts
+wait for a new ROM to load while others exit the host process.
+
+Reset is mostly handled automatically and this works well for all hosts
+except the :doc:`pico`. Here we need a way to stop a wedged 6502. The monitor
+also provides two commands that will bring reset high.
+Either ``load`` a ROM that has a reset vector, or use the ``reset`` command
+if you've prepared RAM some other way.
+To drop reset from high to low and return to the monitor, even from a
+wedged 6502, use any terminal on the
+:ref:`console manifold <term-console-manifold>`:
+
+1. Press Ctrl-Alt-Del from a USB keyboard.
+2. Send a break from a serial terminal.
+3. Send a break from a telnet terminal.
 
 
 PIX Physical Layer
