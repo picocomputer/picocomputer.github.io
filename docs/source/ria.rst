@@ -1250,6 +1250,8 @@ Mouse buttons are a bitfield:
       MOUSE_SIZE    = 6
 
 
+.. _ria-tablet:
+
 Tablet
 ======
 
@@ -1266,30 +1268,24 @@ in XRAM.
   xreg_ria_tablet(xaddr);   // macro shortcut
 
 The block is a four-byte header followed by eight contact records for
-multi-touch; a mouse or pen uses only the first.
+multi-touch; a mouse or pen uses only the first. The layout always reserves
+the whole block, ``tablet_t``, because the RIA writes all eight contacts. A
+program for a mouse or pen reads only the header and the first contact,
+``tablet_pointer_t``.
 
 ``wheel`` and ``pan`` are scroll counters in the same format as the
 mouse's: subtract the previous reading to get the change. Reading them
 once per VSYNC is enough for normal use.
 
-Each axis is a set of single-byte *windows*: exactly one is non-zero, and it
-alone carries the value. Decode by taking the first non-zero byte. This unusual
-decode is because XRAM is atomic for 8-bits only. The single retry is enough
-to guarantee safety because updates are 1ms or more apart while the retry
-happens in a few microseconds. A read that overlaps an update can also return
-one axis from the previous update and the other axis from the new one. That is
-imperceptible, so it needs no handling.
+Each coordinate is 12 bits. ``xy_hi`` holds the high four bits of X in its
+upper half and the high four bits of Y in its lower half, and ``x_lo`` and
+``y_lo`` hold the low bytes. A released contact has flags of 0 and keeps its
+last position.
 
 .. code-block:: C
 
-  if (c.x0) x = c.x0 - 1;
-  else if (c.x1) x = c.x1 + 254;
-  else if (c.x2) x = c.x2 + 509;
-  else { /* read the contact once more, then keep the previous X */ }
-
-  if (c.y0) y = c.y0 - 1;
-  else if (c.y1) y = c.y1 + 254;
-  else { /* read the contact once more, then keep the previous Y */ }
+  x = (c.xy_hi >> 4) << 8 | c.x_lo;
+  y = (c.xy_hi & 0x0F) << 8 | c.y_lo;
 
 Contact flags are a bitfield:
 
@@ -1352,9 +1348,19 @@ pointer, and ``control`` has no effect.
       typedef struct
       {
           uint8_t flags;
-          uint8_t x0, x1, x2;
-          uint8_t y0, y1;
+          uint8_t xy_hi;
+          uint8_t x_lo;
+          uint8_t y_lo;
       } tablet_contact_t;
+
+      typedef struct
+      {
+          uint8_t control;
+          uint8_t status;
+          uint8_t wheel;
+          uint8_t pan;
+          tablet_contact_t contact;
+      } tablet_pointer_t;
 
       typedef struct
       {
@@ -1393,6 +1399,19 @@ pointer, and ``control`` has no effect.
           xreg 0, 0, 3, addr
       .endmacro
 
+      .struct tablet_pointer_t
+          control .byte
+          status  .byte
+          wheel   .byte
+          pan     .byte
+          contact .struct
+              flags .byte
+              xy_hi .byte
+              x_lo  .byte
+              y_lo  .byte
+          .endstruct
+      .endstruct
+
       .struct tablet_t
           control .byte
           status  .byte
@@ -1400,11 +1419,9 @@ pointer, and ``control`` has no effect.
           pan     .byte
           contact .struct
               flags .byte
-              x0    .byte
-              x1    .byte
-              x2    .byte
-              y0    .byte
-              y1    .byte
+              xy_hi .byte
+              x_lo  .byte
+              y_lo  .byte
           .endstruct
           .res (::TABLET_CONTACTS - 1) * .sizeof(contact)
       .endstruct
@@ -1445,14 +1462,115 @@ pointer, and ``control`` has no effect.
       TABLET_CONTACT = 4
 
       TABLET_CONTACT_FLAGS = 0
-      TABLET_CONTACT_X0    = 1
-      TABLET_CONTACT_X1    = 2
-      TABLET_CONTACT_X2    = 3
-      TABLET_CONTACT_Y0    = 4
-      TABLET_CONTACT_Y1    = 5
-      TABLET_CONTACT_SIZE  = 6
+      TABLET_CONTACT_XY_HI = 1
+      TABLET_CONTACT_X_LO  = 2
+      TABLET_CONTACT_Y_LO  = 3
+      TABLET_CONTACT_SIZE  = 4
 
       TABLET_SIZE = TABLET_CONTACT + TABLET_CONTACTS * TABLET_CONTACT_SIZE
+      TABLET_POINTER_SIZE = TABLET_CONTACT + TABLET_CONTACT_SIZE
+
+XRAM is atomic for single bytes only, so the RIA can write the block while a
+program reads it, and that read mixes two positions. ``tablet_read`` copies the
+block, then reads it again to check that the RIA did not write it during the
+first read. Writes are at least 1 ms apart, so when the two reads differ, a
+third read will not overlap one. All three versions have the same C
+prototype, ``void tablet_read(tablet_pointer_t *tablet)``, so a C program can
+call an assembly version in place of the C one. A multi-touch program reads a
+``tablet_t`` in place of ``tablet_pointer_t``.
+
+.. tab:: C
+
+   .. code-block:: C
+
+      // Read the block again to check that the host did not write it during the
+      // read. Writes are at least 1 ms apart, so a third read will not overlap one.
+      void tablet_read(tablet_pointer_t *tablet)
+      {
+          tablet_pointer_t check;
+
+          xram0_read(tablet, XRAM_TABLET, sizeof(tablet_pointer_t));
+          xram0_read(&check, XRAM_TABLET, sizeof(tablet_pointer_t));
+          if (memcmp(tablet, &check, sizeof(tablet_pointer_t)))
+              xram0_read(tablet, XRAM_TABLET, sizeof(tablet_pointer_t));
+      }
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+
+      .importzp ptr1
+      .export _tablet_read
+
+      ; void tablet_read(tablet_pointer_t *tablet);
+      ; Read the block again to check that the host did not write it during the
+      ; read. Writes are at least 1 ms apart, so a third read will not overlap one.
+      _tablet_read:
+          sta ptr1
+          stx ptr1+1
+          lda #1
+          sta RIA_STEP0
+          jsr @read
+          jsr @read
+          beq @done           ; Done when the two reads match, else read a third time
+      @read:
+          lda #<XRAM_TABLET
+          sta RIA_ADDR0
+          lda #>XRAM_TABLET
+          sta RIA_ADDR0+1
+          ldx #0
+          ldy #0
+      @loop:
+          lda RIA_RW0
+          cmp (ptr1),y
+          beq @same
+          inx                 ; A byte changed
+      @same:
+          sta (ptr1),y
+          iny
+          cpy #.sizeof(tablet_pointer_t)
+          bne @loop
+          txa
+      @done:
+          rts
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      .include "imag.inc"
+      .globl tablet_read
+
+      ; void tablet_read(tablet_pointer_t *tablet);
+      ; Read the block again to check that the host did not write it during the
+      ; read. Writes are at least 1 ms apart, so a third read will not overlap one.
+      tablet_read:
+          lda #1
+          sta RIA_STEP0
+          jsr 1f
+          jsr 1f
+          beq 4f              ; Done when the two reads match, else read a third time
+      1:
+          lda #(XRAM_TABLET & $FF)
+          sta RIA_ADDR0
+          lda #((XRAM_TABLET >> 8) & $FF)
+          sta RIA_ADDR0+1
+          ldx #0
+          ldy #0
+      2:
+          lda RIA_RW0
+          cmp (__rc2),y
+          beq 3f
+          inx                 ; A byte changed
+      3:
+          sta (__rc2),y
+          iny
+          cpy #TABLET_POINTER_SIZE
+          bne 2b
+          txa
+      4:
+          rts
 
 
 .. _ria-gamepads:

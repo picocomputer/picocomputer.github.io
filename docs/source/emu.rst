@@ -407,10 +407,9 @@ MOS-style ``$FF``.
      - Work the absolute pointer, including multi-touch up to eight
        contacts. The buttons are the same bits as the mouse. A pointer
        placed with ``at`` always reports hover, and a ``touch`` never
-       does. Each ``at`` moves the pointer in a single update, so a
-       program that reads during that update can get the old X with the
-       new Y. With a real pointer that is imperceptible lag, so it is
-       not a program bug.
+       does. A program that reads the block while an ``at`` is applied
+       can get the old X with the new Y, unless it reads the block as
+       :ref:`Tablet <ria-tablet>` in the RIA datasheet shows.
    * - ``expect "text"``,
        ``expect-not "text"``
      - Check the console since the last check. A match consumes up to and
