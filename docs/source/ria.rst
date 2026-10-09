@@ -1277,15 +1277,16 @@ program for a mouse or pen reads only the header and the first contact,
 mouse's: subtract the previous reading to get the change. Reading them
 once per VSYNC is enough for normal use.
 
-Each coordinate is 12 bits. ``xy_hi`` holds the high four bits of X in its
-upper half and the high four bits of Y in its lower half, and ``x_lo`` and
-``y_lo`` hold the low bytes. A released contact has flags of 0 and keeps its
-last position.
+Each coordinate is 12 bits. ``y_lo`` and ``x_lo`` hold the low bytes, and
+``yx_hi`` holds the high four bits of Y in its upper half and the high four
+bits of X in its lower half. On the 320x240 and 320x180 canvases the high bits
+of Y are always 0, so ``x_lo`` and ``yx_hi`` are X as a little-endian 16-bit
+value. A released contact has flags of 0 and keeps its last position.
 
 .. code-block:: C
 
-  x = (c.xy_hi >> 4) << 8 | c.x_lo;
-  y = (c.xy_hi & 0x0F) << 8 | c.y_lo;
+  x = (c.yx_hi & 0x0F) << 8 | c.x_lo;
+  y = (c.yx_hi >> 4) << 8 | c.y_lo;
 
 Contact flags are a bitfield:
 
@@ -1348,9 +1349,9 @@ pointer, and ``control`` has no effect.
       typedef struct
       {
           uint8_t flags;
-          uint8_t xy_hi;
-          uint8_t x_lo;
           uint8_t y_lo;
+          uint8_t x_lo;
+          uint8_t yx_hi;
       } tablet_contact_t;
 
       typedef struct
@@ -1406,9 +1407,9 @@ pointer, and ``control`` has no effect.
           pan     .byte
           contact .struct
               flags .byte
-              xy_hi .byte
-              x_lo  .byte
               y_lo  .byte
+              x_lo  .byte
+              yx_hi .byte
           .endstruct
       .endstruct
 
@@ -1419,9 +1420,9 @@ pointer, and ``control`` has no effect.
           pan     .byte
           contact .struct
               flags .byte
-              xy_hi .byte
-              x_lo  .byte
               y_lo  .byte
+              x_lo  .byte
+              yx_hi .byte
           .endstruct
           .res (::TABLET_CONTACTS - 1) * .sizeof(contact)
       .endstruct
@@ -1462,9 +1463,9 @@ pointer, and ``control`` has no effect.
       TABLET_CONTACT = 4
 
       TABLET_CONTACT_FLAGS = 0
-      TABLET_CONTACT_XY_HI = 1
+      TABLET_CONTACT_Y_LO  = 1
       TABLET_CONTACT_X_LO  = 2
-      TABLET_CONTACT_Y_LO  = 3
+      TABLET_CONTACT_YX_HI = 3
       TABLET_CONTACT_SIZE  = 4
 
       TABLET_SIZE = TABLET_CONTACT + TABLET_CONTACTS * TABLET_CONTACT_SIZE
