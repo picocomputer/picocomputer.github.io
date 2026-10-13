@@ -428,9 +428,10 @@ byte of UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
      - Run until the program exits, then check its code.
    * - ``peek [xram:|ram:]<addr> <byte>...``
      - Compare memory.
-   * - ``poke [xram:|ram:]<addr> <byte>...``
+   * - ``poke [xram:|ram:|bus:]<addr> <byte>...``
      - Write memory. The program reads what you wrote, so a test can
-       skip ahead to the state it needs to exercise.
+       skip ahead to the state it needs to exercise. Each byte goes to
+       the next address.
    * - ``dump [xram:|ram:]<addr> [count]``
      - Print memory as hex.
    * - ``cpu``
@@ -463,6 +464,16 @@ byte of UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
        the console would.
    * - ``reply [on|off]``
      - Answer every command on stdout. See `Driving it from a program`_.
+
+An address is in the 6502's address space, RAM at $0000-$FEFF, the VIA
+at $FFD0-$FFDF and the RIA at $FFE0-$FFFF, unless ``xram:`` puts it in
+XRAM. ``ram:`` is the same as no prefix. Nothing answers at
+$FF00-$FFCF, so an address there is an error. ``peek``, ``dump`` and
+``wait`` find a register as a read would, without what the read does,
+so RX keeps its byte, XSTACK keeps its top and IRQ keeps its flags.
+``poke`` sets what a read finds and does nothing else. With ``bus:``,
+``poke`` stores the byte the way the program does, so a register does
+what a store to it does: ``poke bus:$FFE1 $41`` sends an ``A`` to stdout.
 
 A failed check names the script and the line it was on, and ends with
 the fields of ``cpu``. The program's stdout that no check used goes to
