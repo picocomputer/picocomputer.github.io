@@ -324,9 +324,9 @@ Scripting
    Scripting is beta and may change.
 
 ``--script`` drives the machine with no one at the keyboard. It types,
-works the gamepads and the pointer, waits for expected console output,
-and checks what the program produced, which is enough to turn a ROM into
-a test that passes or fails.
+works the gamepads and the pointer, waits for what the program writes to
+stdout and stderr, and checks what the program produced, which is enough
+to turn a ROM into a test that passes or fails.
 
 .. code-block:: text
 
@@ -349,6 +349,11 @@ control byte. Hex takes up to two digits and octal up to three, and a
 string cannot hold ``\0``. Numbers may be decimal, C-style ``0xFF``, or
 MOS-style ``$FF``.
 
+Text is UTF-8. The program's stdout and stderr are converted from the
+machine's code page to UTF-8 as the program writes them, so ``wait`` and
+``expect`` match text as the script writes it. An escape from ``\x80``
+to ``\xFF`` is a byte of UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
+
 .. code-block:: text
 
   wait "Colossal Cave Adventure"
@@ -366,8 +371,9 @@ MOS-style ``$FF``.
      - Description
    * - ``run [frames]``
      - Let exactly that many frames elapse, one VSYNC each. Default 1.
-   * - ``wait "text" [frames]``
-     - Run until the console prints it. Default budget 600 frames.
+   * - ``wait [stdout|stderr] "text" [frames]``
+     - Run until the program writes it to that stream, stdout if none is
+       named. Default budget 600 frames.
    * - ``wait [xram:|ram:]<addr> <byte> [frames]``
      - Run until that byte reads that value. The byte is read once a
        frame, at the boundary.
@@ -410,10 +416,12 @@ MOS-style ``$FF``.
        does. A program that reads the block while an ``at`` is applied
        can get the old X with the new Y, unless it reads the block as
        :ref:`Tablet <ria-tablet>` in the RIA datasheet shows.
-   * - ``expect "text"``,
-       ``expect-not "text"``
-     - Check the console since the last check. A match consumes up to and
-       including it.
+   * - ``expect [stdout|stderr] "text"``,
+       ``expect-not [stdout|stderr] "text"``
+     - Check the stream since its last match, stdout if none is named. A
+       match consumes up to and including it. The two streams are checked
+       separately. The line editor's echo of typed text is in neither, but
+       a program that echoes its own input writes that echo to stdout.
    * - ``expect-exit <code> [frames]``
      - Run until the program exits, then check its code.
    * - ``peek [xram:|ram:]<addr> <byte>...``
@@ -423,6 +431,11 @@ MOS-style ``$FF``.
        skip ahead to the state it needs to exercise.
    * - ``dump [xram:|ram:]<addr> [count]``
      - Print memory as hex.
+   * - ``cpu``
+     - Print where the 6502 is: its registers ``PC A X Y SP P``, the RIA's
+       ``OP`` and ``BUSY`` registers, and ``RESB``. A frame can end partway
+       through an instruction, so PC may be past its first byte. RESB is
+       0 once the program has stopped and the 6502 is held in reset.
    * - ``crc``
      - Print the screen as a CRC-32.
    * - ``mark``,
@@ -449,7 +462,12 @@ MOS-style ``$FF``.
    * - ``reply [on|off]``
      - Answer every command on stdout. See `Driving it from a program`_.
 
-A failed check names the script and the line it was on, then exits 1.
+A failed check names the script and the line it was on, and ends with
+the fields of ``cpu``. The program's stdout that no check used goes to
+stdout, as the program wrote it, and the run exits 1. Once more than
+64 KB of it is unused, only the newest part is kept, so it can start
+partway through a line. The program's stderr goes to stderr as it is
+written, all through the run.
 
 A program must treat RAM and XRAM as uninitialized, because they hold
 unknown values until the program writes them. To help find a program that
@@ -519,9 +537,10 @@ Driving it from a program
 -------------------------
 
 ``reply`` turns on one line of answer per command — ``ok``, ``ok <values>``
-for ``dump`` and ``crc``, or ``fail <why>``. It is off until asked, so a
-driver writes its whole preamble without waiting for anything and reads the
-``ok`` for ``reply`` itself as the moment the machine starts answering.
+for ``dump``, ``crc``, ``seed`` and ``cpu``, or ``fail <why>``. It is off
+until asked, so a driver writes its whole preamble without waiting for
+anything and reads the ``ok`` for ``reply`` itself as the moment the
+machine starts answering.
 
 An answer comes when the command **finishes**, not when it parses. The
 ``ok`` for ``run 600`` arrives six hundred frames later, and the one for
@@ -535,7 +554,41 @@ An answer comes when the command **finishes**, not when it parses. The
   pad 0 press start        -> ok
   run 10                   -> ok
   dump xram:$FF00 4        -> ok 80 00 00 08
-  peek xram:$FF00 $99      -> fail $FF00+0 is $80, expected $99
+  peek xram:$FF00 $99      -> fail $FF00+0 is $80, expected $99; PC=$0307 A=$30 X=$01 Y=$00 SP=$F7 P=$86 OP=$01 BUSY=$00 RESB=1
+
+A ``fail`` ends the run, so there is no asking ``cpu`` after one. The
+``fail`` line ends with the ``cpu`` fields after the last ``;``. Everything
+after the ``fail`` line, up to the end of stdout, is the program's stdout
+that no ``wait`` or ``expect`` used, as the program wrote it. The
+program's stderr is on stderr.
+
+This driver never answers the question. It writes:
+
+.. code-block:: text
+
+  reply
+  wait "Would you like instructions?"
+  run 60
+  cpu
+  wait "end of a road" 60
+
+and reads:
+
+.. code-block:: text
+
+  ok
+  ok
+  ok
+  ok PC=$FFF1 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1
+  fail timed out waiting for "end of a road"; PC=$FFF3 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1
+
+
+  >
+
+PC is in the RIA's spin loop, BUSY says an API call is running, and OP
+$16 is READ_XSTACK, the call under ``read()``. The last three lines are
+the program's stdout after the question: two empty lines and the ``>``
+prompt where it waits for the answer.
 
 The arithmetic and the assertions belong in your driver program, which is
 why you don't see any in this scripting language.

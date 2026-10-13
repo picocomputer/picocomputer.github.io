@@ -1208,11 +1208,11 @@ emulator's, so a ROM can run as a step in a script or a test.
 ``--phi2 0`` removes the speed limit.
 
 With ``--script``, the input comes from an emulator :ref:`script
-<emu-scripting>`, and the ROM's output is checked against the script
-instead of being written to standard output, so a program that reads the
-keyboard can be tested. The exit code is 0 when the script passes and 1
-when it fails. A BASIC ROM does not exit when its program ends, so run it
-with ``--script``.
+<emu-scripting>`, and the script checks the ROM's stdout and stderr, so a
+program that reads the keyboard can be tested. The ROM's stdout is written
+to standard output only when the script fails. The exit code is 0 when the
+script passes and 1 when it fails. A BASIC ROM does not exit when its
+program ends, so run it with ``--script``.
 
 ``rp6502.py execute`` is a wrapper for ``rp6502-emu --headless`` or
 ``rp6502-emu --script`` that uses the ``emulator`` setting of
