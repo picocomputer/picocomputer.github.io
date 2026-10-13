@@ -349,18 +349,20 @@ control byte. Hex takes up to two digits and octal up to three, and a
 string cannot hold ``\0``. Numbers may be decimal, C-style ``0xFF``, or
 MOS-style ``$FF``.
 
-Text is UTF-8. The program's stdout and stderr are converted from the
-machine's code page to UTF-8 as the program writes them, so ``wait`` and
-``expect`` match text as the script writes it. An escape from ``\x80``
-to ``\xFF`` is a byte of UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
+Text is UTF-8, and so is what ``wait`` and ``expect`` search: the
+program's stdout and stderr, converted from the machine's code page as the
+program writes them. They are the bytes the program wrote, before the
+console puts a carriage return in front of each newline, so a line the
+program prints ends in ``\n``. An escape from ``\x80`` to ``\xFF`` is a
+byte of UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
 
 .. code-block:: text
 
   wait "Colossal Cave Adventure"
   wait "Would you like instructions?"
-  type "no\n"
+  type "no\r"
   wait "standing at the end of a road"
-  type "take lamp\n"
+  type "take lamp\r"
   wait "I see no lamp here"
 
 .. list-table::
