@@ -345,9 +345,10 @@ time.
 One command per line. ``#`` starts a comment anywhere outside quotes.
 Text is always in double quotes and takes the C escapes, so ``\n`` is a
 newline, ``\\`` and ``\"`` are themselves, and ``\x03`` or ``\3`` is a
-control byte. Hex takes up to two digits and octal up to three, and a
-string cannot hold ``\0``. Numbers may be decimal, C-style ``0xFF``, or
-MOS-style ``$FF``.
+control byte. Hex takes up to two digits and octal up to three. A
+program can write a zero byte, so ``wait`` and ``expect`` take ``\0``,
+and no other string can hold one. Numbers may be decimal, C-style
+``0xFF``, or MOS-style ``$FF``.
 
 Text is UTF-8, and so is what ``wait`` and ``expect`` search: the
 program's stdout and stderr, converted from the machine's code page as the
