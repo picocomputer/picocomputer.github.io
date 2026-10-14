@@ -458,6 +458,9 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
      - Remember the screen, then check it against what you remembered.
    * - ``shot "file.png"``
      - Write the screen.
+   * - ``wav "file.wav" [frames]``
+     - Run that many frames, default 1, and record their sound as 16-bit
+       stereo at 48 kHz. With ``--mute`` the recording is silent.
    * - ``state save "file"``,
        ``state load "file"``
      - Save the whole machine to a file, and load it back.
