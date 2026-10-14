@@ -348,8 +348,8 @@ Text is always in double quotes and takes the C escapes, so ``\n`` is a
 newline, ``\\`` and ``\"`` are themselves, and ``\x03`` or ``\3`` is a
 control byte. Hex takes up to two digits and octal up to three. A
 program can write a zero byte, so ``wait`` and ``expect`` take ``\0``,
-and no other string can hold one. A number is a Python expression, such
-as ``255``, ``$FF`` or ``XRAM_PSG+5``. Spaces separate a command's
+and no other string can hold one. A number is an expression, such as
+``255``, ``$FF`` or ``XRAM_PSG+5``. Spaces separate a command's
 arguments, so an expression with spaces must be in parentheses, as in
 ``xram:(XRAM_PSG + 5)``. See `Symbols and expressions`_.
 
@@ -488,8 +488,7 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
 An address is in the 6502's address space, RAM at $0000-$FEFF, the VIA
 at $FFD0-$FFDF and the RIA at $FFE0-$FFFF, unless ``xram:`` puts it in
 XRAM. ``ram:`` is the same as no prefix. The part after the prefix can be
-an expression, so ``xram:XRAM_PSG+5`` and ``xram:(XRAM_PSG + 5)`` are the
-same address. Nothing answers at
+an expression, as in ``xram:XRAM_PSG+5``. Nothing answers at
 $FF00-$FFCF, so an address there is an error. ``peek``, ``dump`` and
 ``wait`` find a register as a read would, without what the read does,
 so RX keeps its byte, XSTACK keeps its top and IRQ keeps its flags.
@@ -595,47 +594,57 @@ Spaces separate a command's arguments, so an expression with spaces must
 be in parentheses, as in ``poke xram:(XRAM_PSG + 5) ($80 | 3)``. Without
 spaces, as in ``poke xram:XRAM_PSG+5 $83``, no parentheses are needed.
 Where an argument could be a keyword, the emulator reads it as the
-keyword, so a name in that place needs parentheses. C programs have a global
-named ``stdout``, so ``wait stdout "done"`` waits for text and
-``wait (stdout) 1`` waits for that byte. In ``press`` and ``release``
-the emulator reads key names and single digits as keys, so ``press 4``
-is the 4 key and ``press (4)`` is keycode 4.
+keyword, so a name in that place needs parentheses. C programs have a
+global named ``stdout``, so ``wait stdout "done"`` waits for text and
+``wait (stdout) 1`` waits until the byte at ``stdout`` is 1. In
+``press`` and ``release`` the emulator reads key names and single digits
+as keys, so ``press 4`` is the 4 key and ``press (4)`` is keycode 4.
 
 ``let name = expr`` sets a variable, and later lines can use the variable
 in numbers. The rest of the line after ``=`` is the expression, so it
-needs no parentheses even with spaces. A variable can hold a float, but
-no command takes one. A symbol can't be set. ``load`` keeps the
-variables, and a variable whose name is also in the new ``.sym`` becomes
-ambiguous.
+needs no parentheses even with spaces. A symbol can't be set. ``load``
+keeps the variables, and a variable whose name is also in the new
+``.sym`` becomes ambiguous.
 
-The arithmetic follows Python 3's rules, so an expression gives the same
-answer as in Python, or fails where Python raises an error.
+Expressions use whole numbers only. Expressions follow Python 3's rules
+for whole numbers, so an expression has the same value as in Python, or
+it is an error. The list below shows where these rules differ from C.
 
 - Numbers are written as in Python, or with ``$`` for hex: ``255``,
   ``0xFF``, ``$FF``, ``0b1111_1111`` and ``0o377``. Digits can be
-  separated with ``_``. A number with a point or an exponent, such as
-  ``1.5`` or ``2e3``, is a float.
+  separated with ``_``. A number can't start with 0 unless it is 0, so
+  ``010`` is an error, not octal as in C. Write ``0o10`` for octal. A
+  float such as ``1.5`` or ``2e3`` is an error.
 - The operators, from lowest to highest precedence, are ``or``, ``and``,
   ``not``, the comparisons ``< <= > >= == !=``, ``|``, ``^``, ``&``,
-  ``<< >>``, ``+ -``, ``* / // %``, the unary ``- + ~``, and ``**``. So
-  ``-2 ** 2`` is -4.
-- ``/`` always makes a float, even ``6 / 2``, and no command takes a
-  float, so divide with ``//``. It rounds down, so ``-7 // 2`` is -4, and
-  ``%`` takes the sign of the number on its right.
-- A comparison is 1 or 0, and comparisons chain, so ``1 < x < 5`` means
-  ``1 < x and x < 5``. ``and``, ``or`` and ``not`` work as in Python, so
-  ``0 or 3`` is 3.
-- Whole numbers are 64 bits. Python's whole numbers have no limit, so a
-  result that doesn't fit in 64 bits fails instead.
+  ``<< >>``, ``+ -``, ``* // %``, the unary ``- + ~``, and ``**``.
+  ``**`` raises to a power, so ``2 ** 8`` is 256, and ``-2 ** 2`` is -4.
+  Unlike C, ``| ^ &`` have higher precedence than the comparisons, so
+  ``x & 1 == 0`` means ``(x & 1) == 0``.
+- ``/`` is not allowed, because in Python it makes a float, even for
+  ``6 / 2``. Divide with ``//``, which is integer division. With a
+  negative number it differs from C: ``-7 // 2`` is -4 where C gives -3,
+  and ``-7 % 2`` is 1 where C gives -1. A negative power such as
+  ``2 ** -1`` makes a float, so it is not allowed either.
+- A comparison is 1 or 0. ``1 < x < 5`` means ``1 < x and x < 5``, not
+  ``(1 < x) < 5`` as in C.
+- ``not`` is C's ``!`` with a lower precedence, so ``not x + 1`` means
+  ``!(x + 1)``. ``a or b`` is C's ``a ? a : b``, so ``0 or 3`` is 3.
+  ``a and b`` is C's ``a ? b : a``, so ``2 and 3`` is 3. In C,
+  ``0 || 3`` and ``2 && 3`` are both 1.
+- Whole numbers are 64-bit and signed. A result that doesn't fit in 64
+  bits is an error. In C, signed overflow is undefined.
 - A name is a letter or ``_``, then letters, digits, ``_`` and ``.``, so
-  an llvm-mos static such as ``draw.image`` is one name. Case matters.
-- There are no strings, function calls, ``if``, ``is``, ``in``,
-  ``True``, ``False`` or ``j`` numbers. Write 1 and 0 for true and false.
+  an llvm-mos static such as ``draw.image`` is one name. Names are
+  case-sensitive.
+- There are no strings, function calls, casts, ``?:``, ``&&``, ``||`` or
+  ``!``. Write ``and`` for ``&&``, ``or`` for ``||``, ``not`` for ``!``,
+  and 1 and 0 for true and false.
 
-A failure shows the expression as it is written in the script, without
-the ``xram:``, ``xbus:``, ``bus:`` or ``ram:`` in front and without
-parentheses around all of it. For ``let`` it is the expression after
-``=``.
+A failure message shows the expression as it is written in the script,
+without the ``xram:``, ``xbus:``, ``bus:`` or ``ram:`` in front and
+without parentheses around all of it. For ``let`` it is the expression
+after ``=``.
 
 .. list-table::
    :widths: 45 55
@@ -650,23 +659,24 @@ parentheses around all of it. For ``let`` it is the expression after
        it after a ``load``.
    * - ``cannot assign symbol 'XRAM_PSG'``
      - A symbol can't be set.
-   * - ``base + 6 / 2 is not a whole number``
-     - A float given to a command as a number, or to ``~ << >> & | ^``.
+   * - ``base + 6 / 2: floats are not allowed, use //``
+     - The expression has a ``/``.
+   * - ``1.5 * 2: floats are not allowed``
+     - The expression has a number with a point or an exponent, or a
+       negative power such as ``2 ** -1``.
    * - ``base // 0 divides by zero``
-     - ``/``, ``//`` or ``%`` by zero, or zero to a negative power.
+     - A ``//`` or ``%`` has 0 on its right, or 0 is raised to a negative
+       power.
    * - ``1 << 63 overflows 64 bits``
-     - A whole number that doesn't fit in 64 bits, or a ``**`` past the
-       largest float.
-   * - ``(-8.0) ** (1 / 3) is a complex number``
-     - A negative number to a fractional power, which Python makes a
-       complex number.
+     - A number or a result doesn't fit in 64 bits.
    * - ``1 << -1 shifts by a negative count``
-     - A shift by a negative count.
+     - A ``<<`` or ``>>`` has a negative number on its right.
    * - ``bad expression 'base+'``
-     - Any other expression that Python reports as a syntax error.
+     - The expression has a syntax error, or something that expressions
+       don't have, such as ``010``, ``x && y`` or a function call.
    * - ``missing ) in '(base + 4 $00'``
-     - A ``(`` without a matching ``)``, so the argument continues to the
-       end of the line.
+     - A ``(`` has no matching ``)``, so the argument continues to the end
+       of the line.
 
 With ``reply`` on, as in `Driving it from a program`_, a driver that
 starts ``rp6502-emu --fill 0 --script -`` on a program whose ``.sym`` has
@@ -688,7 +698,7 @@ and reads:
   ok
   ok
   ok
-  fail base + 6 / 2 is not a whole number; PC=$0000 A=$00 X=$00 Y=$00 SP=$00 P=$02 OP=$00 BUSY=$00 RESB=1 SEED=1556577197
+  fail base + 6 / 2: floats are not allowed, use //; PC=$0000 A=$00 X=$00 Y=$00 SP=$00 P=$02 OP=$00 BUSY=$00 RESB=1 SEED=1556577197
 
 
 Driving it from a program
