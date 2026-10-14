@@ -494,8 +494,8 @@ telling it.
 
 A failed check names the script and the line it was on, and ends with
 the fields of ``cpu``. The program's stdout that no check used goes to
-stdout, as the program wrote it, and the run exits 1. Once more than
-64 KB of it is unused, only the newest part is kept, so it can start
+stdout, in UTF-8 as the checks see it, and the run exits 1. Once more
+than 64 KB of it is unused, only the newest part is kept, so it can start
 partway through a line. The program's stderr goes to stderr as it is
 written, all through the run.
 
@@ -590,7 +590,7 @@ An answer comes when the command **finishes**, not when it parses. The
 A ``fail`` ends the run, so there is no asking ``cpu`` after one. The
 ``fail`` line ends with the ``cpu`` fields after the last ``;``. Everything
 after the ``fail`` line, up to the end of stdout, is the program's stdout
-that no ``wait`` or ``expect`` used, as the program wrote it. The
+that no ``wait`` or ``expect`` used, in UTF-8 as the checks see it. The
 program's stderr is on stderr.
 
 This driver never answers the question. It writes:
