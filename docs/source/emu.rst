@@ -325,8 +325,9 @@ Scripting
 
 ``--script`` drives the machine with no one at the keyboard. It types,
 works the gamepads and the pointer, waits for what the program writes to
-stdout and stderr, and checks what the program produced, which is enough
-to turn a ROM into a test that passes or fails.
+stdout and stderr and for what reaches the screen, and checks what the
+program produced, which is enough to turn a ROM into a test that passes or
+fails.
 
 .. code-block:: text
 
@@ -350,12 +351,14 @@ program can write a zero byte, so ``wait`` and ``expect`` take ``\0``,
 and no other string can hold one. Numbers may be decimal, C-style
 ``0xFF``, or MOS-style ``$FF``.
 
-Text is UTF-8, and so is what ``wait`` and ``expect`` search: the
-program's stdout and stderr, converted from the machine's code page as the
-program writes them. They are the bytes the program wrote, before the
-console puts a carriage return in front of each newline, so a line the
-program prints ends in ``\n``. An escape from ``\x80`` to ``\xFF`` is a
-byte of UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
+Text is UTF-8, and so is what ``wait`` and ``expect`` search, converted
+from the machine's code page as it is written. ``stdout`` and ``stderr``
+are the bytes the program wrote, before the console puts a carriage return
+in front of each newline, so a line the program prints ends in ``\n``.
+``console`` is what reaches the screen: those bytes with the carriage
+returns, the line editor's echo of what is typed, and the system's own
+messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
+``"caf\xC3\xA9"`` is ``"café"``.
 
 .. code-block:: text
 
@@ -374,9 +377,9 @@ byte of UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
      - Description
    * - ``run [frames]``
      - Let exactly that many frames elapse, one VSYNC each. Default 1.
-   * - ``wait [stdout|stderr] "text" [frames]``
-     - Run until the program writes it to that stream, stdout if none is
-       named. Default budget 600 frames.
+   * - ``wait [stdout|stderr|console] "text" [frames]``
+     - Run until it appears on that stream, stdout if none is named.
+       Default budget 600 frames.
    * - ``wait [xram:|ram:]<addr> <byte> [frames]``
      - Run until that byte reads that value. The byte is read once a
        frame, at the boundary.
@@ -419,12 +422,13 @@ byte of UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
        does. A program that reads the block while an ``at`` is applied
        can get the old X with the new Y, unless it reads the block as
        :ref:`Tablet <ria-tablet>` in the RIA datasheet shows.
-   * - ``expect [stdout|stderr] "text"``,
-       ``expect-not [stdout|stderr] "text"``
+   * - ``expect [stdout|stderr|console] "text"``,
+       ``expect-not [stdout|stderr|console] "text"``
      - Check the stream since its last match, stdout if none is named. A
-       match consumes up to and including it. The two streams are checked
-       separately. The line editor's echo of typed text is in neither, but
-       a program that echoes its own input writes that echo to stdout.
+       match consumes up to and including it. Each stream is checked
+       separately. The line editor's echo of typed text is only on the
+       console, but a program that echoes its own input writes that echo
+       to stdout.
    * - ``expect-exit <code> [frames]``
      - Run until the program exits, then check its code.
    * - ``peek [xram:|ram:]<addr> <byte>...``
