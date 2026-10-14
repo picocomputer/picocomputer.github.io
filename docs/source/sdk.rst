@@ -410,7 +410,7 @@ BASIC projects are described in `BASIC Programs`_.
   project(MY-RP6502-PROJECT C CXX ASM)
 
   add_executable(hello)
-  rp6502_map(hello src/xram.h "XRAM_.*")
+  rp6502_align(hello "XRAM_.*")
   rp6502_asset(hello help src/help.txt)
   rp6502_executable(hello DATA default RESET default)
   rp6502_web(hello)
@@ -421,17 +421,16 @@ BASIC projects are described in `BASIC Programs`_.
 - ``include()`` loads the RP6502 CMake functions from ``tools/``.
 - ``add_executable(hello)`` creates the program, a CMake target named
   ``hello``.
-- ``rp6502_map()`` reads the XRAM addresses for ``hello`` from
-  ``src/xram.h``. See `Addresses in CMake`_.
+- ``rp6502_align()`` checks that the XRAM addresses of ``hello`` are even.
+  See `Alignment`_.
 - ``rp6502_asset()`` adds an asset to the ROM. See `Adding Assets`_.
 - ``rp6502_executable()`` packages the program and its assets into
   ``hello.rp6502``, named after the target.
 - ``rp6502_web()`` packages the ROM into a web player. See `Web Players`_.
 - ``target_sources()`` lists the program's source files.
 
-``rp6502_map()`` and every ``rp6502_asset()`` come after
-``add_executable()`` and before ``rp6502_executable()``. ``rp6502_map()``
-also comes before any ``rp6502_asset()`` that uses its names.
+``rp6502_align()`` and every ``rp6502_asset()`` come after
+``add_executable()`` and before ``rp6502_executable()``.
 ``rp6502_web()`` comes after ``rp6502_executable()``, because it packages
 the ROM that ``rp6502_executable()`` defines.
 ``target_sources()`` can go anywhere after ``add_executable()``.
@@ -442,6 +441,25 @@ The ROM is written to the preset's build folder:
 To share a program, build it with a Release preset, or the ``basic`` preset
 for BASIC, and share that file, or its web player as described in
 :doc:`web`.
+
+The build also writes ``hello.sym`` beside the ROM. The file has one line
+for each name in the program: each ``#define`` of the C sources that has
+a whole-number value, and each symbol of the linker. A line is the name,
+one space and the value. A value from 0 to 0xFFFF has four hex digits,
+and any other value is decimal:
+
+.. code-block:: text
+
+  INT8_MIN -128
+  XRAM_KEYBOARD 0x0000
+  XRAM_LOGO 0x0020
+
+The lines are sorted by name. A name with two different values, such as
+a cc65 local label, has two lines. cc65 puts ``_`` before each C name, so
+a C global ``x`` is in the file as ``x`` and as ``_x``. With cc65, the
+``static`` variables of a function are not in the file. The build reads
+the addresses for ``RAM()`` and ``XRAM()`` in ``rp6502_asset()`` from this
+file, and the emulator's :ref:`scripts <emu-symbols>` can use its names.
 
 ``rp6502_executable()`` takes these keywords:
 
@@ -496,7 +514,9 @@ XRAM, the 64 KB of extended memory outside the 6502's address space
 described in `XRAM Memory Map`_. ``XRAM()`` takes the address the program
 uses, and the bit that marks the address as XRAM is set automatically.
 Inside the parentheses, the address is a number, the name of a CMake
-variable, or a name read by ``rp6502_map()`` (see `Addresses in CMake`_).
+variable, or a name in the program's ``.sym`` file (see `Addresses in
+CMake`_). CMake reads a number or a variable when it configures, and the
+build reads a name from the ``.sym`` file after the link.
 
 Any other address is a name, and a named asset is a file the program opens
 while it runs. Prefix the name with ``ROM:`` and open it like any other
@@ -789,61 +809,74 @@ Only the changed part of ``xram.h`` is shown.
   #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
   #define XRAM_LOGO offsetof(xram_layout_t, logo)
 
-``rp6502_map()`` reads the address names from the header, so each address
-is written once, in the header, and never repeated in ``CMakeLists.txt``.
+``XRAM()`` takes the name from the header, so each address is written
+once, in the header, and never repeated in ``CMakeLists.txt``:
 
 .. code-block:: cmake
 
-  rp6502_map(<target> <header> <regex> [<unaligned_regex>])
-
-.. code-block:: cmake
-
-  rp6502_map(hello src/xram.h "XRAM_.*")
   rp6502_asset(hello XRAM(XRAM_LOGO) img/logo.bin)
 
-The regular expression selects which ``#define`` names to read, and must
-match the whole name. The value can be any constant expression, including
-one built from another name, such as
-``#define XRAM_LOGO_ROW_2 (XRAM_LOGO + 64)``.
+The build reads the value of ``XRAM_LOGO`` from ``hello.sym`` after the
+link. The compiler calculated the value, so the address is the one the
+program uses. A name can be any name in the ``.sym`` file: a ``#define``
+with any constant expression, such as
+``#define XRAM_LOGO_ROW_2 (XRAM_LOGO + 64)``, a linker symbol, or an
+equate in an assembly program, such as ``XRAM_LOGO = $0020``. A change to
+the header rebuilds the program, and the build packages the asset at the
+new address.
 
-A name works only inside ``RAM()`` and ``XRAM()``, in ``rp6502_asset()``
-calls for the target named in ``rp6502_map()``. To read several headers
-for one target, call ``rp6502_map()`` once for each. A name that two of
-the headers define is a configure error.
+If a name is not in the ``.sym`` file, the build stops:
 
-When CMake configures, ``rp6502_map()`` compiles the header to assembly
-with the same compiler as the program and reads each address from the
-result, so the structures are laid out exactly as in the program.
-Changing the header configures the project again on the next build,
-so the addresses always match it.
+.. code-block:: text
 
-``rp6502_map()`` reads C headers only. For an assembly project, write the
-address in ``RAM()`` or ``XRAM()`` as a number or as the name of a CMake
-variable.
+  [rp6502.py] XRAM(XRAM_LOGOO): XRAM_LOGOO is not in /home/user/my-project/build/cc65/debug/hello.sym
+
+If the name has two lines in the ``.sym`` file, the error ends with
+``is ambiguous``.
 
 Alignment
 ---------
 
 Neither compiler pads structures, so each member starts right after the
 one before it. Mode configurations, palettes and the PSG are read as
-16-bit values, so they need an even address. Every address is checked,
-and an odd one fails the build with an error on the line of its
-``#define``.
-
-Pixel data, fonts, tiles, sprite images, and the keyboard, mouse, gamepad
-and tablet blocks work at any address. They are checked anyway, because
-some hosts access them faster at an even address. To exempt names from
-the check, pass a second regular expression:
+16-bit values, so they need an even address. ``rp6502_align()`` checks
+the names in the ``.sym`` file that match a regular expression:
 
 .. code-block:: cmake
 
-  rp6502_map(hello src/xram.h "XRAM_.*" "XRAM_LOGO")
+  rp6502_align(<target> <regex>)
 
-The build also fails if the layout is larger than the 64 KB of XRAM, or
-if an address does not fit in 16 bits.
+.. code-block:: cmake
+
+  rp6502_align(hello "XRAM_.*")
+
+The regular expression uses Python's syntax and must match the whole
+name. Each call adds one regular expression. The value of each name that
+matches must be even and from 0x0000 to 0xFFFF. For a name that fails the
+check, the build stops with an error on the line of its ``#define``:
+
+.. code-block:: text
+
+  <file>:<line>: error: <name> is <value>, which is odd; rp6502_align(<target> "<regex>")
+
+For a name without a ``#define``, such as a linker symbol, the error is on
+its line in the ``.sym`` file.
+
+Pixel data, fonts, tiles, sprite images, and the keyboard, mouse, gamepad
+and tablet blocks work at any address. ``"XRAM_.*"`` checks them anyway,
+because some hosts access them faster at an even address. To exempt a
+name, leave it out of the regular expression. This one matches each
+``XRAM_`` name except ``XRAM_LOGO``:
+
+.. code-block:: cmake
+
+  rp6502_align(hello "XRAM_(?!LOGO$).*")
+
+The build stops if a structure is larger than 65535 bytes, with either
+compiler.
 
 Two requirements of the sound generators are not checked by
-``rp6502_map()``. The 64 bytes of the PSG must not cross a page boundary,
+``rp6502_align()``. The 64 bytes of the PSG must not cross a page boundary,
 and the OPL2 registers must start on one. A page is 256 bytes. The PSG and
 OPL2 snippets in the :doc:`ria` datasheet each define a check. Add the
 line for each sound generator the program uses to ``xram.h``, after the
@@ -917,12 +950,12 @@ CMake side panel.
 .. code-block:: cmake
 
   add_executable(hello)
-  rp6502_map(hello src/hello.h "XRAM_.*")
+  rp6502_align(hello "XRAM_.*")
   rp6502_executable(hello DATA default RESET default)
   target_sources(hello PRIVATE src/hello.c)
 
   add_executable(setup)
-  rp6502_map(setup src/setup.h "XRAM_.*")
+  rp6502_align(setup "XRAM_.*")
   rp6502_asset(setup help src/setup.hlp)
   rp6502_executable(setup DATA default RESET default)
   target_sources(setup PRIVATE src/setup.c)
@@ -939,9 +972,8 @@ CMake side panel.
    :alt: The CMake side panel with the Launch target list open, showing
          the project's ROMs.
 
-``rp6502_map()`` takes the target, so ``hello`` and ``setup`` can have
-different XRAM layouts. Each ROM is built only after the checks pass for
-every header mapped for it.
+Each ROM has its own ``.sym`` file, so ``hello`` and ``setup`` can have
+different XRAM layouts.
 
 A larger project can give each ROM a directory of its own:
 
@@ -953,7 +985,7 @@ A larger project can give each ROM a directory of its own:
 
   # src/setup/CMakeLists.txt
   add_executable(setup)
-  rp6502_map(setup xram.h "XRAM_.*")
+  rp6502_align(setup "XRAM_.*")
   rp6502_asset(setup help setup.hlp)
   rp6502_executable(setup DATA default RESET default)
   target_sources(setup PRIVATE setup.c)
@@ -1180,10 +1212,8 @@ options of that subcommand.
        this.
    * - ``create``
      - Package files into a ROM. See `Packaging a ROM by Hand`_.
-   * - ``web``
-     - Serve the web players in a build folder, and open a page in a
-       browser with a link to each one. VS Code uses this. See `Web
-       Players`_.
+   * - ``sym``
+     - Write the ``.sym`` file of a linked program.
 
 ``run``, ``upload``, ``term`` and ``basic`` send a break first, which
 stops the program running on the RP6502-PICO.
@@ -1237,7 +1267,9 @@ Packaging a ROM by Hand
 the 6502 program comes from a tool CMake doesn't run, such as an
 assembler that writes a linked binary. The options it takes are:
 
-- ``-a``: the address to load the first file at, or the name of an asset;
+- ``-a``: the address to load the first file at, or the name of an asset.
+  The address can also be ``RAM(<name>)`` or ``XRAM(<name>)``, with a name
+  from the ``.sym`` file that ``--sym`` gives after ``create``;
 - ``-r``: the reset address, and ``-i`` and ``-n`` for IRQ and NMI;
 - ``-o``: the ROM file to write.
 
@@ -1427,6 +1459,10 @@ that break an older project.
    * - An assembly macro, or a ca65 label, named ``xreg``
      - ``xreg`` is now a macro in ``rp6502.inc``. Rename or remove the
        one in the project.
+
+``rp6502_map()`` is replaced by ``rp6502_align()``. An older
+``CMakeLists.txt`` still builds, and the warning for each ``rp6502_map()``
+call shows the ``rp6502_align()`` line that replaces it.
 
 For an older C project, save this header in the project, and include
 ``"rp6502-compat.h"`` in place of ``<rp6502.h>``:

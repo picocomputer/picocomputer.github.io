@@ -572,6 +572,8 @@ covers ``capslock``, ``numlock``, ``scrolllock``, ``printscreen``,
 no control byte, such as ``key 1+ctrl``.
 
 
+.. _emu-symbols:
+
 Symbols and expressions
 -----------------------
 
