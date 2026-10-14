@@ -551,7 +551,8 @@ is the a key.
 character and the keys that have an escape sequence. ``+shift`` types the
 shifted character, ``+alt`` prefixes ESC, and ``+ctrl`` sends the control
 byte, which makes ``key c+ctrl`` Ctrl-C and ``key leftbracket+ctrl`` an
-ESC. Those characters are a US keyboard's, whatever layout the machine is
+ESC. Ctrl with a digit from 2 to 8, with Space or with / sends what xterm
+sends, so ``key 2+ctrl`` is a zero byte. Those characters are a US keyboard's, whatever layout the machine is
 set to, so that a script sends the same bytes under every layout.
 
 A key that types nothing is an error, which
