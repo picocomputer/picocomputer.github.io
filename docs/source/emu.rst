@@ -348,8 +348,10 @@ Text is always in double quotes and takes the C escapes, so ``\n`` is a
 newline, ``\\`` and ``\"`` are themselves, and ``\x03`` or ``\3`` is a
 control byte. Hex takes up to two digits and octal up to three. A
 program can write a zero byte, so ``wait`` and ``expect`` take ``\0``,
-and no other string can hold one. Numbers may be decimal, C-style
-``0xFF``, or MOS-style ``$FF``.
+and no other string can hold one. A number is a Python expression, such
+as ``255``, ``$FF`` or ``XRAM_PSG+5``. Spaces separate a command's
+arguments, so an expression with spaces must be in parentheses, as in
+``xram:(XRAM_PSG + 5)``. See `Symbols and expressions`_.
 
 Text is UTF-8, and so is what ``wait`` and ``expect`` search, converted
 from the machine's code page as it is written. ``stdout`` and ``stderr``
@@ -447,9 +449,11 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
      - Print memory as hex.
    * - ``cpu``
      - Print where the 6502 is: its registers ``PC A X Y SP P``, the RIA's
-       ``OP`` and ``BUSY`` registers, and ``RESB``. A frame can end partway
-       through an instruction, so PC may be past its first byte. RESB is
-       0 once the program has stopped and the 6502 is held in reset.
+       ``OP`` and ``BUSY`` registers, ``RESB``, and ``SEED``. A frame can
+       end partway through an instruction, so PC may be past its first
+       byte. RESB is 0 once the program has stopped and the 6502 is held
+       in reset. SEED is the run's seed, and running again with
+       ``--seed <n>`` repeats the run.
    * - ``crc``
      - Print the screen as a CRC-32.
    * - ``mark``,
@@ -464,24 +468,28 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
    * - ``state save "file"``,
        ``state load "file"``
      - Save the whole machine to a file, and load it back.
-   * - ``seed``
-     - Print the seed this run filled memory with.
    * - ``install "path" [NAME]``,
        ``remove <NAME>``
      - Install a file on the null drive as ``:NAME``, and remove it
        again. The default name is the basename of the file.
    * - ``load "path"``
      - Boot a program. The machine must be stopped, since loading writes
-       the memory a running program is using.
+       the memory a running program is using. The new program's ``.sym``
+       replaces the symbols.
    * - ``sys run|stop|break``
      - Start the machine, stop it, or interrupt it the way a break at
        the console would.
    * - ``reply [on|off]``
      - Answer every command on stdout. See `Driving it from a program`_.
+   * - ``let name = expr``
+     - Set a variable that later lines can use in numbers. See `Symbols
+       and expressions`_.
 
 An address is in the 6502's address space, RAM at $0000-$FEFF, the VIA
 at $FFD0-$FFDF and the RIA at $FFE0-$FFFF, unless ``xram:`` puts it in
-XRAM. ``ram:`` is the same as no prefix. Nothing answers at
+XRAM. ``ram:`` is the same as no prefix. The part after the prefix can be
+an expression, so ``xram:XRAM_PSG+5`` and ``xram:(XRAM_PSG + 5)`` are the
+same address. Nothing answers at
 $FF00-$FFCF, so an address there is an error. ``peek``, ``dump`` and
 ``wait`` find a register as a read would, without what the read does,
 so RX keeps its byte, XSTACK keeps its top and IRQ keeps its flags.
@@ -493,11 +501,12 @@ hears a byte written to its block, which ``poke xram:`` changes without
 telling it.
 
 A failed check names the script and the line it was on, and ends with
-the fields of ``cpu``. The program's stdout that no check used goes to
-stdout, in UTF-8 as the checks see it, and the run exits 1. Once more
-than 64 KB of it is unused, only the newest part is kept, so it can start
-partway through a line. The program's stderr goes to stderr as it is
-written, all through the run.
+the fields of ``cpu``. The last of them is ``SEED=<n>``, and running again
+with ``--seed <n>`` repeats the failed run. The program's stdout that no
+check used goes to stdout, in UTF-8 as the checks see it, and the run
+exits 1. Once more than 64 KB of it is unused, only the newest part is
+kept, so it can start partway through a line. The program's stderr goes
+to stderr as it is written, all through the run.
 
 A program must treat RAM and XRAM as uninitialized, because they hold
 unknown values until the program writes them. To help find a program that
@@ -564,11 +573,129 @@ covers ``capslock``, ``numlock``, ``scrolllock``, ``printscreen``,
 no control byte, such as ``key 1+ctrl``.
 
 
+Symbols and expressions
+-----------------------
+
+A ``.sym`` file beside the ROM, with the same name, lists the program's
+addresses and constants by name. Every build of a project made with the
+:doc:`sdk` writes one. Each line is a name, one space and a whole number:
+
+.. code-block:: text
+
+  XRAM_DATA_TAB 0x1100
+  XRAM_PSG 0x1200
+
+A script can use these symbols wherever a command takes a number. The
+emulator reads them from the ``.sym`` of the ROM that boots, and ``load``
+replaces them with the new program's. Without a ``.sym`` there are none.
+A name on two lines is ambiguous, and a script fails only when it uses
+that name.
+
+Spaces separate a command's arguments, so an expression with spaces must
+be in parentheses, as in ``poke xram:(XRAM_PSG + 5) ($80 | 3)``. Without
+spaces, as in ``poke xram:XRAM_PSG+5 $83``, no parentheses are needed.
+Where an argument could be a keyword, the emulator reads it as the
+keyword, so a name in that place needs parentheses. C programs have a global
+named ``stdout``, so ``wait stdout "done"`` waits for text and
+``wait (stdout) 1`` waits for that byte. In ``press`` and ``release``
+the emulator reads key names and single digits as keys, so ``press 4``
+is the 4 key and ``press (4)`` is keycode 4.
+
+``let name = expr`` sets a variable, and later lines can use the variable
+in numbers. The rest of the line after ``=`` is the expression, so it
+needs no parentheses even with spaces. A variable can hold a float, but
+no command takes one. A symbol can't be set. ``load`` keeps the
+variables, and a variable whose name is also in the new ``.sym`` becomes
+ambiguous.
+
+The arithmetic follows Python 3's rules, so an expression gives the same
+answer as in Python, or fails where Python raises an error.
+
+- Numbers are written as in Python, or with ``$`` for hex: ``255``,
+  ``0xFF``, ``$FF``, ``0b1111_1111`` and ``0o377``. Digits can be
+  separated with ``_``. A number with a point or an exponent, such as
+  ``1.5`` or ``2e3``, is a float.
+- The operators, from lowest to highest precedence, are ``or``, ``and``,
+  ``not``, the comparisons ``< <= > >= == !=``, ``|``, ``^``, ``&``,
+  ``<< >>``, ``+ -``, ``* / // %``, the unary ``- + ~``, and ``**``. So
+  ``-2 ** 2`` is -4.
+- ``/`` always makes a float, even ``6 / 2``, and no command takes a
+  float, so divide with ``//``. It rounds down, so ``-7 // 2`` is -4, and
+  ``%`` takes the sign of the number on its right.
+- A comparison is 1 or 0, and comparisons chain, so ``1 < x < 5`` means
+  ``1 < x and x < 5``. ``and``, ``or`` and ``not`` work as in Python, so
+  ``0 or 3`` is 3.
+- Whole numbers are 64 bits. Python's whole numbers have no limit, so a
+  result that doesn't fit in 64 bits fails instead.
+- A name is a letter or ``_``, then letters, digits, ``_`` and ``.``, so
+  an llvm-mos static such as ``draw.image`` is one name. Case matters.
+- There are no strings, function calls, ``if``, ``is``, ``in``,
+  ``True``, ``False`` or ``j`` numbers. Write 1 and 0 for true and false.
+
+A failure shows the expression as it is written in the script, without
+the ``xram:``, ``xbus:``, ``bus:`` or ``ram:`` in front and without
+parentheses around all of it. For ``let`` it is the expression after
+``=``.
+
+.. list-table::
+   :widths: 45 55
+   :header-rows: 1
+
+   * - Failure
+     - Why
+   * - ``unknown name 'XRAM_PSGG'``
+     - No symbol or variable has that name.
+   * - ``ambiguous name 'L0010'``
+     - The ``.sym`` has it on two lines, or a symbol and a variable share
+       it after a ``load``.
+   * - ``cannot assign symbol 'XRAM_PSG'``
+     - A symbol can't be set.
+   * - ``base + 6 / 2 is not a whole number``
+     - A float given to a command as a number, or to ``~ << >> & | ^``.
+   * - ``base // 0 divides by zero``
+     - ``/``, ``//`` or ``%`` by zero, or zero to a negative power.
+   * - ``1 << 63 overflows 64 bits``
+     - A whole number that doesn't fit in 64 bits, or a ``**`` past the
+       largest float.
+   * - ``(-8.0) ** (1 / 3) is a complex number``
+     - A negative number to a fractional power, which Python makes a
+       complex number.
+   * - ``1 << -1 shifts by a negative count``
+     - A shift by a negative count.
+   * - ``bad expression 'base+'``
+     - Any other expression that Python reports as a syntax error.
+   * - ``missing ) in '(base + 4 $00'``
+     - A ``(`` without a matching ``)``, so the argument continues to the
+       end of the line.
+
+With ``reply`` on, as in `Driving it from a program`_, a driver that
+starts ``rp6502-emu --fill 0 --script -`` on a program whose ``.sym`` has
+``XRAM_DATA_TAB`` writes:
+
+.. code-block:: text
+
+  reply
+  let base = XRAM_DATA_TAB
+  peek xram:base+4 $00
+  poke xram:(base + 6 // 2) $01
+  peek xram:(base + 6 / 2) $01
+
+and reads:
+
+.. code-block:: text
+
+  ok
+  ok
+  ok
+  ok
+  fail base + 6 / 2 is not a whole number; PC=$0000 A=$00 X=$00 Y=$00 SP=$00 P=$02 OP=$00 BUSY=$00 RESB=1 SEED=1556577197
+
+
 Driving it from a program
 -------------------------
 
 ``reply`` turns on one line of answer per command — ``ok``, ``ok <values>``
-for ``dump``, ``crc``, ``seed`` and ``cpu``, or ``fail <why>``. It is off
+for ``dump``, ``crc`` and ``cpu``, or ``fail <why>``. It is off
 until asked, so a driver writes its whole preamble without waiting for
 anything and reads the ``ok`` for ``reply`` itself as the moment the
 machine starts answering.
@@ -585,7 +712,7 @@ An answer comes when the command **finishes**, not when it parses. The
   pad 0 press start        -> ok
   run 10                   -> ok
   dump xram:$FF00 4        -> ok 80 00 00 08
-  peek xram:$FF00 $99      -> fail $FF00+0 is $80, expected $99; PC=$0307 A=$30 X=$01 Y=$00 SP=$F7 P=$86 OP=$01 BUSY=$00 RESB=1
+  peek xram:$FF00 $99      -> fail $FF00+0 is $80, expected $99; PC=$0307 A=$30 X=$01 Y=$00 SP=$F7 P=$86 OP=$01 BUSY=$00 RESB=1 SEED=513216670
 
 A ``fail`` ends the run, so there is no asking ``cpu`` after one. The
 ``fail`` line ends with the ``cpu`` fields after the last ``;``. Everything
@@ -610,8 +737,8 @@ and reads:
   ok
   ok
   ok
-  ok PC=$FFF1 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1
-  fail timed out waiting for "end of a road"; PC=$FFF3 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1
+  ok PC=$FFF1 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1 SEED=1215796064
+  fail timed out waiting for "end of a road"; PC=$FFF3 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1 SEED=1215796064
 
 
   >
@@ -621,5 +748,6 @@ $16 is READ_XSTACK, the call under ``read()``. The last three lines are
 the program's stdout after the question: two empty lines and the ``>``
 prompt where it waits for the answer.
 
-The arithmetic and the assertions belong in your driver program, which is
-why you don't see any in this scripting language.
+Arithmetic in a script gives the same answer as Python, so a driver can
+do the math either way. Loops, decisions and anything beyond arithmetic
+belong in your driver program.
