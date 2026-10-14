@@ -439,7 +439,7 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
      - Run until the program exits, then check its code.
    * - ``peek [xram:|ram:]<addr> <byte>...``
      - Compare memory.
-   * - ``poke [xram:|ram:|bus:]<addr> <byte>...``
+   * - ``poke [xram:|ram:|bus:|xbus:]<addr> <byte>...``
      - Write memory. The program reads what you wrote, so a test can
        skip ahead to the state it needs to exercise. Each byte goes to
        the next address.
@@ -488,6 +488,9 @@ so RX keeps its byte, XSTACK keeps its top and IRQ keeps its flags.
 ``poke`` sets what a read finds and does nothing else. With ``bus:``,
 ``poke`` stores the byte the way the program does, so a register does
 what a store to it does: ``poke bus:$FFE1 $41`` sends an ``A`` to stdout.
+``xbus:`` writes XRAM the way RW0 and RW1 write it, so the PSG or OPL
+hears a byte written to its block, which ``poke xram:`` changes without
+telling it.
 
 A failed check names the script and the line it was on, and ends with
 the fields of ``cpu``. The program's stdout that no check used goes to
