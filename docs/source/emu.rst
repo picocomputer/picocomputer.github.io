@@ -388,6 +388,12 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
        converted to the machine's code page, so a byte that is not UTF-8
        becomes ``?``. Waits for the keyboard ring to take it all;
        default budget 600 frames.
+   * - ``eof [frames]``
+     - End the program's stdin, the way a piped ``--stdin`` ends. It
+       waits until the program is reading stdin and has taken everything
+       typed. That read gets what is left of the line, and every read after
+       it returns 0 bytes until the next program starts. Default budget 600
+       frames.
    * - ``key <key>[+ctrl][+shift][+alt]``
      - Send the bytes a terminal sends for that key. See `Key Names`_.
    * - ``press <key>...``,
