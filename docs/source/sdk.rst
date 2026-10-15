@@ -1108,28 +1108,34 @@ settings of the page, and ``PAGE`` replaces the page with your own
 Testing
 =======
 
-``rp6502_test()`` adds tests that run in the emulator. Each file in the
-list is one test:
+``rp6502_test()`` adds a test that runs in the emulator. It takes the form
+of ``add_test()``:
 
 .. code-block:: cmake
 
-  rp6502_test(<file>... [NAME <name>] [ARGS <arg>...])
+  rp6502_test(NAME <name> COMMAND <file> [<arg>...])
 
 .. code-block:: cmake
 
-  rp6502_test(tests/connect.txt tests/buttons.txt
-      ARGS $<TARGET_PROPERTY:gamepad,RP6502_ROM>)
-  rp6502_test(tests/picker.py ARGS $<TARGET_PROPERTY:paint,RP6502_ROM>)
+  rp6502_test(NAME connect COMMAND tests/connect.txt
+      $<TARGET_PROPERTY:gamepad,RP6502_ROM>)
+  rp6502_test(NAME picker COMMAND tests/picker.py
+      $<TARGET_PROPERTY:paint,RP6502_ROM>)
 
 A ``.py`` file is a Python test, and any other file is an emulator
-:ref:`script <emu-scripting>`. The name of a test is the file name without
-the extension, such as ``connect``. ``NAME`` sets a different name, and is
-allowed only with one file. Each name must be unique in the project.
-``ARGS`` gives arguments to every file in the list: emulator options and
-a ROM, then ``--`` and the arguments of the ROM.
+:ref:`script <emu-scripting>`. Each name must be unique in the project.
+Each argument after the file is an emulator option or a ROM, and the
+words after ``--`` are the arguments of the ROM.
 ``$<TARGET_PROPERTY:gamepad,RP6502_ROM>`` is the ROM of the target
 ``gamepad`` in the build folder of the configure preset, so each preset
-tests its own ROM.
+tests its own ROM. A loop adds a test for each file of a list:
+
+.. code-block:: cmake
+
+  foreach(test connect buttons)
+      rp6502_test(NAME ${test} COMMAND tests/${test}.txt
+          $<TARGET_PROPERTY:gamepad,RP6502_ROM>)
+  endforeach()
 
 ``tools/rp6502.cmake`` enables testing in CMake, so no target can have the
 name ``test``.
@@ -1142,6 +1148,7 @@ in XRAM:
 .. code-block:: text
   :caption: tests/connect.txt
 
+  # The program maps the gamepads after it prints the title.
   wait "Gamepad Tester"
   pad 0 connect western sticks
   run 2
@@ -1157,10 +1164,19 @@ a calculation between the commands:
 
   import rp6502
 
+  # The program maps the tablet after it draws the picker, and the mapping
+  # clears earlier input, so the test starts after 60 frames.
   with rp6502.Emu() as emu:
       emu.cmd("run 60")
-      x = (emu.sym["CANVAS_WIDTH"] - emu.sym["PICKER_WIDTH"]) // 2
-      emu.cmd(f"peek picker_x {x} 0")
+      picker_x = (emu.sym["CANVAS_WIDTH"] - emu.sym["PICKER_WIDTH"]) // 2
+      slot_3 = picker_x + 2 + 3 * 6
+      emu.cmd(f"tablet at {slot_3} 4 1")
+      emu.cmd("run 2")
+      emu.cmd(f"tablet at {slot_3} 4 0")
+      emu.cmd("run 2")
+      emu.cmd("tablet at 160 120 1")
+      emu.cmd("run 2")
+      emu.cmd("peek draw_color $03")
 
 .. list-table::
    :widths: 30 70
@@ -1172,8 +1188,8 @@ a calculation between the commands:
      - Starts the emulator of the test with a script on its standard
        input. The emulator gets the words before ``--``, then the
        arguments of the test, then ``--`` and the words after ``--``. The
-       arguments of the test are ``sys.argv[1:]``: ``--save-dir`` and
-       ``ARGS``, which name the ROM.
+       arguments of the test are ``sys.argv[1:]``: ``--save-dir`` and the
+       arguments after the file in ``rp6502_test()``, which name the ROM.
    * - ``cmd(line)``
      - Sends one script command, and returns the text after ``ok``, such
        as the bytes from ``dump``. A ``fail`` raises ``ScriptError``.
@@ -1206,22 +1222,23 @@ folder. `Tool Versions`_ selects the emulator of a test, with
 
 The emulator fills memory with random values from a new seed in each run,
 so a test also finds a program that reads memory before it writes it. A
-failure ends with the seed:
+failure ends with the seed. This failure is from a gamepad example that
+does not map the gamepads, so the gamepad block holds random values:
 
 .. code-block:: text
 
-  rp6502-emu: src/gamepad/tests/connect.txt:5: $000A+0 is $00, expected $01; PC=$FFF3 A=$18 X=$FF Y=$00 SP=$EB P=$04 OP=$18 BUSY=$00 RESB=1 SEED=3132756132
+  rp6502-emu: src/gamepad/tests/connect.txt:5: $0000+0 is $AC, expected $D0; PC=$FFF3 A=$18 X=$FF Y=$00 SP=$EB P=$04 OP=$18 BUSY=$00 RESB=1 SEED=3733940630
 
 A failed Python test shows the same line as a ``ScriptError`` at the end
 of a traceback. ``ctest -R connect -V`` prints the command of the test.
-Add ``--seed 3132756132`` to that command before any ``--`` to repeat the
+Add ``--seed 3733940630`` to that command before any ``--`` to repeat the
 run with that seed. A Python test also requires the environment variables
 that ``ctest -V`` prints.
 
 .. code-block:: text
 
   ctest --test-dir build/cc65/debug -R connect -V
-  build/cc65/debug/test/connect/rp6502-emu --seed 3132756132 --save-dir build/cc65/debug/test/connect/save --script src/gamepad/tests/connect.txt build/cc65/debug/src/gamepad/gamepad/gamepad.rp6502
+  build/cc65/debug/test/connect/rp6502-emu --seed 3733940630 --save-dir build/cc65/debug/test/connect/save --script src/gamepad/tests/connect.txt build/cc65/debug/src/gamepad/gamepad/gamepad.rp6502
 
 
 .. _sdk-tool-versions:
