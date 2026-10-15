@@ -57,8 +57,8 @@ BASIC.
 
 .. _sdk-install:
 
-Installing the Tools
-====================
+Installing the Prerequisites
+============================
 
 Building Picocomputer software takes VS Code, CMake 3.28 or later,
 Python 3, git, Make or Ninja, and one or both of the 6502 compilers, cc65
@@ -66,22 +66,21 @@ and llvm-mos. Only the compilers have to be recent. New Picocomputer
 features are often added to cc65 and llvm-mos before their next release,
 and the versions in package managers such as apt and Homebrew are too old.
 
-Each compiler is installed with one command. The command downloads the
-best build at the moment, from the upstream project or from the
-Picocomputer fork of it. Which one is used, and why, is shown on the
-`Picocomputer GitHub page <https://github.com/picocomputer?view_as=public>`__. The
-compiler goes in the ``.rp6502`` folder in your home folder, and its
-``bin`` folder is added to PATH, the list of folders where programs are
-looked up. Running the same command again updates the compiler, and it
-also switches between upstream and the fork when the recommendation on the
-GitHub page changes. These compilers have a changed ``rp6502.h``, so a
-project written for an older one may need the changes in `Upgrading an
-Older Project`_.
+The commands in this section are a recommendation that is known to work.
+You may install the prerequisites in another way. If you install a
+compiler in another way, first check the `Picocomputer GitHub page
+<https://github.com/picocomputer?view_as=public>`__. It shows which build
+to use, from the upstream project or from the Picocomputer fork of it,
+and why.
+
+The command for each compiler puts the compiler in the ``.rp6502`` folder
+in your home folder and adds its ``bin`` folder to PATH. Run the command
+again to update the compiler.
 
 Windows
 -------
 
-Open PowerShell and install the tools with winget:
+Open PowerShell and install the prerequisites with winget:
 
 .. code-block:: powershell
 
@@ -140,8 +139,8 @@ only when it starts.
 Linux
 -----
 
-On Ubuntu and Debian, install the tools with apt. Ubuntu 24.04 and Debian
-13 and their later releases have CMake 3.28 or later.
+On Ubuntu and Debian, install the prerequisites with apt. Ubuntu 24.04
+and Debian 13 and their later releases have CMake 3.28 or later.
 
 .. code-block:: sh
 
@@ -164,14 +163,15 @@ install the compilers:
    curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.sh | sh
 
 Restart your session, so the new group and PATH take effect. Other
-distributions have the same tools under other package names. On Arch,
-the serial port group is ``uucp`` instead of ``dialout``.
+distributions have the same prerequisites under other package names. On
+Arch, the serial port group is ``uucp`` instead of ``dialout``.
 
 
 Getting Started
 ===============
 
-Install the tools first. The steps are in `Installing the Tools`_.
+Install the prerequisites first. The steps are in `Installing the
+Prerequisites`_.
 
 **1. Make a project.** On the template's GitHub page, select "Use this
 template", then "Create a new repository". GitHub creates a new repository
@@ -256,7 +256,7 @@ The project now looks like this:
 
 Git ignores the release files in ``tools/``: the emulator,
 ``rp6502-0.40-linux-x86_64.tar.gz`` in this Linux example, and the web
-player, ``rp6502-0.40-web.zip``. `Tool Versions`_ lists the release files
+player, ``rp6502-0.40-web.zip``. `Release Files`_ lists the release files
 of each system. The web player linked in ``README.md`` is published to
 GitHub Pages by ``.github/workflows/web.yml``, as described in
 :ref:`GitHub Pages <web-github>`.
@@ -272,23 +272,9 @@ Then delete the presets and source files you do not use. In
 you keep.
 
 Commit the four scripts in ``tools/``, so every clone of the project
-builds with the same tools. The scripts change only when you update them,
-with the "RP6502: update tools" task (Terminal > Run Task) or with
-``cmake -P tools/rp6502.cmake``. An update replaces each script with the
-latest version from the rp6502 repository, and local changes to the
-scripts are lost. An update also downloads the emulator of the latest
-release, and the web player and BASIC of the latest releases when
-``tools/`` already has them. The project then uses the latest versions,
-unless it selects others as `Tool Versions`_ describes.
-
-A configure downloads a release file only when ``tools/`` lacks it, so a
-fresh clone needs no extra step, and a project with its release files
-builds without a network. If a release has no emulator for your system,
-the configure writes ``tools/rp6502-<version>-<system>.unsupported``,
-which names the missing file, and later configures do not try again. To
-use an emulator that you build from the `rp6502 repository
-<https://github.com/picocomputer/rp6502>`__, set ``RP6502_EMU`` to its
-path, as `Tool Versions`_ describes.
+builds with the same tools. `Updating the Tools`_ describes how to update
+the scripts, how a configure downloads the release files, and how to
+select versions.
 
 
 Running and Debugging
@@ -318,8 +304,8 @@ size comes from where its symbol sits in memory.
 :ref:`Debugging <emu-debugging>` in the emulator's datasheet covers both.
 
 RP6502-EMU runs the ``rp6502-emu`` in the build folder of the launch
-target, which is the emulator version that `Tool Versions`_ selects for
-that target. Emulator options go in ``debugAdapterArgs`` of the
+target, which is the emulator version of that target, as `Selecting
+Versions`_ describes. Emulator options go in ``debugAdapterArgs`` of the
 RP6502-EMU entry in ``.vscode/launch.json``, and arguments for the ROM go
 in its ``args``, as in ``"args": ["level2"]``. The program receives the
 arguments only when it defines ``__argv_mem()``, as :ref:`ARGV
@@ -1066,8 +1052,8 @@ asset, the build fails with "Asset name already exists".
 
 The BASIC interpreter comes from a release of `picocomputer/msbasic
 <https://github.com/picocomputer/msbasic>`__: the newest one in
-``tools/``, unless ``RP6502_BASIC_VERSION`` selects another, as `Tool
-Versions`_ describes:
+``tools/``, unless ``RP6502_BASIC_VERSION`` selects another, as
+`Selecting Versions`_ describes:
 
 .. code-block:: cmake
 
@@ -1095,7 +1081,7 @@ opens a page with a link to every web player in the build folder.
 The emulator and the default page come from the web zip of a release of
 `picocomputer/rp6502 <https://github.com/picocomputer/rp6502>`__: the
 newest one in ``tools/``, unless ``RP6502_WEB_VERSION`` selects another,
-as `Tool Versions`_ describes.
+as `Selecting Versions`_ describes.
 
 ``CONFIG`` in ``rp6502_web()`` sets the title, the footer and the other
 settings of the page, and ``PAGE`` replaces the page with your own
@@ -1217,8 +1203,9 @@ tests, which ``ctest`` runs before the other tests: ``rp6502.build``
 builds the project, and ``rp6502.save`` empties each ``SAVE:`` folder.
 Each test runs in ``test/<name>/`` in the build folder. That folder holds
 ``rp6502-emu``, the emulator of the test, and ``save/``, the ``SAVE:``
-folder. `Tool Versions`_ selects the emulator of a test, with
-``set_tests_properties()`` in place of ``set_target_properties()``.
+folder. The settings in `Selecting Versions`_ select the emulator of a
+test, with ``set_tests_properties()`` in place of
+``set_target_properties()``.
 
 The emulator fills memory with random values from a new seed in each run,
 so a test also finds a program that reads memory before it writes it. A
@@ -1241,17 +1228,57 @@ that ``ctest -V`` prints.
   build/cc65/debug/test/connect/rp6502-emu --seed 3733940630 --save-dir build/cc65/debug/test/connect/save --script src/gamepad/tests/connect.txt build/cc65/debug/src/gamepad/gamepad/gamepad.rp6502
 
 
-.. _sdk-tool-versions:
+.. _sdk-updating-tools:
 
-Tool Versions
-=============
+Updating the Tools
+==================
+
+``tools/`` holds two kinds of files. The scripts are ``rp6502.cmake``,
+``rp6502.py``, ``cc65-toolchain.cmake`` and ``cc65-config.cmake``.
+Commit them with the project, so every clone builds with the same
+scripts. The release files are the emulator, the web player and BASIC. Git ignores
+them, and a configure downloads the ones that the project uses, as
+`Release Files`_ describes.
+
+The scripts change only when you update them. To update them, run the
+"RP6502: update tools" task (Terminal > Run Task), or run this command in
+the project folder:
+
+.. code-block:: text
+
+  cmake -P tools/rp6502.cmake
+
+The update does these steps:
+
+#. It downloads ``tools/SHA256SUMS`` from the ``main`` branch of the
+   `rp6502 repository <https://github.com/picocomputer/rp6502>`__. The
+   file lists each script and its SHA-256 hash.
+#. It downloads each script and checks it against its hash. The new
+   script replaces the old one, so local changes to the scripts are lost.
+   If a download or a check fails, the update stops, and that script and
+   the scripts after it do not change.
+#. It downloads the emulator for your system from the latest release of
+   rp6502, when ``tools/`` lacks it. It also downloads the web
+   player and BASIC of the latest releases when ``tools/`` already has a
+   web player or BASIC.
+
+Commit the new scripts after the update. Without a setting, a target uses
+the newest version in ``tools/``, so the project then uses the latest
+releases. A version that the project selects does not change, as
+`Selecting Versions`_ describes.
+
+For a project made with older scripts, the update also changes
+``.vscode/launch.json``, ``.gitignore`` and the top ``CMakeLists.txt``,
+as `Upgrading an Older Project`_ describes.
+
+Release Files
+-------------
 
 The emulator, the web player of ``rp6502_web()`` and the BASIC of
 ``rp6502_basic()`` come from the releases of `picocomputer/rp6502
 <https://github.com/picocomputer/rp6502/releases>`__ and
 `picocomputer/msbasic <https://github.com/picocomputer/msbasic/releases>`__.
-A configure downloads each release file that the project uses into
-``tools/`` under its release name, and unpacks it into ``build/tools/``.
+Each release file has its release name in ``tools/``:
 
 .. list-table::
    :widths: 50 50
@@ -1271,11 +1298,30 @@ A configure downloads each release file that the project uses into
    * - ``msbasic-<version>.zip``
      - BASIC.
 
-Git ignores the release files, so a clone downloads them at its first
-configure. ``tools/`` can hold several versions of each. A version starts
-with a digit, such as ``0.40``, and the tag of its release is ``v0.40``.
-Without a setting, a target gets the newest version in ``tools/``, and a
-configure downloads the latest release only when ``tools/`` has none.
+A configure downloads each release file that the project uses and that
+``tools/`` lacks. It checks the file against the hash in the
+``SHA256SUMS`` of the release, and unpacks the file into ``build/tools/``.
+A fresh clone therefore needs no extra step, and a project that has its
+release files builds without a network. ``tools/`` can hold several
+versions of each file.
+
+If a release has no emulator for your system, the configure writes
+``tools/rp6502-<version>-<system>.unsupported``, which names the missing
+file, and later configures do not try again.
+
+Each target folder and each test folder holds ``rp6502-emu``
+(``rp6502-emu.exe`` on Windows), a link to the emulator of the target or
+the test. F5 and ``ctest`` run these links.
+
+.. _sdk-selecting-versions:
+
+Selecting Versions
+------------------
+
+A version starts with a digit, such as ``0.40``, and the tag of its
+release is ``v0.40``. Without a setting, a target gets the newest version
+in ``tools/``, and a configure downloads the latest release only when
+``tools/`` has none.
 
 Three settings select a version:
 
@@ -1313,11 +1359,17 @@ targets of its folder, and of the folders that its folder adds after the
 ``set_target_properties()`` and ``set_tests_properties()`` can come after
 the other commands of the target or the test.
 
+Local Files
+-----------
+
 ``RP6502_EMU``, ``RP6502_WEB`` and ``RP6502_BASIC`` name a file to use in
 place of a release: an emulator, a web zip, or a ``basic.rp6502``. They
-are settings of the same kind, and a file at any level comes before any
-version. A relative path is a path from the project folder. A file is set
-on the command line, or in ``CMakeUserPresets.json``, which git ignores:
+are settings of the same kind as the versions, and a file at any level
+comes before any version. A relative path is a path from the project
+folder. A file is set on the command line, or in
+``CMakeUserPresets.json``, which git ignores. This line uses an emulator
+built from the `rp6502 repository
+<https://github.com/picocomputer/rp6502>`__:
 
 .. code-block:: text
 
@@ -1327,10 +1379,6 @@ A change to the file relinks it at the next build, so a rebuilt emulator
 runs at the next F5 or ``ctest``. ``RP6502_BASIC`` is also the switch of a
 BASIC project, which the ``basic`` preset sets to ``ON``. A CMake true
 value, such as ``ON``, names no file.
-
-Each target folder and each test folder holds ``rp6502-emu``
-(``rp6502-emu.exe`` on Windows), a link to the emulator of the target or
-the test. F5 and ``ctest`` run these links.
 
 
 Registers and ``volatile``
@@ -1459,8 +1507,8 @@ Packaging a ROM by Hand
 
 ``rp6502.py create`` packages files into a ROM, and
 ``rp6502_executable()`` uses it to build every ROM. Use it directly when
-the 6502 program comes from a tool CMake doesn't run, such as an
-assembler that writes a linked binary. The options it takes are:
+an assembler or compiler that CMake doesn't run writes the 6502 program.
+The options it takes are:
 
 - ``-a``: the address to load the first file at, or the name of an asset.
   The address can also be ``RAM(<name>)`` or ``XRAM(<name>)``, with a name
@@ -1597,8 +1645,8 @@ Upgrading an Older Project
 Because ``volatile`` has no effect on the cc65 optimizer, the macros of
 ``rp6502.h`` that accessed RIA registers directly were replaced by
 library functions. The compilers installed by the commands in
-`Installing the Tools`_ have the change. This table lists the changes
-that break an older project.
+`Installing the Prerequisites`_ have the change. This table lists the
+changes that break an older project.
 
 .. list-table::
    :widths: 40 60

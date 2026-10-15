@@ -439,10 +439,10 @@ in a later script, as in `The Page`_.
 
 ``rp6502.js`` and ``rp6502.wasm`` come from the web zip of a release:
 the newest one in ``tools/``, unless ``RP6502_WEB_VERSION`` selects
-another, as :ref:`Tool Versions <sdk-tool-versions>` describes. The
-variable selects the version of every ``rp6502_web()`` in its folder, and
-the property selects the version of one target. ``RP6502_WEB`` names a
-web zip file in place of a release.
+another, as :ref:`Selecting Versions <sdk-selecting-versions>`
+describes. The variable selects the version of every ``rp6502_web()`` in
+its folder, and the property selects the version of one target.
+``RP6502_WEB`` names a web zip file in place of a release.
 
 .. code-block:: cmake
 
