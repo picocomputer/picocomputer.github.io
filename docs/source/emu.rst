@@ -712,6 +712,9 @@ until asked, so a driver writes its whole preamble without waiting for
 anything and reads the ``ok`` for ``reply`` itself as the moment the
 machine starts answering.
 
+In a project made with the :doc:`sdk`, ``rp6502.Emu`` in
+``tools/rp6502.py`` is such a driver. See :ref:`Testing <sdk-testing>`.
+
 An answer comes when the command **finishes**, not when it parses. The
 ``ok`` for ``run 600`` arrives six hundred frames later, and the one for
 ``wait $0200 $07`` arrives when that byte reads 7.

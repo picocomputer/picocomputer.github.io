@@ -431,8 +431,8 @@ BASIC projects are described in `BASIC Programs`_.
 
 ``rp6502_align()`` and every ``rp6502_asset()`` come after
 ``add_executable()`` and before ``rp6502_executable()``.
-``rp6502_web()`` comes after ``rp6502_executable()``, because it packages
-the ROM that ``rp6502_executable()`` defines.
+``rp6502_web()`` and ``rp6502_test()`` come after ``rp6502_executable()``,
+because they use the ROM that ``rp6502_executable()`` defines.
 ``target_sources()`` can go anywhere after ``add_executable()``.
 
 The ROM is written to the preset's build folder:
@@ -1084,6 +1084,116 @@ settings of the page, and ``PAGE`` replaces the page with your own
 :ref:`Building with CMake <web-cmake>` on the :doc:`web` page.
 
 
+.. _sdk-testing:
+
+Testing
+=======
+
+``rp6502_test()`` adds tests that run a ROM in the emulator. Each file in
+the list is one test:
+
+.. code-block:: cmake
+
+  rp6502_test(<target> <file>... [NAME <name>] [ARGS <arg>...])
+
+.. code-block:: cmake
+
+  rp6502_test(gamepad tests/connect.txt tests/buttons.txt)
+  rp6502_test(paint tests/picker.py)
+
+A ``.py`` file is a Python test, and any other file is an emulator
+:ref:`script <emu-scripting>`. The name of a test is the file name without
+the extension, such as ``connect``. ``NAME`` sets a different name, and is
+allowed only with one file. Each name must be unique in the project.
+``ARGS`` gives arguments to every file in the list. A Python test gets
+them in ``sys.argv[1:]``, and for a script the emulator gets them after
+the ROM. ``rp6502_test()`` comes after ``rp6502_executable()`` or
+``rp6502_basic()``.
+
+``tools/rp6502.cmake`` enables testing in CMake, so no target can have the
+name ``test``.
+
+A script can use the names in the program's ``.sym`` file, as
+:ref:`Symbols and expressions <emu-symbols>` describes. This script waits
+for the gamepad example, connects a gamepad, and checks the gamepad block
+in XRAM:
+
+.. code-block:: text
+  :caption: tests/connect.txt
+
+  wait "Gamepad Tester"
+  pad 0 connect western sticks
+  run 2
+  peek xram:XRAM_GAMEPAD (GAMEPAD_FEAT_CONNECTED|GAMEPAD_FEAT_STICKS|GAMEPAD_TYPE_WESTERN)
+  peek xram:XRAM_GAMEPAD+10 $00
+
+A Python test is a script that imports ``rp6502``, which is
+``tools/rp6502.py``. It is for a test that requires a loop, a decision or
+a calculation between the commands:
+
+.. code-block:: python
+  :caption: tests/picker.py
+
+  import rp6502
+
+  with rp6502.Emu() as emu:
+      emu.cmd("run 60")
+      x = (emu.sym["CANVAS_WIDTH"] - emu.sym["PICKER_WIDTH"]) // 2
+      emu.cmd(f"peek picker_x {x} 0")
+
+.. list-table::
+   :widths: 30 70
+   :header-rows: 1
+
+   * - Name
+     - Description
+   * - ``Emu(rom=None, save_dir=None, args=())``
+     - Starts the emulator with a script on its standard input. ``rom``
+       and ``save_dir`` default to the ROM and the ``SAVE:`` folder of the
+       test. ``args`` are more emulator arguments, after the ROM.
+   * - ``cmd(line)``
+     - Sends one script command, and returns the text after ``ok``, such
+       as the bytes from ``dump``. A ``fail`` raises ``ScriptError``.
+   * - ``sym``
+     - The names and values of the ROM's ``.sym`` file, as a ``dict``. A
+       name with two values raises ``KeyError`` with ``is ambiguous``.
+   * - ``rom``, ``save_dir``
+     - The ROM and the ``SAVE:`` folder.
+   * - ``close()``
+     - Ends the script and waits for the emulator. An exit code other
+       than 0 raises ``ScriptError``. A ``with`` statement calls
+       ``close()``, or stops the emulator when the block raises.
+   * - ``ScriptError``
+     - The command, the reason, and the program's stdout that no command
+       read.
+
+Run the tests from the Testing panel of VS Code, or with ``ctest``:
+
+.. code-block:: text
+
+  ctest --test-dir build/cc65/debug
+
+The first ``rp6502_test()`` also adds the test ``rp6502.build``, which
+builds the project, and ``ctest`` runs it before the other tests. Each
+test runs in ``test/<name>/`` in the build folder, with a new, empty
+``SAVE:`` folder.
+
+The emulator fills memory with random values from a new seed in each run,
+so a test also finds a program that reads memory before it writes it. A
+failure ends with the seed:
+
+.. code-block:: text
+
+  rp6502-emu: src/gamepad/tests/connect.txt:5: $000A+0 is $00, expected $01; PC=$FFF3 A=$18 X=$FF Y=$00 SP=$EB P=$04 OP=$18 BUSY=$00 RESB=1 SEED=3132756132
+
+A failed Python test shows the same line as a ``ScriptError`` at the end
+of a traceback. ``--seed`` repeats the run with that seed:
+
+.. code-block:: text
+
+  python3 tools/rp6502.py -c .rp6502 test --seed 3132756132 src/gamepad/tests/connect.txt build/cc65/debug/src/gamepad/gamepad.rp6502
+
+
 .. _sdk-fetch:
 
 Fetching BASIC and the Emulator
@@ -1214,6 +1324,8 @@ options of that subcommand.
      - Package files into a ROM. See `Packaging a ROM by Hand`_.
    * - ``sym``
      - Write the ``.sym`` file of a linked program.
+   * - ``test``
+     - Run one test with a ROM in the emulator. See `Testing`_.
 
 ``run``, ``upload``, ``term`` and ``basic`` send a break first, which
 stops the program running on the RP6502-PICO.
@@ -1255,6 +1367,13 @@ second command below runs a BASIC program with a test script:
 
   python3 tools/rp6502.py -c .rp6502 execute build/cc65/debug/hello.rp6502
   python3 tools/rp6502.py -c .rp6502 execute --script tests/play.txt --seed 1 build/basic/trek.rp6502
+
+``rp6502.py test`` runs one test the way ``ctest`` runs it, with the
+``emulator`` setting of the settings file:
+
+.. code-block:: text
+
+  python3 tools/rp6502.py -c .rp6502 test tests/title.txt build/basic/trek.rp6502
 
 Another editor can debug with the emulator through the :ref:`Debug
 Adapter Protocol <emu-dap>`.
