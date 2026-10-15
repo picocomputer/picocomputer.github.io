@@ -32,13 +32,13 @@ BASIC.
    :alt: The sources: src/main.c (or an assembly file), src/main.bas,
          src/xram.h, src/help.txt and CMakeLists.txt. CMake builds the
          program with cc65 or llvm-mos, and rp6502.py packages it with
-         its assets into the ROM, such as build/cc65/debug/hello.rp6502,
-         in the build folder of the preset. With the basic preset, a
-         BASIC program is packaged with BASIC. The ROM is run with
-         RP6502-EMU, the emulator in tools/ with breakpoints and stepping;
-         RP6502-PICO, a standalone machine over USB serial or telnet; or
-         RP6502-WEB, web/hello.zip from rp6502_web(), a web player in a
-         browser.
+         its assets into the ROM, such as
+         build/cc65/debug/hello/hello.rp6502, in the build folder of the
+         preset. With the basic preset, a BASIC program is packaged with
+         BASIC. The ROM is run with RP6502-EMU, the emulator with
+         breakpoints and stepping; RP6502-PICO, a standalone machine over
+         USB serial or telnet; or RP6502-WEB, web/hello.zip from
+         rp6502_web(), a web player in a browser.
 
 .. image:: _static/sdk/build-dark.svg
    :class: only-dark
@@ -46,13 +46,13 @@ BASIC.
    :alt: The sources: src/main.c (or an assembly file), src/main.bas,
          src/xram.h, src/help.txt and CMakeLists.txt. CMake builds the
          program with cc65 or llvm-mos, and rp6502.py packages it with
-         its assets into the ROM, such as build/cc65/debug/hello.rp6502,
-         in the build folder of the preset. With the basic preset, a
-         BASIC program is packaged with BASIC. The ROM is run with
-         RP6502-EMU, the emulator in tools/ with breakpoints and stepping;
-         RP6502-PICO, a standalone machine over USB serial or telnet; or
-         RP6502-WEB, web/hello.zip from rp6502_web(), a web player in a
-         browser.
+         its assets into the ROM, such as
+         build/cc65/debug/hello/hello.rp6502, in the build folder of the
+         preset. With the basic preset, a BASIC program is packaged with
+         BASIC. The ROM is run with RP6502-EMU, the emulator with
+         breakpoints and stepping; RP6502-PICO, a standalone machine over
+         USB serial or telnet; or RP6502-WEB, web/hello.zip from
+         rp6502_web(), a web player in a browser.
 
 
 .. _sdk-install:
@@ -60,7 +60,7 @@ BASIC.
 Installing the Tools
 ====================
 
-Building Picocomputer software takes VS Code, CMake 3.21 or later,
+Building Picocomputer software takes VS Code, CMake 3.28 or later,
 Python 3, git, Make or Ninja, and one or both of the 6502 compilers, cc65
 and llvm-mos. Only the compilers have to be recent. New Picocomputer
 features are often added to cc65 and llvm-mos before their next release,
@@ -140,8 +140,8 @@ only when it starts.
 Linux
 -----
 
-On Ubuntu and Debian, install the tools with apt. Ubuntu 22.04 and Debian
-12 and their later releases have CMake 3.21 or later.
+On Ubuntu and Debian, install the tools with apt. Ubuntu 24.04 and Debian
+13 and their later releases have CMake 3.28 or later.
 
 .. code-block:: sh
 
@@ -206,7 +206,8 @@ from the Configure row of the CMake side panel.
          the CMake side panel's Configure row.
 
 The first configure downloads the tools into ``tools/``: the CMake
-functions, ``rp6502.py``, and the emulator for your system.
+functions, ``rp6502.py``, and the releases of the emulator for your
+system and of the web player.
 
 **4. Press F5 to debug.** VS Code builds ``hello.rp6502`` and runs it in
 the emulator. "Hello, world!" appears on the emulator's screen and in VS
@@ -243,19 +244,22 @@ The project now looks like this:
    │   ├── main.bas           the same in BASIC
    │   ├── xram.h             the XRAM layout
    │   └── help.txt           the help asset
-   ├── tools/                 commit these
+   ├── tools/                 commit the four scripts
    │   ├── rp6502.cmake
    │   ├── rp6502.py
    │   ├── cc65-toolchain.cmake
    │   ├── cc65-config.cmake
-   │   └── rp6502-emu         the emulator, ignored by git
+   │   ├── rp6502-0.40-linux-x86_64.tar.gz
+   │   └── rp6502-0.40-web.zip
    ├── build/                 build output, ignored by git
    └── .rp6502                the settings file, ignored by git
 
-On Windows and WSL, the emulator is ``rp6502-emu.exe``. The web player
-linked in ``README.md`` is published to GitHub Pages by
-``.github/workflows/web.yml``, as described in :ref:`GitHub Pages
-<web-github>`.
+Git ignores the release files in ``tools/``: the emulator,
+``rp6502-0.40-linux-x86_64.tar.gz`` in this Linux example, and the web
+player, ``rp6502-0.40-web.zip``. `Tool Versions`_ lists the release files
+of each system. The web player linked in ``README.md`` is published to
+GitHub Pages by ``.github/workflows/web.yml``, as described in
+:ref:`GitHub Pages <web-github>`.
 
 To choose C, assembly or BASIC for the project, edit ``CMakeLists.txt``.
 Its ``if(RP6502_BASIC)`` has a branch for BASIC and a branch for C. Keep
@@ -267,21 +271,24 @@ Then delete the presets and source files you do not use. In
 ``README.md``, set ``preset:`` in the ``<!-- rp6502`` comment to a preset
 you keep.
 
-Commit the ``tools/`` folder, so every clone of the project builds with
-the same tools. The tools change only when you update them, with the
-"RP6502: update tools" task (Terminal > Run Task) or with
-``cmake -P tools/rp6502.cmake``. An update replaces each tool file with
-the latest version from the rp6502 repository, and local changes to those
-files are lost. An update also downloads the latest emulator release. On
-Windows, close the emulator before updating.
+Commit the four scripts in ``tools/``, so every clone of the project
+builds with the same tools. The scripts change only when you update them,
+with the "RP6502: update tools" task (Terminal > Run Task) or with
+``cmake -P tools/rp6502.cmake``. An update replaces each script with the
+latest version from the rp6502 repository, and local changes to the
+scripts are lost. An update also downloads the emulator of the latest
+release, and the web player and BASIC of the latest releases when
+``tools/`` already has them. The project then uses the latest versions,
+unless it selects others as `Tool Versions`_ describes.
 
-When ``tools/`` has no emulator, the next configure downloads one, so a
-fresh clone needs no extra step. If the release has no emulator for your
-system, the configure writes ``tools/rp6502-emu.unsupported``, which
-names the missing build. Later configures don't try again until the next
-update. Build the emulator from the `rp6502 repository
-<https://github.com/picocomputer/rp6502>`__, then set ``emulator`` in
-`The .rp6502 Settings File`_ to its path.
+A configure downloads a release file only when ``tools/`` lacks it, so a
+fresh clone needs no extra step, and a project with its release files
+builds without a network. If a release has no emulator for your system,
+the configure writes ``tools/rp6502-<version>-<system>.unsupported``,
+which names the missing file, and later configures do not try again. To
+use an emulator that you build from the `rp6502 repository
+<https://github.com/picocomputer/rp6502>`__, set ``RP6502_EMU`` to its
+path, as `Tool Versions`_ describes.
 
 
 Running and Debugging
@@ -309,6 +316,14 @@ preset. With llvm-mos, variables show their C types, and structures and
 arrays expand. With cc65, variables have no types, and each variable's
 size comes from where its symbol sits in memory.
 :ref:`Debugging <emu-debugging>` in the emulator's datasheet covers both.
+
+RP6502-EMU runs the ``rp6502-emu`` in the build folder of the launch
+target, which is the emulator version that `Tool Versions`_ selects for
+that target. Emulator options go in ``debugAdapterArgs`` of the
+RP6502-EMU entry in ``.vscode/launch.json``, and arguments for the ROM go
+in its ``args``, as in ``"args": ["level2"]``. The program receives the
+arguments only when it defines ``__argv_mem()``, as :ref:`ARGV
+<api-argv>` describes.
 
 .. image:: _static/sdk/breakpoint-light.png
    :class: only-light
@@ -344,14 +359,13 @@ The .rp6502 Settings File
 =========================
 
 The settings file is named ``.rp6502`` and is in the project folder. It is
-not a ROM, although it has the same extension. It is created the first
-time the tools run. To run on an RP6502-PICO, set ``device`` in the
-``[RP6502][Launch]`` section, and ``key`` as well for telnet.
+not a ROM. The emulator or pico debug configrations creates it the first
+time it runs. To run on an RP6502-PICO, set
+``device`` in that section, and ``key`` as well for telnet.
 
 .. code-block:: text
 
   [RP6502][Launch]
-  emulator = tools/rp6502-emu
   device = /dev/ttyACM0
   key =
   workdir =
@@ -364,11 +378,6 @@ time the tools run. To run on an RP6502-PICO, set ``device`` in the
 
    * - Setting
      - Description
-   * - ``emulator``
-     - Path to the emulator: ``tools/rp6502-emu``, or
-       ``tools/rp6502-emu.exe`` on Windows and WSL. A relative path is
-       resolved against the settings file's folder. A bare name that isn't
-       there, such as ``rp6502-emu``, is looked up on the PATH.
    * - ``device``
      - The serial port of the RP6502-PICO. A new settings file sets it to
        the usual port for your system: ``/dev/ttyACM0`` on Linux, the
@@ -385,8 +394,9 @@ time the tools run. To run on an RP6502-PICO, set ``device`` in the
        ROM is copied, such as ``MyGame``. Leave it empty to copy the ROM to
        the current folder of the monitor.
    * - ``args``
-     - Arguments for the ROM. The program receives them only when it
-       defines ``__argv_mem()``, as :ref:`ARGV <api-argv>` describes.
+     - Arguments for the ROM on an RP6502-PICO. The program receives them
+       only when it defines ``__argv_mem()``, as :ref:`ARGV <api-argv>`
+       describes.
    * - ``term``
      - Open a terminal on the console when running on an RP6502-PICO.
 
@@ -403,7 +413,7 @@ BASIC projects are described in `BASIC Programs`_.
 
 .. code-block:: cmake
 
-  cmake_minimum_required(VERSION 3.21)
+  cmake_minimum_required(VERSION 3.28)
 
   include(${CMAKE_CURRENT_LIST_DIR}/tools/rp6502.cmake)
 
@@ -431,14 +441,16 @@ BASIC projects are described in `BASIC Programs`_.
 
 ``rp6502_align()`` and every ``rp6502_asset()`` come after
 ``add_executable()`` and before ``rp6502_executable()``.
-``rp6502_web()`` and ``rp6502_test()`` come after ``rp6502_executable()``,
-because they use the ROM that ``rp6502_executable()`` defines.
-``target_sources()`` can go anywhere after ``add_executable()``.
+``rp6502_web()`` comes after ``rp6502_executable()``, because it uses the
+ROM that ``rp6502_executable()`` defines. ``target_sources()`` can go
+anywhere after ``add_executable()``.
 
-The ROM is written to the preset's build folder:
-``build/<compiler>/<debug or release>/``, or ``build/basic/`` for the
-``basic`` preset. The cc65 Debug build is ``build/cc65/debug/hello.rp6502``.
-To share a program, build it with a Release preset, or the ``basic`` preset
+The ROM is written to the folder of the target in the preset's build
+folder: ``build/<compiler>/<debug or release>/hello/``, or
+``build/basic/hello/`` for the ``basic`` preset. The cc65 Debug build is
+``build/cc65/debug/hello/hello.rp6502``. The folder also holds the linker
+output and ``rp6502-emu``, the emulator of the target. To share a program,
+build it with a Release preset, or the ``basic`` preset
 for BASIC, and share that file, or its web player as described in
 :doc:`web`.
 
@@ -829,7 +841,7 @@ If a name is not in the ``.sym`` file, the build stops:
 
 .. code-block:: text
 
-  [rp6502.py] XRAM(XRAM_LOGOO): XRAM_LOGOO is not in /home/user/my-project/build/cc65/debug/hello.sym
+  [rp6502.py] XRAM(XRAM_LOGOO): XRAM_LOGOO is not in /home/user/my-project/build/cc65/debug/hello/hello.sym
 
 If the name has two lines in the ``.sym`` file, the error ends with
 ``is ambiguous``.
@@ -896,7 +908,9 @@ file for each, but CMake's ``add_executable()`` tracks only one output
 file. ``rp6502_byproducts()`` declares the other files a target's build
 writes. In a configuration for ld65, cc65's linker, each memory area with
 a ``file`` of its own is a separate output file, and ``%O`` stands for
-the output file name that CMake passes to the linker.
+the output file name that CMake passes to the linker. The linker output
+is in the folder of the target, so the files of the target ``basic`` are
+in ``basic/`` in the build folder.
 
 .. code-block:: cmake
 
@@ -926,14 +940,14 @@ chunks at their addresses, and packaged:
 .. code-block:: cmake
 
   rp6502_byproducts(basic
-      ${CMAKE_CURRENT_BINARY_DIR}/basic.00E8
-      ${CMAKE_CURRENT_BINARY_DIR}/basic.1000
-      ${CMAKE_CURRENT_BINARY_DIR}/basic.C000
+      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.00E8
+      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.1000
+      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.C000
   )
   rp6502_asset(basic help src/help.txt)
-  rp6502_asset(basic RAM(0x00E8) ${CMAKE_CURRENT_BINARY_DIR}/basic.00E8)
-  rp6502_asset(basic RAM(0x1000) ${CMAKE_CURRENT_BINARY_DIR}/basic.1000)
-  rp6502_asset(basic RAM(0xC000) ${CMAKE_CURRENT_BINARY_DIR}/basic.C000)
+  rp6502_asset(basic RAM(0x00E8) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.00E8)
+  rp6502_asset(basic RAM(0x1000) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.1000)
+  rp6502_asset(basic RAM(0xC000) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.C000)
   rp6502_executable(basic RESET 0x1000)
 
 ``rp6502_executable()`` has no ``DATA`` here, because the linker output
@@ -990,8 +1004,8 @@ A larger project can give each ROM a directory of its own:
   rp6502_executable(setup DATA default RESET default)
   target_sources(setup PRIVATE setup.c)
 
-Each ROM is written to the matching folder of the build, such as
-``build/cc65/debug/src/setup/setup.rp6502``.
+Each ROM is written to the folder of its target in the matching folder of
+the build, such as ``build/cc65/debug/src/setup/setup/setup.rp6502``.
 
 
 .. _sdk-basic:
@@ -1005,7 +1019,7 @@ program:
 
 .. code-block:: cmake
 
-  cmake_minimum_required(VERSION 3.21)
+  cmake_minimum_required(VERSION 3.28)
 
   include(${CMAKE_CURRENT_LIST_DIR}/tools/rp6502.cmake)
 
@@ -1050,14 +1064,14 @@ case, and ``CAPS 2`` swaps upper and lower case. ``CAPS 1`` is the
 default. With both a name in ``rp6502_basic()`` and an ``autorun.bas``
 asset, the build fails with "Asset name already exists".
 
-The BASIC interpreter comes from the latest release of
-`picocomputer/msbasic <https://github.com/picocomputer/msbasic>`__. To
-use a specific version instead, name it with ``BASIC``, in any form
-listed in `Fetching BASIC and the Emulator`_:
+The BASIC interpreter comes from a release of `picocomputer/msbasic
+<https://github.com/picocomputer/msbasic>`__: the newest one in
+``tools/``, unless ``RP6502_BASIC_VERSION`` selects another, as `Tool
+Versions`_ describes:
 
 .. code-block:: cmake
 
-  rp6502_basic(trek BASIC build-96e229e instructions.bas)
+  set(RP6502_BASIC_VERSION 0.1)
 
 The BASIC program is a CMake launch target, as a C program is, so F5 runs
 it in the emulator.
@@ -1078,6 +1092,11 @@ unpacked in ``web/hello/``. In VS Code, choose "RP6502-WEB" in the Run
 and Debug side panel and press F5: the project is built, and the browser
 opens a page with a link to every web player in the build folder.
 
+The emulator and the default page come from the web zip of a release of
+`picocomputer/rp6502 <https://github.com/picocomputer/rp6502>`__: the
+newest one in ``tools/``, unless ``RP6502_WEB_VERSION`` selects another,
+as `Tool Versions`_ describes.
+
 ``CONFIG`` in ``rp6502_web()`` sets the title, the footer and the other
 settings of the page, and ``PAGE`` replaces the page with your own
 ``index.html``. Every setting, and how to write a page, is in
@@ -1089,26 +1108,28 @@ settings of the page, and ``PAGE`` replaces the page with your own
 Testing
 =======
 
-``rp6502_test()`` adds tests that run a ROM in the emulator. Each file in
-the list is one test:
+``rp6502_test()`` adds tests that run in the emulator. Each file in the
+list is one test:
 
 .. code-block:: cmake
 
-  rp6502_test(<target> <file>... [NAME <name>] [ARGS <arg>...])
+  rp6502_test(<file>... [NAME <name>] [ARGS <arg>...])
 
 .. code-block:: cmake
 
-  rp6502_test(gamepad tests/connect.txt tests/buttons.txt)
-  rp6502_test(paint tests/picker.py)
+  rp6502_test(tests/connect.txt tests/buttons.txt
+      ARGS $<TARGET_PROPERTY:gamepad,RP6502_ROM>)
+  rp6502_test(tests/picker.py ARGS $<TARGET_PROPERTY:paint,RP6502_ROM>)
 
 A ``.py`` file is a Python test, and any other file is an emulator
 :ref:`script <emu-scripting>`. The name of a test is the file name without
 the extension, such as ``connect``. ``NAME`` sets a different name, and is
 allowed only with one file. Each name must be unique in the project.
-``ARGS`` gives arguments to every file in the list. A Python test gets
-them in ``sys.argv[1:]``, and for a script the emulator gets them after
-the ROM. ``rp6502_test()`` comes after ``rp6502_executable()`` or
-``rp6502_basic()``.
+``ARGS`` gives arguments to every file in the list: emulator options and
+a ROM, then ``--`` and the arguments of the ROM.
+``$<TARGET_PROPERTY:gamepad,RP6502_ROM>`` is the ROM of the target
+``gamepad`` in the build folder of the configure preset, so each preset
+tests its own ROM.
 
 ``tools/rp6502.cmake`` enables testing in CMake, so no target can have the
 name ``test``.
@@ -1147,18 +1168,19 @@ a calculation between the commands:
 
    * - Name
      - Description
-   * - ``Emu(rom=None, save_dir=None, args=())``
-     - Starts the emulator with a script on its standard input. ``rom``
-       and ``save_dir`` default to the ROM and the ``SAVE:`` folder of the
-       test. ``args`` are more emulator arguments, after the ROM.
+   * - ``Emu(*words)``
+     - Starts the emulator of the test with a script on its standard
+       input. The emulator gets the words before ``--``, then the
+       arguments of the test, then ``--`` and the words after ``--``. The
+       arguments of the test are ``sys.argv[1:]``: ``--save-dir`` and
+       ``ARGS``, which name the ROM.
    * - ``cmd(line)``
      - Sends one script command, and returns the text after ``ok``, such
        as the bytes from ``dump``. A ``fail`` raises ``ScriptError``.
    * - ``sym``
-     - The names and values of the ROM's ``.sym`` file, as a ``dict``. A
-       name with two values raises ``KeyError`` with ``is ambiguous``.
-   * - ``rom``, ``save_dir``
-     - The ROM and the ``SAVE:`` folder.
+     - The names and values of the ``.sym`` file of the ROM that the
+       emulator boots, as a ``dict``. A name with two values raises
+       ``KeyError`` with ``is ambiguous``.
    * - ``close()``
      - Ends the script and waits for the emulator. An exit code other
        than 0 raises ``ScriptError``. A ``with`` statement calls
@@ -1173,10 +1195,14 @@ Run the tests from the Testing panel of VS Code, or with ``ctest``:
 
   ctest --test-dir build/cc65/debug
 
-The first ``rp6502_test()`` also adds the test ``rp6502.build``, which
-builds the project, and ``ctest`` runs it before the other tests. Each
-test runs in ``test/<name>/`` in the build folder, with a new, empty
-``SAVE:`` folder.
+Each configure preset has its own build folder, so ``ctest`` and the
+Testing panel run the tests of one preset. The project also gets two setup
+tests, which ``ctest`` runs before the other tests: ``rp6502.build``
+builds the project, and ``rp6502.save`` empties each ``SAVE:`` folder.
+Each test runs in ``test/<name>/`` in the build folder. That folder holds
+``rp6502-emu``, the emulator of the test, and ``save/``, the ``SAVE:``
+folder. `Tool Versions`_ selects the emulator of a test, with
+``set_tests_properties()`` in place of ``set_target_properties()``.
 
 The emulator fills memory with random values from a new seed in each run,
 so a test also finds a program that reads memory before it writes it. A
@@ -1187,48 +1213,107 @@ failure ends with the seed:
   rp6502-emu: src/gamepad/tests/connect.txt:5: $000A+0 is $00, expected $01; PC=$FFF3 A=$18 X=$FF Y=$00 SP=$EB P=$04 OP=$18 BUSY=$00 RESB=1 SEED=3132756132
 
 A failed Python test shows the same line as a ``ScriptError`` at the end
-of a traceback. ``--seed`` repeats the run with that seed:
+of a traceback. ``ctest -R connect -V`` prints the command of the test.
+Add ``--seed 3132756132`` to that command before any ``--`` to repeat the
+run with that seed. A Python test also requires the environment variables
+that ``ctest -V`` prints.
 
 .. code-block:: text
 
-  python3 tools/rp6502.py -c .rp6502 test --seed 3132756132 src/gamepad/tests/connect.txt build/cc65/debug/src/gamepad/gamepad.rp6502
+  ctest --test-dir build/cc65/debug -R connect -V
+  build/cc65/debug/test/connect/rp6502-emu --seed 3132756132 --save-dir build/cc65/debug/test/connect/save --script src/gamepad/tests/connect.txt build/cc65/debug/src/gamepad/gamepad/gamepad.rp6502
 
 
-.. _sdk-fetch:
+.. _sdk-tool-versions:
 
-Fetching BASIC and the Emulator
-===============================
+Tool Versions
+=============
 
-BASIC for ``rp6502_basic()``, and :doc:`RP6502-WEB <web>` for
-``rp6502_web()``, are downloaded automatically into the build folder when
-the project is configured. Each is the latest release of its official repository,
-``picocomputer/msbasic`` or ``picocomputer/rp6502``, unless ``BASIC`` or
-``EMULATOR`` names another in one of these forms:
+The emulator, the web player of ``rp6502_web()`` and the BASIC of
+``rp6502_basic()`` come from the releases of `picocomputer/rp6502
+<https://github.com/picocomputer/rp6502/releases>`__ and
+`picocomputer/msbasic <https://github.com/picocomputer/msbasic/releases>`__.
+A configure downloads each release file that the project uses into
+``tools/`` under its release name, and unpacks it into ``build/tools/``.
+
+.. list-table::
+   :widths: 50 50
+   :header-rows: 1
+
+   * - Release file
+     - Contents
+   * - ``rp6502-<version>-windows.zip``
+     - The emulator for Windows and WSL.
+   * - ``rp6502-<version>-macos.zip``
+     - The emulator for macOS.
+   * - ``rp6502-<version>-linux-x86_64.tar.gz``,
+       ``rp6502-<version>-linux-aarch64.tar.gz``
+     - The emulator for Linux.
+   * - ``rp6502-<version>-web.zip``
+     - The web player.
+   * - ``msbasic-<version>.zip``
+     - BASIC.
+
+Git ignores the release files, so a clone downloads them at its first
+configure. ``tools/`` can hold several versions of each. A version starts
+with a digit, such as ``0.40``, and the tag of its release is ``v0.40``.
+Without a setting, a target gets the newest version in ``tools/``, and a
+configure downloads the latest release only when ``tools/`` has none.
+
+Three settings select a version:
 
 .. list-table::
    :widths: 30 70
    :header-rows: 1
 
-   * - Form
-     - Description
-   * - ``tag``
-     - A release tag of the official repository.
-   * - ``owner/repo``
-     - The latest release of a repository on GitHub.
-   * - ``owner/repo/tag``
-     - A release tag of a repository on GitHub.
-   * - ``tools/basic.rp6502``
-     - A file of the project, ending in ``.rp6502`` for BASIC or ``.zip``
-       for RP6502-WEB.
+   * - Setting
+     - Selects
+   * - ``RP6502_EMU_VERSION``
+     - The emulator of an executable target, a BASIC target or a test.
+   * - ``RP6502_WEB_VERSION``
+     - The web player of an ``rp6502_web()`` target.
+   * - ``RP6502_BASIC_VERSION``
+     - The BASIC of an ``rp6502_basic()`` target.
 
-A failed download is a configure error. To work without a network,
-download the file, commit it with the project, and name it in
-``CMakeLists.txt``:
+A setting is a CMake variable, a property of a target or a test, or a
+cache value from ``-D`` or a preset:
 
 .. code-block:: cmake
 
-  rp6502_basic(trek BASIC tools/basic.rp6502 instructions.bas)
-  rp6502_web(trek EMULATOR tools/rp6502-web.zip)
+  set(RP6502_EMU_VERSION 0.40)
+  set_target_properties(paint PROPERTIES RP6502_EMU_VERSION 0.39)
+  set_tests_properties(picker PROPERTIES RP6502_EMU_VERSION 0.39)
+
+.. code-block:: text
+
+  cmake --preset cc65/Debug -DRP6502_EMU_VERSION=0.40
+
+The cache value comes first, then the property, then the variable, so
+``-D`` sets the version of every target. A variable applies to the
+targets of its folder, and of the folders that its folder adds after the
+``set()``. For a test, the variable is the one in the folder that calls
+``rp6502_test()``. The configure reads the settings at its end, so
+``set_target_properties()`` and ``set_tests_properties()`` can come after
+the other commands of the target or the test.
+
+``RP6502_EMU``, ``RP6502_WEB`` and ``RP6502_BASIC`` name a file to use in
+place of a release: an emulator, a web zip, or a ``basic.rp6502``. They
+are settings of the same kind, and a file at any level comes before any
+version. A relative path is a path from the project folder. A file is set
+on the command line, or in ``CMakeUserPresets.json``, which git ignores:
+
+.. code-block:: text
+
+  cmake --preset cc65/Debug -DRP6502_EMU=/home/user/rp6502/build/sokol/rp6502-emu
+
+A change to the file relinks it at the next build, so a rebuilt emulator
+runs at the next F5 or ``ctest``. ``RP6502_BASIC`` is also the switch of a
+BASIC project, which the ``basic`` preset sets to ``ON``. A CMake true
+value, such as ``ON``, names no file.
+
+Each target folder and each test folder holds ``rp6502-emu``
+(``rp6502-emu.exe`` on Windows), a link to the emulator of the target or
+the test. F5 and ``ctest`` run these links.
 
 
 Registers and ``volatile``
@@ -1267,8 +1352,8 @@ the same as choosing that preset in VS Code.
   cmake --preset cc65/Debug
   cmake --build --preset cc65/Debug
 
-The ROM is ``build/cc65/debug/hello.rp6502``. The configure step
-downloads the emulator when ``tools/`` has none, so the first configure
+The ROM is ``build/cc65/debug/hello/hello.rp6502``. The configure step
+downloads the release files that ``tools/`` lacks, so the first configure
 of a fresh copy needs a network connection.
 
 Running on an RP6502-PICO
@@ -1282,7 +1367,7 @@ and ``-c .rp6502`` uses the settings file that VS Code uses.
 
 .. code-block:: text
 
-  python3 tools/rp6502.py -c .rp6502 run build/cc65/debug/hello.rp6502
+  python3 tools/rp6502.py -c .rp6502 run build/cc65/debug/hello/hello.rp6502
 
 Without a settings file, name the serial port with ``-d``, or the host
 and passkey for telnet with ``-d`` and ``-k``. With ``-c``, the settings
@@ -1290,13 +1375,13 @@ in the file take precedence over these options.
 
 .. code-block:: text
 
-  python3 tools/rp6502.py -d /dev/ttyUSB0 run build/cc65/debug/hello.rp6502
-  python3 tools/rp6502.py -d 192.168.1.20 -k secret run build/cc65/debug/hello.rp6502
+  python3 tools/rp6502.py -d /dev/ttyUSB0 run build/cc65/debug/hello/hello.rp6502
+  python3 tools/rp6502.py -d 192.168.1.20 -k secret run build/cc65/debug/hello/hello.rp6502
 
 Words after the ROM's file name are passed to the ROM as its arguments.
 ``rp6502.py`` has these subcommands. ``python3 tools/rp6502.py --help``
 lists the options that go before a subcommand, and ``--help`` after a
-subcommand, as in ``python3 tools/rp6502.py execute --help``, lists the
+subcommand, as in ``python3 tools/rp6502.py run --help``, lists the
 options of that subcommand.
 
 .. list-table::
@@ -1315,17 +1400,10 @@ options of that subcommand.
    * - ``basic``
      - Type a BASIC program into the BASIC installed on the RP6502-PICO,
        and run it.
-   * - ``execute``
-     - Run a ROM in the emulator. See `Running in the Emulator`_.
-   * - ``emu``
-     - Start the emulator as the debugger for an editor. VS Code uses
-       this.
    * - ``create``
      - Package files into a ROM. See `Packaging a ROM by Hand`_.
    * - ``sym``
      - Write the ``.sym`` file of a linked program.
-   * - ``test``
-     - Run one test with a ROM in the emulator. See `Testing`_.
 
 ``run``, ``upload``, ``term`` and ``basic`` send a break first, which
 stops the program running on the RP6502-PICO.
@@ -1333,16 +1411,16 @@ stops the program running on the RP6502-PICO.
 Running in the Emulator
 -----------------------
 
-The emulator is ``tools/rp6502-emu``, or ``tools/rp6502-emu.exe`` on
-Windows and WSL. With no options, the ROM runs in a window.
-:ref:`Arguments <emu-arguments>` in the emulator's datasheet lists every
-option.
+The emulator of a target is ``rp6502-emu`` in the folder of the target,
+or ``rp6502-emu.exe`` on Windows. With no options, the ROM runs in a
+window. :ref:`Arguments <emu-arguments>` in the emulator's datasheet
+lists every option.
 
 .. code-block:: text
 
-  tools/rp6502-emu build/cc65/debug/hello.rp6502
-  tools/rp6502-emu --headless --phi2 0 build/cc65/debug/hello.rp6502
-  tools/rp6502-emu --script tests/play.txt --seed 1 build/basic/trek.rp6502
+  build/cc65/debug/hello/rp6502-emu build/cc65/debug/hello/hello.rp6502
+  build/cc65/debug/hello/rp6502-emu --headless --phi2 0 build/cc65/debug/hello/hello.rp6502
+  build/basic/trek/rp6502-emu --script tests/play.txt --seed 1 build/basic/trek/trek.rp6502
 
 With ``--headless``, there is no window. The ROM's console is the
 terminal's standard input and output, and the ROM's exit code becomes the
@@ -1355,25 +1433,6 @@ program that reads the keyboard can be tested. The ROM's stdout is written
 to standard output only when the script fails. The exit code is 0 when the
 script passes and 1 when it fails. A BASIC ROM does not exit when its
 program ends, so run it with ``--script``.
-
-``rp6502.py execute`` is a wrapper for ``rp6502-emu --headless`` or
-``rp6502-emu --script`` that uses the ``emulator`` setting of
-`The .rp6502 Settings File`_, so ``-c`` is required. ``--phi2``, ``--seed`` and
-``--save-dir`` are passed to the emulator. The ROM's standard input is
-empty, and the emulator's exit code becomes the command's exit code. The
-second command below runs a BASIC program with a test script:
-
-.. code-block:: text
-
-  python3 tools/rp6502.py -c .rp6502 execute build/cc65/debug/hello.rp6502
-  python3 tools/rp6502.py -c .rp6502 execute --script tests/play.txt --seed 1 build/basic/trek.rp6502
-
-``rp6502.py test`` runs one test the way ``ctest`` runs it, with the
-``emulator`` setting of the settings file:
-
-.. code-block:: text
-
-  python3 tools/rp6502.py -c .rp6502 test tests/title.txt build/basic/trek.rp6502
 
 Another editor can debug with the emulator through the :ref:`Debug
 Adapter Protocol <emu-dap>`.
@@ -1579,9 +1638,18 @@ that break an older project.
      - ``xreg`` is now a macro in ``rp6502.inc``. Rename or remove the
        one in the project.
 
-``rp6502_map()`` is replaced by ``rp6502_align()``. An older
-``CMakeLists.txt`` still builds, and the warning for each ``rp6502_map()``
-call shows the ``rp6502_align()`` line that replaces it.
+The ROMs of an older project move into the folders of their targets,
+such as ``build/cc65/debug/hello/``. The "RP6502: update tools" task
+replaces the RP6502-EMU entry of ``.vscode/launch.json`` with one that
+runs the emulator of the launch target, and changes ``.gitignore`` to
+ignore the release files in ``tools/``. A changed entry is left as it
+is, and the task shows the new entry to copy into it.
+
+``rp6502_map()`` is replaced by ``rp6502_align()``. The update task
+changes each ``rp6502_map()`` call in the top ``CMakeLists.txt`` to the
+``rp6502_align()`` call that replaces it. A call in another
+``CMakeLists.txt`` still builds, and its warning shows the
+``rp6502_align()`` line that replaces it.
 
 For an older C project, save this header in the project, and include
 ``"rp6502-compat.h"`` in place of ``<rp6502.h>``:
