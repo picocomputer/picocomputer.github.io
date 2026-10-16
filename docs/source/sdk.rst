@@ -996,16 +996,101 @@ settings file and ``CMakeLists.txt``.
 The .rp6502 Settings File
 -------------------------
 
-``.rp6502`` in the project directory holds the settings for running on
-an RP6502-PICO. It is a text file, not a ROM. The first run of the
-"RP6502-EMU" or "RP6502-PICO" launch configuration creates it. To run on
-an RP6502-PICO, set ``device`` in the ``[RP6502][Launch]`` section. For
-telnet, also set ``key``.
+``.rp6502`` in the project directory holds the settings of your
+workstation, so git ignores it. The first run of the "RP6502-EMU" or
+"RP6502-PICO" launch configuration creates it.
+
+The file has several sections. The emulator owns most of them and keeps
+the window layout of its on-screen debugger there, so each project
+reopens with the layout of its last session. The ``[RP6502][PICO]``
+section is first. It holds the settings for running on your
+RP6502-PICO, and it is the only section to edit by hand. The first run
+of the "RP6502-PICO" launch configuration adds it:
 
 .. code-block:: text
 
-  ctest --test-dir build/cc65/debug -R connect -V
-  build/cc65/debug/test/connect/rp6502-emu --seed 3733940630 --save-dir build/cc65/debug/test/connect/save --script src/gamepad/tests/connect.txt build/cc65/debug/src/gamepad/gamepad/gamepad.rp6502
+  [RP6502][PICO]
+  device = /dev/ttyACM0
+  key =
+  workdir =
+  args =
+  term = True
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Setting
+     - Description
+   * - ``device``
+     - How to connect to your RP6502-PICO: a serial port, or a hostname
+       or IP address for telnet. A new settings file fills in a hint of
+       the form of a serial port. Replace it with the exact port or
+       address. A hostname or IP address requires ``key``, and may end
+       with ``:port``. The default port is 23.
+   * - ``key``
+     - Passkey for telnet. Leave it empty to use a serial port. See
+       :ref:`Telnet Console <ria-w-telnet-console>`.
+   * - ``workdir``
+     - The directory to work in, from the root of the current drive. The
+       launch configuration uploads the ROM to this directory and runs it
+       from there. Leave it empty to work in the current directory of the
+       RP6502-PICO.
+   * - ``args``
+     - Arguments for the ROM on an RP6502-PICO. See `Arguments for the
+       ROM`_.
+   * - ``term``
+     - With ``True``, ``rp6502.py`` opens a terminal on the console when a
+       ROM runs on an RP6502-PICO.
+
+For telnet, set ``device`` and ``key``:
+
+.. code-block:: text
+
+  [RP6502][PICO]
+  device = example.com:23
+  key = secret
+  workdir =
+  args =
+  term = True
+
+In an older settings file, the section is ``[RP6502][Launch]``.
+
+Arguments for the ROM
+---------------------
+
+The ROM receives arguments only when its program defines
+``__argv_mem()``, as :ref:`ARGV <api-argv>` describes. Each launch
+configuration takes them from a different place:
+
+.. list-table::
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Launch configuration
+     - Arguments for the ROM
+   * - RP6502-EMU
+     - ``args`` of the "RP6502-EMU" launch configuration in
+       ``.vscode/launch.json``, as in ``"args": ["level2"]``.
+   * - RP6502-PICO
+     - ``args`` in the ``.rp6502`` settings file.
+   * - RP6502-WEB
+     - ``args`` in ``CONFIG`` of ``rp6502_web()``, as in
+       ``args: ['level2'],``. :ref:`Building with CMake <web-cmake>` in
+       :doc:`web` describes ``CONFIG``.
+
+On the command line, ``rp6502.py run`` passes the words after the path of
+the ROM to the ROM, and the emulator passes the words after ``--``.
+
+Emulator Options
+----------------
+
+To pass options to the emulator, put them in ``debugAdapterArgs`` of the
+"RP6502-EMU" launch configuration in ``.vscode/launch.json``.
+:ref:`Arguments <emu-arguments>` in the emulator's datasheet lists the
+options. The launch configuration runs ``rp6502-emu`` in the directory of
+the launch target. To run another version of the emulator, see `Selecting
+Versions`_. To run one built from source, see `Local Files`_.
 
 
 .. _sdk-updating-tools:
