@@ -389,8 +389,10 @@ BASIC Programs
 ==============
 
 ``rp6502_basic()`` packages the BASIC interpreter and the BASIC programs
-into one ROM. Each BASIC program is an asset of the ROM, as
-`Adding Assets`_ in the next section describes:
+into one ROM. A BASIC program can be an ordinary file on a drive, but
+with the SDK it is usually an asset of the ROM. The program can then be
+distributed as a single ROM instead of several files. `Adding Assets`_
+in the next section describes assets.
 
 .. code-block:: cmake
 
@@ -411,7 +413,7 @@ a second argument, ``instructions.bas`` above, it adds an ``autorun.bas``
 that runs that program.
 
 A project may add its own ``autorun.bas`` asset instead, and call
-``rp6502_basic()`` without a second argument. ``autorun.bas`` is the
+``rp6502_basic()`` without a second argument. ``autorun.bas`` is a good
 place to adjust the ``CAPS`` setting if needed, and to print a message
 that says how long a large program takes to load:
 
@@ -441,31 +443,31 @@ emulator.
 Adding Assets
 =============
 
-Graphics, level data, help text and any other files the program uses are
-packaged into the same ``.rp6502`` file with ``rp6502_asset()``. BASIC
-programs are assets as well, as described in `BASIC Programs`_.
+``rp6502_asset()`` adds graphics, level data, help text and any other
+file that the program uses to the ``.rp6502`` file. BASIC programs may
+also be assets, as `BASIC Programs`_ describes.
 
 .. code-block:: cmake
 
+  set(TABLE_ADDR 0x8000)
+  rp6502_asset(hello RAM(${TABLE_ADDR}) bin/table.bin)
   rp6502_asset(hello RAM(0x00F0) bin/f0.bin)
   rp6502_asset(hello XRAM(0x1000) img/tiles.bin)
+  rp6502_asset(hello XRAM(XRAM_LOGO) img/logo.bin)
   rp6502_asset(hello help src/help.txt)
 
 An asset with an address in ``RAM()`` or ``XRAM()`` is a memory chunk.
-Before the 6502 starts, the file is loaded to that address in RAM, or in
-XRAM, the 64 KB of extended memory outside the 6502's address space
-described in `XRAM Memory Map`_. ``XRAM()`` takes the address the program
-uses, and the bit that marks the address as XRAM is set automatically.
-Inside the parentheses, the address is a number, the name of a CMake
-variable, or a name in the program's ``.sym`` file (see `Addresses in
-CMake`_). CMake reads a number or a variable when it configures, and the
-build reads a name from the ``.sym`` file after the link.
+Before the 6502 starts, the RIA (the RP6502 Interface Adapter) loads the
+file to that address in 6502 RAM or in XRAM. XRAM is the 64 KB of memory
+outside the address space of the 6502, as `XRAM Memory Map`_ describes.
+Inside the parentheses, the address is a number, a CMake variable such
+as ``${TABLE_ADDR}``, or a symbol from the program such as
+``XRAM_LOGO``, as `Addresses in CMake`_ describes.
 
-Any other address is a name, and a named asset is a file the program opens
-while it runs. Prefix the name with ``ROM:`` and open it like any other
-file. Named assets are read-only, and several can be open at once. To
-load one into XRAM, pass its file descriptor to
-:ref:`read_xram() <api-read-xram>`.
+Any other address is a name, and a named asset is a file that the
+program opens while it runs. The path is ``ROM:`` and the name, and the
+program opens it like any other file. Named assets are read-only, and
+several can be open at once.
 
 .. code-block:: C
 
@@ -473,13 +475,11 @@ load one into XRAM, pass its file descriptor to
 
 The asset named ``help`` is the ROM's help text. An :doc:`pico` monitor
 shows it with the HELP and INFO commands, and the emulator shows it in the
-ROM Help window. The template's help text is ``src/help.txt``.
+ROM Help window.
 
-An asset can also be made by the build, such as an image converted from a
-PNG. Create it with ``add_custom_command()`` and pass its output file to
-``rp6502_asset()``. Both calls must be in the same ``CMakeLists.txt``,
-because CMake connects a generated file to the step that uses it only
-within one directory.
+The build can also make an asset, such as an image converted from a PNG.
+Create the asset with ``add_custom_command()``. Pass its output file to
+``rp6502_asset()``.
 
 .. code-block:: cmake
 
@@ -495,20 +495,16 @@ within one directory.
   )
   rp6502_asset(hello logo ${CMAKE_CURRENT_BINARY_DIR}/logo.bin)
 
-The build fails if two memory chunks overlap ("ROM data already exists")
-or two assets have the same name ("Asset name already exists").
-
 
 .. _sdk-memory-map:
 
 Memory Map
 ==========
 
-Everything below $FF00 is RAM, and nothing in zero page is used or
-reserved. The Picocomputer starts every project as a clean slate. VGA,
-audio, storage, keyboards, mice, gamepads, the RTC, and networking are
-all reached through just the 32 registers of the RIA (the RP6502
-Interface Adapter).
+Everything below $FF00 is RAM. The Picocomputer does not use or reserve
+any of this RAM, including zero page. A program accesses the VGA, sound,
+storage, keyboards, mice, gamepads, the RTC and networking through the
+32 registers of the RIA.
 
 .. list-table::
    :widths: 25 75
@@ -528,30 +524,9 @@ Interface Adapter).
    * - $10000-$1FFFF
      - XRAM, 64 KB, see `XRAM Memory Map`_
 
-The unassigned space is open for experimenters. Design your own
-chip-select logic to use it.
-
-Each compiler includes a linker script that lays out zero page and the
-rest of RAM, so a project does not have to manage the layout.
-
-Most projects keep the default layout. For a different one, copy the
-compiler's script into the project, change the copy, and pass it to the
-linker with ``target_link_options()``. The scripts are ``cfg/rp6502.cfg``
-in the cc65 folder and ``mos-platform/rp6502/lib/link.ld`` in the
-llvm-mos folder. With cc65, a script that moves the start of RAM needs
-``DATA`` and ``RESET`` given as numbers, because ``default`` is always
-``0x200``.
-
-.. code-block:: cmake
-
-  # cc65:
-  target_link_options(hello PRIVATE -C ${CMAKE_SOURCE_DIR}/src/hello.cfg)
-  # llvm-mos:
-  target_link_options(hello PRIVATE -T ${CMAKE_SOURCE_DIR}/src/hello.ld)
-
-The `ld65 documentation <https://cc65.github.io/doc/ld65.html>`__
-describes the cc65 script format, and the llvm-mos wiki page `Linker Script
-<https://llvm-mos.org/wiki/Linker_Script>`__ describes the llvm-mos format.
+No standard machine uses the unassigned space. It is open for hardware
+experiments, which require custom chip-select logic that the experimenter
+designs and supports.
 
 
 .. _sdk-xram-memory-map:
