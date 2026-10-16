@@ -8,51 +8,53 @@ Software Development Kit
 Introduction
 ============
 
-Picocomputer software is distributed as a ROM: one file ending in
-``.rp6502``, such as ``game.rp6502``. A ROM describes the state of the
-machine as it comes out of reset: the program and data are in memory,
-and the reset vector points to where the program begins. A single ROM can
-hold every piece of code, video and audio your game needs.
+The distribution format of a Picocomputer program is the ROM: one file
+that ends in ``.rp6502``, such as ``game.rp6502``. A ROM describes the
+state of the machine as it comes out of reset: the program and data are
+in memory, and the reset vector points to where the program begins. One
+ROM can hold all the code, video and sound of a program.
 
-If this sounds a lot like the cartridge ROM of a game console, or the
-BASIC ROM in your 8-bit home computer, that's not a coincidence.
+A ROM is similar by design to the cartridge ROM of a game console and to
+the BASIC ROM of an 8-bit home computer.
 
 The SDK builds a ROM, runs it with the :doc:`emu`, an :doc:`pico` or the
 :doc:`web`, and debugs it in the :doc:`emu` while it runs. A project
 starts as a copy of the `RP6502 project template
 <https://github.com/picocomputer/rp6502-sdk>`__, which builds with
-either of two 6502 compilers, cc65 or llvm-mos. The template
-includes the same "Hello, world!" program four times: in C, which builds
-with either compiler; in the assembly syntax of each compiler; and in
-BASIC.
+either of two 6502 compilers, cc65 or llvm-mos. The template includes the
+same "Hello, world!" program four times: in C, in the assembly syntax of
+cc65, in the assembly syntax of llvm-mos, and in BASIC. The C program
+builds with either compiler.
 
 .. image:: _static/sdk/build-light.svg
    :class: only-light
    :width: 700
    :alt: The sources: src/main.c (or an assembly file), src/main.bas,
          src/xram.h, src/help.txt and CMakeLists.txt. CMake builds the
-         program with cc65 or llvm-mos, and rp6502.py packages it with
-         its assets into the ROM, such as
-         build/cc65/debug/hello/hello.rp6502, in the build folder of the
-         preset. With the basic preset, a BASIC program is packaged with
-         BASIC. The ROM is run with RP6502-EMU, the emulator with
-         breakpoints and stepping; RP6502-PICO, a standalone machine over
-         USB serial or telnet; or RP6502-WEB, web/hello.zip from
-         rp6502_web(), a web player in a browser.
+         program with cc65 or llvm-mos. Then rp6502.py packages the
+         program and its assets into the ROM, such as
+         build/cc65/debug/hello/hello.rp6502, in the build directory of
+         the preset. With the basic preset, rp6502.py packages a BASIC
+         program with BASIC. RP6502-EMU, the emulator, runs the ROM with
+         breakpoints and stepping. RP6502-PICO, a standalone machine that
+         connects over USB serial or telnet, runs the ROM. RP6502-WEB runs
+         the ROM in a browser from web/hello.zip, a web player that
+         rp6502_web() makes.
 
 .. image:: _static/sdk/build-dark.svg
    :class: only-dark
    :width: 700
    :alt: The sources: src/main.c (or an assembly file), src/main.bas,
          src/xram.h, src/help.txt and CMakeLists.txt. CMake builds the
-         program with cc65 or llvm-mos, and rp6502.py packages it with
-         its assets into the ROM, such as
-         build/cc65/debug/hello/hello.rp6502, in the build folder of the
-         preset. With the basic preset, a BASIC program is packaged with
-         BASIC. The ROM is run with RP6502-EMU, the emulator with
-         breakpoints and stepping; RP6502-PICO, a standalone machine over
-         USB serial or telnet; or RP6502-WEB, web/hello.zip from
-         rp6502_web(), a web player in a browser.
+         program with cc65 or llvm-mos. Then rp6502.py packages the
+         program and its assets into the ROM, such as
+         build/cc65/debug/hello/hello.rp6502, in the build directory of
+         the preset. With the basic preset, rp6502.py packages a BASIC
+         program with BASIC. RP6502-EMU, the emulator, runs the ROM with
+         breakpoints and stepping. RP6502-PICO, a standalone machine that
+         connects over USB serial or telnet, runs the ROM. RP6502-WEB runs
+         the ROM in a browser from web/hello.zip, a web player that
+         rp6502_web() makes.
 
 
 .. _sdk-install:
@@ -60,27 +62,26 @@ BASIC.
 Installing the Prerequisites
 ============================
 
-Building Picocomputer software takes VS Code, CMake 3.28 or later,
+Building Picocomputer programs requires VS Code, CMake 3.28 or later,
 Python 3, git, Make or Ninja, and one or both of the 6502 compilers, cc65
-and llvm-mos. Only the compilers have to be recent. New Picocomputer
-features are often added to cc65 and llvm-mos before their next release,
-and the versions in package managers such as apt and Homebrew are too old.
+and llvm-mos. Only the compilers must be recent. New Picocomputer
+features often go into cc65 and llvm-mos before their next release. The
+versions in package managers such as apt and Homebrew are too old.
 
-The commands in this section are a recommendation that is known to work.
-You may install the prerequisites in another way. If you install a
-compiler in another way, first check the `Picocomputer GitHub page
-<https://github.com/picocomputer?view_as=public>`__. It shows which build
-to use, from the upstream project or from the Picocomputer fork of it,
-and why.
+The commands in this section are a tested recommendation. You may
+install the prerequisites in another way. To install a compiler in
+another way, first check the `Picocomputer GitHub page
+<https://github.com/picocomputer?view_as=public>`__. It shows whether to
+use the upstream project or the Picocomputer fork of it, and why.
 
-The command for each compiler puts the compiler in the ``.rp6502`` folder
-in your home folder and adds its ``bin`` folder to PATH. Run the command
-again to update the compiler.
+The command for each compiler puts the compiler in the ``.rp6502``
+directory of the home directory and adds its ``bin`` directory to PATH.
+Run the command again to update the compiler.
 
 Windows
 -------
 
-Open PowerShell and install the prerequisites with winget:
+Open PowerShell. Install the prerequisites with winget:
 
 .. code-block:: powershell
 
@@ -90,8 +91,9 @@ Open PowerShell and install the prerequisites with winget:
    winget install -e --id Microsoft.VisualStudioCode
    winget install -e --id Python.PythonInstallManager
 
-Close PowerShell and open it again, so the new PATH takes effect. Then
-install Python, make Ninja the build tool, and install the compilers:
+Close PowerShell. Then open it again, so that the new PATH takes effect.
+Run these commands, which install Python, make Ninja the build tool and
+install the compilers:
 
 .. code-block:: powershell
 
@@ -100,61 +102,65 @@ install Python, make Ninja the build tool, and install the compilers:
    irm https://raw.githubusercontent.com/picocomputer/.github/main/install/cc65.ps1 | iex
    irm https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.ps1 | iex
 
-Windows has no Make, so ``CMAKE_GENERATOR`` makes Ninja the build tool of
-every CMake project that names no generator. Close every PowerShell and VS
-Code window before going on. For a project configured before this step,
-run "CMake: Delete Cache and Reconfigure" from the VS Code Command Palette.
+On Windows, CMake defaults to a Visual Studio or NMake generator, which
+does not work with cc65 or llvm-mos. ``CMAKE_GENERATOR`` selects Ninja
+instead. For a project configured before this step, run "CMake: Delete
+Cache and Reconfigure" from the VS Code Command Palette.
+
+Close every PowerShell and VS Code window before the next step. If a
+command is still not found, sign out of Windows and sign in again.
 
 In WSL, follow the Linux steps instead.
 
 macOS
 -----
 
-Open Terminal and install Apple's command line tools, which include git,
+Open Terminal. Install Apple's command line tools, which include git,
 Make and Python 3:
 
 .. code-block:: sh
 
    xcode-select --install
 
-Download the macOS universal disk image of `CMake
-<https://cmake.org/download/>`__, drag CMake to Applications, and add its
-command-line tools:
+Download the universal disk image of `CMake
+<https://cmake.org/download/>`__ for macOS. Drag CMake to Applications.
+Then add its command-line tools:
 
 .. code-block:: sh
 
    sudo "/Applications/CMake.app/Contents/bin/cmake-gui" --install
 
-Download `VS Code <https://code.visualstudio.com/download>`__ and drag it
-to Applications. Then install the compilers:
+Download `VS Code <https://code.visualstudio.com/download>`__. Drag it to
+Applications. Then install the compilers:
 
 .. code-block:: sh
 
    curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/cc65.sh | sh
    curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.sh | sh
 
-Quit VS Code with Cmd+Q and open it again, because VS Code reads PATH
-only when it starts.
+VS Code reads PATH only when it starts. Quit VS Code with Cmd+Q. Then
+open VS Code again.
 
 Linux
 -----
 
-On Ubuntu and Debian, install the prerequisites with apt. Ubuntu 24.04
-and Debian 13 and their later releases have CMake 3.28 or later.
+On Ubuntu and Debian, install the prerequisites with apt. Ubuntu 24.04,
+Debian 13 and their later versions have CMake 3.28 or later.
 
 .. code-block:: sh
 
    sudo apt install git cmake build-essential python3 curl
 
-Download the ``.deb`` of `VS Code <https://code.visualstudio.com/download>`__,
-and install it from the folder it was saved in:
+Download the ``.deb`` of `VS Code
+<https://code.visualstudio.com/download>`__. Install it from the
+directory that holds it:
 
 .. code-block:: sh
 
    sudo apt install ./code_*.deb
 
-Give your account access to the USB serial port of an RP6502-PICO, and
-install the compilers:
+Run these commands, which give the user account access to the USB
+serial port of an RP6502-PICO and install the compilers:
 
 .. code-block:: sh
 
@@ -162,9 +168,7 @@ install the compilers:
    curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/cc65.sh | sh
    curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.sh | sh
 
-Restart your session, so the new group and PATH take effect. Other
-distributions have the same prerequisites under other package names. On
-Arch, the serial port group is ``uucp`` instead of ``dialout``.
+Restart the login session, so that the new group and PATH take effect.
 
 
 Getting Started
@@ -173,9 +177,16 @@ Getting Started
 Install the prerequisites first. The steps are in `Installing the
 Prerequisites`_.
 
-**1. Make a project.** On the template's GitHub page, select "Use this
-template", then "Create a new repository". GitHub creates a new repository
-with a copy of the template. Clone it and open the folder in VS Code.
+**1. Make a project.** On the GitHub page of the template, select "Use
+this template". Then select "Create a new repository". GitHub creates a
+new repository with a copy of the template. These commands clone the
+repository and open its directory in VS Code:
+
+.. code-block:: sh
+
+   git clone https://github.com/<user>/my-project.git
+   cd my-project
+   code .
 
 **2. Install the recommended extensions** when VS Code prompts for them:
 
@@ -184,36 +195,39 @@ with a copy of the template. Clone it and open the folder in VS Code.
 - Python Debugger, to run ``tools/rp6502.py``.
 
 **3. Choose a configure preset.** The first time the project opens,
-CMake Tools lists five presets. Four are for C, one for each combination
-of compiler and build type. Choose a Debug preset, because breakpoints
-and stepping require debug information. Release is the optimized build
-for a ROM you share. The fifth, ``basic``, is for BASIC: choose it, and
-write the program in ``src/main.bas``. The preset can be changed later
-from the Configure row of the CMake side panel.
+CMake Tools lists five presets. Four are for C or assembly: ``cc65/Debug``,
+``cc65/Release``, ``llvm-mos/Debug`` and ``llvm-mos/Release``. Choose a
+Debug preset, because breakpoints and stepping require debug information.
+A Release preset builds an optimized ROM for distribution. The fifth
+preset, ``basic``, is for BASIC. To change the preset later, use the
+Configure row of the CMake side panel.
+
+A C program goes in ``src/main.c``, and a BASIC program goes in
+``src/main.bas``. To write in assembly, replace ``src/main.c`` in
+``CMakeLists.txt`` with ``src/main-cc65.s`` for cc65 or
+``src/main-llvm-mos.s`` for llvm-mos.
 
 .. image:: _static/sdk/preset-light.png
    :class: only-light
    :width: 700
-   :alt: The CMake Tools configure preset list with cc65/Debug,
+   :alt: The list of configure presets of CMake Tools, with cc65/Debug,
          cc65/Release, llvm-mos/Debug, llvm-mos/Release and basic, above
-         the CMake side panel's Configure row.
+         the Configure row of the CMake side panel.
 
 .. image:: _static/sdk/preset-dark.png
    :class: only-dark
    :width: 700
-   :alt: The CMake Tools configure preset list with cc65/Debug,
+   :alt: The list of configure presets of CMake Tools, with cc65/Debug,
          cc65/Release, llvm-mos/Debug, llvm-mos/Release and basic, above
-         the CMake side panel's Configure row.
+         the Configure row of the CMake side panel.
 
-The first configure downloads the tools into ``tools/``: the CMake
-functions, ``rp6502.py``, and the releases of the emulator for your
-system and of the web player.
+The first configure downloads the build tools into ``tools/``.
 
 **4. Press F5 to debug.** VS Code builds ``hello.rp6502`` and runs it in
-the emulator. "Hello, world!" appears on the emulator's screen and in VS
-Code's Debug Console. The session stays open after the program ends so
-the screen can be read. Stop it with Shift+F5. The emulator window may
-open behind VS Code.
+the emulator. "Hello, world!" appears in the emulator window and in the
+Debug Console of VS Code. The session stays open after the ROM exits, so
+the emulator window keeps its output. Stop the session with Shift+F5.
+The emulator window can open behind VS Code.
 
 .. image:: _static/sdk/first-run-light.png
    :class: only-light
@@ -244,7 +258,7 @@ The project now looks like this:
    │   ├── main.bas           the same in BASIC
    │   ├── xram.h             the XRAM layout
    │   └── help.txt           the help asset
-   ├── tools/                 commit the four scripts
+   ├── tools/                 the build tools
    │   ├── rp6502.cmake
    │   ├── rp6502.py
    │   ├── cc65-toolchain.cmake
@@ -254,62 +268,41 @@ The project now looks like this:
    ├── build/                 build output, ignored by git
    └── .rp6502                the settings file, ignored by git
 
-Git ignores the release files in ``tools/``: the emulator,
-``rp6502-0.40-linux-x86_64.tar.gz`` in this Linux example, and the web
-player, ``rp6502-0.40-web.zip``. `Release Files`_ lists the release files
-of each system. The web player linked in ``README.md`` is published to
-GitHub Pages by ``.github/workflows/web.yml``, as described in
-:ref:`GitHub Pages <web-github>`.
+The template supports every compiler and language. A project may keep
+all of it, or change it in any way. When a project settles on one
+compiler and language, these changes remove the parts it does not use:
 
-To choose C, assembly or BASIC for the project, edit ``CMakeLists.txt``.
-Its ``if(RP6502_BASIC)`` has a branch for BASIC and a branch for C. Keep
-the branch you want, and delete the other branch and the ``if()``. For
-assembly, keep the C branch and replace ``src/main.c`` in it with
-``src/main-cc65.s`` or ``src/main-llvm-mos.s``.
+- In ``CMakeLists.txt``, ``if(RP6502_BASIC)`` has a branch for BASIC and a
+  branch for C. Keep the branch you use, and delete the other branch.
+- Delete the presets and the source files that the project does not use.
 
-Then delete the presets and source files you do not use. In
-``README.md``, set ``preset:`` in the ``<!-- rp6502`` comment to a preset
-you keep.
-
-Commit the four scripts in ``tools/``, so every clone of the project
-builds with the same tools. `Updating the Tools`_ describes how to update
-the scripts, how a configure downloads the release files, and how to
-select versions.
+Commit ``tools/`` with the project. Git ignores some of its files on
+purpose. `Updating the Tools`_ describes the files and which ones a
+project commits.
 
 
 Running and Debugging
 =====================
 
 "Start Debugging" (F5) runs one of three launch configurations. Choose
-which in the Run and Debug side panel.
+one in the Run and Debug side panel.
 
 .. image:: _static/sdk/configs-light.png
    :class: only-light
    :width: 400
-   :alt: The Run and Debug configuration list with RP6502-EMU,
-         RP6502-PICO and RP6502-WEB.
+   :alt: The launch configuration list of the Run and Debug side panel,
+         with "RP6502-EMU", "RP6502-PICO" and "RP6502-WEB".
 
 .. image:: _static/sdk/configs-dark.png
    :class: only-dark
    :width: 400
-   :alt: The Run and Debug configuration list with RP6502-EMU,
-         RP6502-PICO and RP6502-WEB.
+   :alt: The launch configuration list of the Run and Debug side panel,
+         with "RP6502-EMU", "RP6502-PICO" and "RP6502-WEB".
 
-**RP6502-EMU** is the default. It builds the project and runs it
-in the :doc:`emu` with source-level debugging: breakpoints, stepping, the
-call stack, variables and watch expressions, all of which need a Debug
-preset. With llvm-mos, variables show their C types, and structures and
-arrays expand. With cc65, variables have no types, and each variable's
-size comes from where its symbol sits in memory.
-:ref:`Debugging <emu-debugging>` in the emulator's datasheet covers both.
-
-RP6502-EMU runs the ``rp6502-emu`` in the build folder of the launch
-target, which is the emulator version of that target, as `Selecting
-Versions`_ describes. Emulator options go in ``debugAdapterArgs`` of the
-RP6502-EMU entry in ``.vscode/launch.json``, and arguments for the ROM go
-in its ``args``, as in ``"args": ["level2"]``. The program receives the
-arguments only when it defines ``__argv_mem()``, as :ref:`ARGV
-<api-argv>` describes.
+The **RP6502-EMU** launch configuration is the default. It builds the
+project and runs the ROM in the :doc:`emu` with source-level debugging,
+which :ref:`Debugging <emu-debugging>` in the emulator's datasheet
+describes.
 
 .. image:: _static/sdk/breakpoint-light.png
    :class: only-light
@@ -323,71 +316,24 @@ arguments only when it defines ``__argv_mem()``, as :ref:`ARGV
    :alt: VS Code stopped at a breakpoint in main.c, with the Variables and
          Call Stack panels.
 
-**RP6502-PICO** builds the project and runs it on an :doc:`pico`.
-The connection is USB, through the USB port on the VGA module, or telnet
-with an :doc:`ria_w`. First set ``device``, and ``key`` for telnet, as
-`The .rp6502 Settings File`_ describes.
+The **RP6502-PICO** launch configuration builds the project and runs the
+ROM on an :doc:`pico`, over USB through the USB port of the VGA module,
+or over telnet with an :doc:`ria_w`. Its first run creates ``.rp6502``,
+the settings file, in the project directory. ``device`` in that file is
+the serial port, which starts as the usual port of your system. For
+another port, or for telnet, change ``device`` as `The .rp6502 Settings
+File`_ describes.
 
-The ROM is copied to the current drive and folder of the monitor, the
-command prompt of the RP6502-PICO, or to the ``workdir`` folder when the
-settings file sets one. It is loaded from there, so a USB drive must be
-plugged in. The copy replaces any file with the same name. The program's
-console opens in a VS Code terminal. There are no breakpoints or stepping
-on the RP6502-PICO. In the terminal, Ctrl-A then X exits, and Ctrl-A then
-B sends a break. A break stops the program and returns to the monitor.
+The launch configuration uploads the ROM to a USB drive plugged into the
+RP6502-PICO, then runs it from there. The upload replaces any file with
+the same name. The console opens in the VS Code Terminal panel, where
+Ctrl-A then X closes the terminal and Ctrl-A then B sends a break. A
+break stops the ROM and returns to the monitor. The RP6502-PICO has no
+breakpoints or stepping.
 
-**RP6502-WEB** builds the project and opens a page in a browser with a
-link to every web player that ``rp6502_web()`` makes, as `Web Players`_
-describes.
-
-
-The .rp6502 Settings File
-=========================
-
-The settings file is named ``.rp6502`` and is in the project folder. It is
-not a ROM. The emulator or pico debug configrations creates it the first
-time it runs. To run on an RP6502-PICO, set
-``device`` in that section, and ``key`` as well for telnet.
-
-.. code-block:: text
-
-  [RP6502][Launch]
-  device = /dev/ttyACM0
-  key =
-  workdir =
-  args =
-  term = True
-
-.. list-table::
-   :widths: 20 80
-   :header-rows: 1
-
-   * - Setting
-     - Description
-   * - ``device``
-     - The serial port of the RP6502-PICO. A new settings file sets it to
-       the usual port for your system: ``/dev/ttyACM0`` on Linux, the
-       first ``/dev/cu.usbmodem`` device on macOS, or ``COM1`` on Windows.
-       On Windows the RP6502-PICO is usually on a higher COM number, shown
-       in Device Manager. When ``key`` is set, ``device`` is the hostname
-       or IP address of the RP6502-PICO for telnet, with an optional
-       ``:port`` (23 by default).
-   * - ``key``
-     - Passkey for telnet. Leave it empty to use a serial port. See
-       :ref:`Telnet Console <ria-w-telnet-console>`.
-   * - ``workdir``
-     - Folder at the root of the current drive of the monitor where the
-       ROM is copied, such as ``MyGame``. Leave it empty to copy the ROM to
-       the current folder of the monitor.
-   * - ``args``
-     - Arguments for the ROM on an RP6502-PICO. The program receives them
-       only when it defines ``__argv_mem()``, as :ref:`ARGV <api-argv>`
-       describes.
-   * - ``term``
-     - Open a terminal on the console when running on an RP6502-PICO.
-
-The emulator also saves its debugger window layout in this file, so each
-project reopens with its windows where you left them.
+The **RP6502-WEB** launch configuration builds the project and opens a
+page in a browser. The page has a link to every web player that
+``rp6502_web()`` makes, as `Web Players`_ describes.
 
 
 Building a ROM
@@ -395,7 +341,7 @@ Building a ROM
 
 ``CMakeLists.txt`` describes the ROMs a project builds. This listing is
 the C branch of the template's ``CMakeLists.txt``, without the ``if()``.
-BASIC projects are described in `BASIC Programs`_.
+`BASIC Programs`_ describes BASIC projects.
 
 .. code-block:: cmake
 
@@ -415,80 +361,79 @@ BASIC projects are described in `BASIC Programs`_.
   )
 
 - ``include()`` loads the RP6502 CMake functions from ``tools/``.
+- ``project()`` names the project and the languages it compiles. Change
+  ``MY-RP6502-PROJECT`` to any name.
 - ``add_executable(hello)`` creates the program, a CMake target named
   ``hello``.
-- ``rp6502_align()`` checks that the XRAM addresses of ``hello`` are even.
-  See `Alignment`_.
+- ``rp6502_align()`` checks that the addresses of ``hello`` in extended
+  RAM (XRAM) are even. See `Alignment`_.
 - ``rp6502_asset()`` adds an asset to the ROM. See `Adding Assets`_.
 - ``rp6502_executable()`` packages the program and its assets into
-  ``hello.rp6502``, named after the target.
+  ``hello.rp6502``, named after the target. See `Load Addresses and
+  Linker Scripts`_.
 - ``rp6502_web()`` packages the ROM into a web player. See `Web Players`_.
 - ``target_sources()`` lists the program's source files.
 
-``rp6502_align()`` and every ``rp6502_asset()`` come after
-``add_executable()`` and before ``rp6502_executable()``.
-``rp6502_web()`` comes after ``rp6502_executable()``, because it uses the
-ROM that ``rp6502_executable()`` defines. ``target_sources()`` can go
-anywhere after ``add_executable()``.
+``add_executable()`` must come first, because every other call refers to
+its target. ``rp6502_align()`` and ``rp6502_asset()`` must come before
+``rp6502_executable()``, and ``rp6502_web()`` must come after it.
 
-The ROM is written to the folder of the target in the preset's build
-folder: ``build/<compiler>/<debug or release>/hello/``, or
-``build/basic/hello/`` for the ``basic`` preset. The cc65 Debug build is
-``build/cc65/debug/hello/hello.rp6502``. The folder also holds the linker
-output and ``rp6502-emu``, the emulator of the target. To share a program,
-build it with a Release preset, or the ``basic`` preset
-for BASIC, and share that file, or its web player as described in
-:doc:`web`.
+Each preset builds into its own directory. With the ``cc65/Debug``
+preset, the ROM is ``build/cc65/debug/hello/hello.rp6502``. With the
+``basic`` preset, it is ``build/basic/hello/hello.rp6502``.
 
-The build also writes ``hello.sym`` beside the ROM. The file has one line
-for each name in the program: each ``#define`` of the C sources that has
-a whole-number value, and each symbol of the linker. A line is the name,
-one space and the value. A value from 0 to 0xFFFF has four hex digits,
-and any other value is decimal:
+
+.. _sdk-basic:
+
+BASIC Programs
+==============
+
+``rp6502_basic()`` packages the BASIC interpreter and the BASIC programs
+into one ROM. Each BASIC program is an asset of the ROM, as
+`Adding Assets`_ in the next section describes:
+
+.. code-block:: cmake
+
+  cmake_minimum_required(VERSION 3.28)
+
+  include(${CMAKE_CURRENT_LIST_DIR}/tools/rp6502.cmake)
+
+  project(trek BASIC)
+
+  add_executable(trek)
+  rp6502_asset(trek instructions.bas src/instructions.bas)
+  rp6502_asset(trek game.bas src/game.bas)
+  rp6502_basic(trek instructions.bas)
+
+At start, BASIC runs the asset ``autorun.bas`` if the ROM has one.
+Otherwise BASIC starts at the ``OK`` prompt. When ``rp6502_basic()`` has
+a second argument, ``instructions.bas`` above, it adds an ``autorun.bas``
+that runs that program.
+
+A project may add its own ``autorun.bas`` asset instead, and call
+``rp6502_basic()`` without a second argument. ``autorun.bas`` is the
+place to adjust the ``CAPS`` setting if needed, and to print a message
+that says how long a large program takes to load:
 
 .. code-block:: text
+  :caption: src/autorun.bas
 
-  INT8_MIN -128
-  XRAM_KEYBOARD 0x0000
-  XRAM_LOGO 0x0020
+  10 CAPS 0
+  20 PRINT "Loading, about 10 seconds..."
+  30 RUN "ROM:GAME.BAS"
 
-The lines are sorted by name. A name with two different values, such as
-a cc65 local label, has two lines. cc65 puts ``_`` before each C name, so
-a C global ``x`` is in the file as ``x`` and as ``_x``. With cc65, the
-``static`` variables of a function are not in the file. The build reads
-the addresses for ``RAM()`` and ``XRAM()`` in ``rp6502_asset()`` from this
-file, and the emulator's :ref:`scripts <emu-symbols>` can use its names.
+.. code-block:: cmake
 
-``rp6502_executable()`` takes these keywords:
+  rp6502_asset(quest autorun.bas src/autorun.bas)
+  rp6502_asset(quest game.bas src/game.bas)
+  rp6502_basic(quest)
 
-.. list-table::
-   :widths: 20 80
-   :header-rows: 1
+The BASIC interpreter comes from `picocomputer/msbasic
+<https://github.com/picocomputer/msbasic>`__, as `Tool Files`_
+describes.
 
-   * - Keyword
-     - Description
-   * - ``DATA``
-     - The address the program loads at. Without ``DATA``, the program is
-       left out, and the ROM holds only its assets.
-   * - ``RESET``
-     - The address the 6502 starts running at, stored at
-       ``$FFFC-$FFFD``. Required.
-   * - ``IRQ``
-     - The address of the interrupt handler, stored at ``$FFFE-$FFFF``.
-       Optional.
-   * - ``NMI``
-     - The address of the non-maskable interrupt handler, stored at
-       ``$FFFA-$FFFB``. Optional.
-
-Each keyword takes a number, such as ``0x200``, or one of two words:
-
-- ``file`` takes the address from the start of the linker output. Only
-  llvm-mos writes addresses there: the load address, then the start
-  address.
-- ``default`` is ``0x200`` with cc65 and ``file`` with llvm-mos.
-
-Use ``file`` and ``default`` only with ``DATA`` and ``RESET``. Give
-``IRQ`` and ``NMI`` a number.
+A BASIC target is a CMake launch target, so F5 runs its ROM in the
+emulator.
 
 
 .. _sdk-assets:
