@@ -1107,13 +1107,28 @@ and that ``tools/`` lacks. You do not download any tool yourself.
 The scripts, ``rp6502.cmake``, ``rp6502.py``, ``cc65-toolchain.cmake``,
 and ``cc65-config.cmake``, come from the ``main`` branch of
 picocomputer/rp6502. They have no versions, and they can change between
-releases. Commit them with the project, so that every clone builds with
+releases. Commit them with the project, so that every Git clone builds with
 the same scripts.
 
-The :ref:`emulator, the web player, and BASIC <sdk-tool-releases>` come
-from the releases of picocomputer/rp6502 and picocomputer/msbasic. You do
-not need to commit them to your repository. To keep your project on a
-specific version, see `Selecting Versions`_.
+The emulator, the web player, and BASIC come from the releases of
+`picocomputer/rp6502 <https://github.com/picocomputer/rp6502/releases>`__
+and `picocomputer/msbasic
+<https://github.com/picocomputer/msbasic/releases>`__. In ``tools/``,
+each of them keeps the file name of its release:
+
+.. code-block:: text
+
+  rp6502-<version>-windows.zip
+  rp6502-<version>-macos.zip
+  rp6502-<version>-linux-x86_64.tar.gz
+  rp6502-<version>-linux-aarch64.tar.gz
+  rp6502-<version>-web.zip
+  msbasic-<version>.zip
+
+WSL uses the emulator for Windows. When a release has no emulator for
+your system, ``tools/`` holds ``rp6502-<version>-<system>.unsupported``
+in its place. You do not need to commit these files to your repository.
+To keep your project on a specific version, see `Selecting Versions`_.
 
 The scripts change only when you update them. To update them, run the
 "RP6502: update tools" task (Terminal > Run Task), or run this command
@@ -1125,152 +1140,83 @@ in the project directory:
 
 The update does these steps:
 
-#. It downloads ``tools/SHA256SUMS`` from the ``main`` branch of the
-   `rp6502 repository <https://github.com/picocomputer/rp6502>`__. The
-   file lists each script and its SHA-256 hash.
-#. It downloads each script and checks it against its hash. The new
-   script replaces the old one, so local changes to the scripts are lost.
-   If a download or a check fails, the update stops, and that script and
-   the scripts after it do not change.
-#. It downloads the emulator for your system from the latest release of
-   rp6502, when ``tools/`` lacks it. It also downloads the web
-   player and BASIC of the latest releases when ``tools/`` already has a
-   web player or BASIC.
+#. It downloads the latest scripts from the `tools directory
+   <https://github.com/picocomputer/rp6502/tree/main/tools>`__ of the
+   ``main`` branch of picocomputer/rp6502. Each new script replaces the
+   old one, so the update discards local changes to the scripts.
+#. It updates the settings in ``.vscode/``, ``.gitignore``, and
+   ``CMakeLists.txt`` when they are out of date.
+#. It downloads the latest release of the emulator, the web player, and
+   BASIC, for each one that ``tools/`` already has.
 
-Commit the new scripts after the update. Without a setting, a target uses
-the newest version in ``tools/``, so the project then uses the latest
-releases. A version that the project selects does not change, as
-`Selecting Versions`_ describes.
-
-For a project made with older scripts, the update also changes
-``.vscode/launch.json``, ``.gitignore`` and the top ``CMakeLists.txt``,
-as `Upgrading an Older Project`_ describes.
-
-Release Files
--------------
-
-The emulator, the web player of ``rp6502_web()`` and the BASIC of
-``rp6502_basic()`` come from the releases of `picocomputer/rp6502
-<https://github.com/picocomputer/rp6502/releases>`__ and
-`picocomputer/msbasic <https://github.com/picocomputer/msbasic/releases>`__.
-Each release file has its release name in ``tools/``:
-
-.. list-table::
-   :widths: 50 50
-   :header-rows: 1
-
-   * - Release file
-     - Contents
-   * - ``rp6502-<version>-windows.zip``
-     - The emulator for Windows and WSL.
-   * - ``rp6502-<version>-macos.zip``
-     - The emulator for macOS.
-   * - ``rp6502-<version>-linux-x86_64.tar.gz``,
-       ``rp6502-<version>-linux-aarch64.tar.gz``
-     - The emulator for Linux.
-   * - ``rp6502-<version>-web.zip``
-     - The web player.
-   * - ``msbasic-<version>.zip``
-     - BASIC.
-
-A configure downloads each release file that the project uses and that
-``tools/`` lacks. It checks the file against the hash in the
-``SHA256SUMS`` of the release, and unpacks the file into ``build/tools/``.
-A fresh clone therefore needs no extra step, and a project that has its
-release files builds without a network. ``tools/`` can hold several
-versions of each file.
-
-If a release has no emulator for your system, the configure writes
-``tools/rp6502-<version>-<system>.unsupported``, which names the missing
-file, and later configures do not try again.
-
-Each target folder and each test folder holds ``rp6502-emu``
-(``rp6502-emu.exe`` on Windows), a link to the emulator of the target or
-the test. F5 and ``ctest`` run these links.
+After the update, check its output for errors. An error leaves only part
+of the update in place, so resolve the error and run the update again.
+Then test that your project still works, and commit the changes.
 
 .. _sdk-selecting-versions:
 
 Selecting Versions
 ------------------
 
-A version starts with a digit, such as ``0.40``, and the tag of its
-release is ``v0.40``. Without a setting, a target gets the newest version
-in ``tools/``, and a configure downloads the latest release only when
-``tools/`` has none.
+Without a setting, a target uses the newest version of each tool in
+``tools/``. To keep your project on a specific version, select it in
+``CMakeLists.txt``. A version is the number of its release, such as
+``0.40`` for the release ``v0.40``. An update does not change a version
+that the project selects.
 
-Three settings select a version:
-
-.. list-table::
-   :widths: 30 70
-   :header-rows: 1
-
-   * - Setting
-     - Selects
-   * - ``RP6502_EMU_VERSION``
-     - The emulator of an executable target, a BASIC target or a test.
-   * - ``RP6502_WEB_VERSION``
-     - The web player of an ``rp6502_web()`` target.
-   * - ``RP6502_BASIC_VERSION``
-     - The BASIC of an ``rp6502_basic()`` target.
-
-A setting is a CMake variable, a property of a target or a test, or a
-cache value from ``-D`` or a preset:
+A variable selects the version for every target and test in its
+``CMakeLists.txt``:
 
 .. code-block:: cmake
 
   set(RP6502_EMU_VERSION 0.40)
-  set_target_properties(paint PROPERTIES RP6502_EMU_VERSION 0.39)
-  set_tests_properties(picker PROPERTIES RP6502_EMU_VERSION 0.39)
+  set(RP6502_WEB_VERSION 0.40)
+  set(RP6502_BASIC_VERSION 0.1)
 
-.. code-block:: text
+A property selects the version for one target or one test:
 
-  cmake --preset cc65/Debug -DRP6502_EMU_VERSION=0.40
+.. code-block:: cmake
 
-The cache value comes first, then the property, then the variable, so
-``-D`` sets the version of every target. A variable applies to the
-targets of its folder, and of the folders that its folder adds after the
-``set()``. For a test, the variable is the one in the folder that calls
-``rp6502_test()``. The configure reads the settings at its end, so
-``set_target_properties()`` and ``set_tests_properties()`` can come after
-the other commands of the target or the test.
+  set_target_properties(hello PROPERTIES RP6502_EMU_VERSION 0.39)
+  set_target_properties(hello PROPERTIES RP6502_WEB_VERSION 0.39)
+  set_target_properties(trek PROPERTIES RP6502_BASIC_VERSION 0.1)
+  set_tests_properties(input PROPERTIES RP6502_EMU_VERSION 0.39)
+
+When CMake configures the project, it downloads each version that the
+project selects and that ``tools/`` lacks. ``tools/`` can hold several
+versions of each tool.
 
 Local Files
 -----------
 
-``RP6502_EMU``, ``RP6502_WEB`` and ``RP6502_BASIC`` name a file to use in
-place of a release: an emulator, a web zip, or a ``basic.rp6502``. They
-are settings of the same kind as the versions, and a file at any level
-comes before any version. A relative path is a path from the project
-folder. A file is set on the command line, or in
-``CMakeUserPresets.json``, which git ignores. This line uses an emulator
-built from the `rp6502 repository
-<https://github.com/picocomputer/rp6502>`__:
+To use your own build of the emulator, the web player, or BASIC, set
+``RP6502_EMU``, ``RP6502_WEB``, or ``RP6502_BASIC`` to the path of its
+file: an emulator, the zip of a web player, or a ``basic.rp6502``. These
+settings work like the version settings, and a file overrides any
+version. A relative path is a path from the project directory.
+
+To keep your project on your own BASIC, put its ``basic.rp6502`` in
+``tools/`` under another name, and select the file in
+``CMakeLists.txt``. Git ignores only the files in ``tools/`` whose names
+start with ``rp6502-`` or ``msbasic-``, so commit your file with the
+project:
+
+.. code-block:: cmake
+
+  set_target_properties(trek PROPERTIES RP6502_BASIC tools/mybasic.rp6502)
+
+To test a file for a short time, set it on the command line instead.
+This command uses an emulator built from the `picocomputer/rp6502
+<https://github.com/picocomputer/rp6502>`__ repository:
 
 .. code-block:: text
 
   cmake --preset cc65/Debug -DRP6502_EMU=/home/user/rp6502/build/sokol/rp6502-emu
 
-A change to the file relinks it at the next build, so a rebuilt emulator
-runs at the next F5 or ``ctest``. ``RP6502_BASIC`` is also the switch of a
-BASIC project, which the ``basic`` preset sets to ``ON``. A CMake true
-value, such as ``ON``, names no file.
-
-
-Registers and ``volatile``
-==========================
-
-``volatile`` has no effect on the cc65 optimizer, so wrap C code that
-accesses RIA or VIA registers directly in an optimize pragma:
-
-.. code-block:: C
-
-  #pragma optimize (push, off)
-  static void timer_start(void)
-  {
-      VIA.acr = 0x40;
-  }
-  #pragma optimize (pop)
-
+After you rebuild the emulator, the next F5 or ``ctest`` runs the new
+one. The setting stays in the CMake cache until you configure again with
+``-U RP6502_EMU``. To keep a setting on your computer only, put it in
+``CMakeUserPresets.json``, which git ignores.
 
 Command Line
 ============
