@@ -268,9 +268,9 @@ The project now looks like this:
    ├── build/                 build output, ignored by git
    └── .rp6502                the settings file, ignored by git
 
-The template supports every compiler and language. A project may keep
-all of it, or change it in any way. When a project settles on one
-compiler and language, these changes remove the parts it does not use:
+Your new project supports every compiler and language. You may keep all
+of it, or change it in any way. When you choose one compiler and
+language, these changes remove the parts you do not use:
 
 - In ``CMakeLists.txt``, ``if(RP6502_BASIC)`` has a branch for BASIC and a
   branch for C. Keep the branch you use, and delete the other branch.
@@ -340,7 +340,8 @@ Building a ROM
 ==============
 
 ``CMakeLists.txt`` describes the ROMs a project builds. This listing is
-the C branch of the template's ``CMakeLists.txt``, without the ``if()``.
+the C branch of the ``CMakeLists.txt`` of a new project, without the
+``if()``.
 `BASIC Programs`_ describes BASIC projects.
 
 .. code-block:: cmake
@@ -366,7 +367,7 @@ the C branch of the template's ``CMakeLists.txt``, without the ``if()``.
 - ``add_executable(hello)`` creates the program, a CMake target named
   ``hello``.
 - ``rp6502_align()`` checks that the addresses of ``hello`` in extended
-  RAM (XRAM) are even. See `Alignment`_.
+  RAM (XRAM) are even. See `Symbols in CMake`_.
 - ``rp6502_asset()`` adds an asset to the ROM. See `Adding Assets`_.
 - ``rp6502_executable()`` packages the program and its assets into
   ``hello.rp6502``, named after the target. See `Load Addresses and
@@ -462,7 +463,7 @@ file to that address in 6502 RAM or in XRAM. XRAM is the 64 KB of memory
 outside the address space of the 6502, as `XRAM Memory Map`_ describes.
 Inside the parentheses, the address is a number, a CMake variable such
 as ``${TABLE_ADDR}``, or a symbol from the program such as
-``XRAM_LOGO``, as `Addresses in CMake`_ describes.
+``XRAM_LOGO``, as `Symbols in CMake`_ describes.
 
 Any other address is a name, and a named asset is a file that the
 program opens while it runs. The path is ``ROM:`` and the name, and the
@@ -548,37 +549,39 @@ they draw. A call to
 section of each device in the :doc:`ria` and :doc:`vga` datasheets shows
 its ``xreg()`` call.
 
-Before the first ``xreg()`` call, decide where each device and each block
-of data goes. A spreadsheet with every address laid out by hand is one
+Before the first ``xreg()`` call, decide the XRAM address of each device
+and of each block of general purpose storage. A spreadsheet with every address laid out by hand is one
 way, but it is tedious and error-prone. Instead, it is strongly recommended to keep your XRAM map in
-one file, ``xram.h`` for C or ``xram.inc`` for assembly. The template
+one file, ``xram.h`` for C or ``xram.inc`` for assembly. Your project
 already has an ``xram.h``, and the rest of this section describes how to
 change it.
 
-The file holds the structure of each device that the program uses, and a
-layout, ``xram_layout_t``, that places those structures in XRAM. The
-compiler calculates every address from the layout, so nothing overlaps,
-and the whole of XRAM is described in one place.
+The file holds the structure of each device that your program uses, and
+a layout, ``xram_layout_t``, with a member for each device and each block
+of storage. The compiler calculates the address of each member, so
+nothing overlaps.
 
 To add support for a device to your program, copy its code block from
-the :doc:`ria` or :doc:`vga` datasheet into the file. Then add a member
-for the device to the layout. Each code block is labeled ``xram.h`` or
-``xram.inc`` and holds the structure of the device, its constants and the
-macros for its extended register (XREG). Choose the C, ca65 or llvm-mc
-tab, then use the "Copy to clipboard" button in the corner of the code
-block.
+the :doc:`ria` or :doc:`vga` datasheet into the file. Each code block is
+labeled ``xram.h`` or ``xram.inc`` and holds the structure of the device,
+its constants and the macros for its extended register (XREG). Choose the
+C, ca65 or llvm-mc tab, then use the "Copy to clipboard" button in the
+corner of the code block. Then add a member for the device to the
+layout.
 
-The structures are not part of ``rp6502.h`` or ``rp6502.inc``, so the
-copy in ``xram.h`` is the only definition the program uses. Register
-numbers, field offsets and sizes never change, so a change to the SDK
-does not break the copy. Only names can change in the datasheets, and a
-project can change any name in its copy.
+The compiler supplies ``rp6502.h`` for C and ``rp6502.inc`` for assembly.
+They provide the API calls, including ``xreg()`` and the XRAM functions,
+but none of the XRAM structures, so your copy is the only definition the
+program uses. Register numbers, field
+offsets and sizes never change, so a change to the SDK never breaks your
+copy. Only names can change in the datasheets, and you can rename
+anything in your copy.
 
-This example is for a program that uses only the keyboard. The keyboard
-definitions are the code block of :ref:`Keyboard <ria-keyboard>` in the
-:doc:`ria` datasheet. The layout after them places the keyboard at
-address 0. The types marked ``/* layout */`` are the blocks a program
-places in ``xram_layout_t`` and gives to an XREG.
+This ``xram.h`` is for a program that uses only the keyboard. It holds
+the code block of :ref:`Keyboard <ria-keyboard>` from the :doc:`ria`
+datasheet, as copied, and a layout that puts the keyboard at address 0.
+A type marked ``/* layout */`` is a block that goes in
+``xram_layout_t``.
 
 .. tab:: C
 
@@ -670,9 +673,10 @@ places in ``xram_layout_t`` and gives to an XREG.
 
       .endif
 
-Each ``XRAM_`` name is the address of one part of the layout, and the
-program uses these names for every XRAM address. This code maps the
-keyboard to its address, then loops until a key is pressed.
+Each ``XRAM_`` symbol is the XRAM address of one member of the layout.
+Use these symbols for every XRAM address in the program. The build and the
+tests use them too, as `Program Symbols`_ describes. This code maps
+the keyboard to its address, then loops until the user presses a key.
 
 .. tab:: C
    :new-set:
@@ -715,12 +719,43 @@ keyboard to its address, then loops until a key is pressed.
           bne 1b
 
 
-Addresses in CMake
-------------------
+The PSG and the OPL2 have placement rules: the 64 bytes of the PSG must
+not cross a 256-byte page, and the OPL2 registers must start on a page.
+Their code blocks in the :doc:`ria` datasheet define ``PSG_PAGE_CHECK``
+and ``OPL_PAGE_CHECK``. For each sound generator that your program uses,
+add its check to ``xram.h``, after the ``XRAM_`` symbols:
 
-An asset that loads into XRAM needs its address in ``CMakeLists.txt`` as
-well as in the header. This layout adds a 2 KB logo after the keyboard.
-Only the changed part of ``xram.h`` is shown.
+.. code-block:: C
+
+  PSG_PAGE_CHECK(XRAM_PSG);
+  OPL_PAGE_CHECK(XRAM_OPL);
+
+
+Program Symbols
+===============
+
+The build writes the symbols of your program to ``hello.sym``, beside the
+ROM: each ``#define`` with a whole-number value, such as
+``XRAM_KEYBOARD``, and each symbol of the linker. The tools read this
+file, so an address that your program defines once is known everywhere:
+
+- ``CMakeLists.txt`` uses symbols as asset addresses, and can check in
+  one call that all of them are even, as `Symbols in CMake`_ describes.
+- An emulator script takes a symbol wherever it takes a number, as
+  `Symbols in the Emulator`_ describes.
+- A Python test reads the symbols from ``emu.sym``, as `Symbols in
+  Python`_ describes.
+
+This is why the layout gives each of its members an ``XRAM_`` symbol: the
+program, the build and the tests then use the same address for each part
+of XRAM. `The .sym File`_ describes the format of the file.
+
+Symbols in CMake
+----------------
+
+This example loads an asset at an address from ``xram.h``. The layout
+adds a 2 KB logo after the keyboard. Only the changed part of ``xram.h``
+is shown:
 
 .. code-block:: C
 
@@ -733,145 +768,82 @@ Only the changed part of ``xram.h`` is shown.
   #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
   #define XRAM_LOGO offsetof(xram_layout_t, logo)
 
-``XRAM()`` takes the name from the header, so each address is written
-once, in the header, and never repeated in ``CMakeLists.txt``:
+``CMakeLists.txt`` then uses the symbol:
 
 .. code-block:: cmake
 
   rp6502_asset(hello XRAM(XRAM_LOGO) img/logo.bin)
 
 The build reads the value of ``XRAM_LOGO`` from ``hello.sym`` after the
-link. The compiler calculated the value, so the address is the one the
-program uses. A name can be any name in the ``.sym`` file: a ``#define``
-with any constant expression, such as
-``#define XRAM_LOGO_ROW_2 (XRAM_LOGO + 64)``, a linker symbol, or an
-equate in an assembly program, such as ``XRAM_LOGO = $0020``. A change to
-the header rebuilds the program, and the build packages the asset at the
-new address.
+link, so the asset loads at the address that the program uses. When you
+change the layout, the next build packages the asset at the new address.
+Any symbol in the file works, such as
+``#define XRAM_LOGO_ROW_2 (XRAM_LOGO + 64)`` or an equate of an assembly
+program.
 
-If a name is not in the ``.sym`` file, the build stops:
-
-.. code-block:: text
-
-  [rp6502.py] XRAM(XRAM_LOGOO): XRAM_LOGOO is not in /home/user/my-project/build/cc65/debug/hello/hello.sym
-
-If the name has two lines in the ``.sym`` file, the error ends with
-``is ambiguous``.
-
-Alignment
----------
-
-Neither compiler pads structures, so each member starts right after the
-one before it. Mode configurations, palettes and the PSG are read as
-16-bit values, so they need an even address. ``rp6502_align()`` checks
-the names in the ``.sym`` file that match a regular expression:
-
-.. code-block:: cmake
-
-  rp6502_align(<target> <regex>)
+Mode configurations, palettes and the PSG must be at even addresses, and
+neither compiler pads structures. ``rp6502_align()`` checks that symbols
+are even. With this call in ``CMakeLists.txt``, the tools check every
+``XRAM_`` symbol. The regular expression is in Python's syntax:
 
 .. code-block:: cmake
 
   rp6502_align(hello "XRAM_.*")
 
-The regular expression uses Python's syntax and must match the whole
-name. Each call adds one regular expression. The value of each name that
-matches must be even and from 0x0000 to 0xFFFF. For a name that fails the
-check, the build stops with an error on the line of its ``#define``:
+Symbols in the Emulator
+-----------------------
+
+An emulator script drives the machine and checks the results, which
+makes it an integration test, as `Testing`_ describes. A script takes a
+symbol or an expression wherever it takes a number, and ``let`` sets a
+variable. This script is for a program that maps the keyboard as in
+`XRAM Memory Map`_, then prints "Key down" when a key is pressed. The
+script presses space and waits for "Key down". Then ``peek`` checks that
+the bit for space is set in the keyboard block:
 
 .. code-block:: text
+  :caption: tests/keys.txt
 
-  <file>:<line>: error: <name> is <value>, which is odd; rp6502_align(<target> "<regex>")
+  # The keyboard block has one bit for each HID keycode.
+  let HID_KEY_SPACE = $2C
+  press space
+  wait "Key down"
+  peek xram:(XRAM_KEYBOARD+HID_KEY_SPACE//8) (1<<HID_KEY_SPACE%8)
 
-For a name without a ``#define``, such as a linker symbol, the error is on
-its line in the ``.sym`` file.
+:ref:`Scripting <emu-scripting>` in the emulator's datasheet describes
+every command, and :ref:`Symbols and expressions <emu-symbols>` describes
+symbols.
 
-Pixel data, fonts, tiles, sprite images, and the keyboard, mouse, gamepad
-and tablet blocks work at any address. ``"XRAM_.*"`` checks them anyway,
-because some hosts access them faster at an even address. To exempt a
-name, leave it out of the regular expression. This one matches each
-``XRAM_`` name except ``XRAM_LOGO``:
+Symbols in Python
+-----------------
 
-.. code-block:: cmake
+A Python test drives an emulator script from Python, for a test that
+requires a loop, a decision or a calculation. ``emu.sym`` holds the
+symbols of the ROM as a ``dict``. This test does the same check as the
+script above, with the calculation in Python:
 
-  rp6502_align(hello "XRAM_(?!LOGO$).*")
+.. code-block:: python
+  :caption: tests/keys.py
 
-The build stops if a structure is larger than 65535 bytes, with either
-compiler.
+  import rp6502
 
-Two requirements of the sound generators are not checked by
-``rp6502_align()``. The 64 bytes of the PSG must not cross a page boundary,
-and the OPL2 registers must start on one. A page is 256 bytes. The PSG and
-OPL2 snippets in the :doc:`ria` datasheet each define a check. Add the
-line for each sound generator the program uses to ``xram.h``, after the
-``XRAM_`` names:
+  HID_KEY_SPACE = 0x2C
 
-.. code-block:: C
+  with rp6502.Emu() as emu:
+      emu.cmd("run 2")
+      emu.cmd("press space")
+      emu.cmd("run 2")
+      byte = emu.sym["XRAM_KEYBOARD"] + HID_KEY_SPACE // 8
+      emu.cmd(f"peek xram:{byte} {1 << HID_KEY_SPACE % 8}")
 
-  PSG_PAGE_CHECK(XRAM_PSG);
-  OPL_PAGE_CHECK(XRAM_OPL);
-
-
-Multiple Compiler Artifacts
-===========================
-
-A cc65 program can load at more than one address, with one linker output
-file for each, but CMake's ``add_executable()`` tracks only one output
-file. ``rp6502_byproducts()`` declares the other files a target's build
-writes. In a configuration for ld65, cc65's linker, each memory area with
-a ``file`` of its own is a separate output file, and ``%O`` stands for
-the output file name that CMake passes to the linker. The linker output
-is in the folder of the target, so the files of the target ``basic`` are
-in ``basic/`` in the build folder.
-
-.. code-block:: cmake
-
-  rp6502_byproducts(<target> <file>...)
-
-Microsoft BASIC loads at three separate addresses: the ``CHRGET`` routine
-at ``$00E8`` in zero page, the init code at ``$1000``, and the interpreter
-at ``$C000``. Its linker configuration writes each one to its own file,
-named after ``%O``.
-
-.. code-block:: text
-
-  MEMORY {
-      ZP:       start = $0000, size = $00E7, file = "";
-      CHRGETZP: start = $00E8, size = $0018, file = "%O.00E8";
-      INITROM:  start = $1000, size = $8000, file = "%O.1000";
-      BASROM:   start = $C000, size = $3DDE, file = "%O.C000";
-      # areas with file = "" write nothing; trimmed here
-      TOUCH:    start = $0000, size = $0000, file = %O;
-  }
-
-``TOUCH`` is an empty memory area whose file is ``%O``. The linker
-writes it as an empty file, and CMake treats that file as the link
-output. The three real files are declared as byproducts, added as memory
-chunks at their addresses, and packaged:
-
-.. code-block:: cmake
-
-  rp6502_byproducts(basic
-      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.00E8
-      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.1000
-      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.C000
-  )
-  rp6502_asset(basic help src/help.txt)
-  rp6502_asset(basic RAM(0x00E8) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.00E8)
-  rp6502_asset(basic RAM(0x1000) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.1000)
-  rp6502_asset(basic RAM(0xC000) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.C000)
-  rp6502_executable(basic RESET 0x1000)
-
-``rp6502_executable()`` has no ``DATA`` here, because the linker output
-is the empty ``TOUCH`` file.
+`Testing`_ describes ``rp6502.Emu``.
 
 
 Multiple ROMs
 =============
 
-Call ``add_executable()`` and ``rp6502_executable()`` once for each ROM.
-F5 runs the ROM selected as the launch target, in the Launch row of the
-CMake side panel.
+To build more than one ROM, call ``add_executable()`` and
+``rp6502_executable()`` once for each:
 
 .. code-block:: cmake
 
@@ -886,6 +858,9 @@ CMake side panel.
   rp6502_executable(setup DATA default RESET default)
   target_sources(setup PRIVATE src/setup.c)
 
+F5 runs the ROM of the launch target, which you select in the Launch row
+of the CMake side panel:
+
 .. image:: _static/sdk/launch-target-light.png
    :class: only-light
    :width: 560
@@ -898,121 +873,24 @@ CMake side panel.
    :alt: The CMake side panel with the Launch target list open, showing
          the project's ROMs.
 
-Each ROM has its own ``.sym`` file, so ``hello`` and ``setup`` can have
-different XRAM layouts.
-
-A larger project can give each ROM a directory of its own:
-
-.. code-block:: cmake
-
-  # CMakeLists.txt
-  add_subdirectory(src/hello)
-  add_subdirectory(src/setup)
-
-  # src/setup/CMakeLists.txt
-  add_executable(setup)
-  rp6502_align(setup "XRAM_.*")
-  rp6502_asset(setup help setup.hlp)
-  rp6502_executable(setup DATA default RESET default)
-  target_sources(setup PRIVATE setup.c)
-
-Each ROM is written to the folder of its target in the matching folder of
-the build, such as ``build/cc65/debug/src/setup/setup/setup.rp6502``.
-
-
-.. _sdk-basic:
-
-BASIC Programs
-==============
-
-``rp6502_basic()`` packages BASIC and the BASIC programs into one ROM.
-Each program is an asset, added with ``rp6502_asset()`` as for a C
-program:
-
-.. code-block:: cmake
-
-  cmake_minimum_required(VERSION 3.28)
-
-  include(${CMAKE_CURRENT_LIST_DIR}/tools/rp6502.cmake)
-
-  project(trek BASIC)
-
-  add_executable(trek)
-  rp6502_asset(trek instructions.bas src/instructions.bas)
-  rp6502_asset(trek game.bas src/game.bas)
-  rp6502_basic(trek instructions.bas)
-
-A project like this one is built with the template's ``basic`` preset.
-
-At start, the asset ``autorun.bas`` is run if the ROM has one. Otherwise
-BASIC starts at the ``OK`` prompt. The optional name after the target in
-``rp6502_basic()``, ``instructions.bas`` above, is written into an
-``autorun.bas`` asset:
-
-.. code-block:: text
-
-  10 RUN "ROM:INSTRUCTIONS.BAS"
-
-``RUN`` with ``ROM:`` and an asset name loads and runs that program. The
-name can be written in any case.
-
-A project can add its own ``autorun.bas`` asset instead, and give
-``rp6502_basic()`` no name. That file is the place to set the input caps
-mode with ``CAPS``, and to print a message while a large program loads:
-
-.. code-block:: text
-
-  10 CAPS 0
-  20 PRINT "Loading..."
-  30 RUN "ROM:GAME.BAS"
-
-.. code-block:: cmake
-
-  rp6502_asset(trek autorun.bas src/autorun.bas)
-  rp6502_basic(trek)
-
-``CAPS 0`` leaves typed letters as they are, ``CAPS 1`` makes them upper
-case, and ``CAPS 2`` swaps upper and lower case. ``CAPS 1`` is the
-default. With both a name in ``rp6502_basic()`` and an ``autorun.bas``
-asset, the build fails with "Asset name already exists".
-
-The BASIC interpreter comes from a release of `picocomputer/msbasic
-<https://github.com/picocomputer/msbasic>`__: the newest one in
-``tools/``, unless ``RP6502_BASIC_VERSION`` selects another, as
-`Selecting Versions`_ describes:
-
-.. code-block:: cmake
-
-  set(RP6502_BASIC_VERSION 0.1)
-
-The BASIC program is a CMake launch target, as a C program is, so F5 runs
-it in the emulator.
-
 
 Web Players
 ===========
 
-``rp6502_web()`` packages a ROM with the emulator and a page into a zip
-that plays the program in a browser:
+To build a web player for your program, add ``rp6502_web()``:
 
 .. code-block:: cmake
 
   rp6502_web(hello)
 
-The zip is ``web/hello.zip`` in the build folder, and the same files are
-unpacked in ``web/hello/``. In VS Code, choose "RP6502-WEB" in the Run
-and Debug side panel and press F5: the project is built, and the browser
-opens a page with a link to every web player in the build folder.
+The build writes ``web/hello.zip`` in the build directory, a web player
+that holds the ROM, ``rp6502.js``, ``rp6502.wasm`` and ``index.html``, and
+the same files unpacked in ``web/hello/``. The "RP6502-WEB" launch configuration of `Running and
+Debugging`_ opens a page with a link to each web player.
 
-The emulator and the default page come from the web zip of a release of
-`picocomputer/rp6502 <https://github.com/picocomputer/rp6502>`__: the
-newest one in ``tools/``, unless ``RP6502_WEB_VERSION`` selects another,
-as `Selecting Versions`_ describes.
-
-``CONFIG`` in ``rp6502_web()`` sets the title, the footer and the other
-settings of the page, and ``PAGE`` replaces the page with your own
-``index.html``. Every setting, and how to write a page, is in
-:ref:`Building with CMake <web-cmake>` on the :doc:`web` page.
+The web player has more settings, such as its title and its footer, and
+can use your own ``index.html``. :ref:`Building with CMake <web-cmake>` on
+the RP6502-WEB page describes them.
 
 
 .. _sdk-testing:
@@ -1020,75 +898,28 @@ settings of the page, and ``PAGE`` replaces the page with your own
 Testing
 =======
 
-``rp6502_test()`` adds a test that runs in the emulator. It takes the form
-of ``add_test()``:
+Unit tests are hard to run on the 6502. Memory is a constraint, and a full
+test framework is a lot for a small machine. Most test libraries require
+an int of more than 16 bits, and the 6502 is slow. Unit tests therefore
+usually run on the host computer. For the ROM itself, the emulator gives
+strong integration tests: an emulator script drives the machine and checks
+the results, and a Python test drives the emulator for a test that
+requires more logic.
+
+To add a test, give ``rp6502_test()`` a test file. It has the form of
+CMake's own ``add_test()``:
 
 .. code-block:: cmake
 
   rp6502_test(NAME <name> COMMAND <file> [<arg>...])
 
-.. code-block:: cmake
-
-  rp6502_test(NAME connect COMMAND tests/connect.txt
-      $<TARGET_PROPERTY:gamepad,RP6502_ROM>)
-  rp6502_test(NAME picker COMMAND tests/picker.py
-      $<TARGET_PROPERTY:paint,RP6502_ROM>)
-
 A ``.py`` file is a Python test, and any other file is an emulator
-:ref:`script <emu-scripting>`. Each name must be unique in the project.
-Each argument after the file is an emulator option or a ROM, and the
-words after ``--`` are the arguments of the ROM.
-``$<TARGET_PROPERTY:gamepad,RP6502_ROM>`` is the ROM of the target
-``gamepad`` in the build folder of the configure preset, so each preset
-tests its own ROM. A loop adds a test for each file of a list:
+script. Each argument after the file is an emulator option or a ROM, and
+the words after ``--`` are the arguments for the ROM.
 
-.. code-block:: cmake
-
-  foreach(test connect buttons)
-      rp6502_test(NAME ${test} COMMAND tests/${test}.txt
-          $<TARGET_PROPERTY:gamepad,RP6502_ROM>)
-  endforeach()
-
-``tools/rp6502.cmake`` enables testing in CMake, so no target can have the
-name ``test``.
-
-A script can use the names in the program's ``.sym`` file, as
-:ref:`Symbols and expressions <emu-symbols>` describes. This script waits
-for the gamepad example, connects a gamepad, and checks the gamepad block
-in XRAM:
-
-.. code-block:: text
-  :caption: tests/connect.txt
-
-  # The program maps the gamepads after it prints the title.
-  wait "Gamepad Tester"
-  pad 0 connect western sticks
-  run 2
-  peek xram:XRAM_GAMEPAD (GAMEPAD_FEAT_CONNECTED|GAMEPAD_FEAT_STICKS|GAMEPAD_TYPE_WESTERN)
-  peek xram:XRAM_GAMEPAD+10 $00
-
-A Python test is a script that imports ``rp6502``, which is
-``tools/rp6502.py``. It is for a test that requires a loop, a decision or
-a calculation between the commands:
-
-.. code-block:: python
-  :caption: tests/picker.py
-
-  import rp6502
-
-  # The program maps the tablet after it draws the picker, and the mapping
-  # clears earlier input, so the test starts after 60 frames.
-  with rp6502.Emu() as emu:
-      emu.cmd("run 60")
-      picker_x = (emu.sym["CANVAS_WIDTH"] - emu.sym["PICKER_WIDTH"]) // 2
-      slot_3 = picker_x + 2 + 3 * 6
-      emu.cmd(f"tablet at {slot_3} 4 1")
-      emu.cmd("run 2")
-      emu.cmd(f"tablet at {slot_3} 4 0")
-      emu.cmd("run 2")
-      emu.cmd("tablet at 160 120 1")
-      emu.cmd("run 2")
-      emu.cmd("peek draw_color $03")
+A Python test imports ``rp6502``, which is ``tools/rp6502.py``. Its
+``rp6502.Emu`` runs the emulator of the test and sends it script
+commands:
 
 .. list-table::
    :widths: 30 70
@@ -1096,57 +927,80 @@ a calculation between the commands:
 
    * - Name
      - Description
-   * - ``Emu(*words)``
-     - Starts the emulator of the test with a script on its standard
-       input. The emulator gets the words before ``--``, then the
-       arguments of the test, then ``--`` and the words after ``--``. The
-       arguments of the test are ``sys.argv[1:]``: ``--save-dir`` and the
-       arguments after the file in ``rp6502_test()``, which name the ROM.
+   * - ``Emu(*args)``
+     - Starts the emulator with the arguments that ``rp6502_test()``
+       passes to the Python test. ``Emu()`` adds the arguments passed to
+       it: emulator options, a ROM, and after ``"--"``, arguments for the
+       ROM. When the two sets give the same option other than
+       ``--install``, both give a ROM, or both give arguments for the ROM,
+       ``Emu()`` raises ``ScriptError``.
    * - ``cmd(line)``
      - Sends one script command, and returns the text after ``ok``, such
        as the bytes from ``dump``. A ``fail`` raises ``ScriptError``.
    * - ``sym``
-     - The names and values of the ``.sym`` file of the ROM that the
-       emulator boots, as a ``dict``. A name with two values raises
-       ``KeyError`` with ``is ambiguous``.
+     - The symbols and values of the ``.sym`` file of the ROM that the
+       emulator starts, as a ``dict``. A lookup of a symbol with two
+       values raises ``KeyError`` with ``is ambiguous``.
    * - ``close()``
      - Ends the script and waits for the emulator. An exit code other
-       than 0 raises ``ScriptError``. A ``with`` statement calls
-       ``close()``, or stops the emulator when the block raises.
+       than 0 raises ``ScriptError``.
    * - ``ScriptError``
      - The command, the reason, and the program's stdout that no command
        read.
 
-Run the tests from the Testing panel of VS Code, or with ``ctest``:
+Run the tests from the Testing side panel of VS Code, or with ``ctest``:
 
 .. code-block:: text
 
   ctest --test-dir build/cc65/debug
 
-Each configure preset has its own build folder, so ``ctest`` and the
-Testing panel run the tests of one preset. The project also gets two setup
-tests, which ``ctest`` runs before the other tests: ``rp6502.build``
-builds the project, and ``rp6502.save`` empties each ``SAVE:`` folder.
-Each test runs in ``test/<name>/`` in the build folder. That folder holds
-``rp6502-emu``, the emulator of the test, and ``save/``, the ``SAVE:``
-folder. The settings in `Selecting Versions`_ select the emulator of a
-test, with ``set_tests_properties()`` in place of
-``set_target_properties()``.
+Each test runs in its own directory, with its own save directory. With the
+``cc65/Debug`` preset, a test named ``input`` runs in
+``build/cc65/debug/test/input/``, and its save directory is
+``build/cc65/debug/test/input/save/``.
 
-The emulator fills memory with random values from a new seed in each run,
-so a test also finds a program that reads memory before it writes it. A
-failure ends with the seed. This failure is from a gamepad example that
-does not map the gamepads, so the gamepad block holds random values:
+Without ``--seed``, the emulator fills memory with different random values
+in each run. A test or a program that reads uninitialized
+memory shows its poor behavior... eventually. A failure message ends with
+the seed of the run:
 
 .. code-block:: text
 
   rp6502-emu: src/gamepad/tests/connect.txt:5: $0000+0 is $AC, expected $D0; PC=$FFF3 A=$18 X=$FF Y=$00 SP=$EB P=$04 OP=$18 BUSY=$00 RESB=1 SEED=3733940630
 
 A failed Python test shows the same line as a ``ScriptError`` at the end
-of a traceback. ``ctest -R connect -V`` prints the command of the test.
-Add ``--seed 3733940630`` to that command before any ``--`` to repeat the
-run with that seed. A Python test also requires the environment variables
-that ``ctest -V`` prints.
+of a traceback. To repeat a failed run exactly, add ``--seed`` and its seed
+to the arguments of the test. Then build the project and run the test
+again.
+
+Putting it all together, these are typical tests in ``CMakeLists.txt``:
+
+.. code-block:: cmake
+
+  rp6502_test(NAME input COMMAND tests/input.txt
+      $<TARGET_PROPERTY:hello,RP6502_ROM>)
+  rp6502_test(NAME pathing COMMAND tests/pathing.py
+      --seed 123 $<TARGET_PROPERTY:hello,RP6502_ROM>)
+
+CMake replaces ``$<TARGET_PROPERTY:hello,RP6502_ROM>`` with the path of
+the ROM of ``hello``.
+
+
+Launch Configurations
+=====================
+
+The launch configurations of `Running and Debugging`_ take their
+settings from three files: ``.vscode/launch.json``, the ``.rp6502``
+settings file and ``CMakeLists.txt``.
+
+The .rp6502 Settings File
+-------------------------
+
+``.rp6502`` in the project directory holds the settings for running on
+an RP6502-PICO. It is a text file, not a ROM. The first run of the
+"RP6502-EMU" or "RP6502-PICO" launch configuration creates it. To run on
+an RP6502-PICO, set ``device`` in the ``[RP6502][Launch]`` section. For
+telnet, also set ``key``.
 
 .. code-block:: text
 

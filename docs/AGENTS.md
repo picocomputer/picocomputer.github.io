@@ -5,95 +5,83 @@ engineers and programmers, in the style of a data sheet, in plain language.
 The rules below are the writing rules of ASD-STE100 Simplified Technical
 English, without its restricted dictionary.
 
+## Write for the reader
+
+The reader is a programmer who works through the manual in order. Write
+each passage for what that reader is trying to do at that point, not for
+how the system is arranged inside.
+
+**Start from the reader's goal.** "To write in assembly, replace
+`src/main.c` in `CMakeLists.txt` with `src/main-cc65.s`." Tell the reader
+what to do, then what happens.
+
+**Name who does the action**, above all when the reader could take it as
+their own job. "The launch configuration uploads the ROM to a USB drive
+plugged into the RP6502-PICO" tells the reader that they do not copy it.
+
+**Say what a thing is.** Use the concrete words for it: "virtual devices
+or general purpose storage", not "any data". A vague noun or verb leaves
+the reader to guess.
+
+**Talk to the programmer.** "You" and "your" are correct when the text
+addresses the programmer. Do not twist a sentence to avoid them.
+
+**Say each thing once, where the reader needs it.** Detail that a later
+section or another datasheet owns gets a link, not a summary. Do not
+explain a thing before the reader has a reason to need it.
+
 ## Rules
 
-**Keep every fact.** An edit for the voice changes how the text says a
-thing, never what it says. Do not add a fact, drop a fact, widen or narrow
-a claim, or change a number, a name, a limit or a condition. When the
-meaning of a sentence is unclear, read the source code before you rewrite
-it. When the code does not settle it, keep the original meaning and report
-it.
+**Never lose a fact.** Do not change what a fact says. You may remove a
+repeated statement of a fact, but at least one statement of it must
+remain. State a fact in more than one place when the reader can meet it
+first in either place. Put each statement where the reader already has
+the knowledge to understand it, and move a statement that the reader
+does not need yet to the section that owns it.
 
-**One word for one meaning.** Use the terms in GLOSSARY.md when it exists.
-Within a page, never alternate synonyms for variety. Defined terms of the
-manual (canvas, plane, fill layer, console, terminal, monitor, console
-manifold, ROM, asset, memory chunk, named asset, XRAM, XREG, XSTACK, portal,
-null drive, save) keep their defined meaning.
+**One word for one meaning.** Use one word for one meaning, and use the
+same word every time.
 
-**Present tense.** "The call returns", not "the call will return". Remove
-"will" and "would" unless they state a real conditional that cannot be
-said in the present.
+**Use each word in its exact meaning.** "Name" means to give a thing its
+name, as in "`project()` names the project". It does not mean to use,
+give or refer to a thing: write "`CMakeLists.txt` then uses the symbol",
+not "names the symbol".
 
-**Active voice, and every sentence has a subject.** "The RIA writes the
-block", not "the block is written". A passive is acceptable only when the
-actor is unknown or irrelevant and an active form is clumsier, and a
-stative adjective ("is connected", "is open", "is empty") is not a passive.
-Imperatives are correct for instructions to the reader; their subject is the
-reader.
+**Present tense and active voice.** Use the present tense and the active
+voice. Give each sentence a subject. Do not invent a machine as the
+subject of a sentence to avoid a passive or the word "you".
 
 **Clear, not padded, not terse.** Write so the reader understands at
 once. Say each thing once: do not repeat a fact or restate a point in
 other words. Do not pad a sentence, and do not squeeze it into a terse
 fragment. A short reason stays short.
 
-**Short sentences.** Split sentences joined by em dashes, semicolons or
-long chains of "and". Do not chop a sentence into fragments: a sentence is
-as long as its content requires. An em dash that joins two clauses becomes
-two sentences or a colon. An em dash in a definition list item ("**Term** —
-definition") may stay.
+**Short sentences.** Prefer short sentences. A sentence is as long as its
+content requires.
 
-**One instruction per sentence.** "Hold BOOTSEL. Plug the Pico into a
-computer." In numbered procedures, each step may hold several sentences.
+**One instruction per sentence.** Write one instruction in each sentence.
 
-**Noun clusters of three words or fewer.** Break longer clusters with a
-preposition or a verb: "the address of the configuration structure", not
-"the configuration structure address". A product name, protocol name or
-register name counts as one word ("USB CDC ACM", "RIA_ATTR_RLN_WIDTH").
+**Noun clusters.** Do not use noun clusters of more than three words.
 
 **No figures of speech, idioms or decoration.** Do not add humor, hype,
 metaphor or idioms. The owner writes these where they matter, such as on
 the index page and in introductions. Leave the ones already in the text.
 
-**RFC 2119 words.** These rules govern the RFC words when the text uses
-them. They do not require the text to use them.
-- "must" / "must not": a requirement on the reader or on a program.
-- "should" / "should not": a recommendation.
-- "may": an option that the reader or a program is free to take.
-- "can": an ability or a possibility. "Reads can return 0 bytes", never
-  "reads may return 0 bytes".
-- A word from this list must not appear with its everyday meaning. Do not
-  use "must" for a fact about a machine ("the light must be on" means a
-  requirement; "the light is on" is a fact).
-- A command, function or argument that does not work without something
-  "requires" it. Do not say "takes" or "accepts" for a required argument
-  when the requirement is the point.
+**RFC 2119 words.** Use the RFC 2119 words with their RFC meanings. "Must"
+and "must not" state a requirement. "Should" and "should not" state a
+recommendation. "May" states an option. "Can" states an ability. A command
+that does not run without an argument requires that argument. These rules
+govern the RFC words when the text uses them. They do not require the text
+to use them.
 
-**Machines are not beings.** Do not give a machine, program, file or
-device a motive, a feeling or a personality. State what it does as fact,
-in the established term of the field.
-
-**No contractions.** Write "does not", "it is", "cannot".
+**Machines are not beings.** Machines and software have no motives,
+feelings or personalities. State what they do as fact: "load replaces the
+symbols" and "poke requires an address". Use the established term of the
+field, such as "request" for an interrupt request.
 
 **No first person.** No I, me, my, we, our, us. The manual is not a letter
 from its author.
 
-**Second person.** Prefer a subject that is the actor: "a program", "the
-6502", "the RIA", "the build", "the user" (the person at the machine). Use
-the imperative for an instruction to the reader. Use "you" only where
-neither fits, and never as filler ("you'll want to", "you can simply").
-
-## What must not change
-
-- Code in code blocks, literal text in ``double backquotes``, directive
-  names and options, labels (``.. _name:``), :ref:/:doc:/:c:func: targets,
-  URLs, file names, image paths, table structure and column widths.
-- A comment inside a code block may change only when it breaks the voice
-  rules plainly, and only the comment text changes.
-- RST structure: indentation, blank lines, list markers, table cells,
-  ``.. tab::`` blocks.
-
 ## Line width
 
-Wrap prose at 79 columns, at word boundaries, with the same indentation.
-Tables, code and long links may run longer. Do not rewrap a paragraph you
-did not change.
+Wrap prose at 79 columns.
