@@ -221,7 +221,7 @@ A C program goes in ``src/main.c``, and a BASIC program goes in
          cc65/Release, llvm-mos/Debug, llvm-mos/Release, and basic, above
          the Configure row of the CMake side panel.
 
-The first configure downloads the build tools into ``tools/``.
+The first configure downloads the tools into ``tools/``.
 
 **4. Press F5 to debug.** VS Code builds ``hello.rp6502`` and runs it in
 the emulator. "Hello, world!" appears in the emulator window and in the
@@ -258,7 +258,7 @@ The project now looks like this:
    │   ├── main.bas           the same in BASIC
    │   ├── xram.h             the XRAM layout
    │   └── help.txt           the help asset
-   ├── tools/                 the build tools
+   ├── tools/                 the tools that build and test
    │   ├── rp6502.cmake
    │   ├── rp6502.py
    │   ├── cc65-toolchain.cmake
@@ -429,11 +429,7 @@ that says how long a large program takes to load:
   rp6502_asset(quest game.bas src/game.bas)
   rp6502_basic(quest)
 
-The BASIC interpreter is a `tool file <Tool Files_>`_ from
-`picocomputer/msbasic <https://github.com/picocomputer/msbasic>`__.
-
-A BASIC target is a CMake launch target, so F5 runs its ROM in the
-emulator.
+F5 runs your BASIC ROM like any other ROM.
 
 
 .. _sdk-assets:
@@ -1104,13 +1100,20 @@ passes ``level2`` to the ROM and gives the web player a title:
 Updating the Tools
 ==================
 
-``tools/`` holds two kinds of files. The scripts are ``rp6502.cmake``,
-``rp6502.py``, ``cc65-toolchain.cmake``, and ``cc65-config.cmake``.
-Commit them with the project, so that every clone builds with the same
-scripts. The `tool files <Tool Files_>`_ are the emulator, the web zip,
-and BASIC. Git ignores them. When CMake configures the project, it
-downloads the ones that the project uses, including the emulator for
-your system.
+``tools/`` holds the tools that build and test your program. When CMake
+configures your project, it downloads each tool that the project uses
+and that ``tools/`` lacks. You do not download any tool yourself.
+
+The scripts, ``rp6502.cmake``, ``rp6502.py``, ``cc65-toolchain.cmake``,
+and ``cc65-config.cmake``, come from the ``main`` branch of
+picocomputer/rp6502. They have no versions, and they can change between
+releases. Commit them with the project, so that every clone builds with
+the same scripts.
+
+The :ref:`emulator, the web player, and BASIC <sdk-tool-releases>` come
+from the releases of picocomputer/rp6502 and picocomputer/msbasic. You do
+not need to commit them to your repository. To keep your project on a
+specific version, see `Selecting Versions`_.
 
 The scripts change only when you update them. To update them, run the
 "RP6502: update tools" task (Terminal > Run Task), or run this command
