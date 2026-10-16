@@ -31,6 +31,9 @@ content requires.
 
 **One instruction per sentence.** Write one instruction in each sentence.
 
+**Serial comma.** Put a comma before the "and" or "or" that ends a list
+of three or more items.
+
 **Noun clusters.** Do not use noun clusters of more than three words.
 
 **No figures of speech, idioms or decoration.** Do not add humor, hype,

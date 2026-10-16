@@ -12,13 +12,13 @@ The distribution format of a Picocomputer program is the ROM: one file
 that ends in ``.rp6502``, such as ``game.rp6502``. A ROM describes the
 state of the machine as it comes out of reset: the program and data are
 in memory, and the reset vector points to where the program begins. One
-ROM can hold all the code, video and sound of a program.
+ROM can hold all the code, video, and sound of a program.
 
 A ROM is similar by design to the cartridge ROM of a game console and to
 the BASIC ROM of an 8-bit home computer.
 
-The SDK builds a ROM, runs it with the :doc:`emu`, an :doc:`pico` or the
-:doc:`web`, and debugs it in the :doc:`emu` while it runs. A project
+The SDK builds a ROM, runs it with the :doc:`emu`, an :doc:`pico`, or
+the :doc:`web`, and debugs it in the :doc:`emu` while it runs. A project
 starts as a copy of the `RP6502 project template
 <https://github.com/picocomputer/rp6502-sdk>`__, which builds with
 either of two 6502 compilers, cc65 or llvm-mos. The template includes the
@@ -30,7 +30,7 @@ builds with either compiler.
    :class: only-light
    :width: 700
    :alt: The sources: src/main.c (or an assembly file), src/main.bas,
-         src/xram.h, src/help.txt and CMakeLists.txt. CMake builds the
+         src/xram.h, src/help.txt, and CMakeLists.txt. CMake builds the
          program with cc65 or llvm-mos. Then rp6502.py packages the
          program and its assets into the ROM, such as
          build/cc65/debug/hello/hello.rp6502, in the build directory of
@@ -45,7 +45,7 @@ builds with either compiler.
    :class: only-dark
    :width: 700
    :alt: The sources: src/main.c (or an assembly file), src/main.bas,
-         src/xram.h, src/help.txt and CMakeLists.txt. CMake builds the
+         src/xram.h, src/help.txt, and CMakeLists.txt. CMake builds the
          program with cc65 or llvm-mos. Then rp6502.py packages the
          program and its assets into the ROM, such as
          build/cc65/debug/hello/hello.rp6502, in the build directory of
@@ -92,8 +92,8 @@ Open PowerShell. Install the prerequisites with winget:
    winget install -e --id Python.PythonInstallManager
 
 Close PowerShell. Then open it again, so that the new PATH takes effect.
-Run these commands, which install Python, make Ninja the build tool and
-install the compilers:
+Run these commands, which install Python, make Ninja the build tool,
+and install the compilers:
 
 .. code-block:: powershell
 
@@ -116,7 +116,7 @@ macOS
 -----
 
 Open Terminal. Install Apple's command line tools, which include git,
-Make and Python 3:
+Make, and Python 3:
 
 .. code-block:: sh
 
@@ -145,7 +145,7 @@ Linux
 -----
 
 On Ubuntu and Debian, install the prerequisites with apt. Ubuntu 24.04,
-Debian 13 and their later versions have CMake 3.28 or later.
+Debian 13, and their later versions have CMake 3.28 or later.
 
 .. code-block:: sh
 
@@ -195,12 +195,12 @@ repository and open its directory in VS Code:
 - Python Debugger, to run ``tools/rp6502.py``.
 
 **3. Choose a configure preset.** The first time the project opens,
-CMake Tools lists five presets. Four are for C or assembly: ``cc65/Debug``,
-``cc65/Release``, ``llvm-mos/Debug`` and ``llvm-mos/Release``. Choose a
-Debug preset, because breakpoints and stepping require debug information.
-A Release preset builds an optimized ROM for distribution. The fifth
-preset, ``basic``, is for BASIC. To change the preset later, use the
-Configure row of the CMake side panel.
+CMake Tools lists five presets. Four are for C or assembly:
+``cc65/Debug``, ``cc65/Release``, ``llvm-mos/Debug``, and
+``llvm-mos/Release``. Choose a Debug preset, because breakpoints and
+stepping require debug information. A Release preset builds an optimized
+ROM for distribution. The fifth preset, ``basic``, is for BASIC. To
+change the preset later, use the Configure row of the CMake side panel.
 
 A C program goes in ``src/main.c``, and a BASIC program goes in
 ``src/main.bas``. To write in assembly, replace ``src/main.c`` in
@@ -211,14 +211,14 @@ A C program goes in ``src/main.c``, and a BASIC program goes in
    :class: only-light
    :width: 700
    :alt: The list of configure presets of CMake Tools, with cc65/Debug,
-         cc65/Release, llvm-mos/Debug, llvm-mos/Release and basic, above
+         cc65/Release, llvm-mos/Debug, llvm-mos/Release, and basic, above
          the Configure row of the CMake side panel.
 
 .. image:: _static/sdk/preset-dark.png
    :class: only-dark
    :width: 700
    :alt: The list of configure presets of CMake Tools, with cc65/Debug,
-         cc65/Release, llvm-mos/Debug, llvm-mos/Release and basic, above
+         cc65/Release, llvm-mos/Debug, llvm-mos/Release, and basic, above
          the Configure row of the CMake side panel.
 
 The first configure downloads the build tools into ``tools/``.
@@ -290,13 +290,13 @@ one in the Run and Debug side panel.
    :class: only-light
    :width: 400
    :alt: The launch configuration list of the Run and Debug side panel,
-         with "RP6502-EMU", "RP6502-PICO" and "RP6502-WEB".
+         with "RP6502-EMU", "RP6502-PICO", and "RP6502-WEB".
 
 .. image:: _static/sdk/configs-dark.png
    :class: only-dark
    :width: 400
    :alt: The launch configuration list of the Run and Debug side panel,
-         with "RP6502-EMU", "RP6502-PICO" and "RP6502-WEB".
+         with "RP6502-EMU", "RP6502-PICO", and "RP6502-WEB".
 
 The **RP6502-EMU** launch configuration is the default. It builds the
 project and runs the ROM in the :doc:`emu` with :ref:`source-level
@@ -324,7 +324,7 @@ technique is ``printf()`` to the console.
 An RP6502-PICO may connect through the USB port of the VGA module or
 over telnet with an :doc:`ria_w`, so the launch configuration requires a
 setting for the connection. Its first run fills in a hint for ``device``
-in the `settings file <The .rp6502 Settings File_>`_. Unless your
+in the `settings file <RP6502-PICO_>`_. Unless your
 RP6502-PICO happens to be on that port, the run fails with an error
 until you set ``device``.
 
@@ -441,7 +441,7 @@ emulator.
 Adding Assets
 =============
 
-``rp6502_asset()`` adds graphics, level data, help text and any other
+``rp6502_asset()`` adds graphics, level data, help text, and any other
 file that the program uses to the ``.rp6502`` file. `BASIC programs
 <BASIC Programs_>`_ may also be assets.
 
@@ -501,7 +501,7 @@ Memory Map
 
 Everything below $FF00 is RAM. The Picocomputer does not use or reserve
 any of this RAM, including zero page. A program accesses the VGA, sound,
-storage, keyboards, mice, gamepads, the RTC and networking through the
+storage, keyboards, mice, gamepads, the RTC, and networking through the
 32 registers of the RIA.
 
 .. list-table::
@@ -534,17 +534,16 @@ XRAM Memory Map
 
 XRAM is the 64 KB of memory outside the address space of the 6502. A C
 program should read and write XRAM with the XRAM functions of the
-:doc:`api`, such as :c:func:`xram0_read`, :c:func:`xram0_write` and
-:c:func:`xram0_peek8`.
+:doc:`api`, such as :c:func:`xram0_read`, :c:func:`xram0_write`,
+and :c:func:`xram0_peek8`.
 
 XRAM has no memory map until your program defines one. The program can
 use XRAM for virtual devices or for general purpose storage. The virtual
-devices are keyboard, mouse, tablet and gamepad input, the PSG and OPL2
-sound generators, and the VGA modes with the pixels, tiles and sprites
-they draw. A call to
-:ref:`xreg() <api-xreg>` maps a device to an address in XRAM, and the
-section of each device in the :doc:`ria` and :doc:`vga` datasheets shows
-its ``xreg()`` call.
+devices are the keyboard, mouse, tablet, and gamepad inputs; the PSG and
+OPL2 sound generators; and the VGA modes with the pixels, tiles, and
+sprites they draw. A call to :ref:`xreg() <api-xreg>` maps a device to
+an address in XRAM, and the section of each device in the :doc:`ria` and
+:doc:`vga` datasheets shows its ``xreg()`` call.
 
 Before the first ``xreg()`` call, decide the XRAM address of each device
 and of each block of general purpose storage. A spreadsheet with every address laid out by hand is one
@@ -561,18 +560,17 @@ nothing overlaps.
 To add support for a device to your program, copy its code block from
 the :doc:`ria` or :doc:`vga` datasheet into the file. Each code block is
 labeled ``xram.h`` or ``xram.inc`` and holds the structure of the device,
-its constants and the macros for its extended register (XREG). Choose the
-C, ca65 or llvm-mc tab, then use the "Copy to clipboard" button in the
+its constants, and the macros for its extended register (XREG). Choose
+the C, ca65, or llvm-mc tab, then use the "Copy to clipboard" button in the
 corner of the code block. Then add a member for the device to the
 layout.
 
 The compiler supplies ``rp6502.h`` for C and ``rp6502.inc`` for assembly.
 They provide the API calls, including ``xreg()`` and the XRAM functions,
 but none of the XRAM structures, so your copy is the only definition the
-program uses. Register numbers, field
-offsets and sizes never change, so a change to the SDK never breaks your
-copy. Only names can change in the datasheets, and you can rename
-anything in your copy.
+program uses. Register numbers, field offsets, and sizes never change, so
+a change to the SDK never breaks your copy. Only names can change in the
+datasheets, and you can rename anything in your copy.
 
 This ``xram.h`` is for a program that uses only the keyboard. It holds
 the code block of :ref:`Keyboard <ria-keyboard>` from the :doc:`ria`
@@ -777,7 +775,7 @@ Any symbol in the file works, such as
 ``#define XRAM_LOGO_ROW_2 (XRAM_LOGO + 64)`` or an equate of an assembly
 program.
 
-Mode configurations, palettes and the PSG must be at even addresses, and
+Mode configurations, palettes, and the PSG must be at even addresses, and
 neither compiler pads structures. ``rp6502_align()`` checks that symbols
 are even. With this call in ``CMakeLists.txt``, the tools check every
 ``XRAM_`` symbol. The regular expression is in Python's syntax:
@@ -811,8 +809,7 @@ Symbols in Python
 -----------------
 
 A `Python test <Testing_>`_ drives an emulator script from Python, for a
-test that
-requires a loop, a decision or a calculation. ``emu.sym`` holds the
+test that requires a loop, a decision, or a calculation. ``emu.sym`` holds the
 symbols of the ROM as a ``dict``. This test does the same check as the
 script above, with the calculation in Python:
 
@@ -875,9 +872,10 @@ To build a web player for your program, add ``rp6502_web()``:
 
   rp6502_web(hello)
 
-The build writes ``web/hello.zip`` in the build directory, a web player
-that holds the ROM, ``rp6502.js``, ``rp6502.wasm`` and ``index.html``, and
-the same files unpacked in ``web/hello/``. The "RP6502-WEB" launch configuration of `Running and
+The build writes ``web/hello.zip`` in the build directory. The zip is a
+web player that holds the ROM, ``rp6502.js``, ``rp6502.wasm``, and
+``index.html``. The build also unpacks the same files into
+``web/hello/``. The "RP6502-WEB" launch configuration of `Running and
 Debugging`_ opens a page with a link to each web player.
 
 The web player has more :ref:`settings <web-cmake>`, such as its title
@@ -980,12 +978,52 @@ the ROM of ``hello``.
 Launch Configurations
 =====================
 
-The launch configurations of `Running and Debugging`_ take their
-settings from three files: ``.vscode/launch.json``, the ``.rp6502``
-settings file and ``CMakeLists.txt``.
+To change how F5 starts a ROM, edit the settings of its launch
+configuration. The settings are in ``.vscode/launch.json`` for
+RP6502-EMU, in ``.rp6502`` for RP6502-PICO, and in ``CMakeLists.txt``
+for RP6502-WEB. In each one, the arguments for the ROM are separate from the
+other settings, such as the options of the emulator or the settings of
+the web player.
 
-The .rp6502 Settings File
--------------------------
+A ROM can start with arguments, which a C program receives as ``argc``
+and ``argv`` of ``main()``. Unlike on other systems, you must set up the
+program to receive them. To learn how, read :ref:`ARGV <api-argv>` on the
+API page.
+
+RP6502-EMU
+----------
+
+The "RP6502-EMU" launch configuration is in ``.vscode/launch.json``.
+``args`` holds the arguments for the ROM. To pass :ref:`options
+<emu-arguments>` to the emulator, add them to ``debugAdapterArgs`` after
+the options that are already there. This launch configuration passes
+``level2`` to the ROM and runs the 6502 at 1 MHz:
+
+.. code-block:: json
+
+  {
+      "name": "RP6502-EMU",
+      "type": "lldb-dap",
+      "request": "launch",
+      "debugAdapterExecutable": "${command:cmake.launchTargetDirectory}/rp6502-emu",
+      "debugAdapterArgs": [
+          "--dap",
+          "--ini",
+          "${workspaceFolder}/.rp6502",
+          "--phi2",
+          "1000"
+      ],
+      "windows": {
+          "debugAdapterExecutable": "${command:cmake.launchTargetDirectory}/rp6502-emu.exe"
+      },
+      "program": "${command:cmake.launchTargetPath}.rp6502",
+      "args": ["level2"],
+      "stopOnEntry": false,
+      "stopOnExit": true
+  }
+
+RP6502-PICO
+-----------
 
 ``.rp6502`` in the project directory holds the settings of your
 workstation, so git ignores it. The first run of the "RP6502-EMU" or
@@ -1028,8 +1066,7 @@ of the "RP6502-PICO" launch configuration adds it:
        from there. Leave it empty to work in the current directory of the
        RP6502-PICO.
    * - ``args``
-     - Arguments for the ROM on an RP6502-PICO. See `Arguments for the
-       ROM`_.
+     - The arguments for the ROM.
    * - ``term``
      - With ``True``, ``rp6502.py`` opens a terminal on the console when a
        ROM runs on an RP6502-PICO.
@@ -1045,43 +1082,21 @@ For telnet, set ``device`` and ``key``:
   args =
   term = True
 
-In an older settings file, the section is ``[RP6502][Launch]``.
+RP6502-WEB
+----------
 
-Arguments for the ROM
----------------------
+The "RP6502-WEB" launch configuration opens the web players of the
+build, so its settings are in ``rp6502_web()`` in ``CMakeLists.txt``.
+``args`` in ``CONFIG`` holds the arguments for the ROM, and the other
+options are :ref:`settings <web-cmake>` of the web player. This call
+passes ``level2`` to the ROM and gives the web player a title:
 
-The ROM receives arguments only when its program defines
-``__argv_mem()``, as :ref:`ARGV <api-argv>` describes. Each launch
-configuration takes them from a different place:
+.. code-block:: cmake
 
-.. list-table::
-   :widths: 25 75
-   :header-rows: 1
-
-   * - Launch configuration
-     - Arguments for the ROM
-   * - RP6502-EMU
-     - ``args`` of the "RP6502-EMU" launch configuration in
-       ``.vscode/launch.json``, as in ``"args": ["level2"]``.
-   * - RP6502-PICO
-     - ``args`` in the ``.rp6502`` settings file.
-   * - RP6502-WEB
-     - ``args`` in ``CONFIG`` of ``rp6502_web()``, as in
-       ``args: ['level2'],``. :ref:`Building with CMake <web-cmake>` in
-       :doc:`web` describes ``CONFIG``.
-
-On the command line, ``rp6502.py run`` passes the words after the path of
-the ROM to the ROM, and the emulator passes the words after ``--``.
-
-Emulator Options
-----------------
-
-To pass options to the emulator, put them in ``debugAdapterArgs`` of the
-"RP6502-EMU" launch configuration in ``.vscode/launch.json``.
-:ref:`Arguments <emu-arguments>` in the emulator's datasheet lists the
-options. The launch configuration runs ``rp6502-emu`` in the directory of
-the launch target. To run another version of the emulator, see `Selecting
-Versions`_. To run one built from source, see `Local Files`_.
+  rp6502_web(hello CONFIG [[
+      title: 'Hello',
+      args: ['level2'],
+  ]])
 
 
 .. _sdk-updating-tools:
@@ -1090,15 +1105,16 @@ Updating the Tools
 ==================
 
 ``tools/`` holds two kinds of files. The scripts are ``rp6502.cmake``,
-``rp6502.py``, ``cc65-toolchain.cmake`` and ``cc65-config.cmake``.
-Commit them with the project, so every clone builds with the same
-scripts. The release files are the emulator, the web player and BASIC. Git ignores
-them, and a configure downloads the ones that the project uses, as
-`Release Files`_ describes.
+``rp6502.py``, ``cc65-toolchain.cmake``, and ``cc65-config.cmake``.
+Commit them with the project, so that every clone builds with the same
+scripts. The `tool files <Tool Files_>`_ are the emulator, the web zip,
+and BASIC. Git ignores them. When CMake configures the project, it
+downloads the ones that the project uses, including the emulator for
+your system.
 
 The scripts change only when you update them. To update them, run the
-"RP6502: update tools" task (Terminal > Run Task), or run this command in
-the project folder:
+"RP6502: update tools" task (Terminal > Run Task), or run this command
+in the project directory:
 
 .. code-block:: text
 
