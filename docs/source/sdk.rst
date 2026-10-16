@@ -277,8 +277,7 @@ language, these changes remove the parts you do not use:
 - Delete the presets and the source files that the project does not use.
 
 Commit ``tools/`` with the project. Git ignores some of its files on
-purpose. `Updating the Tools`_ describes the files and which ones a
-project commits.
+purpose. To learn which ones and why, read `Updating the Tools`_.
 
 
 Running and Debugging
@@ -300,9 +299,8 @@ one in the Run and Debug side panel.
          with "RP6502-EMU", "RP6502-PICO" and "RP6502-WEB".
 
 The **RP6502-EMU** launch configuration is the default. It builds the
-project and runs the ROM in the :doc:`emu` with source-level debugging,
-which :ref:`Debugging <emu-debugging>` in the emulator's datasheet
-describes.
+project and runs the ROM in the :doc:`emu` with :ref:`source-level
+debugging <emu-debugging>`.
 
 .. image:: _static/sdk/breakpoint-light.png
    :class: only-light
@@ -317,23 +315,22 @@ describes.
          Call Stack panels.
 
 The **RP6502-PICO** launch configuration builds the project and runs the
-ROM on an :doc:`pico`, over USB through the USB port of the VGA module,
-or over telnet with an :doc:`ria_w`. Its first run creates ``.rp6502``,
-the settings file, in the project directory. ``device`` in that file is
-the serial port, which starts as the usual port of your system. For
-another port, or for telnet, change ``device`` as `The .rp6502 Settings
-File`_ describes.
-
-The launch configuration uploads the ROM to a USB drive plugged into the
+ROM on an :doc:`pico`. It uploads the ROM to a USB drive plugged into the
 RP6502-PICO, then runs it from there. The upload replaces any file with
-the same name. The console opens in the VS Code Terminal panel, where
-Ctrl-A then X closes the terminal and Ctrl-A then B sends a break. A
-break stops the ROM and returns to the monitor. The RP6502-PICO has no
-breakpoints or stepping.
+the same name. The console opens in the VS Code Terminal panel. The
+RP6502-PICO has no breakpoints or stepping, so a common debugging
+technique is ``printf()`` to the console.
+
+An RP6502-PICO may connect through the USB port of the VGA module or
+over telnet with an :doc:`ria_w`, so the launch configuration requires a
+setting for the connection. Its first run fills in a hint for ``device``
+in the `settings file <The .rp6502 Settings File_>`_. Unless your
+RP6502-PICO happens to be on that port, the run fails with an error
+until you set ``device``.
 
 The **RP6502-WEB** launch configuration builds the project and opens a
-page in a browser. The page has a link to every web player that
-``rp6502_web()`` makes, as `Web Players`_ describes.
+page in a browser. The page has a link to every `web player <Web
+Players_>`_ that ``rp6502_web()`` makes.
 
 
 Building a ROM
@@ -341,8 +338,9 @@ Building a ROM
 
 ``CMakeLists.txt`` describes the ROMs a project builds. This listing is
 the C branch of the ``CMakeLists.txt`` of a new project, without the
-``if()``.
-`BASIC Programs`_ describes BASIC projects.
+``if()``. A BASIC project calls ``rp6502_basic()`` instead of
+``rp6502_executable()``. Learn about it in `BASIC Programs`_, the next
+section.
 
 .. code-block:: cmake
 
@@ -391,9 +389,9 @@ BASIC Programs
 
 ``rp6502_basic()`` packages the BASIC interpreter and the BASIC programs
 into one ROM. A BASIC program can be an ordinary file on a drive, but
-with the SDK it is usually an asset of the ROM. The program can then be
-distributed as a single ROM instead of several files. `Adding Assets`_
-in the next section describes assets.
+with the SDK it is usually an :ref:`asset <sdk-assets>` of the ROM. The
+program can then be distributed as a single ROM instead of several
+files.
 
 .. code-block:: cmake
 
@@ -431,9 +429,8 @@ that says how long a large program takes to load:
   rp6502_asset(quest game.bas src/game.bas)
   rp6502_basic(quest)
 
-The BASIC interpreter comes from `picocomputer/msbasic
-<https://github.com/picocomputer/msbasic>`__, as `Tool Files`_
-describes.
+The BASIC interpreter is a `tool file <Tool Files_>`_ from
+`picocomputer/msbasic <https://github.com/picocomputer/msbasic>`__.
 
 A BASIC target is a CMake launch target, so F5 runs its ROM in the
 emulator.
@@ -445,8 +442,8 @@ Adding Assets
 =============
 
 ``rp6502_asset()`` adds graphics, level data, help text and any other
-file that the program uses to the ``.rp6502`` file. BASIC programs may
-also be assets, as `BASIC Programs`_ describes.
+file that the program uses to the ``.rp6502`` file. `BASIC programs
+<BASIC Programs_>`_ may also be assets.
 
 .. code-block:: cmake
 
@@ -459,11 +456,11 @@ also be assets, as `BASIC Programs`_ describes.
 
 An asset with an address in ``RAM()`` or ``XRAM()`` is a memory chunk.
 Before the 6502 starts, the RIA (the RP6502 Interface Adapter) loads the
-file to that address in 6502 RAM or in XRAM. XRAM is the 64 KB of memory
-outside the address space of the 6502, as `XRAM Memory Map`_ describes.
-Inside the parentheses, the address is a number, a CMake variable such
-as ``${TABLE_ADDR}``, or a symbol from the program such as
-``XRAM_LOGO``, as `Symbols in CMake`_ describes.
+file to that address in 6502 RAM or in XRAM. `XRAM <XRAM Memory Map_>`_
+is the 64 KB of memory outside the address space of the 6502. Inside the
+parentheses, the address is a number, a CMake variable such as
+``${TABLE_ADDR}``, or a `symbol <Symbols in CMake_>`_ from the program
+such as ``XRAM_LOGO``.
 
 Any other address is a name, and a named asset is a file that the
 program opens while it runs. The path is ``ROM:`` and the name, and the
@@ -674,9 +671,10 @@ A type marked ``/* layout */`` is a block that goes in
       .endif
 
 Each ``XRAM_`` symbol is the XRAM address of one member of the layout.
-Use these symbols for every XRAM address in the program. The build and the
-tests use them too, as `Program Symbols`_ describes. This code maps
-the keyboard to its address, then loops until the user presses a key.
+Use these symbols for every XRAM address in the program. The build and
+the tests use them too, as `program symbols <Program Symbols_>`_. This
+code maps the keyboard to its address, then loops until the user
+presses a key.
 
 .. tab:: C
    :new-set:
@@ -740,15 +738,13 @@ ROM: each ``#define`` with a whole-number value, such as
 file, so an address that your program defines once is known everywhere:
 
 - ``CMakeLists.txt`` uses symbols as asset addresses, and can check in
-  one call that all of them are even, as `Symbols in CMake`_ describes.
-- An emulator script takes a symbol wherever it takes a number, as
-  `Symbols in the Emulator`_ describes.
-- A Python test reads the symbols from ``emu.sym``, as `Symbols in
-  Python`_ describes.
+  one call that all of them are even.
+- An emulator script takes a symbol wherever it takes a number.
+- A Python test reads the symbols from ``emu.sym``.
 
-This is why the layout gives each of its members an ``XRAM_`` symbol: the
-program, the build and the tests then use the same address for each part
-of XRAM. `The .sym File`_ describes the format of the file.
+Your program defines each XRAM address once, and the build and the tests
+use the same definition. You can find the format of ``hello.sym`` in `The
+.sym File`_.
 
 Symbols in CMake
 ----------------
@@ -793,13 +789,14 @@ are even. With this call in ``CMakeLists.txt``, the tools check every
 Symbols in the Emulator
 -----------------------
 
-An emulator script drives the machine and checks the results, which
-makes it an integration test, as `Testing`_ describes. A script takes a
-symbol or an expression wherever it takes a number, and ``let`` sets a
-variable. This script is for a program that maps the keyboard as in
-`XRAM Memory Map`_, then prints "Key down" when a key is pressed. The
-script presses space and waits for "Key down". Then ``peek`` checks that
-the bit for space is set in the keyboard block:
+An :ref:`emulator script <emu-scripting>` drives the machine and checks
+the results. You can learn more about testing with scripts in `Testing`_,
+later on this page. A script takes a :ref:`symbol or an expression
+<emu-symbols>` wherever it takes a number, and ``let`` sets a variable.
+This script is for a program that maps the keyboard as in `XRAM Memory
+Map`_, then prints "Key down" when a key is pressed. The script presses
+space and waits for "Key down". Then ``peek`` checks that the bit for
+space is set in the keyboard block:
 
 .. code-block:: text
   :caption: tests/keys.txt
@@ -810,14 +807,11 @@ the bit for space is set in the keyboard block:
   wait "Key down"
   peek xram:(XRAM_KEYBOARD+HID_KEY_SPACE//8) (1<<HID_KEY_SPACE%8)
 
-:ref:`Scripting <emu-scripting>` in the emulator's datasheet describes
-every command, and :ref:`Symbols and expressions <emu-symbols>` describes
-symbols.
-
 Symbols in Python
 -----------------
 
-A Python test drives an emulator script from Python, for a test that
+A `Python test <Testing_>`_ drives an emulator script from Python, for a
+test that
 requires a loop, a decision or a calculation. ``emu.sym`` holds the
 symbols of the ROM as a ``dict``. This test does the same check as the
 script above, with the calculation in Python:
@@ -835,8 +829,6 @@ script above, with the calculation in Python:
       emu.cmd("run 2")
       byte = emu.sym["XRAM_KEYBOARD"] + HID_KEY_SPACE // 8
       emu.cmd(f"peek xram:{byte} {1 << HID_KEY_SPACE % 8}")
-
-`Testing`_ describes ``rp6502.Emu``.
 
 
 Multiple ROMs
@@ -888,9 +880,8 @@ that holds the ROM, ``rp6502.js``, ``rp6502.wasm`` and ``index.html``, and
 the same files unpacked in ``web/hello/``. The "RP6502-WEB" launch configuration of `Running and
 Debugging`_ opens a page with a link to each web player.
 
-The web player has more settings, such as its title and its footer, and
-can use your own ``index.html``. :ref:`Building with CMake <web-cmake>` on
-the RP6502-WEB page describes them.
+The web player has more :ref:`settings <web-cmake>`, such as its title
+and its footer, and can use your own ``index.html``.
 
 
 .. _sdk-testing:

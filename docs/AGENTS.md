@@ -45,8 +45,9 @@ govern the RFC words when the text uses them. They do not require the text
 to use them.
 
 **Machines are not beings.** Machines and software have no motives,
-feelings or personalities. State what they do as fact. Use the established
-term of the field.
+feelings or personalities. State what they do as fact. Give a machine
+only verbs for operations it performs. A verb for a human act, even a
+plain one, gives it a personality. Use the established term of the field.
 
 **No first person.** No I, me, my, we, our, us. The manual is not a letter
 from its author.
