@@ -534,43 +534,49 @@ designs and supports.
 XRAM Memory Map
 ===============
 
-XRAM is 64 KB of memory outside the 6502's address space. The preferred
-way to read and write it from C is with the XRAM functions of the
+XRAM is the 64 KB of memory outside the address space of the 6502. A C
+program should read and write XRAM with the XRAM functions of the
 :doc:`api`, such as :c:func:`xram0_read`, :c:func:`xram0_write` and
-:c:func:`xram0_peek8`. The 0 or 1 in a name selects which of the two
-:ref:`XRAM portals <ria-xram-portals>` of the RIA the call uses, and the
-two portals can point to different addresses.
+:c:func:`xram0_peek8`.
 
-XRAM holds the data for the virtual devices: keyboard, mouse, tablet and
-gamepad input, the PSG and OPL2 sound generators, VGA mode configurations,
-and the pixels, tiles and sprites the modes draw. XRAM has no fixed map.
-You choose an address for each device's data, and set it in the device's
-extended register (XREG) with :ref:`xreg() <api-xreg>`.
+XRAM has no memory map until your program defines one. The program can
+use XRAM for virtual devices or for general purpose storage. The virtual
+devices are keyboard, mouse, tablet and gamepad input, the PSG and OPL2
+sound generators, and the VGA modes with the pixels, tiles and sprites
+they draw. A call to
+:ref:`xreg() <api-xreg>` maps a device to an address in XRAM, and the
+section of each device in the :doc:`ria` and :doc:`vga` datasheets shows
+its ``xreg()`` call.
 
-A ROM's map is usually kept in one file, ``xram.h`` for C or ``xram.inc``
-for assembly. It holds the structure of each device the program uses, and a
-layout that places them in XRAM with a name for each address. Add a
-device's structure when the program starts using the device, and
-rearrange the layout as the data grows. The template's ``src/xram.h`` is
-this file, with a placeholder structure, ``xram_feature_t``, to replace.
+Before the first ``xreg()`` call, decide where each device and each block
+of data goes. A spreadsheet with every address laid out by hand is one
+way, but it is tedious and error-prone. Instead, it is strongly recommended to keep your XRAM map in
+one file, ``xram.h`` for C or ``xram.inc`` for assembly. The template
+already has an ``xram.h``, and the rest of this section describes how to
+change it.
 
-The structures are in the :doc:`ria` and :doc:`vga` datasheets. Each one is
-in a code block labeled ``xram.h`` or ``xram.inc``, together with its
-constants and XREG macros. Choose the C, ca65 or llvm-mc tab, then use the
-"Copy to clipboard" button in the corner of the block to copy the whole
-block into ``xram.h`` or ``xram.inc``.
+The file holds the structure of each device that the program uses, and a
+layout, ``xram_layout_t``, that places those structures in XRAM. The
+compiler calculates every address from the layout, so nothing overlaps,
+and the whole of XRAM is described in one place.
 
-The structures are not part of ``rp6502.h`` or ``rp6502.inc``. The copy
-in ``xram.h`` is the only definition the program uses. This approach is
-unusual, but the project depends on no submodule or shared header for
-these structures, so changes to the SDK do not break its build, and the
-whole map is in one file. Register numbers, field offsets and sizes never
-change. Only names can change in the docs, and a name in the copy can be
-changed without affecting anything else.
+To add support for a device to your program, copy its code block from
+the :doc:`ria` or :doc:`vga` datasheet into the file. Then add a member
+for the device to the layout. Each code block is labeled ``xram.h`` or
+``xram.inc`` and holds the structure of the device, its constants and the
+macros for its extended register (XREG). Choose the C, ca65 or llvm-mc
+tab, then use the "Copy to clipboard" button in the corner of the code
+block.
+
+The structures are not part of ``rp6502.h`` or ``rp6502.inc``, so the
+copy in ``xram.h`` is the only definition the program uses. Register
+numbers, field offsets and sizes never change, so a change to the SDK
+does not break the copy. Only names can change in the datasheets, and a
+project can change any name in its copy.
 
 This example is for a program that uses only the keyboard. The keyboard
-definitions are the :ref:`Keyboard <ria-keyboard>` block from the
-:doc:`ria` datasheet, and the layout after them places the keyboard at
+definitions are the code block of :ref:`Keyboard <ria-keyboard>` in the
+:doc:`ria` datasheet. The layout after them places the keyboard at
 address 0. The types marked ``/* layout */`` are the blocks a program
 places in ``xram_layout_t`` and gives to an XREG.
 
