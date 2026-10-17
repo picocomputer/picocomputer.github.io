@@ -1306,70 +1306,234 @@ Running in the Emulator
 -----------------------
 
 The emulator of a target is ``rp6502-emu`` in the directory of the
-target, or ``rp6502-emu.exe`` on Windows. With no :ref:`options
-<emu-arguments>`, the ROM runs in a window.
+target, or ``rp6502-emu.exe`` on Windows. These examples run a ROM with
+some of the emulator's :ref:`options <emu-arguments>`:
 
 .. code-block:: text
 
-  build/cc65/debug/hello/rp6502-emu build/cc65/debug/hello/hello.rp6502
+  build/cc65/debug/hello/rp6502-emu --debug build/cc65/debug/hello/hello.rp6502
   build/cc65/debug/assemble/rp6502-emu --headless --phi2 0 build/cc65/debug/assemble/assemble.rp6502
-  build/basic/trek/rp6502-emu --script tests/play.txt --seed 1 build/basic/trek/trek.rp6502
+  build/basic/trek/rp6502-emu --script tests/play.txt build/basic/trek/trek.rp6502
 
-With ``--headless``, there is no window. The ROM's console is the
-terminal's standard input and output, and the ROM's exit code becomes the
-emulator's, so a ROM can run as a step in a script or a test.
+With ``--debug``, the emulator draws the :ref:`debug overlay
+<emu-overlay>` over its window.
+
+With ``--headless``, the emulator opens no window. The ROM's console is
+the host's stdin and stdout. The ROM's exit code becomes the exit code of
+the emulator, so a ROM can run as a step in a shell script or a test.
 ``--phi2 0`` removes the speed limit.
 
-With ``--script``, the input comes from an emulator :ref:`script
-<emu-scripting>`, and the script checks the ROM's stdout and stderr, so a
-program that reads the keyboard can be tested. The ROM's stdout is written
-to standard output only when the script fails. The exit code is 0 when the
-script passes and 1 when it fails. A BASIC ROM does not exit when its
-program ends, so run it with ``--script``.
+With ``--script``, the :ref:`emulator script <emu-scripting>`
+``tests/play.txt`` drives the machine and checks the results, as it does
+in a `test <Testing_>`_.
 
-Another editor can debug with the emulator through the :ref:`Debug
-Adapter Protocol <emu-dap>`.
+Packaging a ROM Manually
+------------------------
 
-Packaging a ROM by Hand
------------------------
+When an assembler or compiler that CMake does not run writes the 6502
+program, package the ROM with ``rp6502.py create``. Each run of
+``create`` writes one ROM, and can merge other ROMs into it. A ROM does
+not have to hold a program. It can hold any memory chunks and named
+assets, such as an image for XRAM or the help text.
 
-``rp6502.py create`` packages files into a ROM, and
-``rp6502_executable()`` uses it to build every ROM. Use it directly when
-an assembler or compiler that CMake doesn't run writes the 6502 program.
-The options it takes are:
+ROMs therefore work like object files. Package each part of the program
+in its own ROM, then merge them all in a last step, as a linker joins
+object files. ``rp6502_asset()`` and ``rp6502_executable()`` build a ROM
+this way. Any ROM can hold any part, but the final ROM must hold the
+reset vector to run.
 
-- ``-a``: the address to load the first file at, or the name of an asset.
-  The address can also be ``RAM(<name>)`` or ``XRAM(<name>)``, with a name
-  from the ``.sym`` file that ``--sym`` gives after ``create``;
-- ``-r``: the reset address, and ``-i`` and ``-n`` for IRQ and NMI;
+``create`` uses these options:
+
+- ``-a``: the address to load the file at, or an asset name. The address
+  can also be ``RAM(<x>)`` or ``XRAM(<x>)``, where ``<x>`` is a number
+  or a symbol from the ``.sym`` file that ``--sym`` gives.
+- ``-r``: the reset vector. ``-i`` and ``-n`` set the IRQ and NMI
+  vectors.
 - ``-o``: the ROM file to write.
 
-The first file is the data to package. Every file after it must already
-be a ROM, and its contents are merged in. A ROM that holds only named
-assets is an input for merging and can't be run, because it has no reset
-address.
+With ``-a``, the first file is the file to package, and every file after
+it is a ROM to merge. Without ``-a``, every file is a ROM to merge.
 
-This example packages an assembler's binary that loads at ``$0400``,
-with a help file, a data file, and an image loaded into XRAM.
+This example packages the help text, a data file, and an image in ROMs
+of their own. The last step packages the output file of an assembler,
+which loads at ``$0400``, and merges the other ROMs into it.
 
 .. code-block:: text
 
   # The help text, as a named asset.
-  python3 tools/rp6502.py -a help -o help.rp6502 create plvm.help
+  python3 tools/rp6502.py create -a help -o help.rp6502 plvm.help
 
   # A data file the program opens as ROM:level1.
-  python3 tools/rp6502.py -a level1 -o level1.rp6502 create level1.dat
+  python3 tools/rp6502.py create -a level1 -o level1.rp6502 level1.dat
 
-  # An image loaded into XRAM before the 6502 starts.
-  python3 tools/rp6502.py -a 0x10000 -o splash.rp6502 create splash.bin
+  # An image that the RIA loads into XRAM before the 6502 starts.
+  python3 tools/rp6502.py create -a 0x10000 -o splash.rp6502 splash.bin
 
-  # The program at $0400 with a reset address, merged with the rest.
-  python3 tools/rp6502.py -a 0x0400 -r 0x0400 -o plvm.rp6502 \
-      create plvm.bin help.rp6502 level1.rp6502 splash.rp6502
+  # The program at $0400 with the reset vector, merged with the rest.
+  python3 tools/rp6502.py create -a 0x0400 -r 0x0400 -o plvm.rp6502 \
+      plvm.bin help.rp6502 level1.rp6502 splash.rp6502
 
 The result is ``plvm.rp6502``. It holds memory chunks for the program at
 ``$0400``, the reset vector at ``$FFFC``, and the image at ``$10000``. It
 also holds two named assets, ``help`` and ``level1``.
+
+
+Load Addresses and Linker Scripts
+=================================
+
+``rp6502_executable()`` packages the linker output of a target, the file
+that the linker writes, into a ROM with the assets of the target. The
+keywords of ``rp6502_executable()`` give the addresses of the program:
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Keyword
+     - Description
+   * - ``DATA``
+     - The address where the linker output loads. Without ``DATA``, the
+       ROM does not hold the linker output.
+   * - ``RESET``
+     - The address where the 6502 starts. The ROM holds it in the reset
+       vector at ``$FFFC-$FFFD``. ``rp6502_executable()`` requires
+       ``RESET``.
+   * - ``IRQ``
+     - The address of the IRQ handler. The ROM holds it in the IRQ vector
+       at ``$FFFE-$FFFF``. A call may leave out ``IRQ``.
+   * - ``NMI``
+     - The address of the NMI handler. The ROM holds it in the NMI vector
+       at ``$FFFA-$FFFB``. A call may leave out ``NMI``.
+
+Each keyword takes a number, such as ``0x200``, or ``file``. ``DATA``
+and ``RESET`` also take ``default``:
+
+- With ``file``, the build reads the address from the start of the
+  linker output. Each keyword that is ``file`` takes the next 16-bit
+  address, in the order ``DATA``, ``NMI``, ``RESET``, ``IRQ``. The linker
+  script of llvm-mos writes the ``DATA`` address and then the ``RESET``
+  address there, so ``file`` works for both. The linker script of cc65
+  writes no addresses.
+- ``default`` is ``0x200`` with cc65 and ``file`` with llvm-mos.
+
+The linker script is the map of 6502 RAM, as ``xram.h`` is the map of
+`XRAM <XRAM Memory Map_>`_. Most projects keep the linker script of the
+compiler. To change the map, start from a copy of the linker script of
+the compiler. Pass the copy to the linker with ``target_link_options()``.
+
+For cc65, copy ``cfg/rp6502.cfg`` from the directory of cc65, such as
+``~/.rp6502/cc65``, into the project. To learn its format, read the `ld65
+documentation <https://cc65.github.io/doc/ld65.html>`__.
+
+.. code-block:: cmake
+
+  target_link_options(hello PRIVATE -C ${CMAKE_SOURCE_DIR}/src/hello.cfg)
+
+For llvm-mos, copy ``mos-platform/rp6502/lib/link.ld`` from the
+directory of llvm-mos, such as ``~/.rp6502/llvm-mos``, into the project.
+To learn its format, read the llvm-mos wiki page `Linker Script
+<https://llvm-mos.org/wiki/Linker_Script>`__.
+
+.. code-block:: cmake
+
+  target_link_options(hello PRIVATE -T ${CMAKE_SOURCE_DIR}/src/hello.ld)
+
+
+Multiple Linker Outputs
+=======================
+
+A cc65 program can load at more than one address, with one linker output
+for each address. CMake's ``add_executable()`` tracks only one linker
+output, so declare the others with ``rp6502_byproducts()``. In a
+configuration for ld65, the linker of cc65, each memory area with a
+``file`` of its own is a separate linker output, and ``%O`` stands for the
+output file name that CMake passes to the linker. The linker output is in
+the directory of the target, so the files of the target ``basic`` are in
+``basic/`` in the build directory.
+
+.. code-block:: cmake
+
+  rp6502_byproducts(<target> <file>...)
+
+Microsoft BASIC loads at three separate addresses: the ``CHRGET`` routine
+at ``$00E8`` in zero page, the init code at ``$1000``, and the interpreter
+at ``$C000``. Its linker configuration assigns each one to its own file,
+named after ``%O``.
+
+.. code-block:: text
+
+  MEMORY {
+      ZP:       start = $0000, size = $00E7, file = "";
+      CHRGETZP: start = $00E8, size = $0018, file = "%O.00E8";
+      INITROM:  start = $1000, size = $8000, file = "%O.1000";
+      BASROM:   start = $C000, size = $3DDE, file = "%O.C000";
+      # areas with file = "" write nothing; trimmed here
+      TOUCH:    start = $0000, size = $0000, file = %O;
+  }
+
+``TOUCH`` is an empty memory area whose file is ``%O``. The linker writes
+it as an empty file, and CMake treats that file as the linker output. This
+CMake code declares the three real files as byproducts, adds them as
+memory chunks at their addresses, and packages them:
+
+.. code-block:: cmake
+
+  rp6502_byproducts(basic
+      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.00E8
+      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.1000
+      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.C000
+  )
+  rp6502_asset(basic help src/help.txt)
+  rp6502_asset(basic RAM(0x00E8) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.00E8)
+  rp6502_asset(basic RAM(0x1000) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.1000)
+  rp6502_asset(basic RAM(0xC000) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.C000)
+  rp6502_executable(basic RESET 0x1000)
+
+``rp6502_executable()`` has no ``DATA`` here, because the linker output
+is the empty ``TOUCH`` file.
+
+
+Registers and ``volatile``
+==========================
+
+``volatile`` has no effect on the cc65 optimizer, so wrap C code that
+accesses RIA or VIA registers directly in an optimize pragma:
+
+.. code-block:: C
+
+  #pragma optimize (push, off)
+  static void timer_start(void)
+  {
+      VIA.acr = 0x40;
+  }
+  #pragma optimize (pop)
+
+
+.. _sdk-sym-file:
+
+The .sym File
+=============
+
+The build writes ``hello.sym`` beside ``hello.rp6502``. The file has one
+line for each symbol of the program: each ``#define`` of the C sources
+that has a whole-number value, and each symbol of the linker. A line is
+the symbol, one space, and the value. A value from 0 to 0xFFFF has four
+hex digits, and any other value is decimal:
+
+.. code-block:: text
+
+  INT8_MIN -128
+  XRAM_KEYBOARD 0x0000
+  XRAM_LOGO 0x0020
+
+The lines are sorted by symbol. A symbol with two different values, such
+as a cc65 local label, has two lines. cc65 puts ``_`` before each C
+symbol, so a C global ``x`` is in the file as ``x`` and as ``_x``. With
+cc65, the ``static`` variables of a function are not in the file.
+
+``RAM()`` and ``XRAM()`` in ``rp6502_asset()``, ``rp6502_align()``, and
+emulator scripts use the symbols in this file. You can find an example
+of each in `Program Symbols`_.
 
 
 .. _sdk-rom-file-format:
