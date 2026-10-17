@@ -325,9 +325,9 @@ to the console.
 An RP6502-PICO may connect through the USB port of the VGA module or
 over telnet with an :doc:`ria_w`, so the launch configuration requires a
 setting for the connection. Its first run fills in a hint for ``device``
-in the `settings file <RP6502-PICO_>`_. Unless your
-RP6502-PICO happens to be on that port, the run fails with an error
-until you set ``device``.
+in the `settings file <RP6502-PICO_>`_. Unless your RP6502-PICO happens
+to be on that port, the run fails with an error until you set
+``device``.
 
 The **RP6502-WEB** launch configuration builds the project and opens a
 page in a browser. The page has a link to every `web player <Web
@@ -542,12 +542,12 @@ sprites they draw. A call to :ref:`xreg() <api-xreg>` maps a device to
 an address in XRAM, and the section of each device in the :doc:`ria` and
 :doc:`vga` datasheets shows its ``xreg()`` call.
 
-Before the first ``xreg()`` call, decide the XRAM address of each device
-and of each block of general purpose storage. A spreadsheet with every address laid out by hand is one
-way, but it is tedious and error-prone. Instead, it is strongly recommended to keep your XRAM map in
-one file, ``xram.h`` for C or ``xram.inc`` for assembly. Your project
-already has an ``xram.h``, and the rest of this section describes how to
-change it.
+Before the first ``xreg()`` call, decide the XRAM address of each device and of
+each block of general purpose storage. A spreadsheet with every address laid
+out by hand is one way, but it is tedious and error-prone. Instead, it is
+strongly recommended to keep your XRAM map in one file, ``xram.h`` for C or
+``xram.inc`` for assembly. Your project already has an ``xram.h``, and the rest
+of this section describes how to change it.
 
 The file holds the structure of each device that your program uses, and
 a layout, ``xram_layout_t``, with a member for each device and each block
@@ -975,12 +975,12 @@ the ROM of ``hello``.
 Launch Configurations
 =====================
 
-To change how F5 starts a ROM, edit the settings of its launch
-configuration. The settings are in ``.vscode/launch.json`` for
-RP6502-EMU, in ``.rp6502`` for RP6502-PICO, and in ``CMakeLists.txt``
-for RP6502-WEB. In each one, the arguments for the ROM are separate from the
-other settings, such as the options of the emulator or the settings of
-the web player.
+To change how F5 starts a ROM, edit the settings of the launch
+configuration that you run. The settings are in ``.vscode/launch.json``
+for RP6502-EMU, in ``.rp6502`` for RP6502-PICO, and in
+``CMakeLists.txt`` for RP6502-WEB. In each one, the arguments for the ROM
+are separate from the other settings, such as the options of the emulator
+or the settings of the web player.
 
 A ROM can start with arguments, which a C program receives as ``argc``
 and ``argv`` of ``main()``. Unlike on other systems, you must set up the
@@ -1026,9 +1026,9 @@ RP6502-PICO
 workstation, so git ignores it. The first run of the "RP6502-EMU" or
 "RP6502-PICO" launch configuration creates it.
 
-The file has several sections. The emulator owns most of them and keeps
-the window layout of its debug overlay there, so each project
-reopens with the layout of its last session. The ``[RP6502][PICO]``
+The file has several sections. The emulator writes most of them, with the
+window layout of its debug overlay, so each project reopens with the
+layout of its last session. The ``[RP6502][PICO]``
 section is first. It holds the settings for running on your
 RP6502-PICO, and it is the only section to edit by hand. The first run
 of the "RP6502-PICO" launch configuration adds it:
@@ -1108,8 +1108,8 @@ and that ``tools/`` lacks. You do not download any tool yourself.
 The scripts, ``rp6502.cmake``, ``rp6502.py``, ``cc65-toolchain.cmake``,
 and ``cc65-config.cmake``, come from the ``main`` branch of
 picocomputer/rp6502. They have no versions, and they can change between
-releases. Commit them with the project, so that every Git clone builds with
-the same scripts.
+releases. Commit them with the project, so that every Git clone builds
+with the same scripts.
 
 The emulator, the web player, and BASIC come from the releases of
 `picocomputer/rp6502 <https://github.com/picocomputer/rp6502/releases>`__
@@ -1126,12 +1126,14 @@ each of them keeps the file name of its release:
   rp6502-<version>-web.zip
   msbasic-<version>.zip
 
+You do not need to commit these files to your repository. To keep your
+project on a specific version, see `Selecting Versions`_.
+
 WSL uses the emulator for Windows. When a release has no emulator for
 your system, ``tools/`` holds ``rp6502-<version>-<system>.unsupported``
-in its place. You do not need to commit these files to your repository.
-To keep your project on a specific version, see `Selecting Versions`_.
+in its place.
 
-The scripts change only when you update them. To update them, run the
+The tools change only when you update them. To update them, run the
 "RP6502: update tools" task (Terminal > Run Task), or run this command
 in the project directory:
 
@@ -1159,14 +1161,9 @@ Then test that your project still works, and commit the changes.
 Selecting Versions
 ------------------
 
-Without a setting, a target uses the newest version of each tool in
-``tools/``. To keep your project on a specific version, select it in
-``CMakeLists.txt``. A version is the number of its release, such as
-``0.40`` for the release ``v0.40``. An update does not change a version
-that the project selects.
-
-A variable selects the version for every target and test in its
-``CMakeLists.txt``:
+Each target and test uses the newest version in ``tools/``. To use
+another version, select it in ``CMakeLists.txt``. A variable selects the
+version for every target and test in its ``CMakeLists.txt``:
 
 .. code-block:: cmake
 
@@ -1255,19 +1252,19 @@ Running on an RP6502-PICO
 ``rp6502.py run`` runs a ROM on an RP6502-PICO from the command line. It
 uploads the ROM, loads it with the monitor, and connects your terminal to
 the console of the RP6502-PICO, so you can interact with the program.
-Give the serial port with ``-d``, or for telnet, the network host with
-``-d`` and the passkey with ``-k``:
+Give the serial port with ``-d``, or for telnet, the hostname or IP
+address with ``-d`` and the passkey with ``-k``:
 
 .. code-block:: text
 
-  python3 tools/rp6502.py -d /dev/ttyUSB0 run build/cc65/debug/hello/hello.rp6502
-  python3 tools/rp6502.py -d 192.168.1.20 -k secret run build/cc65/debug/hello/hello.rp6502
+  python3 tools/rp6502.py run -d /dev/ttyUSB0 build/cc65/debug/hello/hello.rp6502
+  python3 tools/rp6502.py run -d 192.168.1.20 -k secret build/cc65/debug/hello/hello.rp6502
 
 ``run`` passes the words after the path of the ROM to the ROM as its
-arguments. ``python3 tools/rp6502.py --help`` lists the options that go
-before a subcommand, and ``--help`` after a subcommand, as in
-``python3 tools/rp6502.py run --help``, lists the options of that
-subcommand. ``rp6502.py`` has these subcommands:
+arguments. ``python3 tools/rp6502.py --help`` lists the subcommands. To
+list the options of a subcommand, put ``--help`` after it, as in
+``python3 tools/rp6502.py run --help``. ``rp6502.py`` has these
+subcommands:
 
 .. list-table::
    :widths: 20 80
@@ -1276,16 +1273,17 @@ subcommand. ``rp6502.py`` has these subcommands:
    * - Subcommand
      - Description
    * - ``run``
-     - Upload a ROM to the USB drive, load it, and open a terminal.
+     - Upload a ROM to the RP6502-PICO, load it, and open a terminal.
    * - ``upload``
-     - Upload files to the USB drive.
+     - Upload files to the RP6502-PICO.
    * - ``term``
-     - Open a terminal on the console, without an upload or a run.
+     - Open a terminal on the console.
    * - ``basic``
-     - Type a BASIC program into the BASIC installed on the RP6502-PICO,
-       and run it.
+     - Send a BASIC program to the BASIC installed on the RP6502-PICO, and
+       run it.
    * - ``create``
-     - Package files into a ROM. See `Packaging a ROM Manually`_.
+     - Package a file into a ROM, and merge ROMs into it. See `Packaging
+       a ROM Manually`_.
    * - ``sym``
      - Write the ``.sym`` file of a linked program, which holds its
        `program symbols <Program Symbols_>`_.
@@ -1297,15 +1295,14 @@ RP6502-PICO and returns to the monitor.
 Running in the Emulator
 -----------------------
 
-The emulator of a target is ``rp6502-emu`` in the folder of the target,
-or ``rp6502-emu.exe`` on Windows. With no options, the ROM runs in a
-window. :ref:`Arguments <emu-arguments>` in the emulator's datasheet
-lists every option.
+The emulator of a target is ``rp6502-emu`` in the directory of the
+target, or ``rp6502-emu.exe`` on Windows. With no :ref:`options
+<emu-arguments>`, the ROM runs in a window.
 
 .. code-block:: text
 
   build/cc65/debug/hello/rp6502-emu build/cc65/debug/hello/hello.rp6502
-  build/cc65/debug/hello/rp6502-emu --headless --phi2 0 build/cc65/debug/hello/hello.rp6502
+  build/cc65/debug/assemble/rp6502-emu --headless --phi2 0 build/cc65/debug/assemble/assemble.rp6502
   build/basic/trek/rp6502-emu --script tests/play.txt --seed 1 build/basic/trek/trek.rp6502
 
 With ``--headless``, there is no window. The ROM's console is the

@@ -151,7 +151,7 @@ receives arguments, and returns an exit code.
 **scanline.** One row of pixels of the canvas.
 
 **Side Bar.** The part of the VS Code window that shows Run and Debug,
-CMake, Testing, and the other views.
+CMake, Testing, and other views.
 
 **template.** The GitHub project template. A project made from it is
 "your project".
