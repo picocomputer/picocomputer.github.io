@@ -312,8 +312,8 @@ cannot replace one whose name differs only in case.
 
 .. _port-files:
 
-Files and Folders
------------------
+Files and Directories
+---------------------
 
 With O_APPEND, the read/write position moves to the end of the file
 once, when the file opens. O_EXCL applies only together with O_CREAT. An

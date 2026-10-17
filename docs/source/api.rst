@@ -8,12 +8,14 @@ Application Programming Interface
 Introduction
 ============
 
-The API is how a 6502 program uses the host. A call such as ``open()``
-or ``time()`` is passed through the registers of the :doc:`ria` to the
-host, which does the work and passes the result back, much like a remote
-procedure call. The host runs outside the 6502 and uses none of its RAM,
-so all of RAM remains available to the program, and that program can
-even be a 6502 operating system of your own.
+The API is how a 6502 program uses the host. The host is the modern side
+of the machine behind the registers of the :doc:`ria`, such as the Pico
+2 of an :doc:`pico` or the computer that runs the :doc:`emu`. A program
+calls a function such as ``open()`` or ``time()``, and the C library
+passes the call through the RIA registers to the host. The host does the
+work and passes the result back, much like a remote procedure call. The
+host runs outside the 6502 and uses none of its RAM, so all of RAM
+remains available to the program.
 
 The API comes with the compilers. It is part of the C libraries of cc65
 and llvm-mos, so a program needs nothing else to use it. This is the
@@ -31,108 +33,72 @@ and llvm-mos, so a program needs nothing else to use it. This is the
   }
 
 ``puts()`` is the standard C function. In both compilers it ends in
-WRITE_XSTACK, an API call that passes the bytes to the RIA, and the host
+`WRITE_XSTACK`_, an API call. The C library pushes the bytes to the
+extended stack (XSTACK), a 512-byte stack in the RIA, and the host
 writes them to the console. Most of the API is standard C in this way:
-``stdio.h`` and ``unistd.h`` for the console and files, and ``time.h``
-for the clock. ``rp6502.h`` adds what standard C has no call for: access
-to XRAM, the settings of the RIA, the filesystem abstraction, the line
-editor, and starting another ROM.
+``fcntl.h``, ``unistd.h``, and ``stdio.h`` for the console and files,
+and ``time.h`` for the clock. ``rp6502.h`` adds what standard C has no
+call for: XRAM, the `RIA attributes <RIA Attributes_>`_, the FAT
+attributes and dates of files, directories, drives, the line editor, and
+the start of another ROM.
 
-The API does not reach the gamepads, the video or the sound. A program
-drives those through XRAM and extended registers (XREGs), described in
-the :doc:`ria` and :doc:`vga` datasheets. The API provides ``xreg()``
-and the XRAM calls that set them up.
+The API has no calls for the video, the sound, or the state of the
+keyboard, mouse, and gamepads. A program maps each of those devices to
+an XRAM address with ``xreg()``, as :ref:`XRAM Memory Map
+<sdk-xram-memory-map>` in the :doc:`sdk` shows. Then the program reads
+and writes the XRAM of the device with the XRAM functions of
+``rp6502.h``. The :doc:`ria` and :doc:`vga` datasheets describe each
+device.
 
-Underneath the C functions is the Application Binary Interface (ABI),
-the register-level form of each call. A C program never sees it. The
-ABI is at the end of this page, for assembly programs and for anyone
-bringing another compiler to the Picocomputer.
+Under the C functions is the Application Binary Interface (ABI), the
+register-level form of each call. The C library implements the ABI, so
+a C program does not use it directly. `Application Binary Interface`_,
+at the end of this page, describes it for assembly programs and for a
+port of another compiler.
 
 
 Application Programming Interface
 =================================
 
-Most calls match their POSIX counterparts. The filesystem calls follow
-FAT, the standard filesystem of USB drives and memory cards, so
-``f_stat()`` stands in for ``stat()`` with FAT's attributes and dates.
-A few calls take their arguments in a different order in the ABI than
-in C. The flags described below mark the two forms where they differ.
+Most calls behave as their POSIX equivalents do. The calls for files and
+directories follow FAT, the standard filesystem of USB drives and memory
+cards, so ``f_stat()`` replaces ``stat()`` and returns the attributes and
+dates of FAT.
 
-Each operation below is one or more C declarations followed by a short
-list of details. Some declarations carry a flag:
+Each section below has one or more C declarations, a description, and a
+list of fields. Most declarations are both a C function and the ABI form
+of an API call. A few API calls take their arguments in a different
+order in the ABI than in C, so their sections have one declaration of
+each form. A flag before the return type marks a declaration that has
+only one of the two forms:
 
-.. c:function:: ABI int an_operation (int arg0, int arg1)
+.. c:function:: ABI int an_api_call (int arg0, int arg1)
                 lib int a_library_call (int arg1, int arg0)
    :no-index-entry:
    :no-contents-entry:
 
-``ABI`` marks a prototype that is only the ABI form. ``LIB`` marks a
-prototype that exists only in the library. A prototype with neither flag
-is both.
+``ABI`` marks a declaration of the ABI form only. ``lib`` marks a
+function of the C library only.
 
-``Operation`` is the operation ID that a program writes to ``RIA_OP`` to
-start the operation. An entry with only ``LIB`` prototypes has no
-operation ID.
-``C proto`` names the header the declaration comes from.
-``a regs`` names the arguments and the return value that fit in ``RIA_A``
-alone, so a program can leave ``RIA_X`` unset. ``errno`` lists what can
-go wrong, and `Errno Translations`_ gives the number of each.
+The fields are:
 
+- ``Operation`` is the operation ID that a program writes to the RIA
+  register ``RIA_OP`` to make the API call. A section with no
+  ``Operation`` field describes functions that make no API call of their
+  own.
+- ``C proto`` is the header that declares the C function.
+- ``a regs`` lists the arguments that a program may pass in ``RIA_A``
+  alone, with ``RIA_X`` unset, and ``return`` when the return value fits
+  in ``RIA_A``.
+- ``errno`` lists every errno that the section can set, from the API call
+  or from the C library. `Errno Translations`_ gives the number of each.
 
-Registers
----------
+A C program does not use the ``Operation`` and ``a regs`` fields. They
+are for the ABI.
 
-DROP
-~~~~
-
-.. c:function:: void ria_drop (void);
-
-   Empty the XSTACK by resetting its pointer. This is the only operation
-   that finishes immediately, so there is no need to wait for it. It is
-   never needed after a failed operation, because a failure already
-   empties the XSTACK. Use it to discard the rest of a returned structure,
-   or arguments already pushed for a call you decide not to make.
-
-   :Operation: RIA_OP_DROP_XSTACK 0x00
-   :C proto: rp6502.h
-
-
-SPIN
-~~~~
-
-.. c:function:: lib int ria_spin (void)
-
-   Waits for the running API call to finish and returns ``RIA_A`` and
-   ``RIA_X`` as an int. A call to ``ria_spin()`` is a ``JSR RIA_SPIN``, as
-   described under `Application Binary Interface`_.
-
-   :C proto: rp6502.h
-
-
-VSYNC
-~~~~~
-
-.. c:function:: lib unsigned char ria_vsync (void)
-
-   Returns the VSYNC register, which increments every 1/60 second when
-   :doc:`PIX VGA <vga>` device 1 is connected.
-
-   :C proto: rp6502.h
-
-
-IRQ
-~~~
-
-.. c:function:: lib unsigned char ria_irq_read (void)
-                lib void ria_irq_write (unsigned char mask)
-
-   ``ria_irq_read()`` returns the triggered signals and clears them.
-   ``ria_irq_write()`` sets the enable mask and also clears any triggered
-   signals. Bit 7 is VSYNC and bit 6 is SIGINT, as in the
-   :ref:`register table <ria-registers>` of the :doc:`ria` datasheet.
-
-   :C proto: rp6502.h
-   :param mask: Signals to enable.
+Some calls work differently on different machines, and each section
+states the difference. The Pocket is the :doc:`fpga`, which runs on an
+Analogue Pocket.
 
 
 .. _api-extended-memory:

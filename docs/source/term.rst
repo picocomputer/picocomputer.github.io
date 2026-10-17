@@ -112,6 +112,8 @@ channels:
 4, and neither can be closed. A second open returns the same file
 descriptor as the first, and a close succeeds as a no-op.
 
+.. _term-nonblocking-read-line:
+
 Non-blocking Read Line
 ----------------------
 
@@ -123,7 +125,7 @@ possible. The hooks are :ref:`RLN_LASTKEY <api-rln-lastkey>`,
 
 The basic pattern:
 
-#. **Open the channel.** ``open("CON:", 0)`` returns a file descriptor.
+#. **Open the channel.** ``open("CON:", O_RDWR)`` returns a file descriptor.
 #. **Set the input cap** (optional). Write ``RIA_ATTR_RLN_LENGTH``.
    Different prompts, or different fields in a form, can use
    different caps. The default is 254.
@@ -143,7 +145,7 @@ The basic pattern:
      are echoed by the editor as if the user had typed them.
    * Optionally check for Ctrl-C via ``RIA_ATTR_SIGINT`` or the RIA SIGINT IRQ.
      To leave cooked input cleanly, poke ``\x03`` to print a visible
-     ``^C``, or poke ``\r`` or ``\n`` to flush silently. Then wait for
+     ``^C``, or poke ``\r`` to flush silently. Then wait for
      ``read()`` to return the line.
    * ``ria_rln_lastkey()`` reports the last keystroke and whether the
      editor consumed it as an editing action. When ``action == 0`` the

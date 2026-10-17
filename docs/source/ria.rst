@@ -113,8 +113,9 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
    * - $FFF0
      - IRQ
      - Interrupt enable mask. Reading returns the triggered signals
-       as bits and clears them. Writing sets the enable mask and
-       also clears any triggered signals.
+       as bits, enabled or not, and clears them. Writing sets the
+       enable mask, and clears the triggered signal of each bit that
+       is 1 in the written value.
 
        * bit 7 - VSYNC
        * bit 6 - SIGINT
@@ -274,8 +275,8 @@ these directly, so each one is given a simple interface of bytes in
 extended RAM (XRAM). The RIA writes keyboard, mouse and gamepad input into
 XRAM for a program to read, and the sound generators and the video system
 read settings and data that a program writes into XRAM. This arrangement
-is called Peripheral Information Exchange (PIX). A program installs each
-device at an XRAM address by setting an extended register (XREG). Until
+is called Peripheral Information Exchange (PIX). A program maps each
+device to an XRAM address by setting an extended register (XREG). Until
 then, the device is off and has no XRAM address.
 
 Extended RAM (XRAM)
@@ -2257,11 +2258,13 @@ file, using a special name. By default ``"VCP0:"`` opens at 115200 bps
 with 8 data bits, no parity, and 1 stop bit. Set the baud rate with
 ``"VCP0:115200"``, or the full bit configuration with
 ``"VCP0:115200,8N1"``. The file won't open if your hardware can't
-support the requested configuration, and the open flags are ignored.
+support the requested configuration. The options of ``open()`` have no
+effect, but ``oflag`` must include O_RDONLY, O_WRONLY, or O_RDWR, as for
+any file.
 
 .. code-block:: C
 
-  open("VCP0:1200,7E2", 0);
+  open("VCP0:1200,7E2", O_RDWR);
   // then read and write
 
 Generous FIFO buffers serve both directions, and both reads and writes
@@ -2296,10 +2299,11 @@ keep the buffer fed. Reads are a recording — incoming messages arrive
 with delta times measuring when they actually happened, ready to store in
 a file or play back later.
 
-The division is ticks per quarter note, the value an SMF carries in its
-header. It accepts 1 to 32767 and is fixed while open; reopen between songs
-to change it. The open flags are ignored. A cable can be input, output, or both;
-reading an output-only cable or writing an input-only one returns an
+The division is ticks per quarter note, the value an SMF carries in its header.
+It accepts 1 to 32767 and is fixed while open; reopen between songs to change
+it. The options of ``open()`` have no effect, but ``oflag`` must include
+O_RDONLY, O_WRONLY, or O_RDWR, as for any file. A cable can be input, output,
+or both; reading an output-only cable or writing an input-only one returns an
 error.
 
 Tempo changes on the fly with the standard SMF Set Tempo meta event,
@@ -2327,7 +2331,7 @@ events straight from the track:
 
 .. code-block:: C
 
-  open("MIDI0:96", 0); // division from the MThd header
+  open("MIDI0:96", O_RDWR); // division from the MThd header
   // FF 51 03 07 A1 20  tempo = 500000 (120 BPM at 96 PPQN)
   // then delta-timed events; the RIA paces them and tracks tempo changes
 
