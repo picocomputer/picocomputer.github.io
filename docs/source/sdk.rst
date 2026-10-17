@@ -1106,14 +1106,163 @@ passes ``level2`` to the ROM and gives the web player a title:
   ]])
 
 
+Load Addresses and Linker Scripts
+=================================
+
+``rp6502_executable()`` packages the linker output of a target, the file
+that the linker writes, into a ROM with the assets of the target. The
+keywords of ``rp6502_executable()`` give the addresses of the program:
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Keyword
+     - Description
+   * - ``DATA``
+     - The address where the linker output loads. Without ``DATA``, the
+       ROM does not hold the linker output.
+   * - ``RESET``
+     - The address where the 6502 starts. The ROM holds it in the reset
+       vector at ``$FFFC-$FFFD``. ``rp6502_executable()`` requires
+       ``RESET``.
+   * - ``IRQ``
+     - The address of the IRQ handler. The ROM holds it in the IRQ vector
+       at ``$FFFE-$FFFF``. A call may leave out ``IRQ``.
+   * - ``NMI``
+     - The address of the NMI handler. The ROM holds it in the NMI vector
+       at ``$FFFA-$FFFB``. A call may leave out ``NMI``.
+
+Each keyword takes a number, such as ``0x200``, or ``file``. ``DATA``
+and ``RESET`` also take ``default``:
+
+- With ``file``, the build reads the address from the start of the
+  linker output. Each keyword that is ``file`` takes the next 16-bit
+  address, in the order ``DATA``, ``NMI``, ``RESET``, ``IRQ``. The linker
+  script of llvm-mos writes the ``DATA`` address and then the ``RESET``
+  address there, so ``file`` works for both. The linker script of cc65
+  writes no addresses.
+- ``default`` is ``0x200`` with cc65 and ``file`` with llvm-mos.
+
+The linker script is the map of 6502 RAM, as ``xram.h`` is the map of
+`XRAM <XRAM Memory Map_>`_. Most projects keep the linker script of the
+compiler. To change the map, start from a copy of the linker script of
+the compiler. Pass the copy to the linker with ``target_link_options()``.
+Add the copy to ``LINK_DEPENDS``, so that the build relinks the program
+when the copy changes.
+
+For cc65, copy ``cfg/rp6502.cfg`` from the directory of cc65, such as
+``~/.rp6502/cc65``, into the project. To learn its format, read the `ld65
+documentation <https://cc65.github.io/doc/ld65.html>`__.
+
+.. code-block:: cmake
+
+  target_link_options(hello PRIVATE -C ${CMAKE_SOURCE_DIR}/src/hello.cfg)
+  set_target_properties(hello PROPERTIES
+      LINK_DEPENDS ${CMAKE_SOURCE_DIR}/src/hello.cfg)
+
+For llvm-mos, copy ``mos-platform/rp6502/lib/link.ld`` from the
+directory of llvm-mos, such as ``~/.rp6502/llvm-mos``, into the project.
+To learn its format, read the llvm-mos wiki page `Linker Script
+<https://llvm-mos.org/wiki/Linker_Script>`__.
+
+.. code-block:: cmake
+
+  target_link_options(hello PRIVATE -T ${CMAKE_SOURCE_DIR}/src/hello.ld)
+  set_target_properties(hello PROPERTIES
+      LINK_DEPENDS ${CMAKE_SOURCE_DIR}/src/hello.ld)
+
+
+Multiple Linker Outputs
+=======================
+
+A cc65 program can load at more than one address, with one linker output
+for each address. In the linker configuration, each memory area with a
+``file`` of its own writes a separate linker output. ``%O`` is the file
+name that CMake passes to the linker, so ``"%O.1000"`` names a file beside
+the linker output of the target. The linker of llvm-mos writes only one
+linker output.
+
+Microsoft BASIC loads at three addresses: the ``CHRGET`` routine at
+``$00E8`` in zero page, the init code at ``$1000``, and the interpreter at
+``$C000``. Its linker configuration gives each one its own file:
+
+.. code-block:: text
+
+  MEMORY {
+      ZP:       start = $0000, size = $00E7, file = "";
+      CHRGETZP: start = $00E8, size = $0018, file = "%O.00E8";
+      INITROM:  start = $1000, size = $8000, file = "%O.1000";
+      BASROM:   start = $C000, size = $3DDE, file = "%O.C000";
+      # areas with file = "" write nothing; trimmed here
+      TOUCH:    start = $0000, size = $0000, file = %O;
+  }
+
+``TOUCH`` is an empty memory area whose file is ``%O``. The linker writes
+it as an empty file, and CMake treats that file as the linker output.
+
+Add each file that the link writes with ``rp6502_byproduct()``. It adds
+the file as an asset, as ``rp6502_asset()`` does, but packages it after
+the link. ``rp6502_asset()`` cannot take a file that the link writes. Each
+file that ``rp6502_asset()`` takes is an input of the link, so that a
+change to the file links the program again and rewrites the ROM.
+
+``rp6502_byproduct()`` takes the same addresses as ``rp6502_asset()``. A
+relative path of ``rp6502_asset()`` starts in the project directory. A
+relative path of ``rp6502_byproduct()`` starts in the build directory, in
+the directory of the linker output:
+
+.. code-block:: cmake
+
+  rp6502_byproduct(<target> <address> <file>)
+
+This CMake code adds the three files as memory chunks at their addresses,
+and packages them:
+
+.. code-block:: cmake
+
+  rp6502_asset(basic help src/help.txt)
+  rp6502_byproduct(basic RAM(0x00E8) basic.00E8)
+  rp6502_byproduct(basic RAM(0x1000) basic.1000)
+  rp6502_byproduct(basic RAM(0xC000) basic.C000)
+  rp6502_executable(basic RESET 0x1000)
+
+``rp6502_executable()`` has no ``DATA`` here, because the linker output
+is the empty ``TOUCH`` file.
+
+
 .. _sdk-updating-tools:
 
 Updating the Tools
 ==================
 
-``tools/`` holds the tools that build and test your program. When CMake
-configures your project, it downloads each tool that the project uses
-and that ``tools/`` lacks. You do not download any tool yourself.
+``tools/`` holds the tools that build and test your program. They change
+only when you update them. To update them, run the "RP6502: update
+tools" task (Terminal > Run Task), or run this command in the project
+directory:
+
+.. code-block:: text
+
+  cmake -P tools/rp6502.cmake
+
+The update does these steps:
+
+#. It downloads the latest scripts from the `tools directory
+   <https://github.com/picocomputer/rp6502/tree/main/tools>`__ of the
+   ``main`` branch of picocomputer/rp6502. Each new script replaces the
+   old one, so the update discards local changes to the scripts.
+#. It updates the settings in ``.vscode/``, ``.gitignore``, and
+   ``CMakeLists.txt`` when they are out of date.
+#. It downloads the latest release of the emulator, the web player, and
+   BASIC, for each one that ``tools/`` already has.
+
+After the update, check its output for errors. An error leaves only part
+of the update in place, so resolve the error and run the update again.
+Then test that your project still works, and commit the changes.
+
+When CMake configures your project, it downloads each tool that the
+project uses and that ``tools/`` lacks. You do not download any tool
+yourself.
 
 The scripts, ``rp6502.cmake``, ``rp6502.py``, ``cc65-toolchain.cmake``,
 and ``cc65-config.cmake``, come from the ``main`` branch of
@@ -1142,29 +1291,6 @@ project on a specific version, see `Selecting Versions`_.
 WSL uses the emulator for Windows. When a release has no emulator for
 your system, ``tools/`` holds ``rp6502-<version>-<system>.unsupported``
 in its place.
-
-The tools change only when you update them. To update them, run the
-"RP6502: update tools" task (Terminal > Run Task), or run this command
-in the project directory:
-
-.. code-block:: text
-
-  cmake -P tools/rp6502.cmake
-
-The update does these steps:
-
-#. It downloads the latest scripts from the `tools directory
-   <https://github.com/picocomputer/rp6502/tree/main/tools>`__ of the
-   ``main`` branch of picocomputer/rp6502. Each new script replaces the
-   old one, so the update discards local changes to the scripts.
-#. It updates the settings in ``.vscode/``, ``.gitignore``, and
-   ``CMakeLists.txt`` when they are out of date.
-#. It downloads the latest release of the emulator, the web player, and
-   BASIC, for each one that ``tools/`` already has.
-
-After the update, check its output for errors. An error leaves only part
-of the update in place, so resolve the error and run the update again.
-Then test that your project still works, and commit the changes.
 
 .. _sdk-selecting-versions:
 
@@ -1227,6 +1353,7 @@ The setting stays until you remove it, or until you delete the
 
 Another option to keep a setting for your system only is
 ``CMakeUserPresets.json``, which git ignores.
+
 
 Command Line
 ============
@@ -1378,141 +1505,17 @@ The result is ``plvm.rp6502``. It holds memory chunks for the program at
 also holds two named assets, ``help`` and ``level1``.
 
 
-Load Addresses and Linker Scripts
-=================================
-
-``rp6502_executable()`` packages the linker output of a target, the file
-that the linker writes, into a ROM with the assets of the target. The
-keywords of ``rp6502_executable()`` give the addresses of the program:
-
-.. list-table::
-   :widths: 20 80
-   :header-rows: 1
-
-   * - Keyword
-     - Description
-   * - ``DATA``
-     - The address where the linker output loads. Without ``DATA``, the
-       ROM does not hold the linker output.
-   * - ``RESET``
-     - The address where the 6502 starts. The ROM holds it in the reset
-       vector at ``$FFFC-$FFFD``. ``rp6502_executable()`` requires
-       ``RESET``.
-   * - ``IRQ``
-     - The address of the IRQ handler. The ROM holds it in the IRQ vector
-       at ``$FFFE-$FFFF``. A call may leave out ``IRQ``.
-   * - ``NMI``
-     - The address of the NMI handler. The ROM holds it in the NMI vector
-       at ``$FFFA-$FFFB``. A call may leave out ``NMI``.
-
-Each keyword takes a number, such as ``0x200``, or ``file``. ``DATA``
-and ``RESET`` also take ``default``:
-
-- With ``file``, the build reads the address from the start of the
-  linker output. Each keyword that is ``file`` takes the next 16-bit
-  address, in the order ``DATA``, ``NMI``, ``RESET``, ``IRQ``. The linker
-  script of llvm-mos writes the ``DATA`` address and then the ``RESET``
-  address there, so ``file`` works for both. The linker script of cc65
-  writes no addresses.
-- ``default`` is ``0x200`` with cc65 and ``file`` with llvm-mos.
-
-The linker script is the map of 6502 RAM, as ``xram.h`` is the map of
-`XRAM <XRAM Memory Map_>`_. Most projects keep the linker script of the
-compiler. To change the map, start from a copy of the linker script of
-the compiler. Pass the copy to the linker with ``target_link_options()``.
-Add the copy to ``LINK_DEPENDS``, so that the build relinks the program
-when the copy changes.
-
-For cc65, copy ``cfg/rp6502.cfg`` from the directory of cc65, such as
-``~/.rp6502/cc65``, into the project. To learn its format, read the `ld65
-documentation <https://cc65.github.io/doc/ld65.html>`__.
-
-.. code-block:: cmake
-
-  target_link_options(hello PRIVATE -C ${CMAKE_SOURCE_DIR}/src/hello.cfg)
-  set_target_properties(hello PROPERTIES
-      LINK_DEPENDS ${CMAKE_SOURCE_DIR}/src/hello.cfg)
-
-For llvm-mos, copy ``mos-platform/rp6502/lib/link.ld`` from the
-directory of llvm-mos, such as ``~/.rp6502/llvm-mos``, into the project.
-To learn its format, read the llvm-mos wiki page `Linker Script
-<https://llvm-mos.org/wiki/Linker_Script>`__.
-
-.. code-block:: cmake
-
-  target_link_options(hello PRIVATE -T ${CMAKE_SOURCE_DIR}/src/hello.ld)
-  set_target_properties(hello PROPERTIES
-      LINK_DEPENDS ${CMAKE_SOURCE_DIR}/src/hello.ld)
-
-
-Multiple Linker Outputs
-=======================
-
-A cc65 program can load at more than one address, with one linker output
-for each address. In the linker configuration, each memory area with a
-``file`` of its own writes a separate linker output. ``%O`` is the file
-name that CMake passes to the linker, so ``"%O.1000"`` names a file beside
-the linker output of the target. The linker of llvm-mos writes only one
-linker output.
-
-Microsoft BASIC loads at three addresses: the ``CHRGET`` routine at
-``$00E8`` in zero page, the init code at ``$1000``, and the interpreter at
-``$C000``. Its linker configuration gives each one its own file:
-
-.. code-block:: text
-
-  MEMORY {
-      ZP:       start = $0000, size = $00E7, file = "";
-      CHRGETZP: start = $00E8, size = $0018, file = "%O.00E8";
-      INITROM:  start = $1000, size = $8000, file = "%O.1000";
-      BASROM:   start = $C000, size = $3DDE, file = "%O.C000";
-      # areas with file = "" write nothing; trimmed here
-      TOUCH:    start = $0000, size = $0000, file = %O;
-  }
-
-``TOUCH`` is an empty memory area whose file is ``%O``. The linker writes
-it as an empty file, and CMake treats that file as the linker output.
-
-Add each file that the link writes with ``rp6502_byproduct()``. It adds
-the file as an asset, as ``rp6502_asset()`` does, but packages it after
-the link. ``rp6502_asset()`` cannot take a file that the link writes. Each
-file that ``rp6502_asset()`` takes is an input of the link, so that a
-change to the file links the program again and rewrites the ROM.
-
-``rp6502_byproduct()`` takes the same addresses as ``rp6502_asset()``. A
-relative path of ``rp6502_asset()`` starts in the project directory. A
-relative path of ``rp6502_byproduct()`` starts in the build directory, in
-the directory of the linker output:
-
-.. code-block:: cmake
-
-  rp6502_byproduct(<target> <address> <file>)
-
-This CMake code adds the three files as memory chunks at their addresses,
-and packages them:
-
-.. code-block:: cmake
-
-  rp6502_asset(basic help src/help.txt)
-  rp6502_byproduct(basic RAM(0x00E8) basic.00E8)
-  rp6502_byproduct(basic RAM(0x1000) basic.1000)
-  rp6502_byproduct(basic RAM(0xC000) basic.C000)
-  rp6502_executable(basic RESET 0x1000)
-
-``rp6502_executable()`` has no ``DATA`` here, because the linker output
-is the empty ``TOUCH`` file.
-
-
 .. _sdk-sym-file:
 
 The .sym File
 =============
 
 The build writes ``hello.sym`` beside ``hello.rp6502``. The file has one
-line for each symbol of the program: each ``#define`` of the C sources
-that has a whole-number value, and each symbol of the linker. A line is
-the symbol, one space, and the value. A value from 0 to 0xFFFF has four
-hex digits, and any other value is decimal:
+line for each symbol and value of the program: each ``#define`` with a
+whole-number value that is in effect in a ``.c`` source file, including
+the ``#define`` lines of its headers, and each symbol of the linker. A
+line is the symbol, one space, and the value. A value from 0 to 0xFFFF is hex,
+with ``0x`` and four digits. Any other value is decimal:
 
 .. code-block:: text
 
@@ -1520,14 +1523,19 @@ hex digits, and any other value is decimal:
   XRAM_KEYBOARD 0x0000
   XRAM_LOGO 0x0020
 
-The lines are sorted by symbol. A symbol with two different values, such
-as a cc65 local label, has two lines. cc65 puts ``_`` before each C
-symbol, so a C global ``x`` is in the file as ``x`` and as ``_x``. With
-cc65, the ``static`` variables of a function are not in the file.
+The build sorts the lines by symbol, then by value. A symbol with two
+different values, such as a label that cc65 generates, like ``L0001``, has
+two lines. A lookup of that symbol fails because it is ambiguous. cc65
+puts ``_`` before each C symbol. The build writes each such symbol with
+and without the ``_``, so a C global ``x`` is in the file as ``x`` and as
+``_x``. With cc65, a ``static`` variable of a function is in the file
+only as a label that cc65 generates, such as ``M0001``. With llvm-mos, it
+is in the file as the function and the variable, such as
+``main.counter``.
 
-``RAM()`` and ``XRAM()`` in ``rp6502_asset()``, ``rp6502_align()``, and
-emulator scripts use the symbols in this file. You can find an example
-of each in `Program Symbols`_.
+The symbols in this file work in ``RAM()`` and ``XRAM()`` addresses, in
+``rp6502_align()``, in emulator scripts, and in Python tests. `Program
+Symbols`_ shows each use.
 
 
 .. _sdk-rom-file-format:
@@ -1535,45 +1543,56 @@ of each in `Program Symbols`_.
 ROM File Format
 ===============
 
-A ROM file is a shebang line, then one group of memory chunks, then any
-number of named assets. Header lines are text and end with ``\n`` or
-``\r\n``. Numbers may be written in decimal (255), C-style hex (0xFF) or
-MOS-style hex ($FF). This is ``hello.rp6502`` from the template, with the
-binary data left out:
+A ROM file is a shebang line, then a group of memory chunks, then any
+number of named assets. A ROM that holds only named assets, such as an
+input for a merge, has no group. Header lines are text and end with
+``\n`` or ``\r\n``. The tools write ``\r\n``. Spaces separate the
+fields of a header line. A number may be decimal (255), C-style hex
+(0xFF), or MOS-style hex ($FF). Each CRC is CRC-32 as zlib and PNG
+compute it.
+
+This is the ``hello.rp6502`` of a new project, built with the cc65/Debug
+preset. Each ``...`` line stands for binary data. The text at the right
+of each line is a note, not part of the file:
 
 .. code-block:: text
 
   #!RP6502                         shebang
-  #>$000003AC $FB52BEE0            memory chunks, 0x3AC bytes follow
-  $0200 $37E $07A747B2             chunk: 0x37E bytes of program
-  $FFFC $002 $AFD773D3             chunk: 2 bytes, the reset vector
-  #>$0000006E $E047820E help       named asset: 0x6E bytes of help text
+  #>$000002FA $DEA2E883            memory chunks, 0x2FA bytes follow
+  $0200 $2CC $C261269A             chunk: 0x2CC bytes at $0200
+  ...                              0x2CC bytes of program
+  $FFFC $002 $AFD773D3             chunk: 2 bytes at $FFFC
+  ...                              2 bytes, the reset vector
+  #>$0000006E $E047820E help       named asset: 0x6E bytes
+  ...                              0x6E bytes of help text
 
-**Shebang** — the first line of every ROM file. The tools write:
+**Shebang.** The shebang is the first line of every ROM file. The tools
+write:
 
 .. code-block:: text
 
   #!RP6502
 
-Any first line that starts with ``#!`` and contains ``rp6502``, in upper
-or lower case, is accepted. The first line can therefore name the program
+Any first line that starts with ``#!`` and contains ``rp6502``, without
+regard to case, is valid. The first line can therefore give the command
 that runs the ROM. A ROM file marked executable then runs from a shell
-when that program is on the PATH:
+when that command is on the PATH:
 
 .. code-block:: text
 
   #!/usr/bin/env rp6502-emu
 
-**Memory chunks** — the line after the shebang starts the group of memory
-chunks, which are loaded into RAM or XRAM before the 6502 starts:
+**Memory chunks.** The line after the shebang starts the group of memory
+chunks, which the RIA loads into 6502 RAM or XRAM before the 6502 starts:
 
 .. code-block:: text
 
   #>len crc
 
-``len`` is the number of bytes that follow in the group, counting each
-chunk's header line as well as its data, and ``crc`` is the CRC-32 of
-those bytes. Each chunk is a header line followed by its data:
+``len`` is the number of bytes that follow in the group. It counts the
+header line of each memory chunk as well as its binary data. ``crc`` is
+the CRC-32 of those bytes. Each memory chunk is a header line followed by
+its binary data:
 
 .. code-block:: text
 
@@ -1586,23 +1605,25 @@ those bytes. Each chunk is a header line followed by its data:
    * - Field
      - Description
    * - ``addr``
-     - Destination address in RAM (``$0000-$FEFF``), the 6502 vectors
-       (``$FFFA-$FFFF``), or XRAM (``$10000-$1FFFF``). A ROM must set
-       the reset vector at ``$FFFC-$FFFD`` to be loaded.
+     - Destination address in 6502 RAM (``$0000-$FEFF``), the 6502
+       vectors (``$FFFA-$FFFF``), or XRAM (``$10000-$1FFFF``). The RIA
+       ignores data for ``$FF00-$FFF9``. A ROM runs only if it sets the
+       reset vector at ``$FFFC-$FFFD``.
    * - ``len``
-     - Number of bytes of binary data that follow this line. At most
-       1024, and a chunk may not cross a 64 KB boundary.
+     - Number of bytes of binary data that follow this line, from 1 to
+       1024. A memory chunk must not cross a 64 KB boundary.
    * - ``crc``
      - CRC-32 of the binary data.
 
-**Named asset** — a file the program opens by name while it runs:
+**Named assets.** A named asset is a file that the program opens by name
+while the ROM runs. Named assets follow the group, one after another, to
+the end of the file. Each named asset is a header line followed by its
+binary data. The header of a named asset has a name, and the header of
+the group has none:
 
 .. code-block:: text
 
   #>len crc name
-
-The line is followed by ``len`` bytes of binary data. Named assets repeat
-to the end of the file.
 
 .. list-table::
    :widths: 1 20
@@ -1615,12 +1636,14 @@ to the end of the file.
    * - ``crc``
      - CRC-32 of the binary data.
    * - ``name``
-     - The asset's name.
+     - The name of the asset, to the end of the line. A program opens the
+       asset as ``ROM:`` and the name. The RIA compares names without
+       regard to case.
 
-The CRC is CRC-32 as zlib and PNG compute it. The format sets no limit on
-the number or size of named assets. Opening ``ROM:`` plus a name reads
-each asset header in file order and skips its data, so a ROM with many
-assets takes longer to open the last ones.
+The format sets no limit on the number of named assets. When a program
+opens an asset, the RIA reads each asset header in file order and skips
+its binary data until the name matches. In a ROM with many assets, the
+last assets therefore take longer to open.
 
 
 .. _sdk-updating:
@@ -1628,11 +1651,12 @@ assets takes longer to open the last ones.
 Upgrading an Older Project
 ==========================
 
-Because ``volatile`` has no effect on the cc65 optimizer, the macros of
-``rp6502.h`` that accessed RIA registers directly were replaced by
-library functions. The compilers installed by the commands in
-`Installing the Prerequisites`_ have the change. This table lists the
-changes that break an older project.
+Some older projects need changes to build with the current compilers
+and tools. Because :ref:`cc65 does not support volatile <ria-volatile>`,
+C library functions replace the macros of ``rp6502.h`` that accessed RIA
+registers directly. Install the current compilers with the commands in
+`Installing the Prerequisites`_. This table lists the changes that break
+an older project:
 
 .. list-table::
    :widths: 40 60
@@ -1644,12 +1668,12 @@ changes that break an older project.
        ``xram1_struct_set``
      - ``xram0_poke8`` or ``xram0_poke16`` at
        ``addr + offsetof(type, member)``, and the ``xram1_`` versions. A
-       4-byte member takes two ``xram0_poke16`` calls.
+       4-byte member requires two ``xram0_poke16`` calls.
    * - ``vga_mode1_config_t``, ``vga_mode2_config_t``,
        ``vga_mode3_config_t``
-     - ``mode1_config_t``, ``mode2_config_t`` and ``mode3_config_t`` from
-       :ref:`vga-mode-1`, :ref:`vga-mode-2` and :ref:`vga-mode-3`, with
-       the same layout.
+     - ``mode1_config_t``, ``mode2_config_t``, and ``mode3_config_t``
+       from :ref:`vga-mode-1`, :ref:`vga-mode-2`, and :ref:`vga-mode-3`,
+       with the same layout.
    * - ``vga_mode4_sprite_t``, ``vga_mode4_asprite_t``,
        ``vga_mode5_sprite_t``
      - ``mode4_sprite_t`` and ``mode4_asprite_t`` from :ref:`vga-mode-4`,
@@ -1657,10 +1681,10 @@ changes that break an older project.
        layout.
    * - ``xreg_ria_keyboard``, ``xreg_ria_mouse``, ``xreg_ria_gamepad``,
        ``xreg_ria_tablet``
-     - The same macros from the :doc:`ria` datasheet, copied into
+     - Copy the same macros from the :doc:`ria` datasheet into
        ``xram.h``.
    * - ``xreg_vga_canvas``
-     - The same macro from :ref:`vga-key-registers`, copied into
+     - Copy the same macro from :ref:`vga-key-registers` into
        ``xram.h``.
    * - ``xreg_vga_mode(n, ...)``
      - One macro per mode from the :doc:`vga` datasheet,
@@ -1668,42 +1692,125 @@ changes that break an older project.
        becomes ``xreg_vga_mode3(...)``.
    * - ``phi2()``
      - ``ria_attr_get(RIA_ATTR_PHI2_KHZ)``
-   * - ``code_page(cp)``
+   * - ``code_page(cp)``, ``codepage(cp)``
      - ``ria_attr_set(cp, RIA_ATTR_CODE_PAGE)`` when ``cp`` is not 0, then
-       ``ria_attr_get(RIA_ATTR_CODE_PAGE)`` for the page in use.
+       ``ria_attr_get(RIA_ATTR_CODE_PAGE)`` for the code page in use.
    * - ``lrand()``
      - ``ria_attr_get(RIA_ATTR_LRAND)``
    * - ``ria_push_long``, ``ria_push_int``, ``ria_push_char``,
        ``ria_pop_long``, ``ria_pop_int``, ``ria_pop_char``,
        ``ria_set_axsreg``, ``ria_set_ax``, ``ria_set_a``,
-       ``ria_call_int``, ``ria_call_long``
-     - None. Each API call has a C function, listed in the :doc:`api`.
-       The ARGV arguments are passed to ``main()`` as ``argc`` and
-       ``argv`` when the program defines ``__argv_mem()``. See
-       :ref:`ARGV <api-argv>`.
+       ``ria_call_int``, ``ria_call_long``, ``ria_call_int_errno``,
+       ``ria_call_long_errno``
+     - None. The C function of each API call is in :doc:`api`. The C
+       library passes the ARGV arguments to ``main()`` as
+       ``argc`` and ``argv`` when the program defines ``__argv_mem()``.
+       See :ref:`ARGV <api-argv>`.
    * - ``RIA_READY_TX_BIT``, ``RIA_READY_RX_BIT``, ``RIA_BUSY_BIT``
      - None.
    * - ``RIA_OP_ZXSTACK``
      - ``RIA_OP_DROP_XSTACK``, or ``ria_drop()`` in C.
+   * - ``RIA_OP_PHI2``, ``RIA_OP_CODE_PAGE``, ``RIA_OP_CODEPAGE``,
+       ``RIA_OP_LRAND``, ``RIA_OP_ERRNO_OPT``
+     - ``RIA_OP_ATTR_GET`` or ``RIA_OP_ATTR_SET`` with
+       ``RIA_ATTR_PHI2_KHZ``, ``RIA_ATTR_CODE_PAGE``, ``RIA_ATTR_LRAND``,
+       or ``RIA_ATTR_ERRNO_OPT``. In C, ``ria_attr_get()`` and
+       ``ria_attr_set()``.
+   * - ``RIA_OP_STDIN_OPT``, ``stdin_opt(ctrl_bits, str_length)``
+     - ``ria_attr_set(str_length, RIA_ATTR_RLN_LENGTH)``. ``ctrl_bits``
+       has no replacement.
+   * - ``RIA_OP_CLOCK``
+     - ``RIA_ATTR_CLK_RUN_MS``, ``RIA_ATTR_CLK_RUN_CS``,
+       ``RIA_ATTR_CLK_RUN_DS``, or ``RIA_ATTR_CLK_RUN_S``. In C,
+       ``clock()``.
+   * - ``RIA_OP_CLOCK_GETTIME``, ``RIA_OP_CLOCK_SETTIME``
+     - ``RIA_OP_TIME_GET`` and ``RIA_OP_TIME_SET``. In C, ``time()`` and
+       ``time_set()``.
+   * - ``RIA_OP_CLOCK_GETRES``, ``RIA_OP_CLOCK_GETTIMEZONE``,
+       ``ria_tzset(time)``
+     - None. The RIA computes local time.
+   * - ``__oserror``, ``_oserror``, ``FRESULT``, ``FR_*``
+     - ``errno`` with the names of ``errno.h``. Nothing sets
+       ``__oserror``.
+   * - ``RIA.step0``, ``RIA.step1`` as ``unsigned char``
+     - The same members, as ``signed char``.
    * - An assembly macro, or a ca65 label, named ``xreg``
      - ``xreg`` is now a macro in ``rp6502.inc``. Rename or remove the
        one in the project.
+   * - ``rp6502_byproducts(<target> <file>...)``, and an
+       ``rp6502_asset()`` call for each file
+     - ``rp6502_byproduct(<target> <address> <file>)`` for each file. A
+       relative ``<file>`` starts in the directory of the linker output.
+       An old call stops configure with ``Unknown CMake command``. See
+       `Multiple Linker Outputs`_.
+   * - Emulator option ``--seed <n>``
+     - ``--memseed <n>`` for the fill of RAM and XRAM, and the script
+       command ``seed <n>`` for the random numbers of the program.
+   * - Emulator option ``--fill <byte>``, ``--fill random``
+     - ``--memfill <byte>``. Without an option, the fill is random.
+   * - Script command ``expect-exit <code> [frames]``
+     - ``wait exit [frames]``, then ``expect exit <code>``.
+   * - Script commands ``wait "text"``, ``expect "text"``, and
+       ``expect-not "text"``, which read the console
+     - The same commands read stdout. For text that only the console
+       carries, add ``console``, as in ``wait console "text"``.
+   * - Script command ``seed`` with no argument, which printed the seed
+     - ``status``, which prints ``SEED=``.
+   * - Script command ``type "...\n"`` for Enter
+     - ``type "...\r"``. ``\n`` sends LF. The line editor ends a line on
+       CR or on LF.
+   * - With ``reply on``, a ``fail`` line
+     - A ``fail`` line, then a status line.
+   * - ``rp6502.py emu``, ``rp6502.py execute``, ``rp6502.py web``
+     - ``emu``: the emulator of the target, such as
+       ``build/cc65/debug/hello/rp6502-emu``. ``execute``:
+       ``rp6502-emu --headless`` or ``rp6502-emu --script``. ``web``:
+       ``rp6502_web()`` and the "RP6502-WEB" launch configuration.
+   * - ``tools/rp6502-emu``, ``tools/rp6502-emu.exe``
+     - The emulator of the target. Configure deletes the old files.
+   * - ``rp6502_web(... EMULATOR <spec>)``, ``RP6502_WEB_EMULATOR``,
+       ``RP6502_EMU_RELEASE``
+     - ``RP6502_WEB_VERSION`` or ``RP6502_WEB``, and
+       ``RP6502_EMU_VERSION`` or ``RP6502_EMU``. See `Selecting
+       Versions`_. ``EMULATOR`` stops configure. The two variables have
+       no effect.
+   * - ``rp6502_executable(... START <addr>)``
+     - ``rp6502_executable(... DATA <addr>)``
+   * - ``<name>.bin.rp6502`` ROMs in a call to ``rp6502_executable()``
+     - Remove them. ``rp6502_asset()`` adds each asset.
+   * - ``rp6502_asset(<name> <addr> <in> <out>)``
+     - ``rp6502_asset(<target> <address> <file>)``
+   * - A ``.hlp`` help file
+     - ``rp6502_asset(<target> help <text file>)``. ``create`` refuses a
+       help file in the older ROM format.
 
-The ROMs of an older project move into the folders of their targets,
-such as ``build/cc65/debug/hello/``. The "RP6502: update tools" task
-replaces the RP6502-EMU entry of ``.vscode/launch.json`` with one that
-runs the emulator of the launch target, and changes ``.gitignore`` to
-ignore the release files in ``tools/``. A changed entry is left as it
-is, and the task shows the new entry to copy into it.
+The build now writes the ROMs of an older project into the directories
+of their targets, such as ``build/cc65/debug/hello/``. The
+"RP6502: update tools" task replaces the "RP6502-EMU" launch
+configuration of ``.vscode/launch.json`` with one that runs the emulator
+of the launch target. The task also changes ``.gitignore`` to ignore the
+emulator, the web player, and BASIC in ``tools/``. If you changed that
+launch configuration, the task leaves it as it is and shows the new one
+for you to copy in. The task renames the launch configurations "RP6502
+(Emulator)", "RP6502 (Hardware)", and "RP6502 (Web)" to "RP6502-EMU",
+"RP6502-PICO", and "RP6502-WEB". It replaces an "RP6502-WEB" launch
+configuration that runs ``rp6502.py web``, and adds the update task to
+``.vscode/tasks.json``.
 
-``rp6502_map()`` is replaced by ``rp6502_align()``. The update task
-changes each ``rp6502_map()`` call in the top ``CMakeLists.txt`` to the
-``rp6502_align()`` call that replaces it. A call in another
-``CMakeLists.txt`` still builds, and its warning shows the
-``rp6502_align()`` line that replaces it.
+``rp6502_align()`` replaces ``rp6502_map()``. The update task changes
+each ``rp6502_map()`` call in the top ``CMakeLists.txt`` whose regular
+expressions are quoted strings to ``rp6502_align()``. Replace any other
+call yourself: an old call still builds, and its warning shows the
+``rp6502_align()`` line to use. ``rp6502_map()`` took the symbols from
+its header. The symbols now come from the compile of each ``.c`` source
+file, so a header that no ``.c`` file includes adds no symbols.
 
-For an older C project, save this header in the project, and include
-``"rp6502-compat.h"`` in place of ``<rp6502.h>``:
+A project made from the older vscode-cc65 or vscode-llvm-mos template
+includes ``tools/`` with ``add_subdirectory(tools)`` and has no update
+task.
+
+For an older C project, add this header to the project. Then include
+``"rp6502-compat.h"`` in place of ``<rp6502.h>``.
 
 .. code-block:: C
   :caption: rp6502-compat.h
@@ -1784,5 +1891,5 @@ For an older C project, save this header in the project, and include
 
   #endif /* RP6502_COMPAT_H */
 
-The header does not replace ``ria_push_*``, ``ria_pop_*``, ``ria_set_*``
+The header does not replace ``ria_push_*``, ``ria_pop_*``, ``ria_set_*``,
 and ``ria_call_*``. Change those calls as the table shows.
