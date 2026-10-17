@@ -923,6 +923,8 @@ commands:
    * - ``cmd(line)``
      - Sends one script command, and returns the text after ``ok``, such
        as the bytes from ``dump``. A ``fail`` raises ``ScriptError``.
+   * - ``status()``
+     - Sends ``status`` and returns its fields as a ``dict``.
    * - ``sym``
      - The symbols and values of the ``.sym`` file of the ROM that the
        emulator starts, as a ``dict``. A lookup of a symbol with two
@@ -931,8 +933,10 @@ commands:
      - Ends the script and waits for the emulator. An exit code other
        than 0 raises ``ScriptError``.
    * - ``ScriptError``
-     - The command, the reason, and the program's stdout that no command
-       read.
+     - ``cmd()`` raises it when a command fails. Its message shows the
+       command, why it failed, the status line, and what the program
+       printed after the last match. Its ``status`` is the status line as a
+       ``dict``, the same as ``status()`` returns.
 
 Run the tests from the Testing view of the Side Bar, or with ``ctest``:
 
@@ -945,19 +949,25 @@ Each test runs in its own directory, with its own save directory. With the
 ``build/cc65/debug/test/input/``, and its save directory is
 ``build/cc65/debug/test/input/save/``.
 
-Without ``--seed``, the emulator fills memory with different random values
-in each run. A test or a program that reads uninitialized
-memory shows its poor behavior... eventually. A failure message ends with
-the seed of the run:
+To find programs that read uninitialized memory, the emulator fills RAM
+and XRAM with random values. The values are different in each run, so a
+test or a program that reads uninitialized memory shows its poor
+behavior... eventually.
+
+When a test fails, the emulator prints the reason, then a status line:
 
 .. code-block:: text
 
-  rp6502-emu: src/gamepad/tests/connect.txt:5: $0000+0 is $AC, expected $D0; PC=$FFF3 A=$18 X=$FF Y=$00 SP=$EB P=$04 OP=$18 BUSY=$00 RESB=1 SEED=3733940630
+  rp6502-emu: src/gamepad/tests/connect.txt:5: $0000+0 is $AC, expected $D0
+  rp6502-emu: PC=$FFF3 A=$18 X=$FF Y=$00 SP=$EB P=$04 OP=$18 BUSY=$00 RESB=1 SEED=1924711803 MEMSEED=3733940630 ROM=FS:/home/user/my-project/build/cc65/debug/gamepad/gamepad.rp6502
 
-A failed Python test shows the same line as a ``ScriptError`` at the end
-of a traceback. To repeat a failed run exactly, add ``--seed`` and its seed
-to the arguments of the test. Then build the project and run the test
-again.
+A failed Python test shows the same lines in a ``ScriptError`` at the end
+of a traceback.
+
+If you suspect uninitialized memory, you can run the test again with the
+same values in memory. ``MEMSEED`` is the seed that filled memory in the
+failed run. Add ``--memseed`` and the ``MEMSEED`` value to the arguments
+of the test. Then build the project and run the test again.
 
 Putting it all together, these are typical tests in ``CMakeLists.txt``:
 
@@ -965,8 +975,8 @@ Putting it all together, these are typical tests in ``CMakeLists.txt``:
 
   rp6502_test(NAME input COMMAND tests/input.txt
       $<TARGET_PROPERTY:hello,RP6502_ROM>)
-  rp6502_test(NAME pathing COMMAND tests/pathing.py
-      --seed 123 $<TARGET_PROPERTY:hello,RP6502_ROM>)
+  rp6502_test(NAME scores COMMAND tests/scores.py
+      --memseed 123 $<TARGET_PROPERTY:hello,RP6502_ROM>)
 
 CMake replaces ``$<TARGET_PROPERTY:hello,RP6502_ROM>`` with the path of
 the ROM of ``hello``.

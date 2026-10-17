@@ -11,6 +11,13 @@ The reader is a programmer who works through the manual in order. Write
 each passage for what that reader is trying to do at that point, not for
 how the system is arranged inside.
 
+**Edit the passage, not the sentence.** Before any change, read the
+section from its start, as the reader who arrives there. Decide what that
+reader needs from the passage at that point. Make every sentence serve
+that need, and remove a sentence that does not. A change to one sentence
+is a change to its passage, so read the whole passage again after the
+change, and before you report it.
+
 ## Rules
 
 **Never lose a fact.** Do not change what a fact says. You may remove a
