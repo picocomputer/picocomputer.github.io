@@ -215,16 +215,15 @@ work.
      - number
      - OEM code page. 437, 720, 737, 771, 775, 850, 852, 855, 857,
        860-866, or 869. Default 437.
-   * - ``--seed``
+   * - ``--memseed``
      - number
-     - Fixed seed for the run, covering both the memory fill and the
-       random numbers a program draws, so a run repeats exactly.
-   * - ``--fill``
-     - ``random``,
-       or a byte
-     - What RAM and XRAM hold before anything writes them. The default
-       is ``random``. Supply a byte, as ``$00`` or ``0``, to start with
-       known memory.
+     - The seed of the random fill of RAM and XRAM, 0 to 4294967295.
+       Without it, the seed is new on every run.
+   * - ``--memfill``
+     - byte
+     - Fill RAM and XRAM with one byte, such as ``$00`` or ``0``, in place
+       of the random fill. ``--memseed`` and ``--memfill`` cannot both be
+       given.
    * - ``--mute``
      - \-
      - No synthesis and no audio device opened at all.
@@ -338,20 +337,28 @@ driver written in any language can work the machine. The machine waits
 for each line, so the driver sets the pace. See `Driving it from a
 program`_.
 
-A script always runs headless, and nothing paces
-it against the host's clock. Frames elapse only when the script asks for
-them, so ``run 600`` is six hundred frames and six hundred VSYNCs every
-time.
+A script always runs headless, and nothing paces it against the host's
+clock. Frames elapse only when the script asks for them, so ``run 600`` is
+six hundred frames and six hundred VSYNCs every time.
 
-One command per line. ``#`` starts a comment anywhere outside quotes.
-Text is always in double quotes and takes the C escapes, so ``\n`` is a
-newline, ``\\`` and ``\"`` are themselves, and ``\x03`` or ``\3`` is a
-control byte. Hex takes up to two digits and octal up to three. A
-program can write a zero byte, so ``wait`` and ``expect`` take ``\0``,
-and no other string can hold one. A number is an expression, such as
-``255``, ``$FF`` or ``XRAM_PSG+5``. Spaces separate a command's
-arguments, so an expression with spaces must be in parentheses, as in
-``xram:(XRAM_PSG + 5)``. See `Symbols and expressions`_.
+A command that waits, such as ``wait``, runs frames until what it waits
+for happens. Its budget is the most frames that it may run. When the
+budget runs out, the line fails, so a script that waits for something
+that never happens ends instead of hanging. The default budget is 600
+frames, ten seconds of the machine's time. ``run`` and ``wav`` run the
+number of frames that they are given. Every other command runs no frames,
+so ``expect``, ``peek``, and the other checks read the machine as it is
+at that line.
+
+One command per line. ``#`` at the start of a word, outside quotes, starts a
+comment. Text is always in double quotes and takes the C escapes, so ``\n`` is
+a newline, ``\\`` and ``\"`` are themselves, and ``\x03`` or ``\3`` is a
+control byte. Hex takes up to two digits and octal up to three. A program can
+write a zero byte, so ``wait`` and ``expect`` take ``\0``, and no other string
+can hold one. A number is an expression, such as ``255``, ``$FF`` or
+``XRAM_PSG+5``. Spaces separate a command's arguments, so an expression with
+spaces must be in parentheses, as in ``xram:(XRAM_PSG + 5)``. See `Symbols and
+expressions`_.
 
 Text is UTF-8, and so is what ``wait`` and ``expect`` search, converted
 from the machine's code page as it is written. ``stdout`` and ``stderr``
@@ -381,21 +388,20 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
      - Let exactly that many frames elapse, one VSYNC each. Default 1.
    * - ``wait [stdout|stderr|console] "text" [frames]``
      - Run until it appears on that stream, stdout if none is named.
-       Default budget 600 frames.
    * - ``wait [xram:|ram:]<addr> <byte> [frames]``
      - Run until that byte reads that value. The byte is read once a
        frame, at the boundary.
+   * - ``wait exit [frames]``
+     - Run until the program exits.
    * - ``type "text" [frames]``
      - Type it. ``\r`` is Enter, ``\t`` is Tab. The text is UTF-8,
        converted to the machine's code page, so a byte that is not UTF-8
-       becomes ``?``. Waits for the keyboard ring to take it all;
-       default budget 600 frames.
+       becomes ``?``. Waits for the keyboard ring to take it all.
    * - ``eof [frames]``
      - End the program's stdin, the way a piped ``--stdin`` ends. It
        waits until the program is reading stdin and has taken everything
        typed. That read gets what is left of the line, and every read after
-       it returns 0 bytes until the next program starts. Default budget 600
-       frames.
+       it returns 0 bytes until the next program starts.
    * - ``key <key>[+ctrl][+shift][+alt]``
      - Send the bytes a terminal sends for that key. See `Key Names`_.
    * - ``press <key>...``,
@@ -437,8 +443,14 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
        separately. The line editor's echo of typed text is only on the
        console, but a program that echoes its own input writes that echo
        to stdout.
-   * - ``expect-exit <code> [frames]``
-     - Run until the program exits, then check its code.
+   * - ``expect exit <code>``,
+       ``expect-not exit <code>``
+     - Check the exit code of the program. The check fails while the
+       program runs, so ``wait exit`` comes first.
+   * - ``discard [stdout|stderr|console]``
+     - Drop what no check has taken from that stream, or from all three
+       if none is named. ``load`` keeps the captured output, so a script
+       that starts a program again discards what the last program wrote.
    * - ``peek [xram:|ram:]<addr> <byte>...``
      - Compare memory.
    * - ``poke [xram:|ram:|bus:|xbus:]<addr> <byte>...``
@@ -447,13 +459,8 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
        the next address.
    * - ``dump [xram:|ram:]<addr> [count]``
      - Print memory as hex.
-   * - ``cpu``
-     - Print where the 6502 is: its registers ``PC A X Y SP P``, the RIA's
-       ``OP`` and ``BUSY`` registers, ``RESB``, and ``SEED``. A frame can
-       end partway through an instruction, so PC may be past its first
-       byte. RESB is 0 once the program has stopped and the 6502 is held
-       in reset. SEED is the run's seed, and running again with
-       ``--seed <n>`` repeats the run.
+   * - ``status``
+     - Print the status of the machine on one line. See the fields below.
    * - ``crc``
      - Print the screen as a CRC-32.
    * - ``mark``,
@@ -476,6 +483,13 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
      - Boot a program. The machine must be stopped, since loading writes
        the memory a running program is using. The new program's ``.sym``
        replaces the symbols.
+   * - ``seed <n>``
+     - Set the seed of the random numbers that the program draws, 0 to
+       4294967295. The program gets the new stream at its next draw, and a
+       program can draw in its first frame. To give a program the stream from
+       its start, set the seed before the first command that runs frames: on
+       the first line, or just before or after ``load``. ``state load``
+       replaces the stream.
    * - ``sys run|stop|break``
      - Start the machine, stop it, or interrupt it the way a break at
        the console would.
@@ -499,21 +513,57 @@ what a store to it does: ``poke bus:$FFE1 $41`` sends an ``A`` to stdout.
 hears a byte written to its block, which ``poke xram:`` changes without
 telling it.
 
-A failed check names the script and the line it was on, and ends with
-the fields of ``cpu``. The last of them is ``SEED=<n>``, and running again
-with ``--seed <n>`` repeats the failed run. The program's stdout that no
-check used goes to stdout, in UTF-8 as the checks see it, and the run
-exits 1. Once more than 64 KB of it is unused, only the newest part is
-kept, so it can start partway through a line. The program's stderr goes
-to stderr as it is written, all through the run.
+``status`` prints these fields in this order, each as ``NAME=value``,
+separated by spaces. A field that does not apply is left out, so a driver
+checks for a field before it reads it.
 
-A program must treat RAM and XRAM as uninitialized, because they hold
-unknown values until the program writes them. To help find a program that
-reads memory before writing it, the emulator fills RAM and XRAM from a new
-random seed on every run, so a program that gets lucky with an
-uninitialized value on one run is not lucky on the next. For a test,
-``--seed`` repeats a run exactly, and ``--fill`` starts with a known byte,
-such as ``--fill 00``.
+.. list-table::
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Field
+     - Value
+   * - ``PC A X Y SP P``
+     - The 6502's registers. A frame can end partway through an
+       instruction, so PC may be past its first byte.
+   * - ``OP``, ``BUSY``
+     - The RIA's OP and BUSY registers.
+   * - ``RESB``
+     - 1 while the 6502 runs, and 0 while it is held in reset.
+   * - ``EXIT``
+     - The exit code of the program. Only after the program exits, and
+       not after ``sys stop`` or ``sys break``.
+   * - ``SEED``
+     - The seed of the random numbers that the program draws, from the
+       last ``seed``, or chosen at startup.
+   * - ``MEMSEED``, ``MEMFILL``
+     - ``MEMSEED`` is the seed of the random fill of RAM and XRAM.
+       ``MEMFILL`` is the byte of ``--memfill``, and replaces
+       ``MEMSEED``.
+   * - ``ROM``
+     - The path of the ROM that runs, or that ran last. It is always the
+       last field, and its value runs to the end of the line, so a path
+       with spaces needs no quotes.
+
+A failed check prints two lines on stderr: the script and the line it was on
+with the reason, then the fields of ``status``. To repeat the failed run, put
+``seed <n>`` with the ``SEED`` value first in a script that sets no seed. Then
+run the script with ``--memseed`` and the ``MEMSEED`` value, or with
+``--memfill`` and the ``MEMFILL`` value. A script that runs frames before its
+first ``seed`` cannot repeat the draws made before that seed. The program's
+stdout that no check used goes to stdout, in UTF-8 as the checks see it, and
+the run exits 1. Once more than 64 KB of it is unused, only the newest part is
+kept, so it can start partway through a line. The program's stderr goes to
+stderr as it is written, all through the run.
+
+A program must treat RAM and XRAM as uninitialized, because they hold unknown
+values until the program writes them. To help find a program that reads memory
+before writing it, the emulator fills RAM and XRAM from a new random seed on
+every run, so a program that gets lucky with an uninitialized value on one run
+is not lucky on the next. For a test, ``--memseed`` repeats the fill, and
+``--memfill`` starts with a known byte, such as ``--memfill 00``. No seed
+controls the clock, the files on ``SAVE:``, or a program that seeds its own
+random numbers.
 
 
 Key Names
@@ -681,7 +731,7 @@ after ``=``.
        of the line.
 
 With ``reply`` on, as in `Driving it from a program`_, a driver that
-starts ``rp6502-emu --fill 0 --script -`` on a program whose ``.sym`` has
+starts ``rp6502-emu --memfill 0 --script -`` on a program whose ``.sym`` has
 ``XRAM_DATA_TAB`` writes:
 
 .. code-block:: text
@@ -700,14 +750,15 @@ and reads:
   ok
   ok
   ok
-  fail base + 6 / 2: floats are not allowed, use //; PC=$0000 A=$00 X=$00 Y=$00 SP=$00 P=$02 OP=$00 BUSY=$00 RESB=1 SEED=1556577197
+  fail base + 6 / 2: floats are not allowed, use //
+  PC=$0000 A=$00 X=$00 Y=$00 SP=$00 P=$02 OP=$00 BUSY=$00 RESB=1 SEED=1556577197 MEMFILL=$00 ROM=FS:/home/user/game/build/game.rp6502
 
 
 Driving it from a program
 -------------------------
 
 ``reply`` turns on one line of answer per command — ``ok``, ``ok <values>``
-for ``dump``, ``crc`` and ``cpu``, or ``fail <why>``. It is off
+for ``dump``, ``crc``, and ``status``, or ``fail <why>``. It is off
 until asked, so a driver writes its whole preamble without waiting for
 anything and reads the ``ok`` for ``reply`` itself as the moment the
 machine starts answering.
@@ -727,13 +778,14 @@ An answer comes when the command **finishes**, not when it parses. The
   pad 0 press start        -> ok
   run 10                   -> ok
   dump xram:$FF00 4        -> ok 80 00 00 08
-  peek xram:$FF00 $99      -> fail $FF00+0 is $80, expected $99; PC=$0307 A=$30 X=$01 Y=$00 SP=$F7 P=$86 OP=$01 BUSY=$00 RESB=1 SEED=513216670
+  peek xram:$FF00 $99      -> fail $FF00+0 is $80, expected $99
+                              PC=$0307 A=$30 X=$01 Y=$00 SP=$F7 P=$86 OP=$01 BUSY=$00 RESB=1 SEED=513216670 MEMSEED=3088541612 ROM=FS:/home/user/game/build/game.rp6502
 
-A ``fail`` ends the run, so there is no asking ``cpu`` after one. The
-``fail`` line ends with the ``cpu`` fields after the last ``;``. Everything
-after the ``fail`` line, up to the end of stdout, is the program's stdout
-that no ``wait`` or ``expect`` used, in UTF-8 as the checks see it. The
-program's stderr is on stderr.
+A ``fail`` ends the run, so there is no asking ``status`` after one.
+Instead, the line after the ``fail`` line is the status line. Everything
+after it, up to the end of stdout, is the program's stdout that no
+``wait`` or ``expect`` used, in UTF-8 as the checks see it. The program's
+stderr is on stderr.
 
 This driver never answers the question. It writes:
 
@@ -742,7 +794,7 @@ This driver never answers the question. It writes:
   reply
   wait "Would you like instructions?"
   run 60
-  cpu
+  status
   wait "end of a road" 60
 
 and reads:
@@ -752,8 +804,9 @@ and reads:
   ok
   ok
   ok
-  ok PC=$FFF1 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1 SEED=1215796064
-  fail timed out waiting for "end of a road"; PC=$FFF3 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1 SEED=1215796064
+  ok PC=$FFF1 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1 SEED=1215796064 MEMSEED=2788390211 ROM=FS:/home/user/adventure.rp6502
+  fail timed out waiting for "end of a road"
+  PC=$FFF3 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1 SEED=1215796064 MEMSEED=2788390211 ROM=FS:/home/user/adventure.rp6502
 
 
   >
