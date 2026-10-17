@@ -1420,6 +1420,8 @@ The linker script is the map of 6502 RAM, as ``xram.h`` is the map of
 `XRAM <XRAM Memory Map_>`_. Most projects keep the linker script of the
 compiler. To change the map, start from a copy of the linker script of
 the compiler. Pass the copy to the linker with ``target_link_options()``.
+Add the copy to ``LINK_DEPENDS``, so that the build relinks the program
+when the copy changes.
 
 For cc65, copy ``cfg/rp6502.cfg`` from the directory of cc65, such as
 ``~/.rp6502/cc65``, into the project. To learn its format, read the `ld65
@@ -1428,6 +1430,8 @@ documentation <https://cc65.github.io/doc/ld65.html>`__.
 .. code-block:: cmake
 
   target_link_options(hello PRIVATE -C ${CMAKE_SOURCE_DIR}/src/hello.cfg)
+  set_target_properties(hello PROPERTIES
+      LINK_DEPENDS ${CMAKE_SOURCE_DIR}/src/hello.cfg)
 
 For llvm-mos, copy ``mos-platform/rp6502/lib/link.ld`` from the
 directory of llvm-mos, such as ``~/.rp6502/llvm-mos``, into the project.
@@ -1437,28 +1441,23 @@ To learn its format, read the llvm-mos wiki page `Linker Script
 .. code-block:: cmake
 
   target_link_options(hello PRIVATE -T ${CMAKE_SOURCE_DIR}/src/hello.ld)
+  set_target_properties(hello PROPERTIES
+      LINK_DEPENDS ${CMAKE_SOURCE_DIR}/src/hello.ld)
 
 
 Multiple Linker Outputs
 =======================
 
 A cc65 program can load at more than one address, with one linker output
-for each address. CMake's ``add_executable()`` tracks only one linker
-output, so declare the others with ``rp6502_byproducts()``. In a
-configuration for ld65, the linker of cc65, each memory area with a
-``file`` of its own is a separate linker output, and ``%O`` stands for the
-output file name that CMake passes to the linker. The linker output is in
-the directory of the target, so the files of the target ``basic`` are in
-``basic/`` in the build directory.
+for each address. In the linker configuration, each memory area with a
+``file`` of its own writes a separate linker output. ``%O`` is the file
+name that CMake passes to the linker, so ``"%O.1000"`` names a file beside
+the linker output of the target. The linker of llvm-mos writes only one
+linker output.
 
-.. code-block:: cmake
-
-  rp6502_byproducts(<target> <file>...)
-
-Microsoft BASIC loads at three separate addresses: the ``CHRGET`` routine
-at ``$00E8`` in zero page, the init code at ``$1000``, and the interpreter
-at ``$C000``. Its linker configuration assigns each one to its own file,
-named after ``%O``.
+Microsoft BASIC loads at three addresses: the ``CHRGET`` routine at
+``$00E8`` in zero page, the init code at ``$1000``, and the interpreter at
+``$C000``. Its linker configuration gives each one its own file:
 
 .. code-block:: text
 
@@ -1472,21 +1471,29 @@ named after ``%O``.
   }
 
 ``TOUCH`` is an empty memory area whose file is ``%O``. The linker writes
-it as an empty file, and CMake treats that file as the linker output. This
-CMake code declares the three real files as byproducts, adds them as
-memory chunks at their addresses, and packages them:
+it as an empty file, and CMake treats that file as the linker output.
+
+A change to an asset file links the program again, which rewrites the
+ROM, so an asset file is an input of the link. A file that the link writes
+cannot also be its input, so add it with ``rp6502_byproduct()``, which
+packages it after the link. It takes the same addresses as
+``rp6502_asset()``. The linker outputs are in the directory of the target,
+such as ``basic/`` in the build directory for the target ``basic``. A
+relative path starts in that directory:
 
 .. code-block:: cmake
 
-  rp6502_byproducts(basic
-      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.00E8
-      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.1000
-      ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.C000
-  )
+  rp6502_byproduct(<target> <address> <file>)
+
+This CMake code adds the three files as memory chunks at their addresses,
+and packages them:
+
+.. code-block:: cmake
+
   rp6502_asset(basic help src/help.txt)
-  rp6502_asset(basic RAM(0x00E8) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.00E8)
-  rp6502_asset(basic RAM(0x1000) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.1000)
-  rp6502_asset(basic RAM(0xC000) ${CMAKE_CURRENT_BINARY_DIR}/basic/basic.C000)
+  rp6502_byproduct(basic RAM(0x00E8) basic.00E8)
+  rp6502_byproduct(basic RAM(0x1000) basic.1000)
+  rp6502_byproduct(basic RAM(0xC000) basic.C000)
   rp6502_executable(basic RESET 0x1000)
 
 ``rp6502_executable()`` has no ``DATA`` here, because the linker output
