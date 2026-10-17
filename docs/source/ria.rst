@@ -162,6 +162,23 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
      - BRK/IRQB
      - 6502 vector.
 
+.. _ria-volatile:
+
+cc65 Does Not Support ``volatile``
+----------------------------------
+
+``volatile`` has no effect on the cc65 optimizer, so wrap C code that
+accesses RIA or VIA registers directly in an optimize pragma:
+
+.. code-block:: C
+
+  #pragma optimize (push, off)
+  static void timer_start(void)
+  {
+      VIA.acr = 0x40;
+  }
+  #pragma optimize (pop)
+
 .. _ria-uart:
 
 UART

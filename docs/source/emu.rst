@@ -222,8 +222,8 @@ work.
    * - ``--memfill``
      - byte
      - Fill RAM and XRAM with one byte, such as ``$00`` or ``0``, in place
-       of the random fill. ``--memseed`` and ``--memfill`` cannot both be
-       given.
+       of the random fill. The emulator takes ``--memseed`` or
+       ``--memfill``, not both.
    * - ``--mute``
      - \-
      - No synthesis and no audio device opened at all.
@@ -286,6 +286,8 @@ wiki describes the work, and the code is on the numbered
 <https://github.com/johnwbyrd/llvm-mos/branches/all?query=feature%2Fdebug>`__.
 Nothing is released, so trying it means building LLVM from source.
 
+.. _emu-overlay:
+
 The on-screen debugger
 ----------------------
 
@@ -341,21 +343,20 @@ A script always runs headless, and nothing paces it against the host's
 clock. Frames elapse only when the script asks for them, so ``run 600`` is
 six hundred frames and six hundred VSYNCs every time.
 
-A command that waits, such as ``wait``, runs frames until what it waits
-for happens. Its budget is the most frames that it may run. When the
-budget runs out, the line fails, so a script that waits for something
-that never happens ends instead of hanging. The default budget is 600
-frames, ten seconds of the machine's time. ``run`` and ``wav`` run the
-number of frames that they are given. Every other command runs no frames,
-so ``expect``, ``peek``, and the other checks read the machine as it is
-at that line.
+A command that waits, such as ``wait``, runs frames until what it waits for
+happens. Its budget is the largest number of frames that it runs. When the
+budget runs out, the line fails, so a script that waits for something that
+never happens ends instead of hanging. The default budget is 600 frames, ten
+seconds of the machine's time. ``run`` and ``wav`` run the number of frames in
+their argument. Every other command runs no frames, so ``expect``, ``peek``,
+and the other checks read the machine as it is at that line.
 
 One command per line. ``#`` at the start of a word, outside quotes, starts a
 comment. Text is always in double quotes and takes the C escapes, so ``\n`` is
 a newline, ``\\`` and ``\"`` are themselves, and ``\x03`` or ``\3`` is a
 control byte. Hex takes up to two digits and octal up to three. A program can
 write a zero byte, so ``wait`` and ``expect`` take ``\0``, and no other string
-can hold one. A number is an expression, such as ``255``, ``$FF`` or
+can hold one. A number is an expression, such as ``255``, ``$FF``, or
 ``XRAM_PSG+5``. Spaces separate a command's arguments, so an expression with
 spaces must be in parentheses, as in ``xram:(XRAM_PSG + 5)``. See `Symbols and
 expressions`_.
@@ -396,7 +397,8 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
    * - ``type "text" [frames]``
      - Type it. ``\r`` is Enter, ``\t`` is Tab. The text is UTF-8,
        converted to the machine's code page, so a byte that is not UTF-8
-       becomes ``?``. Waits for the keyboard ring to take it all.
+       becomes ``?``. The command waits until the keyboard ring takes it
+       all.
    * - ``eof [frames]``
      - End the program's stdin, the way a piped ``--stdin`` ends. It
        waits until the program is reading stdin and has taken everything
@@ -446,11 +448,11 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
    * - ``expect exit <code>``,
        ``expect-not exit <code>``
      - Check the exit code of the program. The check fails while the
-       program runs, so ``wait exit`` comes first.
+       program runs, so put ``wait exit`` first.
    * - ``discard [stdout|stderr|console]``
-     - Drop what no check has taken from that stream, or from all three
-       if none is named. ``load`` keeps the captured output, so a script
-       that starts a program again discards what the last program wrote.
+     - Drop what the program printed on that stream after the last match,
+       or on all three streams without a stream name. ``load`` keeps the captured output, so
+       discard it before you start a program again.
    * - ``peek [xram:|ram:]<addr> <byte>...``
      - Compare memory.
    * - ``poke [xram:|ram:|bus:|xbus:]<addr> <byte>...``
@@ -460,7 +462,7 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
    * - ``dump [xram:|ram:]<addr> [count]``
      - Print memory as hex.
    * - ``status``
-     - Print the status of the machine on one line. See the fields below.
+     - Print the status of the machine on one line.
    * - ``crc``
      - Print the screen as a CRC-32.
    * - ``mark``,
@@ -513,9 +515,9 @@ what a store to it does: ``poke bus:$FFE1 $41`` sends an ``A`` to stdout.
 hears a byte written to its block, which ``poke xram:`` changes without
 telling it.
 
-``status`` prints these fields in this order, each as ``NAME=value``,
-separated by spaces. A field that does not apply is left out, so a driver
-checks for a field before it reads it.
+``status`` prints these fields in this order, each as ``NAME=value``, with
+a space between fields. ``status`` leaves out a field that does not apply,
+so check for a field before you read it.
 
 .. list-table::
    :widths: 25 75
@@ -529,39 +531,39 @@ checks for a field before it reads it.
    * - ``OP``, ``BUSY``
      - The RIA's OP and BUSY registers.
    * - ``RESB``
-     - 1 while the 6502 runs, and 0 while it is held in reset.
+     - 1 while the 6502 runs, and 0 while the RIA holds it in reset.
    * - ``EXIT``
-     - The exit code of the program. Only after the program exits, and
-       not after ``sys stop`` or ``sys break``.
+     - The exit code of the program. It appears after the program exits,
+       but not after ``sys stop`` or ``sys break``.
    * - ``SEED``
      - The seed of the random numbers that the program draws, from the
-       last ``seed``, or chosen at startup.
+       last ``seed``, or the seed that the emulator chose at startup.
    * - ``MEMSEED``, ``MEMFILL``
      - ``MEMSEED`` is the seed of the random fill of RAM and XRAM.
-       ``MEMFILL`` is the byte of ``--memfill``, and replaces
+       ``MEMFILL`` is the byte of ``--memfill``, and appears in place of
        ``MEMSEED``.
    * - ``ROM``
      - The path of the ROM that runs, or that ran last. It is always the
        last field, and its value runs to the end of the line, so a path
        with spaces needs no quotes.
 
-A failed check prints two lines on stderr: the script and the line it was on
-with the reason, then the fields of ``status``. To repeat the failed run, put
-``seed <n>`` with the ``SEED`` value first in a script that sets no seed. Then
-run the script with ``--memseed`` and the ``MEMSEED`` value, or with
+When a check fails, the emulator prints two lines on stderr: the script, the
+line, and the reason, then the fields of ``status``. To repeat the failed run,
+put ``seed <n>`` with the ``SEED`` value first in a script that sets no seed.
+Then run the script with ``--memseed`` and the ``MEMSEED`` value, or with
 ``--memfill`` and the ``MEMFILL`` value. A script that runs frames before its
-first ``seed`` cannot repeat the draws made before that seed. The program's
-stdout that no check used goes to stdout, in UTF-8 as the checks see it, and
-the run exits 1. Once more than 64 KB of it is unused, only the newest part is
-kept, so it can start partway through a line. The program's stderr goes to
-stderr as it is written, all through the run.
+first ``seed`` cannot repeat the draws before that seed. Then the emulator
+prints to stdout what the program printed after the last match, in UTF-8, and
+exits 1. Once that output reaches 64 KB, the emulator keeps only the newest
+part, so it can start partway through a line. The program's stderr goes to
+stderr as the program writes it, all through the run.
 
 A program must treat RAM and XRAM as uninitialized, because they hold unknown
 values until the program writes them. To help find a program that reads memory
 before writing it, the emulator fills RAM and XRAM from a new random seed on
 every run, so a program that gets lucky with an uninitialized value on one run
 is not lucky on the next. For a test, ``--memseed`` repeats the fill, and
-``--memfill`` starts with a known byte, such as ``--memfill 00``. No seed
+``--memfill`` fills memory with a known byte, such as ``--memfill 00``. No seed
 controls the clock, the files on ``SAVE:``, or a program that seeds its own
 random numbers.
 
@@ -783,9 +785,8 @@ An answer comes when the command **finishes**, not when it parses. The
 
 A ``fail`` ends the run, so there is no asking ``status`` after one.
 Instead, the line after the ``fail`` line is the status line. Everything
-after it, up to the end of stdout, is the program's stdout that no
-``wait`` or ``expect`` used, in UTF-8 as the checks see it. The program's
-stderr is on stderr.
+after it, up to the end of stdout, is what the program printed after the
+last match, in UTF-8. The program's stderr is on stderr.
 
 This driver never answers the question. It writes:
 

@@ -1473,13 +1473,16 @@ Microsoft BASIC loads at three addresses: the ``CHRGET`` routine at
 ``TOUCH`` is an empty memory area whose file is ``%O``. The linker writes
 it as an empty file, and CMake treats that file as the linker output.
 
-A change to an asset file links the program again, which rewrites the
-ROM, so an asset file is an input of the link. A file that the link writes
-cannot also be its input, so add it with ``rp6502_byproduct()``, which
-packages it after the link. It takes the same addresses as
-``rp6502_asset()``. The linker outputs are in the directory of the target,
-such as ``basic/`` in the build directory for the target ``basic``. A
-relative path starts in that directory:
+Add each file that the link writes with ``rp6502_byproduct()``. It adds
+the file as an asset, as ``rp6502_asset()`` does, but packages it after
+the link. ``rp6502_asset()`` cannot take a file that the link writes. Each
+file that ``rp6502_asset()`` takes is an input of the link, so that a
+change to the file links the program again and rewrites the ROM.
+
+``rp6502_byproduct()`` takes the same addresses as ``rp6502_asset()``. A
+relative path of ``rp6502_asset()`` starts in the project directory. A
+relative path of ``rp6502_byproduct()`` starts in the build directory, in
+the directory of the linker output:
 
 .. code-block:: cmake
 
@@ -1498,22 +1501,6 @@ and packages them:
 
 ``rp6502_executable()`` has no ``DATA`` here, because the linker output
 is the empty ``TOUCH`` file.
-
-
-Registers and ``volatile``
-==========================
-
-``volatile`` has no effect on the cc65 optimizer, so wrap C code that
-accesses RIA or VIA registers directly in an optimize pragma:
-
-.. code-block:: C
-
-  #pragma optimize (push, off)
-  static void timer_start(void)
-  {
-      VIA.acr = 0x40;
-  }
-  #pragma optimize (pop)
 
 
 .. _sdk-sym-file:
