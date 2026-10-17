@@ -1193,44 +1193,52 @@ To use your own build of the emulator, the web player, or BASIC, set
 ``RP6502_EMU``, ``RP6502_WEB``, or ``RP6502_BASIC`` to the path of its
 file: an emulator, the zip of a web player, or a ``basic.rp6502``. These
 settings work like the version settings, and a file overrides any
-version. A relative path is a path from the project directory.
+version.
 
-To keep your project on your own BASIC, put its ``basic.rp6502`` in
-``tools/`` under another name, and select the file in
-``CMakeLists.txt``. Git ignores only the files in ``tools/`` whose names
-start with ``rp6502-`` or ``msbasic-``, so commit your file with the
-project:
+This example uses a custom BASIC. Commit its file with the project, in a
+place that Git does not ignore. In ``tools/``, Git ignores only the files
+whose names start with ``rp6502-`` or ``msbasic-``, so you can put it
+there as ``mybasic.rp6502``. Then select the file in ``CMakeLists.txt``:
 
 .. code-block:: cmake
 
   set_target_properties(trek PROPERTIES RP6502_BASIC tools/mybasic.rp6502)
 
-To test a file for a short time, set it on the command line instead.
-This command uses an emulator built from the `picocomputer/rp6502
-<https://github.com/picocomputer/rp6502>`__ repository:
+To test a file for a short time, set it on the command line instead:
 
 .. code-block:: text
 
   cmake --preset cc65/Debug -DRP6502_EMU=/home/user/rp6502/build/sokol/rp6502-emu
 
-After you rebuild the emulator, the next F5 or ``ctest`` runs the new
-one. The setting stays in the CMake cache until you configure again with
-``-U RP6502_EMU``. To keep a setting on your computer only, put it in
+The setting stays until you remove it, or until you delete the
+``build/`` directory. This command removes it:
+
+.. code-block:: text
+
+  cmake --preset cc65/Debug -U RP6502_EMU
+
+Another option to keep a setting for your system only is
 ``CMakeUserPresets.json``, which git ignores.
 
 Command Line
 ============
 
-The sections above use VS Code. This section covers building and running
-without it: on a build server,
-in another editor, or with a 6502 program from another toolchain.
+This section is for advanced users who work with another editor, with a
+6502 program from another toolchain, or for continuous integration. The
+build and the automatic download of the tools are part of CMake, so they
+work wherever CMake runs. CMake downloads the tools that ``tools/`` lacks,
+so the first configure of a fresh Git clone requires a network
+connection.
+
+The examples below get you started. For everything else, read the `CMake
+documentation <https://cmake.org/cmake/help/latest/>`__ and the help of
+``rp6502.py``.
 
 Building
 --------
 
-Each C preset is a compiler and a build type, and ``basic`` is for BASIC.
-These commands list the presets, then configure and build ``cc65/Debug``,
-the same as choosing that preset in VS Code.
+The project builds with its CMake presets. These commands list the
+presets, then configure and build ``cc65/Debug``:
 
 .. code-block:: text
 
@@ -1238,37 +1246,27 @@ the same as choosing that preset in VS Code.
   cmake --preset cc65/Debug
   cmake --build --preset cc65/Debug
 
-The ROM is ``build/cc65/debug/hello/hello.rp6502``. The configure step
-downloads the release files that ``tools/`` lacks, so the first configure
-of a fresh copy needs a network connection.
+The build writes the ROM to ``build/cc65/debug/hello/hello.rp6502``.
 
 Running on an RP6502-PICO
 -------------------------
 
-``rp6502.py run`` copies the ROM to the current folder of the monitor, or
-to the ``workdir`` folder, loads it, and opens a terminal on the console.
-In the terminal, Ctrl-A then X exits, and Ctrl-A then B sends a break.
-The options of ``rp6502.py``, such as ``-c``, go before the subcommand,
-and ``-c .rp6502`` uses the settings file that VS Code uses.
-
-.. code-block:: text
-
-  python3 tools/rp6502.py -c .rp6502 run build/cc65/debug/hello/hello.rp6502
-
-Without a settings file, name the serial port with ``-d``, or the host
-and passkey for telnet with ``-d`` and ``-k``. With ``-c``, the settings
-in the file take precedence over these options.
+``rp6502.py run`` runs a ROM on an RP6502-PICO from the command line. It
+uploads the ROM, loads it with the monitor, and connects your terminal to
+the console of the RP6502-PICO, so you can interact with the program.
+Give the serial port with ``-d``, or for telnet, the network host with
+``-d`` and the passkey with ``-k``:
 
 .. code-block:: text
 
   python3 tools/rp6502.py -d /dev/ttyUSB0 run build/cc65/debug/hello/hello.rp6502
   python3 tools/rp6502.py -d 192.168.1.20 -k secret run build/cc65/debug/hello/hello.rp6502
 
-Words after the ROM's file name are passed to the ROM as its arguments.
-``rp6502.py`` has these subcommands. ``python3 tools/rp6502.py --help``
-lists the options that go before a subcommand, and ``--help`` after a
-subcommand, as in ``python3 tools/rp6502.py run --help``, lists the
-options of that subcommand.
+``run`` passes the words after the path of the ROM to the ROM as its
+arguments. ``python3 tools/rp6502.py --help`` lists the options that go
+before a subcommand, and ``--help`` after a subcommand, as in
+``python3 tools/rp6502.py run --help``, lists the options of that
+subcommand. ``rp6502.py`` has these subcommands:
 
 .. list-table::
    :widths: 20 80
@@ -1277,22 +1275,23 @@ options of that subcommand.
    * - Subcommand
      - Description
    * - ``run``
-     - Copy a ROM to the USB drive, load it, and open a terminal.
+     - Upload a ROM to the USB drive, load it, and open a terminal.
    * - ``upload``
-     - Copy files to the USB drive. With one file, ``-o`` sets the name
-       it is saved under.
+     - Upload files to the USB drive.
    * - ``term``
-     - Open a terminal on the console.
+     - Open a terminal on the console, without an upload or a run.
    * - ``basic``
      - Type a BASIC program into the BASIC installed on the RP6502-PICO,
        and run it.
    * - ``create``
-     - Package files into a ROM. See `Packaging a ROM by Hand`_.
+     - Package files into a ROM. See `Packaging a ROM Manually`_.
    * - ``sym``
-     - Write the ``.sym`` file of a linked program.
+     - Write the ``.sym`` file of a linked program, which holds its
+       `program symbols <Program Symbols_>`_.
 
-``run``, ``upload``, ``term`` and ``basic`` send a break first, which
-stops the program running on the RP6502-PICO.
+``run``, ``upload``, ``term``, and ``basic`` work through the monitor, so
+they send a break first. The break stops any ROM that runs on the
+RP6502-PICO and returns to the monitor.
 
 Running in the Emulator
 -----------------------
