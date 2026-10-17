@@ -159,6 +159,9 @@ directory that holds it:
 
    sudo apt install ./code_*.deb
 
+In WSL, you do not need to install this ``.deb`` if you use VS Code for
+Windows.
+
 Run these commands, which give the user account access to the USB
 serial port of an RP6502-PICO and install the compilers:
 
@@ -1651,12 +1654,59 @@ last assets therefore take longer to open.
 Upgrading an Older Project
 ==========================
 
-Some older projects need changes to build with the current compilers
-and tools. Because :ref:`cc65 does not support volatile <ria-volatile>`,
-C library functions replace the macros of ``rp6502.h`` that accessed RIA
-registers directly. Install the current compilers with the commands in
-`Installing the Prerequisites`_. This table lists the changes that break
-an older project:
+Because :ref:`cc65 does not support volatile <ria-volatile>`, the
+macros of the old ``rp6502.h`` did not always work. The SDK removed them,
+and now uses C library functions to access the RIA and XRAM. An older
+project needs changes to build with the current compilers and tools.
+Upgrade it in two steps.
+
+First, make the project build and run again:
+
+#. Install the current compilers with the commands in `Installing the
+   Prerequisites`_.
+#. If the project has ``tools/CMakeLists.txt``, it comes from an older
+   template that sets its compiler at the top of ``CMakeLists.txt``.
+   Change its build to the one of the `current template
+   <https://github.com/picocomputer/rp6502-sdk>`__:
+
+   a. Copy ``tools/rp6502.cmake`` from the template over the one in the
+      project. The first configure fetches the rest of the tools.
+   b. Replace everything above ``project()`` in ``CMakeLists.txt`` with
+      these lines:
+
+      .. code-block:: cmake
+
+        cmake_minimum_required(VERSION 3.28)
+        include(${CMAKE_CURRENT_LIST_DIR}/tools/rp6502.cmake)
+
+   c. Delete ``tools/CMakeLists.txt`` and the ``add_subdirectory(tools)``
+      line.
+   d. Copy ``CMakePresets.json`` from the template.
+
+#. Update the tools as in `Updating the Tools`_.
+#. Add ``xram.h`` to the project, from ``src/`` of the template or as an
+   empty file. For an assembly project, add ``xram.inc``. The structures
+   and macros that the table copies from the datasheets go in this file.
+#. In a C project, add ``rp6502-compat.h`` from the end of this section.
+   Include ``"rp6502-compat.h"`` in place of ``<rp6502.h>``. The header
+   defines most of the old names, so the code that uses them builds
+   unchanged.
+#. Build and test the project. For each error, find the old name,
+   option, or command in the table below. Change it to its replacement.
+   Change only what fails. ``rp6502-compat.h`` defines most of the old
+   names, and the second step replaces those.
+
+Then stop using the compat header:
+
+#. Replace each name that ``rp6502-compat.h`` defines with its
+   replacement from the table.
+#. Lay out XRAM in ``xram_layout_t``, so that ``xram.h`` holds the
+   `XRAM memory map <XRAM Memory Map_>`_.
+#. Include ``<rp6502.h>`` in place of ``"rp6502-compat.h"``. Remove
+   ``rp6502-compat.h`` from the project.
+#. Build and test the project.
+
+This table lists the changes that break an older project:
 
 .. list-table::
    :widths: 40 60
@@ -1775,7 +1825,16 @@ an older project:
        Versions`_. ``EMULATOR`` stops configure. The two variables have
        no effect.
    * - ``rp6502_executable(... START <addr>)``
-     - ``rp6502_executable(... DATA <addr>)``
+     - ``rp6502_executable(... DATA <addr>)``. ``DATA default RESET
+       default`` works with both compilers.
+   * - ``rp6502_map(<target> <header> <regex> [<exclude>])``
+     - ``rp6502_align(<target> "<regex>")``, or with ``<exclude>``,
+       ``rp6502_align(<target> "(?!(?:<exclude>)$)(?:<regex>)")``. The
+       symbols come from the ``.c`` source files, not from ``<header>``.
+   * - The ROM in the build directory, such as
+       ``build/cc65/debug/hello.rp6502``
+     - The ROM in the directory of its target, such as
+       ``build/cc65/debug/hello/hello.rp6502``.
    * - ``<name>.bin.rp6502`` ROMs in a call to ``rp6502_executable()``
      - Remove them. ``rp6502_asset()`` adds each asset.
    * - ``rp6502_asset(<name> <addr> <in> <out>)``
@@ -1784,33 +1843,7 @@ an older project:
      - ``rp6502_asset(<target> help <text file>)``. ``create`` refuses a
        help file in the older ROM format.
 
-The build now writes the ROMs of an older project into the directories
-of their targets, such as ``build/cc65/debug/hello/``. The
-"RP6502: update tools" task replaces the "RP6502-EMU" launch
-configuration of ``.vscode/launch.json`` with one that runs the emulator
-of the launch target. The task also changes ``.gitignore`` to ignore the
-emulator, the web player, and BASIC in ``tools/``. If you changed that
-launch configuration, the task leaves it as it is and shows the new one
-for you to copy in. The task renames the launch configurations "RP6502
-(Emulator)", "RP6502 (Hardware)", and "RP6502 (Web)" to "RP6502-EMU",
-"RP6502-PICO", and "RP6502-WEB". It replaces an "RP6502-WEB" launch
-configuration that runs ``rp6502.py web``, and adds the update task to
-``.vscode/tasks.json``.
-
-``rp6502_align()`` replaces ``rp6502_map()``. The update task changes
-each ``rp6502_map()`` call in the top ``CMakeLists.txt`` whose regular
-expressions are quoted strings to ``rp6502_align()``. Replace any other
-call yourself: an old call still builds, and its warning shows the
-``rp6502_align()`` line to use. ``rp6502_map()`` took the symbols from
-its header. The symbols now come from the compile of each ``.c`` source
-file, so a header that no ``.c`` file includes adds no symbols.
-
-A project made from the older vscode-cc65 or vscode-llvm-mos template
-includes ``tools/`` with ``add_subdirectory(tools)`` and has no update
-task.
-
-For an older C project, add this header to the project. Then include
-``"rp6502-compat.h"`` in place of ``<rp6502.h>``.
+This is ``rp6502-compat.h``:
 
 .. code-block:: C
   :caption: rp6502-compat.h
@@ -1890,6 +1923,3 @@ For an older C project, add this header to the project. Then include
   } vga_mode5_sprite_t;
 
   #endif /* RP6502_COMPAT_H */
-
-The header does not replace ``ria_push_*``, ``ria_pop_*``, ``ria_set_*``,
-and ``ria_call_*``. Change those calls as the table shows.
