@@ -200,7 +200,8 @@ CMake Tools lists five presets. Four are for C or assembly:
 ``llvm-mos/Release``. Choose a Debug preset, because breakpoints and
 stepping require debug information. A Release preset builds an optimized
 ROM for distribution. The fifth preset, ``basic``, is for BASIC. To
-change the preset later, use the Configure row of the CMake side panel.
+change the preset later, use the Configure row of the CMake view of the
+Side Bar.
 
 A C program goes in ``src/main.c``, and a BASIC program goes in
 ``src/main.bas``. To write in assembly, replace ``src/main.c`` in
@@ -212,14 +213,14 @@ A C program goes in ``src/main.c``, and a BASIC program goes in
    :width: 700
    :alt: The list of configure presets of CMake Tools, with cc65/Debug,
          cc65/Release, llvm-mos/Debug, llvm-mos/Release, and basic, above
-         the Configure row of the CMake side panel.
+         the Configure row of the CMake view of the Side Bar.
 
 .. image:: _static/sdk/preset-dark.png
    :class: only-dark
    :width: 700
    :alt: The list of configure presets of CMake Tools, with cc65/Debug,
          cc65/Release, llvm-mos/Debug, llvm-mos/Release, and basic, above
-         the Configure row of the CMake side panel.
+         the Configure row of the CMake view of the Side Bar.
 
 The first configure downloads the tools into ``tools/``.
 
@@ -284,19 +285,19 @@ Running and Debugging
 =====================
 
 "Start Debugging" (F5) runs one of three launch configurations. Choose
-one in the Run and Debug side panel.
+one in the Run and Debug view of the Side Bar.
 
 .. image:: _static/sdk/configs-light.png
    :class: only-light
    :width: 400
-   :alt: The launch configuration list of the Run and Debug side panel,
-         with "RP6502-EMU", "RP6502-PICO", and "RP6502-WEB".
+   :alt: The launch configuration list of the Run and Debug view of the
+         Side Bar, with "RP6502-EMU", "RP6502-PICO", and "RP6502-WEB".
 
 .. image:: _static/sdk/configs-dark.png
    :class: only-dark
    :width: 400
-   :alt: The launch configuration list of the Run and Debug side panel,
-         with "RP6502-EMU", "RP6502-PICO", and "RP6502-WEB".
+   :alt: The launch configuration list of the Run and Debug view of the
+         Side Bar, with "RP6502-EMU", "RP6502-PICO", and "RP6502-WEB".
 
 The **RP6502-EMU** launch configuration is the default. It builds the
 project and runs the ROM in the :doc:`emu` with :ref:`source-level
@@ -315,11 +316,11 @@ debugging <emu-debugging>`.
          Call Stack panels.
 
 The **RP6502-PICO** launch configuration builds the project and runs the
-ROM on an :doc:`pico`. It uploads the ROM to a USB drive plugged into the
-RP6502-PICO, then runs it from there. The upload replaces any file with
-the same name. The console opens in the VS Code Terminal panel. The
-RP6502-PICO has no breakpoints or stepping, so a common debugging
-technique is ``printf()`` to the console.
+ROM on an :doc:`pico`. It uploads the ROM to the RP6502-PICO, then runs
+it from there. The upload replaces any file with the same name. The
+console opens in the VS Code Terminal panel. The RP6502-PICO has no
+breakpoints or stepping, so a common debugging technique is ``printf()``
+to the console.
 
 An RP6502-PICO may connect through the USB port of the VGA module or
 over telnet with an :doc:`ria_w`, so the launch configuration requires a
@@ -844,19 +845,19 @@ To build more than one ROM, call ``add_executable()`` and
   target_sources(setup PRIVATE src/setup.c)
 
 F5 runs the ROM of the launch target, which you select in the Launch row
-of the CMake side panel:
+of the CMake view of the Side Bar:
 
 .. image:: _static/sdk/launch-target-light.png
    :class: only-light
    :width: 560
-   :alt: The CMake side panel with the Launch target list open, showing
-         the project's ROMs.
+   :alt: The CMake view of the Side Bar with the Launch target list open,
+         showing the project's ROMs.
 
 .. image:: _static/sdk/launch-target-dark.png
    :class: only-dark
    :width: 560
-   :alt: The CMake side panel with the Launch target list open, showing
-         the project's ROMs.
+   :alt: The CMake view of the Side Bar with the Launch target list open,
+         showing the project's ROMs.
 
 
 Web Players
@@ -933,7 +934,7 @@ commands:
      - The command, the reason, and the program's stdout that no command
        read.
 
-Run the tests from the Testing side panel of VS Code, or with ``ctest``:
+Run the tests from the Testing view of the Side Bar, or with ``ctest``:
 
 .. code-block:: text
 
@@ -1026,7 +1027,7 @@ workstation, so git ignores it. The first run of the "RP6502-EMU" or
 "RP6502-PICO" launch configuration creates it.
 
 The file has several sections. The emulator owns most of them and keeps
-the window layout of its on-screen debugger there, so each project
+the window layout of its debug overlay there, so each project
 reopens with the layout of its last session. The ``[RP6502][PICO]``
 section is first. It holds the settings for running on your
 RP6502-PICO, and it is the only section to edit by hand. The first run

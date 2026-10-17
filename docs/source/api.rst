@@ -70,8 +70,9 @@ list of details. Some declarations carry a flag:
 prototype that exists only in the library. A prototype with neither flag
 is both.
 
-``Op code`` is the value a program writes to ``RIA_OP`` to start the
-operation. An entry with only ``LIB`` prototypes has no op code.
+``Operation`` is the operation ID that a program writes to ``RIA_OP`` to
+start the operation. An entry with only ``LIB`` prototypes has no
+operation ID.
 ``C proto`` names the header the declaration comes from.
 ``a regs`` names the arguments and the return value that fit in ``RIA_A``
 alone, so a program can leave ``RIA_X`` unset. ``errno`` lists what can
@@ -92,7 +93,7 @@ DROP
    empties the XSTACK. Use it to discard the rest of a returned structure,
    or arguments already pushed for a call you decide not to make.
 
-   :Op code: RIA_OP_DROP_XSTACK 0x00
+   :Operation: RIA_OP_DROP_XSTACK 0x00
    :C proto: rp6502.h
 
 
@@ -167,7 +168,7 @@ XREG
    Assembly programs use the ``xreg`` macro in rp6502.inc, which takes the
    same arguments: ``xreg 1, 0, 1, 3, 2, $FF00``.
 
-   :Op code: RIA_OP_XREG 0x01
+   :Operation: RIA_OP_XREG 0x01
    :C proto: rp6502.h
    :param device: PIX device ID. 0:RIA, 1:VGA, 2-6:unassigned
    :param channel: PIX channel. 0-15
@@ -316,7 +317,7 @@ ARGV
 
       void *__argv_mem(size_t size) { return malloc(size); }
 
-   :Op code: RIA_OP_ARGV 0x08
+   :Operation: RIA_OP_ARGV 0x08
    :C proto: (none)
    :returns: Size of argv data
    :errno: will not fail
@@ -346,7 +347,7 @@ EXEC
    path plus up to 15 arguments) totaling no more than 512 bytes including
    the offset table; exceeding either limit returns -1 with EINVAL.
 
-   :Op code: RIA_OP_EXEC 0x09
+   :Operation: RIA_OP_EXEC 0x09
    :C proto: rp6502.h
    :returns: Does not return on success — the new ROM begins
       executing. -1 on error.
@@ -366,7 +367,7 @@ EXIT
    Dropping the user out of your program is generally discouraged, but
    calling exit() beats locking up, as does falling off the end of main().
 
-   :Op code: RIA_OP_EXIT 0xFF
+   :Operation: RIA_OP_EXIT 0xFF
    :C proto: stdlib.h
    :param status: 0 is success, and any other value is an error.
 
@@ -395,7 +396,7 @@ OPEN
    :doc:`ria` datasheet for ``VCP0:``, ``MIDI0:`` and ``NFC:``, and the
    :doc:`ria_w` page for ``AT:``.
 
-   :Op code: RIA_OP_OPEN 0x14
+   :Operation: RIA_OP_OPEN 0x14
    :C proto: fcntl.h
    :param path: Pathname to a file.
    :param oflag: Bitfield of options.
@@ -431,7 +432,7 @@ CLOSE
    after close differs by machine, as listed in
    :ref:`Durability <port-durability>`.
 
-   :Op code: RIA_OP_CLOSE 0x15
+   :Operation: RIA_OP_CLOSE 0x15
    :C proto: fcntl.h
    :param fildes: File descriptor from open().
    :returns: 0 on success. -1 on error.
@@ -464,7 +465,7 @@ READ_XSTACK
 
    Read ``count`` bytes from a file to the XSTACK.
 
-   :Op code: RIA_OP_READ_XSTACK 0x16
+   :Operation: RIA_OP_READ_XSTACK 0x16
    :C proto: rp6502.h
    :param buf: Destination for the returned data.
    :param count: Quantity of bytes to read. 0x200 max.
@@ -484,7 +485,7 @@ READ_XRAM
 
    Read ``count`` bytes from a file to XRAM.
 
-   :Op code: RIA_OP_READ_XRAM 0x17
+   :Operation: RIA_OP_READ_XRAM 0x17
    :C proto: rp6502.h
    :param buf: Destination for the returned data.
    :param count: Quantity of bytes to read. 0x7FFF max.
@@ -520,7 +521,7 @@ WRITE_XSTACK
 
    Write ``count`` bytes from the XSTACK to a file.
 
-   :Op code: RIA_OP_WRITE_XSTACK 0x18
+   :Operation: RIA_OP_WRITE_XSTACK 0x18
    :C proto: rp6502.h
    :param buf: Location of the data.
    :param count: Quantity of bytes to write. 0x200 max.
@@ -538,7 +539,7 @@ WRITE_XRAM
 
    Write ``count`` bytes from XRAM to a file.
 
-   :Op code: RIA_OP_WRITE_XRAM 0x19
+   :Operation: RIA_OP_WRITE_XRAM 0x19
    :C proto: rp6502.h
    :param buf: Location of the data.
    :param count: Quantity of bytes to write. 0x7FFF max.
@@ -565,7 +566,7 @@ LSEEK
    and the position unchanged. A seek past the end of a file opened only
    for reading stops at the end.
 
-   :Op code: See table below.
+   :Operation: See table below.
    :C proto: f_lseek: rp6502.h, lseek: unistd.h
    :param offset: Distance to move the pointer.
    :param whence: Where the offset is measured from. See table below.
@@ -606,7 +607,7 @@ SYNCFS
    the data is stored, within the limits of each machine listed in
    :ref:`Durability <port-durability>`.
 
-   :Op code: RIA_OP_SYNCFS 0x1E
+   :Operation: RIA_OP_SYNCFS 0x1E
    :C proto: unistd.h
    :param fildes: File descriptor from open().
    :returns: 0 on success. -1 on error.
@@ -657,7 +658,7 @@ STAT
    directory named ``/``, with size 0 and zero dates. An empty path or a
    bare drive name, such as ``MSC0:``, fails with EINVAL.
 
-   :Op code: RIA_OP_STAT 0x1F
+   :Operation: RIA_OP_STAT 0x1F
    :C proto: rp6502.h
    :param path: Pathname to a directory entry.
    :param dirent: Returned f_stat_t data.
@@ -674,7 +675,7 @@ UNLINK
    Removes a file or directory from the volume. A read-only file fails
    with EACCES. Close a file before removing it.
 
-   :Op code: RIA_OP_UNLINK 0x1B
+   :Operation: RIA_OP_UNLINK 0x1B
    :C proto: unistd.h
    :param name: File or directory name to unlink (remove).
    :returns: 0 on success. -1 on error.
@@ -693,7 +694,7 @@ RENAME
    new name fails with EEXIST. Close a file before renaming it, and
    before a rename replaces it.
 
-   :Op code: RIA_OP_RENAME 0x1C
+   :Operation: RIA_OP_RENAME 0x1C
    :C proto: stdio.h
    :param oldname: Existing file or directory name to rename.
    :param newname: New object name.
@@ -710,7 +711,7 @@ CHMOD
 
    Change the attributes of a file or directory.
 
-   :Op code: RIA_OP_CHMOD 0x26
+   :Operation: RIA_OP_CHMOD 0x26
    :C proto: rp6502.h
    :param path: Pathname to a file or directory.
    :param attr: New bitfield of attributes. See table.
@@ -745,7 +746,7 @@ UTIME
    Update the date and time stamps of a file or directory. A date of 0
    (invalid) leaves the date and time unchanged.
 
-   :Op code: RIA_OP_UTIME 0x27
+   :Operation: RIA_OP_UTIME 0x27
    :C proto: rp6502.h
    :param path: Pathname to a file or directory.
    :param fdate: Modification date.
@@ -786,7 +787,7 @@ MKDIR
 
    Make a new directory entry.
 
-   :Op code: RIA_OP_MKDIR 0x28
+   :Operation: RIA_OP_MKDIR 0x28
    :C proto: rp6502.h
    :param name: Pathname of the directory to create.
    :returns: 0 on success. -1 on error.
@@ -804,7 +805,7 @@ OPENDIR
 
    Create a connection between a directory and a directory descriptor.
 
-   :Op code: RIA_OP_OPENDIR 0x20
+   :Operation: RIA_OP_OPENDIR 0x20
    :C proto: rp6502.h
    :param name: Pathname to a directory.
    :returns: Directory descriptor. -1 on error.
@@ -827,7 +828,7 @@ READDIR
    an :doc:`pico`, a name with a character that the code page cannot hold
    shows as its short 8.3 name instead, and that name opens the file.
 
-   :Op code: RIA_OP_READDIR 0x21
+   :Operation: RIA_OP_READDIR 0x21
    :C proto: rp6502.h
    :param dirdes: Directory descriptor from f_opendir().
    :param dirent: Returned f_stat_t data.
@@ -844,7 +845,7 @@ CLOSEDIR
    Release the directory descriptor. The descriptor goes back to the pool
    that f_opendir() draws from.
 
-   :Op code: RIA_OP_CLOSEDIR 0x22
+   :Operation: RIA_OP_CLOSEDIR 0x22
    :C proto: rp6502.h
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
@@ -859,7 +860,7 @@ TELLDIR
 
    Returns the read position of the directory descriptor.
 
-   :Op code: RIA_OP_TELLDIR 0x23
+   :Operation: RIA_OP_TELLDIR 0x23
    :C proto: rp6502.h
    :param dirdes: Directory descriptor from f_opendir().
    :returns: Read position. -1 on error.
@@ -878,7 +879,7 @@ SEEKDIR
    directory when seeking backward. Use this for convenience, not
    performance.
 
-   :Op code: RIA_OP_SEEKDIR 0x24
+   :Operation: RIA_OP_SEEKDIR 0x24
    :C proto: rp6502.h
    :param offs: New read position, as returned by f_telldir().
    :param dirdes: Directory descriptor from f_opendir().
@@ -894,7 +895,7 @@ REWINDDIR
 
    Rewind the read position of the directory descriptor.
 
-   :Op code: RIA_OP_REWINDDIR 0x25
+   :Operation: RIA_OP_REWINDDIR 0x25
    :C proto: rp6502.h
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
@@ -913,7 +914,7 @@ CHDIR
    Change to a directory entry. A directory on another drive also makes
    that drive the current drive.
 
-   :Op code: RIA_OP_CHDIR 0x29
+   :Operation: RIA_OP_CHDIR 0x29
    :C proto: unistd.h
    :param name: Pathname of the directory to make current.
    :returns: 0 on success. -1 on error.
@@ -932,7 +933,7 @@ CHDRIVE
    it, and that directory becomes current again. The drive names of each
    machine are listed in :ref:`Filesystems <port-filesystems>`.
 
-   :Op code: RIA_OP_CHDRIVE 0x2A
+   :Operation: RIA_OP_CHDRIVE 0x2A
    :C proto: rp6502.h
    :param name: Drive name to change to.
    :returns: 0 on success. -1 on error.
@@ -954,7 +955,7 @@ GETCWD
    `READDIR`_. When the directory is longer than 255 bytes, the call
    fails with ENOMEM, because no call accepts a path that long.
 
-   :Op code: RIA_OP_GETCWD 0x2B
+   :Operation: RIA_OP_GETCWD 0x2B
    :C proto: rp6502.h
    :param name: The returned directory.
    :param size: Size of the ``name`` buffer. It stays in the C library,
@@ -972,7 +973,7 @@ GETLABEL
    :doc:`pico` has volume labels, and other machines fail with EACCES, or
    ENOSYS on the Pocket.
 
-   :Op code: RIA_OP_GETLABEL 0x2D
+   :Operation: RIA_OP_GETLABEL 0x2D
    :C proto: rp6502.h
    :param path: Volume to read the label from.
    :param label: Storage for returned label.
@@ -990,7 +991,7 @@ SETLABEL
    volume labels, and other machines fail with EACCES, or ENOSYS on the
    Pocket.
 
-   :Op code: RIA_OP_SETLABEL 0x2C
+   :Operation: RIA_OP_SETLABEL 0x2C
    :C proto: rp6502.h
    :param name: Label with optional volume name.
    :returns: 0 on success. -1 on error.
@@ -1013,7 +1014,7 @@ GETFREE
          unsigned long total;
       };
 
-   :Op code: RIA_OP_GETFREE 0x2E
+   :Operation: RIA_OP_GETFREE 0x2E
    :C proto: rp6502.h
    :param name: Volume name.
    :param free: Storage for returned value.
@@ -1043,7 +1044,7 @@ RLN_LASTKEY
    typed. Sequences longer than 32 bytes, or any call made while no line
    read is in progress, return 0.
 
-   :Op code: RIA_OP_RLN_LASTKEY 0x30
+   :Operation: RIA_OP_RLN_LASTKEY 0x30
    :C proto: rp6502.h
    :param key: Storage for the returned byte sequence.
    :param action: Out-parameter set non-zero if the key triggered an
@@ -1064,7 +1065,7 @@ RLN_PEEK
    cursor position within it. The buffer bytes are pushed to the XSTACK.
    It fails with EINVAL when no line read is in progress.
 
-   :Op code: RIA_OP_RLN_PEEK 0x31
+   :Operation: RIA_OP_RLN_PEEK 0x31
    :C proto: rp6502.h
    :param peek: Storage for the returned buffer contents. The C wrapper
       null-terminates the result, so it must hold up to
@@ -1094,7 +1095,7 @@ RLN_POKE
    length is at least 2. LF submits the field like CR but adds no
    linefeed, which is useful for form input on the last terminal row.
 
-   :Op code: RIA_OP_RLN_POKE 0x32
+   :Operation: RIA_OP_RLN_POKE 0x32
    :C proto: rp6502.h
    :param poke: Null-terminated string to feed into the editor.
    :returns: 0.
@@ -1117,7 +1118,7 @@ TIME_GET
    time_t has 32 bits, so the cc65 time() fails with ERANGE when the
    seconds do not fit.
 
-   :Op code: RIA_OP_TIME_GET 0x3F
+   :Operation: RIA_OP_TIME_GET 0x3F
    :C proto: time.h
    :returns: The current time, also stored at ``timep`` if it is not
       NULL. -1 on error.
@@ -1133,7 +1134,7 @@ TIME_SET
    Sets the clock to seconds since the Unix epoch. Supported only on the
    :doc:`pico`.
 
-   :Op code: RIA_OP_TIME_SET 0x3E
+   :Operation: RIA_OP_TIME_SET 0x3E
    :C proto: rp6502.h
    :param time: Seconds since 1970-01-01T00:00:00Z.
    :returns: 0 on success. -1 on error.
@@ -1165,7 +1166,7 @@ GMTIME
          int16_t tm_isdst; /* >0 DST, 0 no DST, <0 unknown */
       };
 
-   :Op code: RIA_OP_GMTIME 0x3A
+   :Operation: RIA_OP_GMTIME 0x3A
    :C proto: time.h
    :returns: Pointer to a static struct tm. NULL on error.
    :a regs: return
@@ -1184,7 +1185,7 @@ LOCALTIME
    operation pushes a struct tm (see `GMTIME`_) back to the XSTACK and
    returns 0, or -1 on error.
 
-   :Op code: RIA_OP_LOCALTIME 0x3B
+   :Operation: RIA_OP_LOCALTIME 0x3B
    :C proto: time.h
    :returns: Pointer to a static struct tm. NULL on error.
    :a regs: return
@@ -1203,7 +1204,7 @@ MKTIME
    mktime() then calls `LOCALTIME`_ to write the normalized struct, with
    tm_wday and tm_yday set, back to the caller.
 
-   :Op code: RIA_OP_MKTIME 0x3C
+   :Operation: RIA_OP_MKTIME 0x3C
    :C proto: time.h
    :returns: Seconds since the Unix epoch. -1 on error.
    :a regs: return
@@ -1230,7 +1231,7 @@ STRFTIME
    ``SET TZ`` on an :doc:`pico`. The format and result are code page
    text. ``%E`` and ``%O`` modifiers are ignored.
 
-   :Op code: RIA_OP_STRFTIME 0x3D
+   :Operation: RIA_OP_STRFTIME 0x3D
    :C proto: time.h
    :returns: Length of the string in ``buf``, not counting the
       terminator. 0 on error, or if the result is empty or does not fit.
@@ -1249,7 +1250,7 @@ ATTR_GET
    Returns the current value of a RIA attribute. See `RIA Attributes`_
    for attribute IDs and descriptions.
 
-   :Op code: RIA_OP_ATTR_GET 0x0A
+   :Operation: RIA_OP_ATTR_GET 0x0A
    :C proto: rp6502.h
    :param id: Attribute ID. One of the ``RIA_ATTR_*`` constants.
    :a regs: id
@@ -1265,7 +1266,7 @@ ATTR_SET
    Sets the value of a RIA attribute. See `RIA Attributes`_ for
    attribute IDs and descriptions.
 
-   :Op code: RIA_OP_ATTR_SET 0x0B
+   :Operation: RIA_OP_ATTR_SET 0x0B
    :C proto: rp6502.h
    :param id: Attribute ID. One of the ``RIA_ATTR_*`` constants.
    :param val: New value.

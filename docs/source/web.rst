@@ -449,8 +449,8 @@ its folder, and the property selects the version of one target.
   set(RP6502_WEB_VERSION 0.40)
   set_target_properties(game PROPERTIES RP6502_WEB_VERSION 0.39)
 
-In VS Code, choose "RP6502-WEB" in the Run and Debug side panel and
-press F5. The project is built, and the browser opens a page with a link
+In VS Code, choose "RP6502-WEB" in the Run and Debug view of the Side Bar
+and press F5. The project is built, and the browser opens a page with a link
 to every web player in the build folder.
 
 
