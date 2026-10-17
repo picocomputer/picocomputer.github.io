@@ -96,53 +96,19 @@ The fields are:
 A C program does not use the ``Operation`` and ``a regs`` fields. They
 are for the ABI.
 
-Some calls work differently on different machines, and each section
-states the difference. The Pocket is the :doc:`fpga`, which runs on an
-Analogue Pocket.
-
 
 .. _api-extended-memory:
 
 Extended Memory
 ---------------
 
-.. _api-xreg:
-
-XREG
-~~~~
-
-.. c:function:: int xreg (char device, char channel, unsigned char address, ...);
-                lib int xregn (char device, char channel, unsigned char address, unsigned count, ...);
-
-   Prefer xreg() from C to avoid a counting mistake. The count isn't sent
-   over the ABI, so both prototypes are equally valid.
-
-   The variadic argument is a list of ints to store in the extended
-   registers, starting at address on the given device and channel. See
-   :ref:`Extended Registers <ria-xreg>` in the :doc:`ria` datasheet and the
-   :doc:`vga` datasheet for what each register does. Setting an
-   extended register can fail, which doubles as feature detection: EINVAL
-   means the device sent a negative acknowledgement, EIO means a timeout
-   waiting for ack/nak, and EACCES means a write to the VGA control
-   channel, which the RIA manages.
-
-   This is how you add virtual hardware to extended RAM. Both the :doc:`ria`
-   and the :doc:`vga` include virtual devices you can install, and you can
-   build your own hardware for the PIX bus and configure it with this same
-   call.
-
-   Assembly programs use the ``xreg`` macro in rp6502.inc, which takes the
-   same arguments: ``xreg 1, 0, 1, 3, 2, $FF00``.
-
-   :Operation: RIA_OP_XREG 0x01
-   :C proto: rp6502.h
-   :param device: PIX device ID. 0:RIA, 1:VGA, 2-6:unassigned
-   :param channel: PIX channel. 0-15
-   :param address: PIX address. 0-255
-   :param ...: 16 bit integers to set starting at address.
-   :a regs: return
-   :errno: EACCES, EINVAL, EIO
-
+Extended RAM (XRAM) is 64 KB of memory outside the address space of the
+6502. A program reads and writes it through the two :ref:`XRAM portals
+<ria-xram-portals>` of the RIA. Each portal has its own address and step
+registers, so the two portals can point at different places in XRAM. The
+functions whose names start with ``xram0_`` use portal 0, and the
+functions whose names start with ``xram1_`` use portal 1. Each function
+changes the registers of its portal.
 
 XRAM_READ
 ~~~~~~~~~
@@ -150,16 +116,8 @@ XRAM_READ
 .. c:function:: lib void xram0_read (void* dest, unsigned src, unsigned count)
                 lib void xram1_read (void* dest, unsigned src, unsigned count)
 
-   Copy ``count`` bytes from XRAM to 6502 RAM, like ``memcpy``.
-   ``xram0_read()`` copies through portal 0 and ``xram1_read()`` through
-   portal 1, the two :ref:`XRAM portals <ria-xram-portals>` of the RIA.
-   The other portal is not touched. A count of 0 copies nothing.
-
-   The call changes the portal's address register and sets its step
-   register to 1.
-
-   This copies within the machine. To load XRAM from a file, use
-   `READ_XRAM`_.
+   ``xram0_read()`` and ``xram1_read()`` copy ``count`` bytes from XRAM
+   to 6502 RAM, as ``memcpy()`` does.
 
    :C proto: rp6502.h
    :param dest: Destination in 6502 RAM.
@@ -173,8 +131,8 @@ XRAM_WRITE
 .. c:function:: lib void xram0_write (unsigned dest, const void* src, unsigned count)
                 lib void xram1_write (unsigned dest, const void* src, unsigned count)
 
-   Copy ``count`` bytes from 6502 RAM into XRAM. This is the other direction
-   of `XRAM_READ`_ and follows the same rules.
+   ``xram0_write()`` and ``xram1_write()`` copy ``count`` bytes from 6502
+   RAM to XRAM, as ``memcpy()`` does.
 
    :C proto: rp6502.h
    :param dest: Destination address in XRAM.
@@ -188,13 +146,12 @@ XRAM_SET
 .. c:function:: lib void xram0_set (unsigned dest, unsigned char val, unsigned count)
                 lib void xram1_set (unsigned dest, unsigned char val, unsigned count)
 
-   Fill ``count`` bytes of XRAM with ``val``, like ``memset``.
-   ``xram0_set()`` uses portal 0 and ``xram1_set()`` uses portal 1, with the
-   same effect on the portal's registers as `XRAM_READ`_.
+   ``xram0_set()`` and ``xram1_set()`` fill ``count`` bytes of XRAM with
+   ``val``, as ``memset()`` does.
 
    :C proto: rp6502.h
    :param dest: Address in XRAM to fill.
-   :param val: Byte written to every position.
+   :param val: Byte to write to every address.
    :param count: Quantity of bytes to fill.
 
 
@@ -203,11 +160,10 @@ XRAM_MOVE
 
 .. c:function:: lib void xram_move (unsigned dest, unsigned src, unsigned count)
 
-   Copy ``count`` bytes from one XRAM address to another, like ``memmove``,
-   so the result is correct even when the two ranges overlap. Portal 0 reads
-   and portal 1 writes, and both address registers are changed. Both step
-   registers are left at 1, or at -1 if the destination overlaps the end of
-   the source and the copy runs backward.
+   ``xram_move()`` copies ``count`` bytes from one XRAM address to
+   another, as ``memmove()`` does, so the result is correct when the two
+   ranges overlap. It uses both portals, so the copy is fast and the data
+   does not pass through 6502 RAM.
 
    :C proto: rp6502.h
    :param dest: Destination address in XRAM.
@@ -223,14 +179,8 @@ XRAM_PEEK
                 lib unsigned xram0_peek16 (unsigned addr)
                 lib unsigned xram1_peek16 (unsigned addr)
 
-   Read one value from XRAM. ``xram0_peek8()`` and ``xram0_peek16()`` read
-   through portal 0, and ``xram1_peek8()`` and ``xram1_peek16()`` through
-   portal 1. The other portal is not touched.
-
-   The 8-bit calls read one byte and leave the step register unchanged.
-   The 16-bit calls read two bytes, low byte first, and set the step
-   register to 1. Every call changes the address register of the portal
-   it uses.
+   ``xram0_peek8()`` and ``xram1_peek8()`` read one byte from XRAM.
+   ``xram0_peek16()`` and ``xram1_peek16()`` read a 16-bit value.
 
    :C proto: rp6502.h
    :param addr: Address in XRAM to read.
@@ -245,12 +195,52 @@ XRAM_POKE
                 lib void xram0_poke16 (unsigned addr, unsigned val)
                 lib void xram1_poke16 (unsigned addr, unsigned val)
 
-   Write one value to XRAM. This is the other direction of `XRAM_PEEK`_
-   and follows the same rules.
+   ``xram0_poke8()`` and ``xram1_poke8()`` write one byte to XRAM.
+   ``xram0_poke16()`` and ``xram1_poke16()`` write a 16-bit value.
 
    :C proto: rp6502.h
    :param addr: Address in XRAM to write.
    :param val: Value to write.
+
+
+.. _api-xreg:
+
+XREG
+~~~~
+
+.. c:function:: int xreg (char device, char channel, unsigned char index, ...);
+
+   ``xreg()`` configures the peripherals of the :ref:`Peripheral
+   Information Exchange (PIX) <ria-pix>`. A program uses it to map
+   devices, such as the keyboard and the video modes, to XRAM. Then the
+   program uses each device through its XRAM, with the XRAM functions.
+   The section of each device in the :doc:`ria` and :doc:`vga`
+   datasheets gives its registers and its ``xreg()`` call.
+
+   The manual writes the address of an extended register (XREG) as
+   $device:channel:index. These are the first three arguments of
+   ``xreg()``: ``device``, ``channel``, and ``index``. Each value after
+   them goes to the next register in sequence, from ``index`` up. This
+   call sets $1:0:01 to 3, $1:0:02 to 2, and $1:0:03 to $FF00:
+
+   .. code-block:: C
+
+      xreg(0x1, 0x0, 0x01, 3, 2, 0xFF00);
+
+   When a program maps a device, the device can refuse a value, and the
+   call fails. A refusal usually means that the value is not valid, but
+   it can also mean that the machine does not have the feature.
+   :ref:`Extended Registers <ria-xreg>` in the :doc:`ria` datasheet
+   describes the errors.
+
+   :Operation: RIA_OP_XREG 0x01
+   :C proto: rp6502.h
+   :param device: PIX device ID. 0:RIA, 1:VGA, 2-6:unassigned
+   :param channel: PIX channel. 0-15
+   :param index: Index of the register in the channel. 0-255
+   :param ...: 16-bit values to set, from ``index`` up.
+   :a regs: return
+   :errno: EACCES, EINVAL, EIO
 
 
 Process

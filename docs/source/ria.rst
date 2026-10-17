@@ -266,6 +266,8 @@ fastcall mechanism of the :doc:`api`. Reading past the end is guaranteed
 to return zeros. Write to push, read to pull.
 
 
+.. _ria-pix:
+
 Peripheral Information Exchange (PIX)
 =====================================
 
@@ -294,26 +296,27 @@ Extended Registers (XREG)
 An extended register (XREG) is a 16-bit register of a PIX device.
 Device 0 is the RIA, device 1 is the :doc:`vga`, and devices 2-6 are
 open for expansion. Each PIX device has 16 channels of 256 registers. A
-program sets XREGs to map devices, such as the keyboard, to XRAM, and
-to control them. XREGs are not in the address space of the 6502, so a
-load or a store cannot access one. A program sets them with the
-:ref:`xreg() <api-xreg>` API call, and cannot read them back.
+program sets XREGs to map devices, such as the keyboard, to XRAM. XREGs
+are not in the address space of the 6502, so a load or a store cannot
+access one. A program sets them with the :ref:`xreg() <api-xreg>` API
+call, and cannot read them back.
 
 This call maps the keyboard to XRAM $1000:
 
 .. code-block:: C
 
-  xreg(0, 0, 0x00, 0x1000);
+  xreg(0x0, 0x0, 0x00, 0x1000);
 
-The first three arguments are the PIX device, the channel, and the
-register. Together they locate the XREG, in the form
-$device:$channel:register, so the keyboard XREG is $0:0:00. The last
-argument is the value. After the call, the RIA keeps the state of the
-keyboard in the 32 bytes at $1000-$101F.
+The first three arguments are the PIX device, the channel, and the index
+of the register in the channel. Together they are the address of the
+XREG, written $device:channel:index, so the keyboard XREG is $0:0:00.
+The last argument is the value. After the call, the RIA keeps the state
+of the keyboard in the 32 bytes at $1000-$101F.
 
-An XREG is a key register or an argument register. A write to a key
-register makes the device act at once. ``xreg()`` returns 0 when the
-device accepts the value, or -1 with ``errno`` set when the device
+An XREG is a key register or an argument register. When a program sets
+a key register, the device applies the value, such as the XRAM address
+of the keyboard, before ``xreg()`` returns. ``xreg()`` returns 0 when
+the device accepts the value, or -1 with ``errno`` set when the device
 refuses it. An argument register holds a value for a key register, and
 has no effect until the program sets that key register.
 
@@ -322,12 +325,12 @@ as :ref:`Key Registers <vga-key-registers>` in the :doc:`vga` datasheet
 describes. CANVAS selects the size of the canvas, the grid of pixels
 that the VGA draws. MODE programs a video mode from the argument
 registers above it. One ``xreg()`` call can set MODE and its arguments
-together, because the first value goes to the given register, and each
-next value to the next register up:
+together, because the first value goes to the register at the index, and
+each next value to the next register up:
 
 .. code-block:: C
 
-  xreg(1, 0, 0x01, 3, 2, 0xFF00);
+  xreg(0x1, 0x0, 0x01, 3, 2, 0xFF00);
 
 This call sets MODE ($1:0:01) to 3, the :ref:`bitmap mode <vga-mode-3>`.
 It sets $1:0:02 to 2, which selects 4-bit color, and $1:0:03 to $FF00,
@@ -339,20 +342,48 @@ write to CANVAS or MODE clears them, or until the ROM stops.
 
 One ``xreg()`` call logically sets all of its registers at once. The RIA
 receives every value of the call before it sets a register. Then it sets
-the key registers in order, from the lowest address, and sets the
+the key registers in order, from the lowest index, and sets the
 argument registers of each key register before that key register. So
 one call to the VGA can select the canvas and program the first video
 mode, which is all the video setup that many programs need:
 
 .. code-block:: C
 
-  xreg(1, 0, 0x00, 1, 3, 2, 0xFF00);
+  xreg(0x1, 0x0, 0x00, 1, 3, 2, 0xFF00);
 
 This call selects the 320x240 canvas, and then programs mode 3 as the
 call above does.
 
+When a key register refuses its value, the call ends and fails. The
+registers that the RIA set before the failure keep their new values, and
+the RIA does not set the others. A device refuses a value that it does
+not support, so a program can set a key register to test for a feature.
+A failed call sets ``errno`` to one of these:
+
+- EINVAL: a key register refused its value, or the arguments of the call
+  are not valid.
+- EIO: on an :doc:`pico`, the VGA did not answer a write to CANVAS or
+  MODE, as when no VGA is connected.
+- EACCES: the call wrote to channel $F of the VGA, which the RIA
+  manages. On an :doc:`pico`, the call fails this way only while a VGA
+  is connected.
+
+A device 2-6 cannot refuse a value, so a valid call to one always
+succeeds. On an :doc:`pico`, hardware that you build for the PIX bus is a
+device 2-6, and takes its settings through ``xreg()``. The other machines
+have no PIX bus, and discard the values for devices 2-6.
+
 An assembly program uses the ``xreg`` macro of ``rp6502.inc``, which
-takes the same arguments as ``xreg()``.
+takes the same arguments as ``xreg()``:
+
+.. code-block:: ca65
+
+  xreg $1, $0, $01, 3, 2, $FF00
+
+The macro loads each argument as an immediate operand, so an argument
+must be a constant or a symbol. The macro pushes the device, the
+channel, and the index, one byte each, and then each value, high byte
+first. ``RIA_A`` and ``RIA_X`` carry no argument.
 
 The XREGs of the RIA, device 0, are in the table below. Each one maps a
 device to XRAM at the address written to it. Writing ``$FFFF`` turns the
@@ -401,9 +432,9 @@ in XRAM.
 
 .. code-block:: C
 
-  xreg(0, 0, 0x00, xaddr);  // enable
-  xreg(0, 0, 0x00, 0xFFFF); // disable
-  xreg_ria_keyboard(xaddr); // macro shortcut
+  xreg(0x0, 0x0, 0x00, xaddr);  // enable
+  xreg(0x0, 0x0, 0x00, 0xFFFF); // disable
+  xreg_ria_keyboard(xaddr);     // macro shortcut
 
 The RIA continuously updates XRAM with a bit array of USB HID keyboard
 keycodes, which are not PS/2 scancodes. Each keycode is one bit in the
@@ -427,7 +458,7 @@ four keycodes are special:
 
       #define KEYBOARD_PRESSED(keys, code) ((keys)[(code) >> 3] & (1 << ((code) & 7)))
 
-      #define xreg_ria_keyboard(...) xreg(0, 0, 0, __VA_ARGS__)
+      #define xreg_ria_keyboard(...) xreg(0x0, 0x0, 0x00, __VA_ARGS__)
 
       typedef struct
       {
@@ -445,7 +476,7 @@ four keycodes are special:
       KEYBOARD_SCROLL_LOCK = 3
 
       .macro xreg_ria_keyboard addr
-          xreg 0, 0, 0, addr
+          xreg $0, $0, $00, addr
       .endmacro
 
       .struct keyboard_t
@@ -464,7 +495,7 @@ four keycodes are special:
       KEYBOARD_SCROLL_LOCK = 3
 
       .macro xreg_ria_keyboard addr
-          xreg 0, 0, 0, \addr
+          xreg $0, $0, $00, \addr
       .endm
 
       KEYBOARD_KEYS = 0
@@ -1211,9 +1242,9 @@ disable it by mapping it to an address in XRAM.
 
 .. code-block:: C
 
-  xreg(0, 0, 0x01, xaddr);  // enable
-  xreg(0, 0, 0x01, 0xFFFF); // disable
-  xreg_ria_mouse(xaddr);    // macro shortcut
+  xreg(0x0, 0x0, 0x01, xaddr);  // enable
+  xreg(0x0, 0x0, 0x01, 0xFFFF); // disable
+  xreg_ria_mouse(xaddr);        // macro shortcut
 
 This sets the XRAM address of a structure holding the live mouse input.
 
@@ -1249,7 +1280,7 @@ Mouse buttons are a bitfield:
       #define MOUSE_BUTTON_BACKWARD 0x08
       #define MOUSE_BUTTON_FORWARD 0x10
 
-      #define xreg_ria_mouse(...) xreg(0, 0, 1, __VA_ARGS__)
+      #define xreg_ria_mouse(...) xreg(0x0, 0x0, 0x01, __VA_ARGS__)
 
       typedef struct
       {
@@ -1273,7 +1304,7 @@ Mouse buttons are a bitfield:
       MOUSE_BUTTON_FORWARD  = $10
 
       .macro xreg_ria_mouse addr
-          xreg 0, 0, 1, addr
+          xreg $0, $0, $01, addr
       .endmacro
 
       .struct mouse_t
@@ -1298,7 +1329,7 @@ Mouse buttons are a bitfield:
       MOUSE_BUTTON_FORWARD  = $10
 
       .macro xreg_ria_mouse addr
-          xreg 0, 0, 1, \addr
+          xreg $0, $0, $01, \addr
       .endm
 
       MOUSE_BUTTONS = 0
@@ -1323,9 +1354,9 @@ in XRAM.
 
 .. code-block:: C
 
-  xreg(0, 0, 0x03, xaddr);  // enable
-  xreg(0, 0, 0x03, 0xFFFF); // disable
-  xreg_ria_tablet(xaddr);   // macro shortcut
+  xreg(0x0, 0x0, 0x03, xaddr);  // enable
+  xreg(0x0, 0x0, 0x03, 0xFFFF); // disable
+  xreg_ria_tablet(xaddr);       // macro shortcut
 
 The block is a four-byte header followed by eight contact records for
 multi-touch; a mouse or pen uses only the first. The layout always reserves
@@ -1404,7 +1435,7 @@ pointer, and ``control`` has no effect.
       #define TABLET_CURSOR_RESIZE_EW 5
       #define TABLET_CURSOR_RESIZE_NS 6
 
-      #define xreg_ria_tablet(...) xreg(0, 0, 3, __VA_ARGS__)
+      #define xreg_ria_tablet(...) xreg(0x0, 0x0, 0x03, __VA_ARGS__)
 
       typedef struct
       {
@@ -1457,7 +1488,7 @@ pointer, and ``control`` has no effect.
       TABLET_CURSOR_RESIZE_NS = 6
 
       .macro xreg_ria_tablet addr
-          xreg 0, 0, 3, addr
+          xreg $0, $0, $03, addr
       .endmacro
 
       .struct tablet_pointer_t
@@ -1513,7 +1544,7 @@ pointer, and ``control`` has no effect.
       TABLET_CURSOR_RESIZE_NS = 6
 
       .macro xreg_ria_tablet addr
-          xreg 0, 0, 3, \addr
+          xreg $0, $0, $03, \addr
       .endm
 
       TABLET_CONTROL = 0
@@ -1650,9 +1681,9 @@ data.
 
 .. code-block:: C
 
-  xreg(0, 0, 2, xaddr);    // enable
-  xreg(0, 0, 2, 0xFFFF);   // disable
-  xreg_ria_gamepad(xaddr); // macro shortcut
+  xreg(0x0, 0x0, 0x02, xaddr);  // enable
+  xreg(0x0, 0x0, 0x02, 0xFFFF); // disable
+  xreg_ria_gamepad(xaddr);      // macro shortcut
 
 The RIA continuously updates extended memory with gamepad state. The
 10-byte structure below repeats four times — 40 bytes total, one block
@@ -1809,7 +1840,7 @@ and R2 should expect analog values of just 0 or 255.
       #define GAMEPAD_BTN1_L3 0x20
       #define GAMEPAD_BTN1_R3 0x40
 
-      #define xreg_ria_gamepad(...) xreg(0, 0, 2, __VA_ARGS__)
+      #define xreg_ria_gamepad(...) xreg(0x0, 0x0, 0x02, __VA_ARGS__)
 
       typedef struct
       {
@@ -1877,7 +1908,7 @@ and R2 should expect analog values of just 0 or 255.
       GAMEPAD_BTN1_R3     = $40
 
       .macro xreg_ria_gamepad addr
-          xreg 0, 0, 2, addr
+          xreg $0, $0, $02, addr
       .endmacro
 
       .struct gamepad_t
@@ -1944,7 +1975,7 @@ and R2 should expect analog values of just 0 or 255.
       GAMEPAD_BTN1_R3     = $40
 
       .macro xreg_ria_gamepad addr
-          xreg 0, 0, 2, \addr
+          xreg $0, $0, $02, \addr
       .endm
 
       GAMEPAD_PLAYER = 0
@@ -1987,9 +2018,9 @@ plays at a time, so enabling the PSG disables the OPL2.
 
 .. code-block:: C
 
-  xreg(0, 1, 0x00, xaddr);  // enable
-  xreg(0, 1, 0x00, 0xFFFF); // disable
-  xreg_ria_psg(xaddr);      // macro shortcut
+  xreg(0x0, 0x1, 0x00, xaddr);  // enable
+  xreg(0x0, 0x1, 0x00, 0xFFFF); // disable
+  xreg_ria_psg(xaddr);          // macro shortcut
 
 Configuration changes take effect immediately, which opens the door to
 panning, slide instruments, and other CPU-driven shenanigans.
@@ -2125,7 +2156,7 @@ Volume attenuation is logarithmic.
       #define PSG_FREQ_HZ(hz) ((hz) * 3u)
       #define PSG_PAN(pan) ((uint8_t)((pan) * 2))
 
-      #define xreg_ria_psg(...) xreg(0, 1, 0, __VA_ARGS__)
+      #define xreg_ria_psg(...) xreg(0x0, 0x1, 0x00, __VA_ARGS__)
 
       typedef struct
       {
@@ -2163,7 +2194,7 @@ Volume attenuation is logarithmic.
       PSG_GATE = $01
 
       .macro xreg_ria_psg addr
-          xreg 0, 1, 0, addr
+          xreg $0, $1, $00, addr
       .endmacro
 
       .struct psg_t
@@ -2196,7 +2227,7 @@ Volume attenuation is logarithmic.
       PSG_GATE = $01
 
       .macro xreg_ria_psg addr
-          xreg 0, 1, 0, \addr
+          xreg $0, $1, $00, \addr
       .endm
 
       PSG_CHANNEL = 0
@@ -2226,9 +2257,9 @@ XRAM from 0x4200 to 0x42FF. Enabling the OPL2 disables the PSG.
 
 .. code-block:: C
 
-  xreg(0, 1, 0x01, xaddr);  // enable
-  xreg(0, 1, 0x01, 0xFFFF); // disable
-  xreg_ria_opl(xaddr);      // macro shortcut
+  xreg(0x0, 0x1, 0x01, xaddr);  // enable
+  xreg(0x0, 0x1, 0x01, 0xFFFF); // disable
+  xreg_ria_opl(xaddr);          // macro shortcut
 
 
 Timers, interrupts, and the status register are not supported. Those
@@ -2240,7 +2271,7 @@ the era had their own timers and rarely used the chip's.
    .. code-block:: C
       :caption: xram.h
 
-      #define xreg_ria_opl(...) xreg(0, 1, 1, __VA_ARGS__)
+      #define xreg_ria_opl(...) xreg(0x0, 0x1, 0x01, __VA_ARGS__)
 
       typedef struct
       {
@@ -2257,7 +2288,7 @@ the era had their own timers and rarely used the chip's.
       :caption: xram.inc
 
       .macro xreg_ria_opl addr
-          xreg 0, 1, 1, addr
+          xreg $0, $1, $01, addr
       .endmacro
 
       .struct opl_t
@@ -2271,7 +2302,7 @@ the era had their own timers and rarely used the chip's.
       :force:
 
       .macro xreg_ria_opl addr
-          xreg 0, 1, 1, \addr
+          xreg $0, $1, $01, \addr
       .endm
 
       OPL_REG  = 0
@@ -2648,7 +2679,8 @@ For devices 1-6, the remaining bits address an extended register:
 
 - **Bits 27-24** (0x0F000000) — the channel ID; each device can have 16
   channels.
-- **Bits 23-16** (0x00FF0000) — the register address within that channel.
+- **Bits 23-16** (0x00FF0000) — the index of the register within that
+  channel.
 - **Bits 15-0** (0x0000FFFF) — the value to store in the register.
 
 The RIA broadcasts every change to XRAM as a device 0 message, with the

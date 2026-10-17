@@ -598,7 +598,7 @@ A type marked ``/* layout */`` is a block that goes in
 
       #define KEYBOARD_PRESSED(keys, code) ((keys)[(code) >> 3] & (1 << ((code) & 7)))
 
-      #define xreg_ria_keyboard(...) xreg(0, 0, 0, __VA_ARGS__)
+      #define xreg_ria_keyboard(...) xreg(0x0, 0x0, 0x00, __VA_ARGS__)
 
       typedef struct
       {
@@ -628,7 +628,7 @@ A type marked ``/* layout */`` is a block that goes in
       KEYBOARD_SCROLL_LOCK = 3
 
       .macro xreg_ria_keyboard addr
-          xreg 0, 0, 0, addr
+          xreg $0, $0, $00, addr
       .endmacro
 
       .struct keyboard_t
@@ -658,7 +658,7 @@ A type marked ``/* layout */`` is a block that goes in
       KEYBOARD_SCROLL_LOCK = 3
 
       .macro xreg_ria_keyboard addr
-          xreg 0, 0, 0, \addr
+          xreg $0, $0, $00, \addr
       .endm
 
       KEYBOARD_KEYS = 0
@@ -1865,12 +1865,12 @@ This is ``rp6502-compat.h``:
        (int)ria_attr_get(RIA_ATTR_CODE_PAGE))
   #define lrand() ria_attr_get(RIA_ATTR_LRAND)
 
-  #define xreg_ria_keyboard(...) xreg(0, 0, 0, __VA_ARGS__)
-  #define xreg_ria_mouse(...) xreg(0, 0, 1, __VA_ARGS__)
-  #define xreg_ria_gamepad(...) xreg(0, 0, 2, __VA_ARGS__)
-  #define xreg_ria_tablet(...) xreg(0, 0, 3, __VA_ARGS__)
-  #define xreg_vga_canvas(...) xreg(1, 0, 0, __VA_ARGS__)
-  #define xreg_vga_mode(...) xreg(1, 0, 1, __VA_ARGS__)
+  #define xreg_ria_keyboard(...) xreg(0x0, 0x0, 0x00, __VA_ARGS__)
+  #define xreg_ria_mouse(...) xreg(0x0, 0x0, 0x01, __VA_ARGS__)
+  #define xreg_ria_gamepad(...) xreg(0x0, 0x0, 0x02, __VA_ARGS__)
+  #define xreg_ria_tablet(...) xreg(0x0, 0x0, 0x03, __VA_ARGS__)
+  #define xreg_vga_canvas(...) xreg(0x1, 0x0, 0x00, __VA_ARGS__)
+  #define xreg_vga_mode(...) xreg(0x1, 0x0, 0x01, __VA_ARGS__)
 
   /* Bit tests, not ==, avoid a cc65 warning about constant comparisons.
      The casts avoid conversion warnings from the unused branches. */

@@ -70,18 +70,18 @@ own, given in its section below.
 
 You program the VGA device with :ref:`PIX extended registers <ria-xreg>`
 (XREGs). The VGA is PIX device ID 1. Registers are 16-bit values
-addressed as $device:$channel:register — for example, $1:0:0F.
+addressed as $device:channel:index — for example, $1:0:0F.
 ``xaddr`` in the examples below is the XRAM address of that mode's
 configuration structure.
 
 .. code-block:: C
 
     // Select a 320x240 canvas
-    result = xreg(1, 0, 0, 1); // or
+    result = xreg(0x1, 0x0, 0x00, 1); // or
     result = xreg_vga_canvas(CANVAS_320X240);
     // Program mode 3 for 4 bit color with
     // its config structure at XRAM $FF00.
-    result = xreg(1, 0, 1, 3, 2, 0xFF00); // or
+    result = xreg(0x1, 0x0, 0x01, 3, 2, 0xFF00); // or
     result = xreg_vga_mode3(MODE3_4BPP, 0xFF00);
 
 
@@ -131,7 +131,7 @@ because setting CANVAS clears all scanline programming.
 
 .. code-block:: C
 
-  xreg(1, 0, 0, 1);                // 320x240 canvas
+  xreg(0x1, 0x0, 0x00, 1);         // 320x240 canvas
   xreg_vga_canvas(CANVAS_320X240); // macro shortcut
 
 .. tab:: C
@@ -139,7 +139,7 @@ because setting CANVAS clears all scanline programming.
    .. code-block:: C
       :caption: xram.h
 
-      #define xreg_vga_canvas(...) xreg(1, 0, 0, __VA_ARGS__)
+      #define xreg_vga_canvas(...) xreg(0x1, 0x0, 0x00, __VA_ARGS__)
 
       #define CANVAS_CONSOLE 0
       #define CANVAS_320X240 1
@@ -153,7 +153,7 @@ because setting CANVAS clears all scanline programming.
       :caption: xram.inc
 
       .macro xreg_vga_canvas canvas
-          xreg 1, 0, 0, canvas
+          xreg $1, $0, $00, canvas
       .endmacro
 
       CANVAS_CONSOLE = 0
@@ -169,7 +169,7 @@ because setting CANVAS clears all scanline programming.
       :force:
 
       .macro xreg_vga_canvas canvas
-          xreg 1, 0, 0, \canvas
+          xreg $1, $0, $00, \canvas
       .endm
 
       CANVAS_CONSOLE = 0
@@ -293,15 +293,15 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 0, 0); // console on plane 0
-  xreg_vga_mode0(0);   // macro shortcut
+  xreg(0x1, 0x0, 0x01, 0, 0); // console on plane 0
+  xreg_vga_mode0(0);          // macro shortcut
 
 .. tab:: C
 
    .. code-block:: C
       :caption: xram.h
 
-      #define xreg_vga_mode0(...) xreg(1, 0, 1, 0, __VA_ARGS__)
+      #define xreg_vga_mode0(...) xreg(0x1, 0x0, 0x01, 0, __VA_ARGS__)
 
 .. tab:: ca65
 
@@ -309,7 +309,7 @@ Program the mode by setting MODE and the registers after it in one call.
       :caption: xram.inc
 
       .macro xreg_vga_mode0 plane, begin, end
-          xreg 1, 0, 1, 0, plane, begin, end
+          xreg $1, $0, $01, 0, plane, begin, end
       .endmacro
 
 .. tab:: llvm-mc
@@ -319,7 +319,7 @@ Program the mode by setting MODE and the registers after it in one call.
       :force:
 
       .macro xreg_vga_mode0 values:vararg
-          xreg 1, 0, 1, 0, \values
+          xreg $1, $0, $01, 0, \values
       .endm
 
 
@@ -365,7 +365,7 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 1, 3, xaddr, 0);        // 8-bit color on plane 0
+  xreg(0x1, 0x0, 0x01, 1, 3, xaddr, 0); // 8-bit color on plane 0
   xreg_vga_mode1(MODE1_8BPP, xaddr, 0); // macro shortcut
 
 Config structure may be updated without reprogramming scanlines.
@@ -411,7 +411,7 @@ page.
    .. code-block:: C
       :caption: xram.h
 
-      #define xreg_vga_mode1(...) xreg(1, 0, 1, 1, __VA_ARGS__)
+      #define xreg_vga_mode1(...) xreg(0x1, 0x0, 0x01, 1, __VA_ARGS__)
 
       #define MODE1_1BPP 0x00
       #define MODE1_4BPPR 0x01
@@ -476,7 +476,7 @@ page.
       :caption: xram.inc
 
       .macro xreg_vga_mode1 options, config, plane, begin, end
-          xreg 1, 0, 1, 1, options, config, plane, begin, end
+          xreg $1, $0, $01, 1, options, config, plane, begin, end
       .endmacro
 
       MODE1_1BPP  = $00
@@ -534,7 +534,7 @@ page.
       :force:
 
       .macro xreg_vga_mode1 values:vararg
-          xreg 1, 0, 1, 1, \values
+          xreg $1, $0, $01, 1, \values
       .endm
 
       MODE1_1BPP  = $00
@@ -623,7 +623,7 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 2, 2, xaddr, 0);                    // 4-bit color 8x8 tiles on plane 0
+  xreg(0x1, 0x0, 0x01, 2, 2, xaddr, 0);             // 4-bit color 8x8 tiles on plane 0
   xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, xaddr, 0); // macro shortcut
 
 Config structure may be updated without reprogramming scanlines.
@@ -655,7 +655,7 @@ data would extend past the end of XRAM are drawn as transparent black.
    .. code-block:: C
       :caption: xram.h
 
-      #define xreg_vga_mode2(...) xreg(1, 0, 1, 2, __VA_ARGS__)
+      #define xreg_vga_mode2(...) xreg(0x1, 0x0, 0x01, 2, __VA_ARGS__)
 
       #define MODE2_1BPP 0x00
       #define MODE2_2BPP 0x01
@@ -696,7 +696,7 @@ data would extend past the end of XRAM are drawn as transparent black.
       :caption: xram.inc
 
       .macro xreg_vga_mode2 options, config, plane, begin, end
-          xreg 1, 0, 1, 2, options, config, plane, begin, end
+          xreg $1, $0, $01, 2, options, config, plane, begin, end
       .endmacro
 
       MODE2_1BPP = $00
@@ -735,7 +735,7 @@ data would extend past the end of XRAM are drawn as transparent black.
       :force:
 
       .macro xreg_vga_mode2 values:vararg
-          xreg 1, 0, 1, 2, \values
+          xreg $1, $0, $01, 2, \values
       .endm
 
       MODE2_1BPP = $00
@@ -806,7 +806,7 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 3, 2, xaddr, 0);        // 4-bit color on plane 0
+  xreg(0x1, 0x0, 0x01, 3, 2, xaddr, 0); // 4-bit color on plane 0
   xreg_vga_mode3(MODE3_4BPP, xaddr, 0); // macro shortcut
 
 Config structure may be updated without reprogramming scanlines.
@@ -834,7 +834,7 @@ manipulation code slightly smaller and faster.
    .. code-block:: C
       :caption: xram.h
 
-      #define xreg_vga_mode3(...) xreg(1, 0, 1, 3, __VA_ARGS__)
+      #define xreg_vga_mode3(...) xreg(0x1, 0x0, 0x01, 3, __VA_ARGS__)
 
       #define MODE3_1BPP 0x00
       #define MODE3_2BPP 0x01
@@ -862,7 +862,7 @@ manipulation code slightly smaller and faster.
       :caption: xram.inc
 
       .macro xreg_vga_mode3 options, config, plane, begin, end
-          xreg 1, 0, 1, 3, options, config, plane, begin, end
+          xreg $1, $0, $01, 3, options, config, plane, begin, end
       .endmacro
 
       MODE3_1BPP  = $00
@@ -891,7 +891,7 @@ manipulation code slightly smaller and faster.
       :force:
 
       .macro xreg_vga_mode3 values:vararg
-          xreg 1, 0, 1, 3, \values
+          xreg $1, $0, $01, 3, \values
       .endm
 
       MODE3_1BPP  = $00
@@ -960,8 +960,8 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 4, 0, xaddr, length, 1); // sprites on plane 1
-  xreg_vga_mode4(0, xaddr, length, 1);   // macro shortcut
+  xreg(0x1, 0x0, 0x01, 4, 0, xaddr, length, 1); // sprites on plane 1
+  xreg_vga_mode4(0, xaddr, length, 1);          // macro shortcut
 
 Move unused sprites off the canvas.
 
@@ -992,7 +992,7 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
    .. code-block:: C
       :caption: xram.h
 
-      #define xreg_vga_mode4(...) xreg(1, 0, 1, 4, __VA_ARGS__)
+      #define xreg_vga_mode4(...) xreg(0x1, 0x0, 0x01, 4, __VA_ARGS__)
 
       #define MODE4_AFFINE_BIT 0x01
 
@@ -1042,7 +1042,7 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
       :caption: xram.inc
 
       .macro xreg_vga_mode4 options, config, length, plane, begin, end
-          xreg 1, 0, 1, 4, options, config, length, plane, begin, end
+          xreg $1, $0, $01, 4, options, config, length, plane, begin, end
       .endmacro
 
       MODE4_AFFINE_BIT = $01
@@ -1094,7 +1094,7 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
       :force:
 
       .macro xreg_vga_mode4 values:vararg
-          xreg 1, 0, 1, 4, \values
+          xreg $1, $0, $01, 4, \values
       .endm
 
       MODE4_AFFINE_BIT = $01
@@ -1187,7 +1187,7 @@ Program the mode by setting MODE and the registers after it in one call.
 
 .. code-block:: C
 
-  xreg(1, 0, 1, 5, 0x0A, xaddr, length, 1);                   // 16x16 4-bit, plane 1
+  xreg(0x1, 0x0, 0x01, 5, 0x0A, xaddr, length, 1);            // 16x16 4-bit, plane 1
   xreg_vga_mode5(MODE5_4BPP | MODE5_16X16, xaddr, length, 1); // macro shortcut
   xreg_vga_mode5(MODE5_CUSTOM, xaddr, length, 2);             // custom sprites, plane 2
 
@@ -1220,7 +1220,7 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
    .. code-block:: C
       :caption: xram.h
 
-      #define xreg_vga_mode5(...) xreg(1, 0, 1, 5, __VA_ARGS__)
+      #define xreg_vga_mode5(...) xreg(0x1, 0x0, 0x01, 5, __VA_ARGS__)
 
       #define MODE5_1BPP 0x00
       #define MODE5_2BPP 0x01
@@ -1286,7 +1286,7 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
       :caption: xram.inc
 
       .macro xreg_vga_mode5 options, config, length, plane, begin, end
-          xreg 1, 0, 1, 5, options, config, length, plane, begin, end
+          xreg $1, $0, $01, 5, options, config, length, plane, begin, end
       .endmacro
 
       MODE5_1BPP = $00
@@ -1353,7 +1353,7 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
       :force:
 
       .macro xreg_vga_mode5 values:vararg
-          xreg 1, 0, 1, 5, \values
+          xreg $1, $0, $01, 5, \values
       .endm
 
       MODE5_1BPP = $00
