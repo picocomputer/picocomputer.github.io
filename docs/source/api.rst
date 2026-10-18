@@ -356,44 +356,47 @@ OPEN
 
 .. c:function:: int open (const char *path, int oflag)
 
-   Create a connection between a file and a file descriptor.
+   ``open()`` opens a file or a device stream, and returns a file
+   descriptor, which the other calls of this section take to use it.
+   ``oflag`` is the OR of these options, and must include O_RDONLY,
+   O_WRONLY, or O_RDWR, or the call fails with EINVAL:
 
-   The options must include O_RDONLY, O_WRONLY or O_RDWR, or the call
-   fails with EINVAL. An open of a directory fails with EACCES. A file can
-   be open on several descriptors at once. Close a descriptor that writes
-   a file before opening that file again, as described in
-   :ref:`Files and Folders <port-files>`.
+   .. list-table::
+      :widths: 10 18 72
 
-   A path can also name a device. See :doc:`term` for ``CON:`` and
-   ``TTY:``, the :doc:`sdk` for ``ROM:`` followed by an asset name, and
-   :ref:`PORT <port-save>` for ``SAVE:`` followed by a save name. See the
-   :doc:`ria` datasheet for ``VCP0:``, ``MIDI0:`` and ``NFC:``, and the
-   :doc:`ria_w` page for ``AT:``.
+      * - 0x01
+        - O_RDONLY
+        - Open for reading only.
+      * - 0x02
+        - O_WRONLY
+        - Open for writing only.
+      * - 0x03
+        - O_RDWR
+        - Open for reading and writing.
+      * - 0x10
+        - O_CREAT
+        - Create the file when it does not exist.
+      * - 0x20
+        - O_TRUNC
+        - With O_WRONLY or O_RDWR, set the length of the file to 0.
+      * - 0x40
+        - O_APPEND
+        - Set the read/write position to the end of the file once, at the
+          open, not before each write.
+      * - 0x80
+        - O_EXCL
+        - With O_CREAT, fail when the file exists.
+
+   When no file descriptor is free, the call fails with EMFILE.
 
    :Operation: RIA_OP_OPEN 0x14
    :C proto: fcntl.h
-   :param path: Pathname to a file.
-   :param oflag: Bitfield of options.
+   :param path: Path of the file or the device stream.
+   :param oflag: Options, ORed together.
    :returns: File descriptor. -1 on error.
    :a regs: return, oflag
    :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM,
       ENOSPC
-   :Options:
-
-      | O_RDONLY 0x01
-      |    Open for reading only.
-      | O_WRONLY 0x02
-      |    Open for writing only.
-      | O_RDWR 0x03
-      |    Open for reading and writing.
-      | O_CREAT 0x10
-      |    Create the file if it does not exist.
-      | O_TRUNC 0x20
-      |    Truncate the file length to 0 after opening.
-      | O_APPEND 0x40
-      |    Read/write pointer is set to the end of the file at open.
-      | O_EXCL 0x80
-      |    If O_CREAT and O_EXCL are set, fail if the file exists.
 
 
 CLOSE
@@ -401,10 +404,13 @@ CLOSE
 
 .. c:function:: int close (int fildes)
 
-   Finish pending writes and release the file descriptor. The descriptor
-   goes back to the pool that open() draws from. What survives a failure
-   after close differs by machine, as listed in
-   :ref:`Durability <port-durability>`.
+   ``close()`` finishes the pending writes of a file and closes its file
+   descriptor. ``close()`` closes the file descriptor also when it fails,
+   so a program must not use the file descriptor after ``close()``. A
+   close of stdin, stdout, stderr, ``CON:``, or ``TTY:`` succeeds and
+   leaves it open. :ref:`Durability <port-durability>` lists the data that
+   each machine keeps through a crash or the removal of a drive after
+   ``close()``.
 
    :Operation: RIA_OP_CLOSE 0x15
    :C proto: fcntl.h

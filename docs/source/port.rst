@@ -320,12 +320,13 @@ once, when the file opens. O_EXCL applies only together with O_CREAT. An
 open with neither O_RDONLY nor O_WRONLY fails with EINVAL, and an open of
 a directory fails with EACCES.
 
-A file can be open on several descriptors at once, and reading it
-through all of them is safe. A portable program closes a descriptor that
-writes a file before it opens that file again, and it closes a file
-before an UNLINK removes it or a RENAME moves or replaces it. Without
-those closes, the results differ between machines, and a FAT drive can
-be damaged.
+A file can be open for reading on several descriptors at once. On a USB
+drive of an :doc:`pico`, a file that is open for writing has no other
+descriptor: an open of it fails with EBUSY, and so does an open for
+writing of a file that is open, and an UNLINK or a RENAME of an open
+file. The other machines allow these. A portable program closes a file
+before it opens that file again to write it, and before an UNLINK
+removes it or a RENAME moves or replaces it.
 
 A seek past the end of a file opened for writing extends the file with
 zeros. On a full drive, that seek fails with ENOSPC and changes nothing.

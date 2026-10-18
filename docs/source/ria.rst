@@ -2331,9 +2331,7 @@ file, using a special name. By default ``"VCP0:"`` opens at 115200 bps
 with 8 data bits, no parity, and 1 stop bit. Set the baud rate with
 ``"VCP0:115200"``, or the full bit configuration with
 ``"VCP0:115200,8N1"``. The file won't open if your hardware can't
-support the requested configuration. The options of ``open()`` have no
-effect, but ``oflag`` must include O_RDONLY, O_WRONLY, or O_RDWR, as for
-any file.
+support the requested configuration.
 
 .. code-block:: C
 
@@ -2374,10 +2372,8 @@ a file or play back later.
 
 The division is ticks per quarter note, the value an SMF carries in its header.
 It accepts 1 to 32767 and is fixed while open; reopen between songs to change
-it. The options of ``open()`` have no effect, but ``oflag`` must include
-O_RDONLY, O_WRONLY, or O_RDWR, as for any file. A cable can be input, output,
-or both; reading an output-only cable or writing an input-only one returns an
-error.
+it. A cable can be input, output, or both; reading an output-only cable or
+writing an input-only one returns an error.
 
 Tempo changes on the fly with the standard SMF Set Tempo meta event,
 which the RIA consumes locally and never forwards to the instrument. The
