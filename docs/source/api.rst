@@ -253,30 +253,33 @@ ARGV
 
 .. c:function:: ABI int _argv (char *argv, int size)
 
-   The virtual _argv is called during C initialization to supply argc and
-   argv to main(). It returns an array of zero-terminated string indexes
-   followed by the strings themselves. The returned data is guaranteed
-   valid. For example, ["ABC", "DEF"] is:
-
-   .. code-block:: text
-
-      06 00 0A 00 00 00 41 42 43 00 44 45 46 00
-
-   Because this can use up to 512 bytes of RAM, you opt in by defining
-   ``__argv_mem()`` to provide storage for the argv data. Use static
-   memory, or dynamically allocated memory you can free afterward. You can
-   also reject an oversized argv by returning NULL. The argv data is on
-   the XSTACK while ``__argv_mem()`` runs, so ``__argv_mem()`` must not
-   make an API call, not even through printf().
+   The C runtime runs this operation before ``main()`` to get ``argc`` and
+   ``argv``. The argv data can use up to 512 bytes of RAM, so ``argc`` and
+   ``argv`` are opt-in. To get them in ``main()``, define ``__argv_mem()`` in
+   any source file of the program, such as ``main.c``:
 
    .. code-block:: c
 
       void *__argv_mem(size_t size) { return malloc(size); }
 
+   The C runtime calls ``__argv_mem()`` with the size of the argv data.
+   ``__argv_mem()`` returns storage of that size, in static memory or from
+   ``malloc()``. A program can free the memory from ``malloc()`` after it
+   reads the arguments. ``__argv_mem()`` can return NULL to reject an argv
+   that is too large. With no ``__argv_mem()``, or when it returns NULL,
+   ``main()`` gets an ``argc`` of 0.
+
+   The operation returns, on the XSTACK, a table of 16-bit offsets, which ends
+   with 0, and then the zero-terminated strings. Each offset is the position of
+   a string from the start of the data. The data is always valid. For example,
+   ["ABC", "DEF"] is:
+
+   .. code-block:: text
+
+      06 00 0A 00 00 00 41 42 43 00 44 45 46 00
+
    :Operation: RIA_OP_ARGV 0x08
-   :C proto: (none)
-   :returns: Size of argv data
-   :errno: will not fail
+   :returns: Size of the argv data.
 
 
 EXEC
@@ -286,27 +289,38 @@ EXEC
                 lib int ria_execl (const char *path, ...)
                 lib int ria_execv (const char *path, char * const argv[])
 
-   The virtual _exec is called by ria_execl() and ria_execv(). Note one
-   difference from the execl() and execv() you may know: because RAM is
-   precious, the path is supplied once, not again in argv[0]. In the
-   launched ROM, argv[0] is the absolute form of the path given, with its
-   drive, or ``:NAME`` for a ROM on the null drive, as described in
-   :ref:`Installed ROMs <port-installed-roms>`.
+   ``ria_execl()`` and ``ria_execv()`` start another ROM. ``path`` is the path
+   of the ROM. The arguments of the new ROM are the strings after ``path`` in
+   ``ria_execl()``, or the array ``argv`` in ``ria_execv()``, and each list
+   ends with NULL. Unlike the POSIX ``execl()`` and ``execv()``, the arguments
+   do not repeat the path, which saves RAM. In the new ROM, ``argv[0]`` is the
+   absolute path of the ROM, with its drive, or ``:NAME`` for a ROM on the null
+   drive, as :ref:`Installed ROMs <port-installed-roms>` describes. The
+   arguments follow it, so the first argument of the call, ``argv[0]`` of
+   ``ria_execv()``, becomes ``argv[1]`` in the new ROM.
 
-   The data sent by _exec() is checked for pointer safety and sanity, but
-   the path is assumed to point at a loadable ROM file. On EINVAL, the argv
-   buffer is cleared, so later calls to _argv() return an empty set. If the
-   ROM turns out to be invalid, the user is dropped back to the console
-   with an error message.
+   After a successful call, the RIA stops the 6502, loads the new ROM, and
+   starts it. When the ROM does not load, the 6502 stays stopped, and the
+   display shows the console, with its text and the error. An :doc:`pico`
+   returns to its monitor. The :doc:`emu` exits, unless it runs with
+   ``--debug``. The other machines stay stopped. The ROM does not load when the
+   file is missing or is not a valid ROM, when its absolute path is longer than
+   255 bytes, or when the argv data with that path does not fit in 512 bytes.
 
-   The ria_execl() and ria_execv() wrappers accept at most 16 strings (the
-   path plus up to 15 arguments) totaling no more than 512 bytes including
-   the offset table; exceeding either limit returns -1 with EINVAL.
+   ``ria_execl()`` and ``ria_execv()`` take at most 16 strings, the path and up
+   to 15 arguments, in at most 512 bytes with the offset table. A call over
+   either limit returns -1 with EINVAL.
+
+   The data of the API call has the layout of `ARGV`_, with at least one
+   string. Each string starts after the zero of the string before it, in the
+   order of the offset table. The path in ``argv[0]`` has at most 255 bytes.
+   The RIA checks the layout and the length of the path, but does not check
+   that the path is a ROM that loads. When a check fails, the call fails with
+   EINVAL.
 
    :Operation: RIA_OP_EXEC 0x09
    :C proto: rp6502.h
-   :returns: Does not return on success — the new ROM begins
-      executing. -1 on error.
+   :returns: Does not return on success. -1 on error.
    :errno: EINVAL
 
 
@@ -315,17 +329,21 @@ EXIT
 
 .. c:function:: void exit (int status)
 
-   Halt the 6502 and hand the console back to the machine. This is
-   the only operation that never returns; the OS pulls RESB low before the
-   next instruction can execute. The status value is kept for the next ROM
-   and is readable via ``RIA_ATTR_EXIT_CODE``.
+   ``exit()`` ends the program and does not return. A return from
+   ``main()`` also ends the program, with the return value as the exit
+   code. The RIA stops the 6502 before it runs another instruction, and
+   keeps the exit code for the next ROM, which reads it from
+   ``RIA_ATTR_EXIT_CODE``.
 
-   Dropping the user out of your program is generally discouraged, but
-   calling exit() beats locking up, as does falling off the end of main().
+   When another ROM is the launcher, that ROM runs again, as `Launcher`_
+   describes. Otherwise, an :doc:`pico` returns to its monitor, and the
+   :doc:`emu` exits with the same exit code, unless it runs with
+   ``--debug``. The other machines stay stopped.
 
    :Operation: RIA_OP_EXIT 0xFF
    :C proto: stdlib.h
-   :param status: 0 is success, and any other value is an error.
+   :param status: The exit code. 0 is success, and any other value is an
+      error.
 
 
 Files
