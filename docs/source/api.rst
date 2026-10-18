@@ -122,7 +122,7 @@ XRAM_READ
    :C proto: rp6502.h
    :param dest: Destination in 6502 RAM.
    :param src: Source address in XRAM.
-   :param count: Quantity of bytes to copy.
+   :param count: Number of bytes to copy.
 
 
 XRAM_WRITE
@@ -137,7 +137,7 @@ XRAM_WRITE
    :C proto: rp6502.h
    :param dest: Destination address in XRAM.
    :param src: Source in 6502 RAM.
-   :param count: Quantity of bytes to copy.
+   :param count: Number of bytes to copy.
 
 
 XRAM_SET
@@ -152,7 +152,7 @@ XRAM_SET
    :C proto: rp6502.h
    :param dest: Address in XRAM to fill.
    :param val: Byte to write to every address.
-   :param count: Quantity of bytes to fill.
+   :param count: Number of bytes to fill.
 
 
 XRAM_MOVE
@@ -168,7 +168,7 @@ XRAM_MOVE
    :C proto: rp6502.h
    :param dest: Destination address in XRAM.
    :param src: Source address in XRAM.
-   :param count: Quantity of bytes to copy.
+   :param count: Number of bytes to copy.
 
 
 XRAM_PEEK
@@ -269,10 +269,10 @@ ARGV
    that is too large. With no ``__argv_mem()``, or when it returns NULL,
    ``main()`` gets an ``argc`` of 0.
 
-   The operation returns, on the XSTACK, a table of 16-bit offsets, which ends
-   with 0, and then the zero-terminated strings. Each offset is the position of
-   a string from the start of the data. The data is always valid. For example,
-   ["ABC", "DEF"] is:
+   The operation returns the argv data on the XSTACK: a table of 16-bit offsets
+   that ends with 0, then the zero-terminated strings. Each offset is the
+   position of a string from the start of the data. The data is always valid.
+   For example, ["ABC", "DEF"] is:
 
    .. code-block:: text
 
@@ -311,7 +311,7 @@ EXEC
    to 15 arguments, in at most 512 bytes with the offset table. A call over
    either limit returns -1 with EINVAL.
 
-   The data of the API call has the layout of `ARGV`_, with at least one
+   The EXEC data has the same layout as the ARGV data, with at least one
    string. Each string starts after the zero of the string before it, in the
    order of the offset table. The path in ``argv[0]`` has at most 255 bytes.
    The RIA checks the layout and the length of the path, but does not check
@@ -356,10 +356,11 @@ OPEN
 
 .. c:function:: int open (const char *path, int oflag)
 
-   ``open()`` opens a file or a device stream, and returns a file
-   descriptor, which the other calls of this section take to use it.
-   ``oflag`` is the OR of these options, and must include O_RDONLY,
-   O_WRONLY, or O_RDWR, or the call fails with EINVAL:
+   ``open()`` opens a file or a device stream, and returns a file descriptor.
+
+   ``oflag`` is the options below, ORed together. It must include O_RDONLY,
+   O_WRONLY, or O_RDWR, or the call fails with EINVAL. O_RDONLY is 0x01, not 0
+   as on most POSIX systems, so ``open(path, 0)`` fails.
 
    .. list-table::
       :widths: 10 18 72
@@ -404,13 +405,7 @@ CLOSE
 
 .. c:function:: int close (int fildes)
 
-   ``close()`` finishes the pending writes of a file and closes its file
-   descriptor. ``close()`` closes the file descriptor also when it fails,
-   so a program must not use the file descriptor after ``close()``. A
-   close of stdin, stdout, stderr, ``CON:``, or ``TTY:`` succeeds and
-   leaves it open. :ref:`Durability <port-durability>` lists the data that
-   each machine keeps through a crash or the removal of a drive after
-   ``close()``.
+   ``close()`` closes a file descriptor.
 
    :Operation: RIA_OP_CLOSE 0x15
    :C proto: fcntl.h
@@ -425,15 +420,14 @@ READ
 
 .. c:function:: lib int read (int fildes, void *buf, unsigned count)
 
-   Read ``count`` bytes from a file into a buffer. This is implemented in
-   the compiler library as a series of calls to `READ_XSTACK`_.
+   ``read()`` reads up to ``count`` bytes from a file into ``buf``. It is a C
+   library function that calls `READ_XSTACK`_ as many times as it needs to.
 
    :C proto: unistd.h
-   :param buf: Destination for the returned data.
-   :param count: Quantity of bytes to read. 0x7FFF max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes read is returned. On error, -1 is
-      returned.
+   :param buf: Destination of the data.
+   :param count: Number of bytes to read. 0x7FFF max.
+   :returns: The number of bytes read. -1 on error.
    :a regs: fildes
    :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
 
@@ -443,15 +437,15 @@ READ_XSTACK
 
 .. c:function:: int read_xstack (void *buf, unsigned count, int fildes)
 
-   Read ``count`` bytes from a file to the XSTACK.
+   ``read_xstack()`` reads up to ``count`` bytes from a file into ``buf``,
+   through the XSTACK.
 
    :Operation: RIA_OP_READ_XSTACK 0x16
    :C proto: rp6502.h
-   :param buf: Destination for the returned data.
-   :param count: Quantity of bytes to read. 0x200 max.
+   :param buf: Destination of the data.
+   :param count: Number of bytes to read. 0x200 max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes read is returned. On error, -1 is
-      returned.
+   :returns: The number of bytes read. -1 on error.
    :a regs: fildes
    :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
 
@@ -461,17 +455,17 @@ READ_XSTACK
 READ_XRAM
 ~~~~~~~~~
 
-.. c:function:: int read_xram (unsigned buf, unsigned count, int fildes)
+.. c:function:: int read_xram (unsigned xaddr, unsigned count, int fildes)
 
-   Read ``count`` bytes from a file to XRAM.
+   ``read_xram()`` reads up to ``count`` bytes from a file into XRAM at
+   ``xaddr``.
 
    :Operation: RIA_OP_READ_XRAM 0x17
    :C proto: rp6502.h
-   :param buf: Destination for the returned data.
-   :param count: Quantity of bytes to read. 0x7FFF max.
+   :param xaddr: Destination address in XRAM.
+   :param count: Number of bytes to read. 0x7FFF max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes read is returned. On error, -1 is
-      returned.
+   :returns: The number of bytes read. -1 on error.
    :a regs: fildes
    :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
 
@@ -481,15 +475,14 @@ WRITE
 
 .. c:function:: lib int write (int fildes, const void *buf, unsigned count)
 
-   Write ``count`` bytes from a buffer to a file. This is implemented in
-   the compiler library as a series of calls to `WRITE_XSTACK`_.
+   ``write()`` writes ``count`` bytes from ``buf`` to a file. It is a C library
+   function that calls `WRITE_XSTACK`_ as many times as it needs to.
 
    :C proto: unistd.h
-   :param buf: Location of the data.
-   :param count: Quantity of bytes to write. 0x7FFF max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes written is returned. On error, -1
-      is returned.
+   :param buf: Source of the data.
+   :param count: Number of bytes to write. 0x7FFF max.
+   :returns: The number of bytes written. -1 on error.
    :a regs: fildes
    :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC, ENOSYS
 
@@ -499,15 +492,15 @@ WRITE_XSTACK
 
 .. c:function:: int write_xstack (const void *buf, unsigned count, int fildes)
 
-   Write ``count`` bytes from the XSTACK to a file.
+   ``write_xstack()`` writes ``count`` bytes from ``buf`` to a file, through
+   the XSTACK.
 
    :Operation: RIA_OP_WRITE_XSTACK 0x18
    :C proto: rp6502.h
-   :param buf: Location of the data.
-   :param count: Quantity of bytes to write. 0x200 max.
+   :param buf: Source of the data.
+   :param count: Number of bytes to write. 0x200 max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes written is returned. On error, -1
-      is returned.
+   :returns: The number of bytes written. -1 on error.
    :a regs: fildes
    :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC, ENOSYS
 
@@ -515,17 +508,16 @@ WRITE_XSTACK
 WRITE_XRAM
 ~~~~~~~~~~
 
-.. c:function:: int write_xram (unsigned buf, unsigned count, int fildes)
+.. c:function:: int write_xram (unsigned xaddr, unsigned count, int fildes)
 
-   Write ``count`` bytes from XRAM to a file.
+   ``write_xram()`` writes ``count`` bytes from XRAM at ``xaddr`` to a file.
 
    :Operation: RIA_OP_WRITE_XRAM 0x19
    :C proto: rp6502.h
-   :param buf: Location of the data.
-   :param count: Quantity of bytes to write. 0x7FFF max.
+   :param xaddr: Source address in XRAM.
+   :param count: Number of bytes to write. 0x7FFF max.
    :param fildes: File descriptor from open().
-   :returns: On success, number of bytes written is returned. On error, -1
-      is returned.
+   :returns: The number of bytes written. -1 on error.
    :a regs: fildes
    :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC, ENOSYS
 

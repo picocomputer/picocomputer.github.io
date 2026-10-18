@@ -337,8 +337,21 @@ entry: a directory named ``/``, with size 0 and zero dates. STAT of an
 empty path or a bare drive name, such as ``MSC0:``, fails with EINVAL. A
 RENAME to another drive fails with ENODEV. A file at the new name is
 replaced only when the old name is also a file, and any other entry at
-the new name fails with EEXIST. An UNLINK of a read-only file fails with
-EACCES.
+the new name fails with EEXIST. On an :doc:`pico`, a RENAME that replaces
+a file and then fails can leave the file at the new name removed and the
+old name in place.
+
+UNLINK removes a file or an empty directory. An UNLINK of a read-only
+file, or of a directory that is not empty, fails with EACCES. On an
+:doc:`pico`, so does an UNLINK of the current directory.
+
+No machine changes the Directory attribute with CHMOD. On the :doc:`emu`
+on Linux and macOS, and on the :doc:`web`, CHMOD changes only Read Only,
+and UTIME sets only the modification date and time. There, STAT and
+READDIR report Hidden for a name that starts with ``.``, Archive for
+every file, and never System. A READDIR of an entry whose information the
+host cannot read, such as a broken symbolic link, fails with ENOENT or
+EACCES there, and the next READDIR continues with the next entry.
 
 Working Directory
 -----------------
