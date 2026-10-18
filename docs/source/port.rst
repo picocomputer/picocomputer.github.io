@@ -323,9 +323,9 @@ a directory fails with EACCES.
 A file can be open for reading on several descriptors at once. On a USB
 drive of an :doc:`pico`, a file that is open for writing has no other
 descriptor: an open of it fails with EBUSY, and so does an open for
-writing of a file that is open, and an UNLINK or a RENAME of an open
+writing of a file that is open, and a REMOVE or a RENAME of an open
 file. The other machines allow these. A portable program closes a file
-before it opens that file again to write it, and before an UNLINK
+before it opens that file again to write it, and before a REMOVE
 removes it or a RENAME moves or replaces it.
 
 A seek past the end of a file opened for writing extends the file with
@@ -334,16 +334,17 @@ A seek past the end of a file opened only for reading stops at the end.
 
 STAT of a drive root, such as ``/`` or ``MSC0:/``, returns one fixed
 entry: a directory named ``/``, with size 0 and zero dates. STAT of an
-empty path or a bare drive name, such as ``MSC0:``, fails with EINVAL. A
-RENAME to another drive fails with ENODEV. A file at the new name is
-replaced only when the old name is also a file, and any other entry at
-the new name fails with EEXIST. On an :doc:`pico`, a RENAME that replaces
-a file and then fails can leave the file at the new name removed and the
-old name in place.
+empty path or a bare drive name, such as ``MSC0:``, fails with EINVAL.
 
-UNLINK removes a file or an empty directory. An UNLINK of a read-only
+A RENAME that replaces an entry is atomic on Linux and macOS, on the
+:doc:`web`, and for a file on Windows. On an :doc:`pico`, and for a
+directory on Windows, RENAME removes the entry at the new name first, and
+then renames. When the rename fails after that, the entry at the new name
+is gone and the old name stays in place.
+
+REMOVE removes a file or an empty directory. A REMOVE of a read-only
 file, or of a directory that is not empty, fails with EACCES. On an
-:doc:`pico`, so does an UNLINK of the current directory.
+:doc:`pico`, so does a REMOVE of the current directory.
 
 No machine changes the Directory attribute with CHMOD. On the :doc:`emu`
 on Linux and macOS, and on the :doc:`web`, CHMOD changes only Read Only,
@@ -519,7 +520,7 @@ slot then loads as no save, the same as a slot that was never written.
 A save is opened with :ref:`OPEN <api-open>` and O_RDONLY, O_WRONLY or
 O_RDWR, plus any of O_CREAT, O_TRUNC, O_EXCL and O_APPEND. The program
 can then read, write, seek within the file, call syncfs and close it.
-Every other call on a ``SAVE:`` path, such as STAT, UNLINK or OPENDIR,
+Every other call on a ``SAVE:`` path, such as STAT, REMOVE or OPENDIR,
 fails with ENODEV, or ENOSYS on the Pocket. The file behind a save is an
 ordinary file, and on some machines another path to its folder can stat
 or unlink it, but the folder differs by machine and only ``SAVE:`` works
@@ -632,7 +633,7 @@ RetroArch too, except that its working directory at start is the working
 directory of RetroArch and it has no installed ROMs.
 
 On the Pocket, files are opened by path, but there are no folder
-operations and no listing. STAT, UNLINK, RENAME, MKDIR, CHDIR, CHMOD,
+operations and no listing. STAT, REMOVE, RENAME, MKDIR, CHDIR, CHMOD,
 UTIME, GETLABEL, SETLABEL and GETFREE fail there with ENOSYS, and so do
 OPENDIR, READDIR, CLOSEDIR, TELLDIR, SEEKDIR and REWINDDIR. An open fails
 with EACCES for the root of the card, ``Assets/rp6502/common``,

@@ -388,8 +388,6 @@ OPEN
         - O_EXCL
         - With O_CREAT, fail when the file exists.
 
-   When no file descriptor is free, the call fails with EMFILE.
-
    :Operation: RIA_OP_OPEN 0x14
    :C proto: fcntl.h
    :param path: Path of the file or the device stream.
@@ -525,29 +523,19 @@ WRITE_XRAM
 LSEEK
 ~~~~~
 
-.. c:function:: ABI long f_lseek (long offset, unsigned char whence, int fildes)
+.. c:function:: long f_lseek (long offset, char whence, int fildes)
                 lib off_t lseek (int fildes, off_t offset, int whence)
 
-   Move the read/write pointer.
+   ``lseek()`` and ``f_lseek()`` move the read/write position of a file.
+   ``f_lseek(0, SEEK_CUR, fd)`` returns the current position.
 
-   This can also be used to obtain the current read/write position with
-   ``f_lseek(0, SEEK_CUR, fd)``.
+   A seek past the end of a file that is open for writing extends the
+   file with zeros. On a full drive, that seek fails with ENOSPC and does
+   not change the file or the position. A seek past the end of a file
+   that is open only for reading stops at the end.
 
-   A seek past the end of a file opened for writing extends the file with
-   zeros. On a full drive, that seek fails with ENOSPC and leaves the file
-   and the position unchanged. A seek past the end of a file opened only
-   for reading stops at the end.
-
-   :Operation: See table below.
-   :C proto: f_lseek: rp6502.h, lseek: unistd.h
-   :param offset: Distance to move the pointer.
-   :param whence: Where the offset is measured from. See table below.
-   :param fildes: File descriptor from open().
-   :returns: Read/write position. -1 on error. A resulting position past
-      0x7FFFFFFF cannot be represented in the returned long; the seek then
-      fails with errno ERANGE and the file position is left unchanged.
-   :a regs: fildes
-   :errno: EBADF, EINVAL, EIO, ENOSPC, ENOSYS, ERANGE, ESPIPE
+   cc65 and llvm-mos give SEEK_SET, SEEK_CUR, and SEEK_END different
+   values, so each compiler has its own operation ID:
 
    .. list-table::
       :header-rows: 1
@@ -569,15 +557,25 @@ LSEEK
         - 2
         - 1
 
+   :Operation: See the table above.
+   :C proto: f_lseek: rp6502.h, lseek: unistd.h
+   :param offset: Distance in bytes from the position that ``whence``
+      selects.
+   :param whence: SEEK_SET, SEEK_CUR, or SEEK_END.
+   :param fildes: File descriptor from open().
+   :returns: The new read/write position. -1 on error. A position past
+      0x7FFFFFFF does not fit in the returned long, so that seek fails
+      with ERANGE and does not change the position.
+   :a regs: fildes
+   :errno: EBADF, EINVAL, EIO, ENOSPC, ENOSYS, ERANGE, ESPIPE
+
 
 SYNCFS
 ~~~~~~
 
 .. c:function:: int syncfs (int fildes)
 
-   Finish pending writes for the file descriptor. The call returns once
-   the data is stored, within the limits of each machine listed in
-   :ref:`Durability <port-durability>`.
+   ``syncfs()`` flushes the pending writes of a file descriptor to storage.
 
    :Operation: RIA_OP_SYNCFS 0x1E
    :C proto: unistd.h
@@ -592,9 +590,8 @@ ISATTY
 
 .. c:function:: lib int isatty (int fildes)
 
-   Test whether a file descriptor is the console. ``stdin``, ``stdout``,
-   ``stderr``, ``CON:`` and ``TTY:`` are the console, as described in the
-   :ref:`console manifold <term-console-manifold>`.
+   ``isatty()`` returns 1 when a file descriptor is the console: stdin,
+   stdout, stderr, ``CON:``, or ``TTY:``.
 
    :C proto: unistd.h
    :param fildes: File descriptor.
@@ -609,49 +606,66 @@ STAT
 
 .. c:function:: int f_stat (const char* path, f_stat_t* dirent)
 
-   Returns file or directory info for requested path. See the
-   `FatFs documentation <https://elm-chan.org/fsw/ff/doc/sfileinfo.html>`__
-   for details about the data structure.
-
-   .. code-block:: c
-
-      typedef struct {
-         unsigned long fsize;
-         unsigned fdate;
-         unsigned ftime;
-         unsigned crdate;
-         unsigned crtime;
-         unsigned char fattrib;
-         char altname[12 + 1];
-         char fname[255 + 1];
-      } f_stat_t;
-
-   A drive root, such as ``/`` or ``MSC0:/``, returns one fixed entry: a
-   directory named ``/``, with size 0 and zero dates. An empty path or a
-   bare drive name, such as ``MSC0:``, fails with EINVAL.
+   ``f_stat()`` returns the :ref:`directory entry <api-directory-entries>`
+   of a file or a directory. For the root of a drive, such as ``/`` or
+   ``MSC0:/``, it returns a directory named ``/``, with size 0 and zero
+   dates.
 
    :Operation: RIA_OP_STAT 0x1F
    :C proto: rp6502.h
-   :param path: Pathname to a directory entry.
-   :param dirent: Returned f_stat_t data.
+   :param path: Path of a file or a directory.
+   :param dirent: The returned f_stat_t data.
    :returns: 0 on success. -1 on error.
    :a regs: return
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
+REMOVE
+~~~~~~
+
+.. c:function:: int remove (const char* name)
+
+   ``remove()`` removes a file or an empty directory. It is the lightest
+   of the three calls that remove an entry, because it does not test the
+   type of the entry first. The removal fails with EACCES on a read-only
+   file, and on a directory that is not empty.
+
+   :Operation: RIA_OP_REMOVE 0x1B
+   :C proto: stdio.h
+   :param name: Path of the file or the directory to remove.
+   :returns: 0 on success. -1 on error.
+   :a regs: return
+   :errno: EACCES, EBUSY, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
+
+
 UNLINK
 ~~~~~~
 
-.. c:function:: int unlink (const char* name)
+.. c:function:: lib int unlink (const char* name)
 
-   Removes a file or directory from the volume. A read-only file fails
-   with EACCES. Close a file before removing it.
+   ``unlink()`` removes a file. It makes two API calls: `STAT`_ tests that
+   the entry is not a directory, and `REMOVE`_ removes it. ``unlink()``
+   fails with EACCES on a directory, and on a read-only file.
 
-   :Operation: RIA_OP_UNLINK 0x1B
    :C proto: unistd.h
-   :param name: File or directory name to unlink (remove).
+   :param name: Path of the file to remove.
    :returns: 0 on success. -1 on error.
-   :a regs: return
+   :errno: EACCES, EBUSY, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
+
+
+RMDIR
+~~~~~
+
+.. c:function:: lib int rmdir (const char* name)
+
+   ``rmdir()`` removes an empty directory. It makes two API calls: `STAT`_
+   tests that the entry is a directory, and `REMOVE`_ removes it.
+   ``rmdir()`` fails with EACCES on a file, and on a directory that is not
+   empty.
+
+   :C proto: unistd.h
+   :param name: Path of the directory to remove.
+   :returns: 0 on success. -1 on error.
    :errno: EACCES, EBUSY, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
@@ -660,16 +674,14 @@ RENAME
 
 .. c:function:: int rename (const char* oldname, const char* newname)
 
-   Renames or moves a file or directory within its drive. A new name on
-   another drive fails with ENODEV. A file already at the new name is
-   replaced when the old name is also a file, and any other entry at the
-   new name fails with EEXIST. Close a file before renaming it, and
-   before a rename replaces it.
+   ``rename()`` renames or moves a file or a directory on its drive. It
+   does not replace a read-only file. A refused replacement fails with
+   EACCES, and a move to another drive fails with ENODEV.
 
    :Operation: RIA_OP_RENAME 0x1C
    :C proto: stdio.h
-   :param oldname: Existing file or directory name to rename.
-   :param newname: New object name.
+   :param oldname: Path of the file or directory to rename.
+   :param newname: New path.
    :returns: 0 on success. -1 on error.
    :a regs: return
    :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSPC,
@@ -681,33 +693,19 @@ CHMOD
 
 .. c:function:: int f_chmod (const char* path, unsigned char attr, unsigned char mask)
 
-   Change the attributes of a file or directory.
+   ``f_chmod()`` changes the attributes of a file or a directory, the bits
+   of ``fattrib`` in its :ref:`directory entry <api-directory-entries>`. It
+   changes only the attributes whose bits are set in ``mask``, and it does
+   not change the Directory attribute.
 
    :Operation: RIA_OP_CHMOD 0x26
    :C proto: rp6502.h
-   :param path: Pathname to a file or directory.
-   :param attr: New bitfield of attributes. See table.
-   :param mask: Only attributes with bits set here will be changed.
+   :param path: Path of a file or a directory.
+   :param attr: New attributes.
+   :param mask: Attributes to change.
    :returns: 0 on success. -1 on error.
    :a regs: return, mask
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
-
-   .. list-table::
-      :header-rows: 1
-      :widths: 25 25
-
-      * - Attribute
-        - Bit
-      * - Read Only
-        - 0x01
-      * - Hidden
-        - 0x02
-      * - System
-        - 0x04
-      * - Directory
-        - 0x10
-      * - Archive
-        - 0x20
 
 
 UTIME
@@ -715,12 +713,14 @@ UTIME
 
 .. c:function:: int f_utime (const char* path, unsigned fdate, unsigned ftime, unsigned crdate, unsigned crtime)
 
-   Update the date and time stamps of a file or directory. A date of 0
-   (invalid) leaves the date and time unchanged.
+   ``f_utime()`` sets the dates and times of a file or a directory, in the
+   format of its :ref:`directory entry <api-directory-entries>`. An
+   ``fdate`` of 0 keeps the modification date and time, and a ``crdate`` of
+   0 keeps the creation date and time.
 
    :Operation: RIA_OP_UTIME 0x27
    :C proto: rp6502.h
-   :param path: Pathname to a file or directory.
+   :param path: Path of a file or a directory.
    :param fdate: Modification date.
    :param ftime: Modification time.
    :param crdate: Creation date.
@@ -729,39 +729,17 @@ UTIME
    :a regs: return
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
-   .. list-table:: Date
-      :header-rows: 0
-      :widths: 10 25
-
-      * - bit15:9
-        - Years since 1980 (0..127)
-      * - bit8:5
-        - Month (1..12)
-      * - bit4:0
-        - Day (1..31)
-
-   .. list-table:: Time
-      :header-rows: 0
-      :widths: 10 25
-
-      * - bit15:11
-        - Hour (0..23)
-      * - bit10:5
-        - Minute (0..59)
-      * - bit4:0
-        - Second / 2 (0..29)
-
 
 MKDIR
 ~~~~~
 
 .. c:function:: int f_mkdir (const char* name)
 
-   Make a new directory entry.
+   ``f_mkdir()`` creates a directory.
 
    :Operation: RIA_OP_MKDIR 0x28
    :C proto: rp6502.h
-   :param name: Pathname of the directory to create.
+   :param name: Path of the directory to make.
    :returns: 0 on success. -1 on error.
    :a regs: return
    :errno: EACCES, EEXIST, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSPC, ENOSYS
@@ -775,11 +753,11 @@ OPENDIR
 
 .. c:function:: int f_opendir (const char* name)
 
-   Create a connection between a directory and a directory descriptor.
+   ``f_opendir()`` opens a directory and returns a directory descriptor for it.
 
    :Operation: RIA_OP_OPENDIR 0x20
    :C proto: rp6502.h
-   :param name: Pathname to a directory.
+   :param name: Path of a directory.
    :returns: Directory descriptor. -1 on error.
    :a regs: return
    :errno: EACCES, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM, ENOSYS
@@ -790,20 +768,14 @@ READDIR
 
 .. c:function:: int f_readdir (f_stat_t* dirent, int dirdes)
 
-   Returns directory entry info for the current read position of a
-   directory descriptor, then advances the read position. At the end of
-   the directory, the call succeeds and ``fname`` is empty.
-
-   A name with a character that the code page cannot hold, or that FAT
-   refuses, shows character 127 in place of each such character. That
-   entry cannot be opened, because character 127 is refused in a path. On
-   an :doc:`pico`, a name with a character that the code page cannot hold
-   shows as its short 8.3 name instead, and that name opens the file.
+   ``f_readdir()`` returns the next :ref:`directory entry
+   <api-directory-entries>` of a directory. At the end of the
+   directory, it succeeds with an empty ``fname``.
 
    :Operation: RIA_OP_READDIR 0x21
    :C proto: rp6502.h
+   :param dirent: The returned f_stat_t data.
    :param dirdes: Directory descriptor from f_opendir().
-   :param dirent: Returned f_stat_t data.
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
    :errno: EACCES, EBADF, EINVAL, EIO, ENOENT, ENOMEM, ENOSYS
@@ -814,15 +786,14 @@ CLOSEDIR
 
 .. c:function:: int f_closedir (int dirdes)
 
-   Release the directory descriptor. The descriptor goes back to the pool
-   that f_opendir() draws from.
+   ``f_closedir()`` closes a directory descriptor.
 
    :Operation: RIA_OP_CLOSEDIR 0x22
    :C proto: rp6502.h
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
-   :errno: EBADF, EINVAL, EIO, ENOSYS
+   :errno: EBADF, EINVAL, ENOSYS
 
 
 TELLDIR
@@ -830,12 +801,13 @@ TELLDIR
 
 .. c:function:: long f_telldir (int dirdes)
 
-   Returns the read position of the directory descriptor.
+   ``f_telldir()`` returns the read position of a directory descriptor, as
+   a location for ``f_seekdir()``.
 
    :Operation: RIA_OP_TELLDIR 0x23
    :C proto: rp6502.h
    :param dirdes: Directory descriptor from f_opendir().
-   :returns: Read position. -1 on error.
+   :returns: Location. -1 on error.
    :a regs: dirdes
    :errno: EBADF, EINVAL, ENOSYS
 
@@ -843,17 +815,14 @@ TELLDIR
 SEEKDIR
 ~~~~~~~
 
-.. c:function:: int f_seekdir (long offs, int dirdes)
+.. c:function:: int f_seekdir (long loc, int dirdes)
 
-   Set the read position for the directory descriptor. The OS reads
-   entries one at a time up to the new position, starting from the
-   current position when seeking forward and from the start of the
-   directory when seeking backward. Use this for convenience, not
-   performance.
+   ``f_seekdir()`` restores the read position of a directory descriptor to
+   a location from ``f_telldir()``.
 
    :Operation: RIA_OP_SEEKDIR 0x24
    :C proto: rp6502.h
-   :param offs: New read position, as returned by f_telldir().
+   :param loc: Location from f_telldir().
    :param dirdes: Directory descriptor from f_opendir().
    :returns: 0 on success. -1 on error.
    :a regs: return, dirdes
@@ -865,7 +834,8 @@ REWINDDIR
 
 .. c:function:: int f_rewinddir (int dirdes)
 
-   Rewind the read position of the directory descriptor.
+   ``f_rewinddir()`` sets the read position of a directory descriptor to
+   the start of the directory.
 
    :Operation: RIA_OP_REWINDDIR 0x25
    :C proto: rp6502.h
@@ -875,8 +845,8 @@ REWINDDIR
    :errno: EACCES, EBADF, EINVAL, EIO, ENODEV, ENOENT, ENOSYS
 
 
-Drives and Volumes
-------------------
+Drives
+------
 
 CHDIR
 ~~~~~
