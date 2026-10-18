@@ -853,34 +853,15 @@ CHDIR
 
 .. c:function:: int chdir (const char* name)
 
-   Change to a directory entry. A directory on another drive also makes
-   that drive the current drive.
+   ``chdir()`` changes the current directory. On a host with named drives,
+   it also changes the drive.
 
    :Operation: RIA_OP_CHDIR 0x29
    :C proto: unistd.h
-   :param name: Pathname of the directory to make current.
+   :param name: Path of the directory to make current.
    :returns: 0 on success. -1 on error.
    :a regs: return
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
-
-
-CHDRIVE
-~~~~~~~
-
-.. c:function:: int f_chdrive (const char* name)
-
-   Change the current drive. The name is that of a mounted drive, colon
-   included, such as ``MSC1:``, and the name of a drive that is not
-   mounted fails with ENODEV. Each drive keeps the last directory used on
-   it, and that directory becomes current again. The drive names of each
-   machine are listed in :ref:`Filesystems <port-filesystems>`.
-
-   :Operation: RIA_OP_CHDRIVE 0x2A
-   :C proto: rp6502.h
-   :param name: Drive name to change to.
-   :returns: 0 on success. -1 on error.
-   :a regs: return
-   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT
 
 
 .. _api-getcwd:
@@ -888,22 +869,18 @@ CHDRIVE
 GETCWD
 ~~~~~~
 
-.. c:function:: int f_getcwd (char* name, int size)
+.. c:function:: ABI int _getcwd (char* buf, int size)
+                lib char* getcwd (char* buf, size_t size)
 
-   Get the current working directory.
-
-   The result is absolute and always includes a device name, such as
-   ``MSC0:/games``. Each folder name in it shows as it does in
-   `READDIR`_. When the directory is longer than 255 bytes, the call
-   fails with ENOMEM, because no call accepts a path that long.
+   ``getcwd()`` returns the current directory, as an absolute path that
+   starts with its drive, such as ``MSC0:/games``.
 
    :Operation: RIA_OP_GETCWD 0x2B
-   :C proto: rp6502.h
-   :param name: The returned directory.
-   :param size: Size of the ``name`` buffer. It stays in the C library,
-      which fails with ENOMEM when the directory does not fit.
-   :returns: Size of returned name. -1 on error.
-   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM
+   :C proto: unistd.h
+   :param buf: The returned path.
+   :param size: Size of ``buf``. The API call does not take it.
+   :returns: ``buf``. NULL on error.
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ERANGE
 
 
 GETLABEL

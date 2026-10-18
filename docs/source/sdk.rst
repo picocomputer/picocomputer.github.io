@@ -1762,6 +1762,11 @@ This table lists the changes that break an older project:
      - ``RIA_OP_DROP_XSTACK``, or ``ria_drop()`` in C.
    * - ``RIA_OP_UNLINK``
      - ``RIA_OP_REMOVE``.
+   * - ``f_chdrive()``, ``RIA_OP_CHDRIVE``
+     - ``chdir()``, or ``RIA_OP_CHDIR``. A drive name alone, such as
+       ``MSC1:``, changes the drive.
+   * - ``f_getcwd()``
+     - ``getcwd()``. It returns a pointer to the path, not its length.
    * - ``RIA_OP_PHI2``, ``RIA_OP_CODE_PAGE``, ``RIA_OP_CODEPAGE``,
        ``RIA_OP_LRAND``, ``RIA_OP_ERRNO_OPT``
      - ``RIA_OP_ATTR_GET`` or ``RIA_OP_ATTR_SET`` with
@@ -1861,6 +1866,7 @@ This is ``rp6502-compat.h``:
   #define RIA_BUSY_BIT 0x80
   #define RIA_OP_ZXSTACK RIA_OP_DROP_XSTACK
   #define RIA_OP_UNLINK RIA_OP_REMOVE
+  #define RIA_OP_CHDRIVE RIA_OP_CHDIR
 
   #define phi2() ((int)ria_attr_get(RIA_ATTR_PHI2_KHZ))
   #define code_page(cp)                                                    \

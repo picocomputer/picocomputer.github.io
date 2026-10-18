@@ -364,19 +364,17 @@ Where that is when a machine starts differs: the root of ``MSC0:`` on an
 core runs there, and the root, ``FS:/``, on an :doc:`web`.
 
 The :doc:`emu` and the :doc:`web` never change the current drive or
-directory themselves.
-Only CHDIR and CHDRIVE from a program change them, and a ROM starts with
-the drive and directory that the ROM before it left. The one exception is
-an NFC card on an :doc:`pico`: the ROM it names starts in the folder that
-holds the ROM.
+directory themselves. Only CHDIR from a program changes them, and a ROM
+starts with the drive and directory that the ROM before it left. The one
+exception is an NFC card on an :doc:`pico`: the ROM it names starts in
+the folder that holds the ROM.
 
 A CHDIR into a folder on another drive also makes that drive current.
-Each drive keeps the last folder used on it, so a later CHDRIVE back to a
-drive returns to that folder. CHDRIVE takes the name of a mounted drive,
-colon included, and the name of a drive that is not mounted fails with
-ENODEV. On a machine with one drive, a CHDRIVE to it succeeds and changes
-nothing. The Pocket has one fixed folder, so CHDIR fails there with
-ENOSYS.
+Each drive keeps the last folder used on it, so a later CHDIR to the
+drive name alone, such as ``MSC1:``, returns to that folder. A CHDIR to a
+drive that is not mounted fails with ENODEV. On a machine with one drive,
+a CHDIR to its name alone succeeds and changes nothing. The Pocket has
+one fixed folder, so every CHDIR fails there with ENOSYS.
 
 :ref:`GETCWD <api-getcwd>` returns an absolute path that starts with its
 drive, such as ``MSC0:/games``, ``C:/Users/me`` or ``FS:/home/me``. A
@@ -543,8 +541,8 @@ such as ``SAVE:hopper.hiscore``, ``SAVE:hopper.slot0`` or
 `Names`_: open a save with the exact case of its name, and do
 not create two saves whose names differ only in case.
 
-The folder for saves is fixed when a ROM starts, so a CHDIR or CHDRIVE by
-the program does not move its saves. A missing folder is created the
+The folder for saves is fixed when a ROM starts, so a CHDIR by the
+program does not move its saves. A missing folder is created the
 first time a program creates a save, so a game that never saves leaves
 nothing behind. The Pocket cannot create folders, so its save folder is
 shipped with the core. The save folder on each machine is:

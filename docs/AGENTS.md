@@ -7,9 +7,10 @@ English, without its restricted dictionary.
 
 ## Write for the reader
 
-The reader is a programmer who works through the manual in order. Write
-each passage for what that reader is trying to do at that point, not for
-how the system is arranged inside.
+The reader is a programmer who works through the manual in order. The
+reader of the documentation is expected to also have access to C and
+POSIX documentation. Write each passage for what that reader is trying
+to do at that point, not for how the system is arranged inside.
 
 **Edit the passage, not the sentence.** Before any change, read the
 section from its start, as the reader who arrives there. Decide what that
@@ -18,11 +19,25 @@ that need, and remove a sentence that does not. A change to one sentence
 is a change to its passage, so read the whole passage again after the
 change, and before you report it.
 
+**Document the interface.** State what a program can observe and rely
+on. Do not describe how a host does the work or what it stores. The
+source code that you read before an edit is not content for the manual.
+
+**State a rule once.** A rule that a general section states, such as the
+ABI rules or the errno contract, does not appear again in each entry.
+
+**Test each sentence.** Before you report a change, read the section from
+its heading. For each sentence, ask: without this sentence, would a
+programmer with the C and POSIX documentation, who has read the earlier
+sections, write wrong code? If not, delete the sentence. Decoration that
+the owner wrote stays.
+
 ## Rules
 
 **Never lose a fact.** Do not change what a fact says. You may remove a
 repeated statement of a fact, but at least one statement of it must
-remain.
+remain. A statement in the C or POSIX documentation counts. This rule
+covers facts about the interface, not about the implementation.
 
 **One word for one meaning.** Use one word for one meaning, and use the
 same word every time.
