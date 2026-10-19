@@ -209,7 +209,7 @@ XRAM_POKE
 XREG
 ~~~~
 
-.. c:function:: int xreg (char device, char channel, unsigned char index, ...);
+.. c:function:: int xreg (char device, char channel, unsigned char index, ...)
 
    ``xreg()`` configures the peripherals of the :ref:`Peripheral
    Information Exchange (PIX) <ria-pix>`. A program uses it to map
@@ -1185,14 +1185,14 @@ ATTR_GET
 
 .. c:function:: long ria_attr_get (unsigned char id)
 
-   Returns the current value of a RIA attribute. See `RIA Attributes`_
-   for attribute IDs and descriptions.
+   ``ria_attr_get()`` returns the value of a RIA attribute. It fails with
+   EINVAL for an unknown ID. `RIA Attributes`_ lists the attributes.
 
    :Operation: RIA_OP_ATTR_GET 0x0A
    :C proto: rp6502.h
    :param id: Attribute ID. One of the ``RIA_ATTR_*`` constants.
+   :returns: The value. -1 on error.
    :a regs: id
-   :returns: The attribute value as a 31-bit integer. -1 on error.
    :errno: EINVAL
 
 
@@ -1201,16 +1201,183 @@ ATTR_SET
 
 .. c:function:: int ria_attr_set (long val, unsigned char id)
 
-   Sets the value of a RIA attribute. See `RIA Attributes`_ for
-   attribute IDs and descriptions.
+   ``ria_attr_set()`` sets the value of a RIA attribute. It fails with
+   EINVAL for an unknown ID, for a read-only attribute, and for a value
+   outside the range of the attribute.
 
    :Operation: RIA_OP_ATTR_SET 0x0B
    :C proto: rp6502.h
-   :param id: Attribute ID. One of the ``RIA_ATTR_*`` constants.
    :param val: New value.
-   :a regs: id
-   :returns: 0 on success
+   :param id: Attribute ID. One of the ``RIA_ATTR_*`` constants.
+   :returns: 0 on success. -1 on error.
+   :a regs: return, id
    :errno: EINVAL
+
+
+Registers
+---------
+
+SPIN
+~~~~
+
+.. c:function:: lib int ria_spin (void)
+
+   ``ria_spin()`` is ``JSR RIA_SPIN``, which `Application Binary
+   Interface`_ describes. It waits until the running API call finishes.
+   It returns with A and X loaded from ``RIA_A`` and ``RIA_X``.
+
+   :C proto: rp6502.h
+
+
+DROP
+~~~~
+
+.. c:function:: void ria_drop (void)
+
+   ``ria_drop()`` is ``STZ RIA_OP``, which writes ``RIA_OP_DROP_XSTACK``
+   to ``RIA_OP``. It empties the XSTACK. It is the only API call that
+   does not need a `SPIN`_. A program that makes API calls itself uses
+   ``ria_drop()`` to quickly discard any unused data on the XSTACK, with
+   one write instead of a loop of pulls.
+
+   :Operation: RIA_OP_DROP_XSTACK 0x00
+   :C proto: rp6502.h
+
+
+VSYNC
+~~~~~
+
+.. c:function:: lib unsigned char ria_vsync (void)
+
+   ``ria_vsync()`` returns the VSYNC register. The register increments
+   every 1/60 second while the :doc:`vga` is connected.
+
+   :C proto: rp6502.h
+
+
+IRQ
+~~~
+
+.. c:function:: lib unsigned char ria_irq_read (void)
+                lib void ria_irq_write (unsigned char mask)
+
+   The RIA can interrupt the 6502 on two events:
+
+   - Bit 7, VSYNC, at each increment of the `VSYNC`_ register.
+   - Bit 6, SIGINT, when a terminal of the :ref:`console manifold
+     <term-console-manifold>` sends Ctrl-C.
+
+   ``ria_irq_write()`` enables the interrupt of each event whose bit is 1
+   in ``mask``, and disables the others. For example,
+   ``ria_irq_write(0x80)`` enables VSYNC only. The first interrupt comes
+   from an event after the write. A ROM starts with both interrupts
+   disabled.
+
+   An interrupt handler calls ``ria_irq_read()`` to learn which events
+   happened. ``ria_irq_read()`` returns a 1 in the bit of each event that
+   happened, enabled or not, and clears the bits. The read ends the
+   interrupt request.
+
+   :C proto: rp6502.h
+   :param mask: The interrupts to enable.
+
+
+.. _api-directory-entries:
+
+Directory Entries
+=================
+
+`STAT`_ and `READDIR`_ return a directory entry in an ``f_stat_t``, which
+``rp6502.h`` defines:
+
+.. code-block:: c
+
+   typedef struct {
+      unsigned long fsize;
+      unsigned fdate;
+      unsigned ftime;
+      unsigned crdate;
+      unsigned crtime;
+      unsigned char fattrib;
+      char altname[12 + 1];
+      char fname[255 + 1];
+   } f_stat_t;
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Member
+     - Description
+   * - ``fsize``
+     - The size of the file in bytes. 0 for a directory.
+   * - ``fdate``, ``ftime``
+     - The date and the time of the last modification. On a FAT drive, a
+       directory keeps the date and the time of its creation here.
+   * - ``crdate``, ``crtime``
+     - The date and the time of the creation. 0 when the drive does not
+       store them.
+   * - ``fattrib``
+     - The attributes, in the bits below.
+   * - ``altname``
+     - The short 8.3 name, such as ``NOTES~1.TXT``, where the drive has
+       one. Empty otherwise.
+   * - ``fname``
+     - The name.
+
+A date and a time are each 16 bits, in the format of FAT:
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Bits
+     - Date
+   * - 15-9
+     - Year, from 1980 (0 to 127)
+   * - 8-5
+     - Month (1 to 12)
+   * - 4-0
+     - Day (1 to 31)
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Bits
+     - Time
+   * - 15-11
+     - Hour (0 to 23)
+   * - 10-5
+     - Minute (0 to 59)
+   * - 4-0
+     - Second, divided by 2 (0 to 29)
+
+The attributes are these bits of ``fattrib``:
+
+.. list-table::
+   :widths: 10 20 70
+   :header-rows: 1
+
+   * - Bit
+     - Attribute
+     - Meaning
+   * - 0x01
+     - Read Only
+     - The file cannot be written or removed.
+   * - 0x02
+     - Hidden
+     - Marks an entry to leave out of a normal listing.
+   * - 0x04
+     - System
+     - Marks an entry of an operating system.
+   * - 0x10
+     - Directory
+     - The entry is a directory.
+   * - 0x20
+     - Archive
+     - Marks a file that changed since a backup program cleared this
+       bit. A machine sets it when it creates or writes a file.
 
 
 .. _api-ria-attributes:

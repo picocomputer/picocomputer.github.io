@@ -112,10 +112,9 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
      - Write an :doc:`api` op here to begin an API call.
    * - $FFF0
      - IRQ
-     - Interrupt enable mask. Reading returns the triggered signals
-       as bits, enabled or not, and clears them. Writing sets the
-       enable mask, and clears the triggered signal of each bit that
-       is 1 in the written value.
+     - Interrupts. A write enables the interrupt of each event whose
+       bit is 1, and disables the others. A read returns a 1 in the bit
+       of each event that happened, enabled or not, and clears the bits.
 
        * bit 7 - VSYNC
        * bit 6 - SIGINT
