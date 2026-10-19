@@ -974,8 +974,8 @@ RLN_LASTKEY
    :param key: The returned bytes, with no terminator. ``key`` must hold
       32 bytes.
    :param action: The returned flag.
-   :returns: Length of the key sequence. 0 when no key is available or no
-      line read is in progress. -1 on error.
+   :returns: Length of the key sequence. 0 when no key is available or the
+      line editor is not reading a line. -1 on error.
    :a regs: return
    :errno: EINVAL
 
@@ -989,7 +989,7 @@ RLN_PEEK
 
    ``ria_rln_peek()`` returns the text in the :ref:`line editor
    <term-nonblocking-read-line>` and the position of the cursor in it. It
-   fails with EINVAL when no line read is in progress.
+   fails with EINVAL when the line editor is not reading a line.
 
    The position byte is on top of the text on the XSTACK.
 
@@ -1012,7 +1012,7 @@ RLN_POKE
 
    ``ria_rln_poke()`` sends a string to the :ref:`line editor
    <term-nonblocking-read-line>` as typed input, in overwrite mode. While
-   no line read is in progress, the call does nothing.
+   the line editor is not reading a line, the call does nothing.
 
    A control byte, 0x00 to 0x1F, ends the input and discards the rest of
    the string. An empty string sends 0x00. ESC (``\33``) and CAN
@@ -1385,10 +1385,9 @@ The attributes are these bits of ``fattrib``:
 RIA Attributes
 ==============
 
-RIA attributes are 31-bit values identified by an 8-bit ID, accessed with
-:c:func:`ria_attr_get` and :c:func:`ria_attr_set`. Both succeed for any
-valid attribute ID. Getting or setting an unknown ID returns -1 with
-``errno`` set to ``EINVAL``, as does trying to set a get-only attribute.
+Each RIA attribute has a value from 0 to 0x7FFFFFFF.
+:c:func:`ria_attr_get` returns the value of an attribute, and
+:c:func:`ria_attr_set` sets it.
 
 .. list-table::
    :widths: 35 65
@@ -1398,91 +1397,203 @@ valid attribute ID. Getting or setting an unknown ID returns -1 with
      - Description
    * - | 0x00
        | ``RIA_ATTR_ERRNO_OPT``
-     - Errno mapping option. Selects which set of errno constants the OS
-       uses. The cc65 and llvm-mos C runtimes set it at startup whenever
-       the program links ``errno``; assembly programs must set it before
-       making API calls that can fail. See `Errno Translations`_
-       for option values.
+     - The C library sets this attribute, so a C program does not use it.
+       An assembly program that reads ``RIA_ERRNO`` sets it as `Errno
+       Translations`_ describes.
    * - | 0x01
        | ``RIA_ATTR_PHI2_KHZ``
-     - CPU clock speed in kHz. Range 100–8000. Changes take effect
-       immediately and revert to the system setting when the ROM stops.
+     - The clock speed of the 6502, in kHz. Set it to a value from 100 to
+       8000 to change the speed. On an :doc:`pico`, a set rounds the speed
+       up, so get the attribute after a set to learn the speed.
    * - | 0x02
        | ``RIA_ATTR_CODE_PAGE``
-     - Active OEM code page used by the filesystem, console, and default
-       :doc:`VGA <vga>` font. Reverts to the system setting when the ROM
-       stops. If the requested page is unavailable, the system setting is
-       selected; follow a set with a get to confirm the result.
-       One of: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862,
-       863, 864, 865, 866, 869.
+     - The OEM code page of the filesystem, the console, and the built-in
+       font of the :doc:`vga`. Set it to 437, 720, 737, 771, 775, 850,
+       852, 855, 857, 860, 861, 862, 863, 864, 865, 866, or 869.
    * - | 0x03
        | ``RIA_ATTR_RLN_LENGTH``
-     - Maximum input line length for the stdin line editor. 0–255,
-       default 254. With 0, only a blank line can be entered.
+     - The maximum number of characters that the user can type into a
+       line of the :ref:`line editor <term-nonblocking-read-line>`, 0 to
+       255. It is 254 after a reset of the 6502. With 0, the user can
+       enter only a blank line.
    * - | 0x04
        | ``RIA_ATTR_LRAND``
-     - 31-bit hardware random number seeded with entropy from the RIA.
-       Returns a value in the range 0x0 to 0x7FFFFFFF. Suitable for
-       seeding a PRNG or direct use. The 16-bit ``rand()`` in the cc65
-       library can be seeded with this by calling ``_randomize()``.
+     - Read-only. A random number from 0 to 0x7FFFFFFF. A program can use
+       it directly, or seed ``rand()`` with
+       ``srand(ria_attr_get(RIA_ATTR_LRAND))``.
    * - | 0x05
        | ``RIA_ATTR_BEL``
-     - BEL (``\a``) output enable on the console.
-       0 silences the alert; 1 (default) enables it.
+     - Set it to 0 to silence the bell of the machine, which sounds for
+       each BEL (``\a``) on the console.
    * - | 0x06
        | ``RIA_ATTR_LAUNCHER``
-     - Launcher flag. Set to 1 to register the current ROM as the launcher;
-       set to 0 to deregister. See the `Launcher`_ section for full
-       details and usage patterns.
+     - Set it to 1 to register the running ROM as the launcher, and to 0
+       to clear the registration. A get returns 1 while any ROM is the
+       launcher. `Launcher`_ describes how a launcher works.
    * - | 0x07
        | ``RIA_ATTR_EXIT_CODE``
-     - The exit code of the last ROM to exit.
+     - Read-only. The exit code of the last ROM that exited, 0 to 65535,
+       for a launcher to test. ``exit(-1)`` reads back as 65535.
    * - | 0x08
        | ``RIA_ATTR_SIGINT``
-     - Read-only Ctrl-C latch. Returns 1 if a Ctrl-C has been seen since
-       the previous get on any terminal attached to the console manifold,
-       including the telnet Interrupt Process command; returns 0 otherwise.
-       Reading clears the latch. Same as RIA IRQ SIGINT.
+     - Read-only. 1 after the user presses Ctrl-C on the console, even
+       while the input before the Ctrl-C is still unread. A get clears it.
+       It is the SIGINT bit of `IRQ`_.
    * - | 0x09
        | ``RIA_ATTR_RLN_CAPS``
-     - Caps mode applied to keystrokes by the console line editor.
-       0 (default) passes characters through unchanged; 1 forces all
-       letters to upper case; 2 inverts the case of letters. Reverts
-       to the system setting when the ROM stops.
+     - Compatibility for programs from 8-bit systems that had no lower
+       case. Set it to 1 to change the letters that the user types into
+       the line editor to upper case, or to 2 to invert their case.
    * - | 0x0A
        | ``RIA_ATTR_RLN_WIDTH``
-     - Terminal width in columns used by the stdin line editor.
-       Setting a non-zero value pins the width and bypasses
-       auto-detect; 0 returns the channel to auto-detect (default).
-       Reverts to 0 when the ROM stops. See :doc:`term` for how the
-       console manifold probes terminal size.
+     - The width of the console, in columns, for a program that fits its
+       output to the console. The line editor detects the width and the
+       height of the console each time it reads a line. Get them after the
+       line editor reads a line. Set it to a width to use that width, or to
+       0 to use the detected width.
    * - | 0x0B
        | ``RIA_ATTR_RLN_HEIGHT``
-     - Terminal height in rows used by the stdin line editor. Setting
-       and revert semantics match ``RIA_ATTR_RLN_WIDTH``. With both
-       width and height pinned, the size-probe handshake is skipped
-       entirely.
+     - The height of the console, in rows. Set it to a height to use that
+       height, or to 0 to use the detected height.
    * - | 0x0C
        | ``RIA_ATTR_RLN_SUPPRESS_NL``
-     - Prevents read line from sending a CRLF at the end of input.
-       Useful for using the last terminal line for field input.
+     - Set it to 1 for a program that draws a form. Enter then keeps the
+       cursor on the row of the field, so a field on the last row does not
+       scroll the console. The line that the program reads still ends with
+       ``\n``.
    * - | 0x10
        | ``RIA_ATTR_CLK_RUN_MS``
-     - Read-only milliseconds the 6502 has been running, counted from
-       the release of reset. Wraps approximately every 24.8 days. This
-       is the C ``clock()``, which has a ``CLOCKS_PER_SEC`` of 1000.
+     - Read-only. The time that the 6502 has run since the release of
+       reset, in milliseconds. It wraps about every 24.9 days. This is the
+       C ``clock()``, which has a ``CLOCKS_PER_SEC`` of 1000.
    * - | 0x11
        | ``RIA_ATTR_CLK_RUN_CS``
-     - Read-only 6502 run time in 1/100 second ticks. Wraps
-       approximately every 248 days.
+     - Read-only. The run time of the 6502 in 1/100 seconds. It wraps
+       about every 249 days.
    * - | 0x12
        | ``RIA_ATTR_CLK_RUN_DS``
-     - Read-only 6502 run time in 1/10 second ticks. Wraps
-       approximately every 6.8 years.
+     - Read-only. The run time of the 6502 in 1/10 seconds. It wraps
+       about every 6.8 years.
    * - | 0x13
        | ``RIA_ATTR_CLK_RUN_S``
-     - Read-only 6502 run time in whole seconds. Wraps approximately
+     - Read-only. The run time of the 6502 in seconds. It wraps about
        every 68 years.
+
+
+Launcher
+========
+
+A ROM is the whole state of the machine as it comes out of reset, like a
+cartridge, so a ROM that starts replaces whatever ran before. A ROM also
+takes arguments through `ARGV`_ and returns an exit code through
+`EXIT`_, like a program. The launcher puts the two together: a ROM that
+starts other ROMs with `EXEC`_ gets control back when each one stops.
+
+A ROM registers as the launcher when it sets ``RIA_ATTR_LAUNCHER`` to 1
+with :c:func:`ria_attr_set`. From then on, when a ROM that it started
+calls ``exit()`` or returns from ``main()``, the launcher ROM runs again
+from the start, and ``RIA_ATTR_EXIT_CODE`` holds the exit code of the ROM
+that stopped. When a ROM that the launcher starts does not load, the
+console shows the error, and the launcher does not run again.
+
+The launcher starts fresh each time, so it keeps anything that it needs
+between runs in a file. When it runs again, ``argv`` holds only its own
+path. When the launcher itself stops, the registration clears. A ROM
+that the launcher starts can also set ``RIA_ATTR_LAUNCHER``: 1 makes
+that ROM the launcher, and 0 clears the registration.
+
+For example, a shell ROM can run a compiler, a linker, and a packager,
+each a ROM of its own, as three steps. It starts each one with EXEC and
+its arguments, reads the exit code when it runs again, and ends the chain
+when a step fails. A menu for an anthology of games works in the same
+way, and comes back when a game exits. That works best when every game
+in it has a way to exit, such as an Exit item in its menu.
+
+
+Errno Translations
+==================
+
+An API call that fails sets ``RIA_ERRNO``. cc65 and llvm-mos give the
+errno names different numbers, so ``RIA_ATTR_ERRNO_OPT`` selects the
+numbers that the API uses. In C, ``errno`` uses the numbers of the
+compiler, and the program does not need to set the option. The option
+is 0 when a ROM starts, and while it is 0, every error sets
+``RIA_ERRNO`` to $FFFF. To get errno numbers without a C runtime, set
+the option before the first API call that can fail.
+
+cc65 does not define EDOM and EILSEQ. A cc65 program gets EUNKNOWN, 18,
+for them.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 33 33
+
+   * -
+     - cc65
+     - llvm-mos
+   * - option
+     - 1
+     - 2
+   * - ENOENT
+     - 1
+     - 2
+   * - ENOMEM
+     - 2
+     - 12
+   * - EACCES
+     - 3
+     - 13
+   * - ENODEV
+     - 4
+     - 19
+   * - EMFILE
+     - 5
+     - 24
+   * - EBUSY
+     - 6
+     - 16
+   * - EINVAL
+     - 7
+     - 22
+   * - ENOSPC
+     - 8
+     - 28
+   * - EEXIST
+     - 9
+     - 17
+   * - EAGAIN
+     - 10
+     - 11
+   * - EIO
+     - 11
+     - 5
+   * - EINTR
+     - 12
+     - 4
+   * - ENOSYS
+     - 13
+     - 38
+   * - ESPIPE
+     - 14
+     - 29
+   * - ERANGE
+     - 15
+     - 34
+   * - EBADF
+     - 16
+     - 9
+   * - ENOEXEC
+     - 17
+     - 8
+   * - EDOM
+     - 18
+     - 33
+   * - EILSEQ
+     - 18
+     - 84
+   * - EUNKNOWN
+     - 18
+     - 85
 
 
 Host Error Codes
