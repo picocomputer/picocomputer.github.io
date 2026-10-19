@@ -52,9 +52,10 @@ device.
 
 Under the C functions is the Application Binary Interface (ABI), the
 register-level form of each call. The C library implements the ABI, so
-a C program does not use it directly. `Application Binary Interface`_,
-at the end of this page, describes it for assembly programs and for a
-port of another compiler.
+a C program needs it only to make an API call itself. `Application
+Binary Interface`_, at the end of this page, describes it for assembly
+programs, for a port of another compiler, and for a C program that makes
+API calls itself.
 
 
 Application Programming Interface
@@ -93,8 +94,8 @@ The fields are:
 - ``errno`` lists every errno that the section can set, from the API call
   or from the C library. `Errno Translations`_ gives the number of each.
 
-A C program does not use the ``Operation`` and ``a regs`` fields. They
-are for the ABI.
+The ``Operation`` and ``a regs`` fields are for the ABI. A C program uses
+them only when it makes API calls itself.
 
 
 .. _api-extended-memory:
@@ -1013,12 +1014,13 @@ RLN_POKE
    <term-nonblocking-read-line>` as typed input, in overwrite mode. While
    no line read is in progress, the call does nothing.
 
-   A control byte, 0x01 to 0x1F, ends the input and discards the rest of
-   the string. ESC (``\33``) and CAN (``\30``) are the exceptions: ESC
-   starts an escape sequence, and CAN cancels one. When
-   ``RIA_ATTR_RLN_LENGTH`` is 2 or more, the line editor shows the byte
-   that ends the input at the cursor in caret notation, ``^A`` to ``^_``,
-   but does not put it in the text. CR (``\r``) shows nothing.
+   A control byte, 0x00 to 0x1F, ends the input and discards the rest of
+   the string. An empty string sends 0x00. ESC (``\33``) and CAN
+   (``\30``) are the exceptions: ESC starts an escape sequence, and CAN
+   cancels one. When ``RIA_ATTR_RLN_LENGTH`` is 2 or more, the line editor
+   shows the byte that ends the input at the cursor in caret notation,
+   ``^@`` to ``^_``, but does not put it in the text. CR (``\r``) shows
+   nothing.
 
    :Operation: RIA_OP_RLN_POKE 0x32
    :C proto: rp6502.h
@@ -1035,21 +1037,21 @@ Time
 TIME_GET
 ~~~~~~~~
 
-.. c:function:: ABI int _time (time_t *timep)
+.. c:function:: ABI int _time (long long* time)
                 lib time_t time (time_t *timep)
 
-   Obtains the current time as seconds since the Unix epoch,
-   1970-01-01T00:00:00Z. The operation pushes the seconds to the XSTACK
-   as a 64-bit signed integer and returns 0, or -1 on error. The cc65
-   time_t has 32 bits, so the cc65 time() fails with ERANGE when the
-   seconds do not fit.
+   ``time()`` returns the current time in seconds since the Unix epoch,
+   1970-01-01T00:00:00Z. llvm-mos has 64-bit integers, and its ``time_t``
+   is a ``long long``. cc65 has integers of at most 32 bits, so its
+   ``time_t`` is an ``unsigned long``, and its ``time()`` fails with
+   ERANGE when the seconds do not fit. `Chaining Time Calls`_, in the ABI
+   section, shows how a cc65 program keeps all 64 bits of the time.
 
    :Operation: RIA_OP_TIME_GET 0x3F
    :C proto: time.h
-   :returns: The current time, also stored at ``timep`` if it is not
-      NULL. -1 on error.
+   :returns: The current time. -1 on error.
    :a regs: return
-   :errno: EINVAL, EIO, ERANGE
+   :errno: EINVAL, ERANGE
 
 
 TIME_SET
@@ -1057,8 +1059,11 @@ TIME_SET
 
 .. c:function:: int time_set (long long time)
 
-   Sets the clock to seconds since the Unix epoch. Supported only on the
-   :doc:`pico`.
+   ``time_set()`` sets the clock, in seconds since the Unix epoch. Only
+   an :doc:`pico` can set its clock. On other machines the call fails
+   with EACCES. llvm-mos passes all 64 bits. cc65 has integers of at most
+   32 bits, so it declares ``time`` as an ``unsigned long``, and a cc65
+   program can set only the years 1970 to 2106.
 
    :Operation: RIA_OP_TIME_SET 0x3E
    :C proto: rp6502.h
@@ -1071,12 +1076,11 @@ TIME_SET
 GMTIME
 ~~~~~~
 
-.. c:function:: lib struct tm *gmtime (const time_t *timep)
+.. c:function:: ABI int _gmtime (struct tm* tm, const long long* time)
+                lib struct tm *gmtime (const time_t *timep)
 
-   Converts seconds since the Unix epoch to UTC broken-down time.
-   Push the seconds as a signed integer of up to 64 bits. The operation
-   pushes this struct tm back to the XSTACK
-   and returns 0, or -1 on error.
+   ``gmtime()`` converts seconds since the Unix epoch to broken-down time
+   in UTC. The ``struct tm`` of the API calls has this layout:
 
    .. code-block:: c
 
@@ -1102,14 +1106,13 @@ GMTIME
 LOCALTIME
 ~~~~~~~~~
 
-.. c:function:: lib struct tm *localtime (const time_t *timep)
+.. c:function:: ABI int _localtime (struct tm* tm, const long long* time)
+                lib struct tm *localtime (const time_t *timep)
 
-   Converts seconds since the Unix epoch to local broken-down time
-   using the configured time zone. Run ``help set tz`` on an :doc:`pico`
-   monitor to learn how to configure your time zone. Push the seconds as a
-   signed integer of up to 64 bits. The
-   operation pushes a struct tm (see `GMTIME`_) back to the XSTACK and
-   returns 0, or -1 on error.
+   ``localtime()`` converts seconds since the Unix epoch to local
+   broken-down time, in the time zone of the machine. On an :doc:`pico`,
+   the monitor command ``SET TZ`` sets the time zone, and ``HELP SET TZ``
+   shows how.
 
    :Operation: RIA_OP_LOCALTIME 0x3B
    :C proto: time.h
@@ -1121,14 +1124,11 @@ LOCALTIME
 MKTIME
 ~~~~~~
 
-.. c:function:: lib time_t mktime (struct tm *timep)
+.. c:function:: ABI int _mktime (long long* time, const struct tm* tm)
+                lib time_t mktime (struct tm *timep)
 
-   Converts local broken-down time to seconds since the Unix epoch.
-   Push a struct tm (see `GMTIME`_) to the XSTACK; fields outside
-   their ranges are normalized. The operation pushes the seconds back as
-   a 64-bit signed integer and returns 0, or -1 on error. The C library
-   mktime() then calls `LOCALTIME`_ to write the normalized struct, with
-   tm_wday and tm_yday set, back to the caller.
+   ``mktime()`` converts local broken-down time to seconds since the Unix
+   epoch.
 
    :Operation: RIA_OP_MKTIME 0x3C
    :C proto: time.h
@@ -1140,29 +1140,41 @@ MKTIME
 STRFTIME
 ~~~~~~~~
 
-.. c:function:: lib size_t strftime (char *buf, size_t bufsize, const char *format, const struct tm *tm)
+.. c:function:: ABI int _strftime (char* buf, int bufsize, const struct tm* tm, const char* format)
+                lib size_t strftime (char *buf, size_t bufsize, const char *format, const struct tm *tm)
 
-   Formats a broken-down time as a string. Push a struct tm (see
-   `GMTIME`_), then a zero-terminated format string, to the XSTACK.
-   All struct tm fields must be in range, e.g. as returned by
-   `GMTIME`_, `LOCALTIME`_, or `MKTIME`_. The operation pushes the
-   formatted string back without a terminator and returns its length: 0
-   if the result is empty or does not fit, or -1 on error. The format and
-   the result share the XSTACK, which limits the result. The C library
-   strftime() compares the length to its buffer size and abandons an
-   oversized result with `DROP`_.
+   ``strftime()`` formats a broken-down time as a string. Every member of
+   the ``struct tm`` must be in range, as `GMTIME`_ and `LOCALTIME`_
+   return it. The API call returns 0 when the result is empty or does not
+   fit.
 
-   ``%a %A %b %B %c %p %r %x %X`` follow the configured locale and
-   ``%z %Z`` the configured time zone. Set both with ``SET LOC`` and
-   ``SET TZ`` on an :doc:`pico`. The format and result are code page
-   text. ``%E`` and ``%O`` modifiers are ignored.
+   ``%z %Z`` follow the time zone of the machine, and ``%a %A %b %B %c %p
+   %r %x %X`` follow its locale. On an :doc:`pico`, the monitor commands
+   ``SET LOC`` and ``SET TZ`` set the locale and the time zone. The
+   :doc:`emu` uses the locale of the computer that runs it. The :doc:`web`
+   and the :doc:`fpga` use the C locale, in English. The format and the
+   result are code page text. The ``%E`` and ``%O`` modifiers have no effect.
 
    :Operation: RIA_OP_STRFTIME 0x3D
    :C proto: time.h
-   :returns: Length of the string in ``buf``, not counting the
-      terminator. 0 on error, or if the result is empty or does not fit.
-   :a regs: return
+   :param bufsize: Size of ``buf``. The API call does not take it.
+   :returns: Length of the string in ``buf``. 0 on error, or when the
+      result is empty or does not fit.
    :errno: EINVAL
+
+
+ASCTIME
+~~~~~~~
+
+.. c:function:: lib char* asctime (const struct tm* tm)
+                lib char* ctime (const time_t* timep)
+
+   ``asctime()`` and ``ctime()`` return the time in the English form of C,
+   such as ``Sun Sep 16 01:03:52 1973``, in any locale.
+
+   :C proto: time.h
+   :returns: Pointer to a static string. NULL on error.
+   :errno: EINVAL, ERANGE
 
 
 Attributes
