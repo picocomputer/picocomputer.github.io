@@ -138,8 +138,8 @@ The basic pattern:
      current cursor position and SGR state. Position the cursor *before*
      this read.
    * A non-zero return means the line is complete. Pull it whole with a
-     buffer at least ``RIA_ATTR_RLN_LENGTH`` bytes long, or drain it in
-     fragments until you see the newline.
+     buffer at least ``RIA_ATTR_RLN_LENGTH`` + 1 bytes long, or drain it
+     in fragments until you see the newline.
    * On the first pass after activation, call ``ria_rln_poke()`` to
      pre-load any text you want to appear in the line. The poked bytes
      are echoed by the editor as if the user had typed them.
@@ -151,7 +151,9 @@ The basic pattern:
      editor consumed it as an editing action. When ``action == 0`` the
      editor passed the key through. That is the application's chance
      to handle Tab, function keys, arrow keys for history or form
-     navigation, and any other keys it claims. Call ``ria_rln_peek()``
+     navigation, and any other keys it claims. The line editor keeps no
+     history while a program reads a line, so Up and Down always have
+     ``action == 0``. Call ``ria_rln_peek()``
      to get the current input text and cursor position. Respond by
      poking literal characters or ANSI sequences (``CUF``, ``CUB``,
      ``ICH``, ``DCH``) back into the editor.
@@ -159,9 +161,10 @@ The basic pattern:
 #. **Read ``RIA_ATTR_RLN_WIDTH`` and ``RIA_ATTR_RLN_HEIGHT``** to obtain
    the dynamic size after the read line completes.
 
-Anything you can do by typing, you can do by poking. Poke ``\r`` or
-``\n`` to pull the buffer out without the user pressing Enter, for
-example when Tab should jump to the next field of a form. The editor
+A poke edits as typing does, except that a control byte ends the input,
+as :ref:`RLN_POKE <api-rln-poke>` describes. Poke ``\r`` to pull the
+buffer out without the user pressing Enter, for example when Tab should
+jump to the next field of a form. The editor
 flushes through ``read()`` like any other line, and the application can
 move on, entering the next field with a fresh ``read()`` and
 ``ria_rln_poke()`` to restore its prior contents.

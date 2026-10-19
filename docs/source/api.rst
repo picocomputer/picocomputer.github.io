@@ -279,7 +279,8 @@ ARGV
       06 00 0A 00 00 00 41 42 43 00 44 45 46 00
 
    :Operation: RIA_OP_ARGV 0x08
-   :returns: Size of the argv data.
+   :returns: Size of the argv data. -1 on error.
+   :errno: EINVAL
 
 
 EXEC
@@ -312,7 +313,8 @@ EXEC
    either limit returns -1 with EINVAL.
 
    The EXEC data has the same layout as the ARGV data, with at least one
-   string. Each string starts after the zero of the string before it, in the
+   string. With the terminator of its last string, it has at most 512 bytes.
+   Each string starts after the zero of the string before it, in the
    order of the offset table. The path in ``argv[0]`` has at most 255 bytes.
    The RIA checks the layout and the length of the path, but does not check
    that the path is a ROM that loads. When a check fails, the call fails with
@@ -880,25 +882,25 @@ GETCWD
    :param buf: The returned path.
    :param size: Size of ``buf``. The API call does not take it.
    :returns: ``buf``. NULL on error.
+   :a regs: return
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ERANGE
 
 
 GETLABEL
 ~~~~~~~~
 
-.. c:function:: int f_getlabel (const char* path, char* label)
+.. c:function:: int f_getlabel (const char* drive, char* label)
 
-   Get the volume label. Label must have room for (11+1) bytes. Only an
-   :doc:`pico` has volume labels, and other machines fail with EACCES, or
-   ENOSYS on the Pocket.
+   ``f_getlabel()`` returns the volume label of a drive. ``label`` must hold 12
+   bytes, 11 and the terminator. Only an :doc:`pico` has volume labels.
 
    :Operation: RIA_OP_GETLABEL 0x2D
    :C proto: rp6502.h
-   :param path: Volume to read the label from.
-   :param label: Storage for returned label.
-   :returns: Size of returned label. -1 on error.
+   :param drive: Device name of the drive, such as ``MSC0:``.
+   :param label: The returned label.
+   :returns: Length of the returned label. -1 on error.
    :a regs: return
-   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOSYS
 
 
 SETLABEL
@@ -906,25 +908,26 @@ SETLABEL
 
 .. c:function:: int f_setlabel (const char* name)
 
-   Change the volume label. Max 11 characters. Only an :doc:`pico` has
-   volume labels, and other machines fail with EACCES, or ENOSYS on the
-   Pocket.
+   ``f_setlabel()`` changes the volume label of a drive. A label has at most 11
+   characters. Only an :doc:`pico` has volume labels.
 
    :Operation: RIA_OP_SETLABEL 0x2C
    :C proto: rp6502.h
-   :param name: Label with optional volume name.
+   :param name: Device name of the drive, then the label, such as
+      ``MSC0:GAMES``.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOSYS
 
 
 GETFREE
 ~~~~~~~
 
-.. c:function:: int f_getfree (const char* name, unsigned long* free, unsigned long* total)
+.. c:function:: int f_getfree (const char* drive, unsigned long* free, unsigned long* total)
 
-   Get the free and total space of a volume in 512-byte blocks. The
-   operation pushes both counts to the XSTACK in this layout:
+   ``f_getfree()`` returns the free space and the total space of a
+   drive, in 512-byte blocks. The API call returns both counts on the
+   XSTACK, in this layout:
 
    .. code-block:: c
 
@@ -935,9 +938,9 @@ GETFREE
 
    :Operation: RIA_OP_GETFREE 0x2E
    :C proto: rp6502.h
-   :param name: Volume name.
-   :param free: Storage for returned value.
-   :param total: Storage for returned value.
+   :param drive: Device name of the drive, such as ``MSC0:``.
+   :param free: The returned free space.
+   :param total: The returned total space.
    :returns: 0 on success. -1 on error.
    :a regs: return
    :errno: EACCES, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
@@ -953,22 +956,25 @@ RLN_LASTKEY
 
 .. c:function:: int ria_rln_lastkey (char* key, unsigned char* action)
 
-   Returns the raw bytes of the most recently completed input sequence
-   typed by the user during a non-blocking cooked read from ``CON:``.
-   This includes single characters and multi-byte escape sequences such
-   as arrow, function, and editing keys. The ``action`` out-parameter
-   reports whether the line editor handled the key as an editing
-   action (non-zero) or passed it through (zero). Reading consumes the
-   captured sequence; the next call returns 0 until another key is
-   typed. Sequences longer than 32 bytes, or any call made while no line
-   read is in progress, return 0.
+   ``ria_rln_lastkey()`` returns the last key that the :ref:`line editor
+   <term-nonblocking-read-line>` received during a read from ``CON:``,
+   and clears it. A key is one character or an escape sequence. A string
+   from `RLN_POKE`_ also sets the last key. A key longer than 32 bytes is
+   not returned.
+
+   ``action`` is 1 when the line editor handled the key, and 0 when it did
+   not. For example, the line editor does not handle Left at the start of
+   the line.
+
+   The action byte is on top of the key bytes on the XSTACK.
 
    :Operation: RIA_OP_RLN_LASTKEY 0x30
    :C proto: rp6502.h
-   :param key: Storage for the returned byte sequence.
-   :param action: Out-parameter set non-zero if the key triggered an
-      editing action.
-   :returns: Length of key sequence. 0 if no key is available.
+   :param key: The returned bytes, with no terminator. ``key`` must hold
+      32 bytes.
+   :param action: The returned flag.
+   :returns: Length of the key sequence. 0 when no key is available or no
+      line read is in progress. -1 on error.
    :a regs: return
    :errno: EINVAL
 
@@ -980,18 +986,18 @@ RLN_PEEK
 
 .. c:function:: int ria_rln_peek (char* peek, unsigned char* pos)
 
-   Returns the current contents of the line editor buffer and the
-   cursor position within it. The buffer bytes are pushed to the XSTACK.
-   It fails with EINVAL when no line read is in progress.
+   ``ria_rln_peek()`` returns the text in the :ref:`line editor
+   <term-nonblocking-read-line>` and the position of the cursor in it. It
+   fails with EINVAL when no line read is in progress.
+
+   The position byte is on top of the text on the XSTACK.
 
    :Operation: RIA_OP_RLN_PEEK 0x31
    :C proto: rp6502.h
-   :param peek: Storage for the returned buffer contents. The C wrapper
-      null-terminates the result, so it must hold up to
-      ``RIA_ATTR_RLN_LENGTH`` + 1 bytes (256 max).
-   :param pos: Out-parameter set to the cursor position within the
-      buffer.
-   :returns: Length of the buffer contents. -1 on error.
+   :param peek: The returned text. ``peek`` must hold
+      ``RIA_ATTR_RLN_LENGTH`` + 1 bytes, 256 at most.
+   :param pos: The returned position of the cursor in the text.
+   :returns: Length of the text. -1 on error.
    :a regs: return
    :errno: EINVAL
 
@@ -1003,21 +1009,22 @@ RLN_POKE
 
 .. c:function:: int ria_rln_poke (const char* poke)
 
-   Feeds a string to the line editor as if the user had typed it. The
-   bytes pass through the same input pipeline as live keystrokes:
-   printable characters are written at the cursor (in overwrite mode
-   while the editor is in its line-edit phase), and recognized editing
-   escape sequences are honored. Any C0 control byte (0x00–0x1F) finishes
-   the input, with two exceptions — ESC (``\33``) begins a CSI sequence,
-   and CAN (``\30``) aborts an in-flight one. Control bytes other than
-   CR (``\r``) echo in caret notation (``^@``..``^_``) when the input
-   length is at least 2. LF submits the field like CR but adds no
-   linefeed, which is useful for form input on the last terminal row.
+   ``ria_rln_poke()`` sends a string to the :ref:`line editor
+   <term-nonblocking-read-line>` as typed input, in overwrite mode. While
+   no line read is in progress, the call does nothing.
+
+   A control byte, 0x01 to 0x1F, ends the input and discards the rest of
+   the string. ESC (``\33``) and CAN (``\30``) are the exceptions: ESC
+   starts an escape sequence, and CAN cancels one. When
+   ``RIA_ATTR_RLN_LENGTH`` is 2 or more, the line editor shows the byte
+   that ends the input at the cursor in caret notation, ``^A`` to ``^_``,
+   but does not put it in the text. CR (``\r``) shows nothing.
 
    :Operation: RIA_OP_RLN_POKE 0x32
    :C proto: rp6502.h
-   :param poke: Null-terminated string to feed into the editor.
-   :returns: 0.
+   :param poke: String to send to the line editor, with a length of at
+      most 512.
+   :returns: 0. -1 on error.
    :a regs: return
    :errno: EINVAL
 
