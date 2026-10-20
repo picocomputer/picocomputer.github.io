@@ -14,10 +14,16 @@ machine or referencing the manual.
 make sure that it is written for the reader. Do this after every
 paragraph, every time.
 
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
+
 The reader is a programmer who works through the manual in order. The
 reader of the documentation is expected to also have access to C and
 POSIX documentation. Write each passage for what that reader is trying
 to do at that point, not for how the system is arranged inside.
+
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
 
 **Edit the passage, not the sentence.** Before any change, read the
 section from its start, as the reader who arrives there. Decide what that
@@ -26,12 +32,21 @@ that need, and remove a sentence that does not. A change to one sentence
 is a change to its passage, so read the whole passage again after the
 change, and before you report it.
 
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
+
 **Document the interface.** State what a program can observe and rely
 on. Do not describe how a host does the work or what it stores. The
 source code that you read before an edit is not content for the manual.
 
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
+
 **State a rule once.** A rule that a general section states, such as the
 ABI rules or the errno contract, does not appear again in each entry.
+
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
 
 **Test each sentence.** Before you report a change, read the section from
 its heading. For each sentence, ask: without this sentence, would a
@@ -39,35 +54,68 @@ programmer with the C and POSIX documentation, who has read the earlier
 sections, write wrong code? If not, delete the sentence. Decoration that
 the owner wrote stays.
 
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
+
 ## Rules
+
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
 
 **Never lose a fact.** Do not change what a fact says. You may remove a
 repeated statement of a fact, but at least one statement of it must
 remain. A statement in the C or POSIX documentation counts. This rule
 covers facts about the interface, not about the implementation.
 
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
+
 **One word for one meaning.** Use one word for one meaning, and use the
 same word every time.
+
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
 
 **Use each word in its exact meaning.** "Name" means to give a thing its
 name. It does not mean to use, give or refer to a thing.
 
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
+
 **Present tense and active voice.** Use the present tense and the active
 voice. Give each sentence a subject.
+
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
 
 **Short sentences.** Prefer short sentences. A sentence is as long as its
 content requires.
 
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
+
 **One instruction per sentence.** Write one instruction in each sentence.
+
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
 
 **Serial comma.** Put a comma before the "and" or "or" that ends a list
 of three or more items.
 
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
+
 **Noun clusters.** Do not use noun clusters of more than three words.
+
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
 
 **No figures of speech, idioms or decoration.** Do not add humor, hype,
 metaphor or idioms. The owner writes these where they matter. Leave the
 ones already in the text.
+
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
 
 **RFC 2119 words.** Use the RFC 2119 words with their RFC meanings. "Must"
 and "must not" state a requirement. "Should" and "should not" state a
@@ -76,13 +124,22 @@ that does not run without an argument requires that argument. These rules
 govern the RFC words when the text uses them. They do not require the text
 to use them.
 
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
+
 **Machines are not beings.** Machines and software have no motives,
 feelings or personalities. State what they do as fact. Give a machine
 only verbs for operations it performs. A verb for a human act, even a
 plain one, gives it a personality. Use the established term of the field.
 
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
+
 **No first person.** No I, me, my, we, our, us. The manual is not a letter
 from its author.
+
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
 
 **Errors.** Prefer solid systems and clear messages to documentation of
 errors. Decide each case on its own. An error that the project does not
