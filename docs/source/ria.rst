@@ -338,28 +338,43 @@ succeeds. An address that is not valid for the device also unmaps it, and
 Keyboard
 ========
 
-The RIA can provide applications direct access to keyboard data, which is
-what you want when you need key-up and key-down events or the modifier
-keys. If you don't need that, the UART or stdin works just as well.
+The keyboard interface is direct access to the keys, as opposed to the
+console. stdin only delivers the characters that keys make. It can't tell
+a program that a key is being held, that a key was let go, or that two
+keys are down at once. It never reports Shift or Control by themselves,
+because they make no character. Direct access gives the program the up or
+down state of every key, and that's what a game or anything real-time
+needs.
 
-Enable and disable direct keyboard access by mapping it to an address
-in XRAM.
+A program turns on direct access by mapping the keyboard to XRAM, then
+copies the state to RAM whenever it checks the keys. This checks the
+space bar:
 
 .. code-block:: C
 
-  xreg(0x0, 0x0, 0x00, xaddr);  // enable
-  xreg(0x0, 0x0, 0x00, 0xFFFF); // disable
-  xreg_ria_keyboard(xaddr);     // macro shortcut
+  keyboard_t kb;
 
-The RIA continuously updates XRAM with a bit array of USB HID keyboard
-keycodes, which are not PS/2 scancodes. Each keycode is one bit in the
-array: bit N is 1 while the key with HID keycode N is pressed. The first
-four keycodes are special:
+  xreg_ria_keyboard(XRAM_KEYBOARD);
 
-- 0 - No key pressed
-- 1 - Num Lock on
-- 2 - Caps Lock on
-- 3 - Scroll Lock on
+  xram0_read(&kb, XRAM_KEYBOARD, sizeof(kb));
+  if (KEYBOARD_PRESSED(kb.keys, HID_KEY_SPACE))
+      fire();
+
+Each key is named by its USB HID keycode, like ``HID_KEY_SPACE`` in the
+example, and ``hidkeys.h`` at the end of this section has every name.
+Keycodes are positions on the keyboard, not letters, so W, A, S, and D are
+the same four keys on every layout. To catch a key going down or coming
+back up, a program keeps the last copy and compares.
+
+A few bits aren't keys. ``KEYBOARD_NO_KEY`` is set while nothing is down,
+so a program sees any key the moment the bit clears, even Shift, Control,
+or Alt. At last, "press any key" means any key. ``KEYBOARD_NUM_LOCK``,
+``KEYBOARD_CAPS_LOCK``, and ``KEYBOARD_SCROLL_LOCK`` follow the lock
+lights.
+
+This block goes in ``xram.h``, as :ref:`XRAM Memory Map
+<sdk-xram-memory-map>` in the :doc:`sdk` describes. That's also where
+``XRAM_KEYBOARD``, the address in the example, comes from:
 
 .. tab:: C
 
@@ -390,6 +405,11 @@ four keycodes are special:
       KEYBOARD_CAPS_LOCK   = 2
       KEYBOARD_SCROLL_LOCK = 3
 
+      .macro KEYBOARD_PRESSED keys, code
+          lda keys + (code >> 3)
+          and #1 << (code & 7)
+      .endmacro
+
       .macro xreg_ria_keyboard addr
           xreg $0, $0, $00, addr
       .endmacro
@@ -409,6 +429,11 @@ four keycodes are special:
       KEYBOARD_CAPS_LOCK   = 2
       KEYBOARD_SCROLL_LOCK = 3
 
+      .macro KEYBOARD_PRESSED keys, code
+          lda \keys + (\code >> 3)
+          and #1 << (\code & 7)
+      .endm
+
       .macro xreg_ria_keyboard addr
           xreg $0, $0, $00, \addr
       .endm
@@ -416,9 +441,9 @@ four keycodes are special:
       KEYBOARD_KEYS = 0
       KEYBOARD_SIZE = 32
 
-The keycodes are listed by name below, from the Keyboard/Keypad page of
-the USB HID Usage Tables. Copy the ones you need or the whole block into
-a file of its own, ``hidkeys.h`` or ``hidkeys.inc``.
+These are the standard USB keycodes, the same numbers that the USB
+Implementers Forum gives them in its HID Usage Tables. Copy the names a
+program needs, or the whole block:
 
 .. tab:: C
 

@@ -627,6 +627,11 @@ A type marked ``/* layout */`` is a block that goes in
       KEYBOARD_CAPS_LOCK   = 2
       KEYBOARD_SCROLL_LOCK = 3
 
+      .macro KEYBOARD_PRESSED keys, code
+          lda keys + (code >> 3)
+          and #1 << (code & 7)
+      .endmacro
+
       .macro xreg_ria_keyboard addr
           xreg $0, $0, $00, addr
       .endmacro
@@ -656,6 +661,11 @@ A type marked ``/* layout */`` is a block that goes in
       KEYBOARD_NUM_LOCK    = 1
       KEYBOARD_CAPS_LOCK   = 2
       KEYBOARD_SCROLL_LOCK = 3
+
+      .macro KEYBOARD_PRESSED keys, code
+          lda \keys + (\code >> 3)
+          and #1 << (\code & 7)
+      .endm
 
       .macro xreg_ria_keyboard addr
           xreg $0, $0, $00, \addr
