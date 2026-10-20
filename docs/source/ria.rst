@@ -372,14 +372,10 @@ or Alt. At last, "press any key" means any key. ``KEYBOARD_NUM_LOCK``,
 ``KEYBOARD_CAPS_LOCK``, and ``KEYBOARD_SCROLL_LOCK`` follow the lock
 lights.
 
-This block goes in ``xram.h``, as :ref:`XRAM Memory Map
-<sdk-xram-memory-map>` in the :doc:`sdk` describes. That's also where
-``XRAM_KEYBOARD``, the address in the example, comes from:
-
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define KEYBOARD_NO_KEY 0
       #define KEYBOARD_NUM_LOCK 1
@@ -398,7 +394,7 @@ This block goes in ``xram.h``, as :ref:`XRAM Memory Map
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       KEYBOARD_NO_KEY      = 0
       KEYBOARD_NUM_LOCK    = 1
@@ -421,7 +417,7 @@ This block goes in ``xram.h``, as :ref:`XRAM Memory Map
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       KEYBOARD_NO_KEY      = 0
@@ -1212,7 +1208,7 @@ Mouse buttons are a bitfield:
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define MOUSE_BUTTON_LEFT 0x01
       #define MOUSE_BUTTON_RIGHT 0x02
@@ -1235,7 +1231,7 @@ Mouse buttons are a bitfield:
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       MOUSE_BUTTON_LEFT     = $01
       MOUSE_BUTTON_RIGHT    = $02
@@ -1259,7 +1255,7 @@ Mouse buttons are a bitfield:
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       MOUSE_BUTTON_LEFT     = $01
@@ -1354,7 +1350,7 @@ pointer, and ``control`` has no effect.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define TABLET_CONTACTS 8
 
@@ -1406,7 +1402,7 @@ pointer, and ``control`` has no effect.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       TABLET_CONTACTS = 8
 
@@ -1461,7 +1457,7 @@ pointer, and ``control`` has no effect.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       TABLET_CONTACTS = 8
@@ -1736,7 +1732,7 @@ and R2 should expect analog values of just 0 or 255.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define GAMEPAD_PLAYERS 4
 
@@ -1803,7 +1799,7 @@ and R2 should expect analog values of just 0 or 255.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       GAMEPAD_PLAYERS = 4
 
@@ -1869,7 +1865,7 @@ and R2 should expect analog values of just 0 or 255.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       GAMEPAD_PLAYERS = 4
@@ -2082,7 +2078,7 @@ Volume attenuation is logarithmic.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define PSG_CHANNELS 8
 
@@ -2122,7 +2118,7 @@ Volume attenuation is logarithmic.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       PSG_CHANNELS = 8
 
@@ -2154,7 +2150,7 @@ Volume attenuation is logarithmic.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       PSG_CHANNELS = 8
@@ -2212,7 +2208,7 @@ the era had their own timers and rarely used the chip's.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define xreg_ria_opl(...) xreg(0x0, 0x1, 0x01, __VA_ARGS__)
 
@@ -2228,7 +2224,7 @@ the era had their own timers and rarely used the chip's.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       .macro xreg_ria_opl addr
           xreg $0, $1, $01, addr
@@ -2241,7 +2237,7 @@ the era had their own timers and rarely used the chip's.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       .macro xreg_ria_opl addr

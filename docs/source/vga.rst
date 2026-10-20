@@ -165,7 +165,7 @@ because setting CANVAS clears all scanline programming.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define xreg_vga_canvas(...) xreg(0x1, 0x0, 0x00, __VA_ARGS__)
 
@@ -178,7 +178,7 @@ because setting CANVAS clears all scanline programming.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       .macro xreg_vga_canvas canvas
           xreg $1, $0, $00, canvas
@@ -193,7 +193,7 @@ because setting CANVAS clears all scanline programming.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       .macro xreg_vga_canvas canvas
@@ -222,7 +222,7 @@ but without transparency.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define COLOR_FROM_RGB8(r, g, b) \
           ((((unsigned)(b) >> 3) << 11) | (((unsigned)(g) >> 3) << 6) | ((unsigned)(r) >> 3))
@@ -233,7 +233,7 @@ but without transparency.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       COLOR_ALPHA_MASK = 1 << 5
 
@@ -256,7 +256,7 @@ but without transparency.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       COLOR_ALPHA_MASK = 1 << 5
@@ -327,14 +327,14 @@ Program the mode by setting MODE and the registers after it in one call.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define xreg_vga_mode0(...) xreg(0x1, 0x0, 0x01, 0, __VA_ARGS__)
 
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       .macro xreg_vga_mode0 plane, begin, end
           xreg $1, $0, $01, 0, plane, begin, end
@@ -343,7 +343,7 @@ Program the mode by setting MODE and the registers after it in one call.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       .macro xreg_vga_mode0 values:vararg
@@ -437,7 +437,7 @@ page.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define xreg_vga_mode1(...) xreg(0x1, 0x0, 0x01, 1, __VA_ARGS__)
 
@@ -501,7 +501,7 @@ page.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       .macro xreg_vga_mode1 options, config, plane, begin, end
           xreg $1, $0, $01, 1, options, config, plane, begin, end
@@ -558,7 +558,7 @@ page.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       .macro xreg_vga_mode1 values:vararg
@@ -681,7 +681,7 @@ data would extend past the end of XRAM are drawn as transparent black.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define xreg_vga_mode2(...) xreg(0x1, 0x0, 0x01, 2, __VA_ARGS__)
 
@@ -721,7 +721,7 @@ data would extend past the end of XRAM are drawn as transparent black.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       .macro xreg_vga_mode2 options, config, plane, begin, end
           xreg $1, $0, $01, 2, options, config, plane, begin, end
@@ -759,7 +759,7 @@ data would extend past the end of XRAM are drawn as transparent black.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       .macro xreg_vga_mode2 values:vararg
@@ -860,7 +860,7 @@ manipulation code slightly smaller and faster.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define xreg_vga_mode3(...) xreg(0x1, 0x0, 0x01, 3, __VA_ARGS__)
 
@@ -887,7 +887,7 @@ manipulation code slightly smaller and faster.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       .macro xreg_vga_mode3 options, config, plane, begin, end
           xreg $1, $0, $01, 3, options, config, plane, begin, end
@@ -915,7 +915,7 @@ manipulation code slightly smaller and faster.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       .macro xreg_vga_mode3 values:vararg
@@ -1018,7 +1018,7 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define xreg_vga_mode4(...) xreg(0x1, 0x0, 0x01, 4, __VA_ARGS__)
 
@@ -1067,7 +1067,7 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       .macro xreg_vga_mode4 options, config, length, plane, begin, end
           xreg $1, $0, $01, 4, options, config, length, plane, begin, end
@@ -1118,7 +1118,7 @@ Non-affine sprites use ``mode4_sprite_t`` and affine sprites use
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       .macro xreg_vga_mode4 values:vararg
@@ -1246,7 +1246,7 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define xreg_vga_mode5(...) xreg(0x1, 0x0, 0x01, 5, __VA_ARGS__)
 
@@ -1311,7 +1311,7 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       .macro xreg_vga_mode5 options, config, length, plane, begin, end
           xreg $1, $0, $01, 5, options, config, length, plane, begin, end
@@ -1377,7 +1377,7 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       .macro xreg_vga_mode5 values:vararg
