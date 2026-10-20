@@ -1,11 +1,8 @@
 # Picocomputer Manual
 
 The manual is the Sphinx reStructuredText in `source/`. Write it for
-engineers and programmers, in the style of a data sheet, in plain language.
-The manual talks to a person. Write each passage the way you would explain
-it to that person.
-The rules below are the writing rules of ASD-STE100 Simplified Technical
-English, without its restricted dictionary.
+engineers and programmers, in plain language. The manual talks to a
+person. Write each passage the way you would explain it to that person.
 
 ## Write for a person
 
@@ -37,9 +34,9 @@ change, and before you report it.
 **Most important rule:** Write for a person - a person learning about the
 machine or referencing the manual.
 
-**Document the interface.** State what a program can observe and rely
-on. Do not describe how a host does the work or what it stores. The
-source code that you read before an edit is not content for the manual.
+**Document the interface.** Do not describe how a host does the work or
+what it stores. The source code that you read before an edit is not
+content for the manual.
 
 **Most important rule:** Write for a person - a person learning about the
 machine or referencing the manual.
@@ -51,10 +48,8 @@ ABI rules or the errno contract, does not appear again in each entry.
 machine or referencing the manual.
 
 **Test each sentence.** Before you report a change, read the section from
-its heading. For each sentence, ask: without this sentence, would a
-programmer with the C and POSIX documentation, who has read the earlier
-sections, write wrong code? If not, delete the sentence. Decoration that
-the owner wrote stays.
+its heading as a person reading the manual. Delete a sentence that the
+person does not need. Decoration that the owner wrote stays.
 
 **Most important rule:** Write for a person - a person learning about the
 machine or referencing the manual.
@@ -85,7 +80,7 @@ name. It does not mean to use, give or refer to a thing.
 machine or referencing the manual.
 
 **Present tense and active voice.** Use the present tense and the active
-voice. Give each sentence a subject.
+voice.
 
 **Most important rule:** Write for a person - a person learning about the
 machine or referencing the manual.

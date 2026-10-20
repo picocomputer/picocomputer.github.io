@@ -346,9 +346,7 @@ because they make no character. Direct access gives the program the up or
 down state of every key, and that's what a game or anything real-time
 needs.
 
-A program turns on direct access by mapping the keyboard to XRAM, then
-copies the state to RAM whenever it checks the keys. This checks the
-space bar:
+This checks the space bar:
 
 .. code-block:: C
 
@@ -360,11 +358,10 @@ space bar:
   if (KEYBOARD_PRESSED(kb.keys, HID_KEY_SPACE))
       fire();
 
-Each key is named by its USB HID keycode, like ``HID_KEY_SPACE`` in the
-example, and ``hidkeys.h`` at the end of this section has every name.
+Each key has a USB HID keycode, like ``HID_KEY_SPACE`` in the example.
 Keycodes are positions on the keyboard, not letters, so W, A, S, and D are
 the same four keys on every layout. To catch a key going down or coming
-back up, a program keeps the last copy and compares.
+back up, a program keeps the last reading and compares.
 
 A few bits aren't keys. ``KEYBOARD_NO_KEY`` is set while nothing is down,
 so a program sees any key the moment the bit clears, even Shift, Control,
@@ -1166,44 +1163,49 @@ program needs, or the whole block:
 Mouse
 =====
 
-.. note::
+The mouse interface reports how far the mouse moves and which buttons are
+down. Use it when the movement itself is the input, like turning the view
+in a first-person game. It also reads a spinner, the knob from arcade
+games like Tempest. For everything
+else, the `Tablet`_ is the better choice. It reports where the pointer is
+on the canvas.
 
-   The `Tablet`_ interface is almost always the better choice. It gives a
-   canvas pixel position for a mouse, pen, or touchscreen. Raw mouse input
-   is still useful for devices that act like a mouse but are not a pointer,
-   such as spinners.
+On the :doc:`emu` and the :doc:`web`, the mouse interface captures the
+mouse. After a program maps the mouse, a click in the window hides the
+pointer and locks the mouse there. The player presses Esc to get the
+mouse back. The tablet never captures the mouse.
 
-The RIA can give applications direct access to mouse data. Enable and
-disable it by mapping it to an address in XRAM.
-
-.. code-block:: C
-
-  xreg(0x0, 0x0, 0x01, xaddr);  // enable
-  xreg(0x0, 0x0, 0x01, 0xFFFF); // disable
-  xreg_ria_mouse(xaddr);        // macro shortcut
-
-This sets the XRAM address of a structure holding the live mouse input.
-
-Compute movement by subtracting the previous value from the current one.
-VSYNC timing (60 Hz) is period-correct but slow by modern standards. For
-precise mouse input, poll from an ISR at 8 ms or faster (125 Hz).
-
-Account for canvas resolution when interpreting movement. At 640x480 and
-640x360, one unit equals one pixel; at 320x240 and 320x180, two units
-equal one pixel.
+This finds how far the mouse moved since the last reading, and checks the
+left button:
 
 .. code-block:: C
 
-  int8_t delta_x = current_x - prev_x;
-  int8_t delta_y = current_y - prev_y;
+  static uint8_t last_x, last_y;
+  mouse_t mouse;
+  int8_t dx, dy;
 
-Mouse buttons are a bitfield:
+  xreg_ria_mouse(XRAM_MOUSE);
 
-- 0 - LEFT
-- 1 - RIGHT
-- 2 - MIDDLE
-- 3 - BACKWARD
-- 4 - FORWARD
+  xram0_read(&mouse, XRAM_MOUSE, sizeof(mouse));
+  dx = mouse.x - last_x;
+  dy = mouse.y - last_y;
+  last_x = mouse.x;
+  last_y = mouse.y;
+  if (mouse.buttons & MOUSE_BUTTON_LEFT)
+      fire();
+
+The ``x`` and ``y`` values are just counters. ``x`` counts up as the mouse
+moves right, and ``y`` counts up as it moves down. Both roll over at 255.
+That's why the example subtracts the last reading: the difference is how
+far the mouse moved, and keeping it in an ``int8_t`` makes the rollover
+come out right. The ``wheel`` and ``pan`` counters work the same way. The
+buttons are bits, such as ``MOUSE_BUTTON_LEFT``.
+
+A count is one pixel on a 640-wide canvas and half a pixel on a 320-wide
+one. Reading the mouse once a frame, at 60 Hz, is period-correct but slow
+by modern standards. A fast flick can move more than 127 counts in one
+frame, and then the difference comes out backward. For precise mouse
+input, read the mouse from an interrupt handler every 8 ms or faster.
 
 .. tab:: C
 
