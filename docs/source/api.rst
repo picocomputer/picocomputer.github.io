@@ -309,6 +309,9 @@ EXEC
    file is missing or is not a valid ROM, when its absolute path is longer than
    255 bytes, or when the argv data with that path does not fit in 512 bytes.
 
+   To run again when the new ROM exits, a ROM first registers as the
+   `Launcher`_.
+
    ``ria_execl()`` and ``ria_execv()`` take at most 16 strings, the path and up
    to 15 arguments, in at most 512 bytes with the offset table. A call over
    either limit returns -1 with EINVAL.
@@ -430,7 +433,7 @@ READ
    :param count: Number of bytes to read. 0x7FFF max.
    :returns: The number of bytes read. -1 on error.
    :a regs: fildes
-   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
+   :errno: EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO
 
 
 READ_XSTACK
@@ -448,7 +451,7 @@ READ_XSTACK
    :param fildes: File descriptor from open().
    :returns: The number of bytes read. -1 on error.
    :a regs: fildes
-   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
+   :errno: EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO
 
 
 .. _api-read-xram:
@@ -468,7 +471,7 @@ READ_XRAM
    :param fildes: File descriptor from open().
    :returns: The number of bytes read. -1 on error.
    :a regs: fildes
-   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSYS
+   :errno: EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO
 
 
 WRITE
@@ -485,7 +488,7 @@ WRITE
    :param count: Number of bytes to write. 0x7FFF max.
    :returns: The number of bytes written. -1 on error.
    :a regs: fildes
-   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC, ENOSYS
+   :errno: EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC
 
 
 WRITE_XSTACK
@@ -503,7 +506,7 @@ WRITE_XSTACK
    :param fildes: File descriptor from open().
    :returns: The number of bytes written. -1 on error.
    :a regs: fildes
-   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC, ENOSYS
+   :errno: EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC
 
 
 WRITE_XRAM
@@ -520,7 +523,7 @@ WRITE_XRAM
    :param fildes: File descriptor from open().
    :returns: The number of bytes written. -1 on error.
    :a regs: fildes
-   :errno: EACCES, EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC, ENOSYS
+   :errno: EAGAIN, EBADF, EBUSY, EINTR, EINVAL, EIO, ENOSPC
 
 
 LSEEK
@@ -570,7 +573,7 @@ LSEEK
       0x7FFFFFFF does not fit in the returned long, so that seek fails
       with ERANGE and does not change the position.
    :a regs: fildes
-   :errno: EBADF, EINVAL, EIO, ENOSPC, ENOSYS, ERANGE, ESPIPE
+   :errno: EBADF, EINVAL, EIO, ENOSPC, ERANGE, ESPIPE
 
 
 SYNCFS
@@ -585,7 +588,7 @@ SYNCFS
    :param fildes: File descriptor from open().
    :returns: 0 on success. -1 on error.
    :a regs: return, fildes
-   :errno: EACCES, EBADF, EINVAL, EIO, ENOSPC, ENOSYS
+   :errno: EACCES, EBADF, EINVAL, EIO, ENOSPC
 
 
 ISATTY
@@ -631,14 +634,14 @@ REMOVE
    ``remove()`` removes a file or an empty directory. It is the lightest
    of the three calls that remove an entry, because it does not test the
    type of the entry first. The removal fails with EACCES on a read-only
-   file, and on a directory that is not empty.
+   file.
 
    :Operation: RIA_OP_REMOVE 0x1B
    :C proto: stdio.h
    :param name: Path of the file or the directory to remove.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EACCES, EBUSY, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
+   :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 UNLINK
@@ -663,13 +666,12 @@ RMDIR
 
    ``rmdir()`` removes an empty directory. It makes two API calls: `STAT`_
    tests that the entry is a directory, and `REMOVE`_ removes it.
-   ``rmdir()`` fails with EACCES on a file, and on a directory that is not
-   empty.
+   ``rmdir()`` fails with EACCES on a file.
 
    :C proto: unistd.h
    :param name: Path of the directory to remove.
    :returns: 0 on success. -1 on error.
-   :errno: EACCES, EBUSY, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
+   :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, ENODEV, ENOENT, ENOMEM, ENOSYS
 
 
 RENAME
@@ -677,9 +679,10 @@ RENAME
 
 .. c:function:: int rename (const char* oldname, const char* newname)
 
-   ``rename()`` renames or moves a file or a directory on its drive. It
-   does not replace a read-only file. A refused replacement fails with
-   EACCES, and a move to another drive fails with ENODEV.
+   ``rename()`` renames or moves a file or a directory on its drive. A
+   replacement of a read-only file, or of a file by a directory or a
+   directory by a file, fails with EACCES. A move to another drive fails
+   with ENODEV.
 
    :Operation: RIA_OP_RENAME 0x1C
    :C proto: stdio.h
@@ -901,7 +904,7 @@ GETLABEL
    :param label: The returned label.
    :returns: Length of the returned label. -1 on error.
    :a regs: return
-   :errno: EACCES, EINVAL, EIO, ENODEV, ENOSYS
+   :errno: EINVAL, EIO, ENODEV, ENOSYS
 
 
 SETLABEL
@@ -918,7 +921,7 @@ SETLABEL
       ``MSC0:GAMES``.
    :returns: 0 on success. -1 on error.
    :a regs: return
-   :errno: EACCES, EINVAL, EIO, ENODEV, ENOSYS
+   :errno: EACCES, EINVAL, EIO, ENODEV, ENOSPC, ENOSYS
 
 
 GETFREE
@@ -1397,7 +1400,7 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
      - Description
    * - | 0x00
        | ``RIA_ATTR_ERRNO_OPT``
-     - The C library sets this attribute, so a C program does not use it.
+     - The C runtime sets this attribute, so a C program does not use it.
        An assembly program that reads ``RIA_ERRNO`` sets it as `Errno
        Translations`_ describes.
    * - | 0x01
@@ -1486,43 +1489,314 @@ Launcher
 A ROM is the whole state of the machine as it comes out of reset, like a
 cartridge, so a ROM that starts replaces whatever ran before. A ROM also
 takes arguments through `ARGV`_ and returns an exit code through
-`EXIT`_, like a program. The launcher puts the two together: a ROM that
-starts other ROMs with `EXEC`_ gets control back when each one stops.
+`EXIT`_, like a program. A launcher puts the two together: it is a ROM
+that starts other ROMs with `EXEC`_, and runs again when each one exits.
+A menu for an anthology of games works this way. So does a shell that
+runs a compiler, a linker, and a packager, and stops when a step fails.
 
-A ROM registers as the launcher when it sets ``RIA_ATTR_LAUNCHER`` to 1
-with :c:func:`ria_attr_set`. From then on, when a ROM that it started
-calls ``exit()`` or returns from ``main()``, the launcher ROM runs again
-from the start, and ``RIA_ATTR_EXIT_CODE`` holds the exit code of the ROM
-that stopped. When a ROM that the launcher starts does not load, the
-console shows the error, and the launcher does not run again.
+To write a launcher:
+
+#. Set ``RIA_ATTR_LAUNCHER`` to 1 with :c:func:`ria_attr_set`.
+#. Start a ROM with `EXEC`_, with its arguments.
+#. When that ROM exits, the launcher runs again from the start, with only
+   its own path in ``argv``. ``RIA_ATTR_EXIT_CODE`` holds the exit code
+   of the ROM that exited.
 
 The launcher starts fresh each time, so it keeps anything that it needs
-between runs in a file. When it runs again, ``argv`` holds only its own
-path. When the launcher itself stops, the registration clears. A ROM
-that the launcher starts can also set ``RIA_ATTR_LAUNCHER``: 1 makes
-that ROM the launcher, and 0 clears the registration.
+between runs in a file, such as the next step of a shell. The
+registration clears when the launcher itself exits. When a ROM that the
+launcher starts does not load, the console shows the error, and the
+launcher does not run again.
 
-For example, a shell ROM can run a compiler, a linker, and a packager,
-each a ROM of its own, as three steps. It starts each one with EXEC and
-its arguments, reads the exit code when it runs again, and ends the chain
-when a step fails. A menu for an anthology of games works in the same
-way, and comes back when a game exits. That works best when every game
-in it has a way to exit, such as an Exit item in its menu.
+A menu works best when every game in it has a way to exit, such as an
+Exit item in its menu.
+
+
+Application Binary Interface
+============================
+
+A compiler turns each call of a C function into machine code in a
+standard way: where each argument goes, in what order, and where the
+result comes back. That byte-level convention is an Application Binary
+Interface (ABI).
+
+The ABI is based on fastcall from the `cc65 internals
+<https://cc65.github.io/doc/cc65-intern.html>`__. The C library of each
+compiler follows it for every C program, so a C programmer needs this
+section only to make API calls itself. An assembly programmer, or a
+programmer who brings another compiler to the Picocomputer, needs all of
+it.
+
+The ABI has five rules:
+
+* The program pushes the stack arguments to the XSTACK from left to
+  right.
+* The XSTACK holds only the stack arguments. An API call that takes
+  arguments or returns data on the XSTACK fails with EINVAL when the
+  XSTACK holds more than its stack arguments.
+* The last argument goes in ``RIA_A`` for 8 bits, in ``RIA_A`` and
+  ``RIA_X`` for 16 bits, and in ``RIA_A``, ``RIA_X``, and ``RIA_SREG``
+  for 32 bits. A last argument of 64 bits goes on the XSTACK.
+* The return value comes back in ``RIA_A`` and ``RIA_X``, and also in
+  ``RIA_SREG`` for 32 bits.
+* An API call can also return data on the XSTACK.
+
+A and X are the 6502 registers. The pseudo-register AX combines them
+into 16 bits, and AXSREG extends AX to 32 bits with the 16 bits of SREG.
+The ABI of each API call is a C declaration, such as:
+
+.. c:function:: int doit(int arg0, int arg1)
+   :no-index-entry:
+   :no-contents-entry:
+
+``RIA_A``, ``RIA_X``, and ``RIA_SREG`` are :ref:`RIA registers
+<ria-registers>`. An int is 16 bits, so arg1 goes in ``RIA_A`` and
+``RIA_X``. In this section, "A" is the 6502 register and "RIA_A" is the
+RIA register.
+
+arg0 goes on the extended stack (XSTACK), 512 bytes of memory in the
+RIA. A read of ``RIA_XSTACK`` pulls a byte, and a write pushes one. The
+XSTACK is a top-down stack, so push the arguments from left to right.
+Push each value high byte first, so that it is in memory low byte first.
+
+To make the call, store the operation ID in ``RIA_OP``. The API call
+starts at once. To wait until the call finishes, ``JSR RIA_SPIN``. To do
+other work while the call runs, such as a loading animation, poll
+``RIA_BUSY``.
+
+``JSR RIA_SPIN`` leaves its loop within 3 clock cycles after the API call
+finishes, and returns with A and X loaded. A sequence of API calls runs fastest
+this way. ``RIA_SPIN`` is a short program in the RIA registers, and the RIA
+changes the program as the call runs:
+
+.. code-block:: asm
+
+   FFF1: BRA #$??   ; RIA_BUSY {-2 or 0}
+   FFF3: LDA #$??   ; RIA_A
+   FFF5: LDX #$??   ; RIA_X
+   FFF7: RTS
+
+A program that polls reads the same registers as data. ``RIA_BUSY`` is
+the -2 or 0 in the BRA above. Bit 7 of ``RIA_BUSY`` is 1 while the call
+runs, and the BIT instruction copies bit 7 to flag N. When bit 7 is 0,
+read ``RIA_A`` and ``RIA_X`` with absolute instructions.
+
+.. code-block:: asm
+
+   wait: BIT RIA_BUSY
+         BMI wait
+         LDA RIA_A
+         LDX RIA_X
+
+An API call that returns ``RIA_A`` also returns ``RIA_X``, for C integer
+promotion. Load X last, so that flag N shows a negative return value. The
+RIA changes ``RIA_SREG`` only for a 32-bit return or an error, and
+``RIA_ERRNO`` only on an error. A failed API call returns -1 in
+``RIA_A``, ``RIA_X``, and ``RIA_SREG``, and empties the XSTACK.
+
+Some API calls return strings or structures on the XSTACK. Pull all of
+the data before the next call, or discard it with
+`ria_drop() <DROP_>`_, which takes constant time with no loop.
+
+The data that one API call returns on the XSTACK can also be an argument
+of the next API call. `READ_XSTACK`_ returns the data of a file on the
+XSTACK, and `WRITE_XSTACK`_ writes the data on the XSTACK to a file, so
+the two API calls copy a file with no pass through RAM or XRAM. The C
+functions ``read_xstack()`` and ``write_xstack()`` copy the
+data through ``buf`` in RAM, so a program that copies this way makes the
+API calls itself.
+
+Short Stacking
+--------------
+
+A program can push fewer bytes of an argument when the value fits, to
+save cycles. Only the first stack argument that the program pushes can
+be short. Take `LSEEK`_:
+
+.. code-block:: C
+
+   long f_lseek(long offset, char whence, int fildes)
+
+``offset`` is a 32-bit value, and the ABI puts it first so that it can
+be short. When the offset always fits in 16 bits, push two bytes in
+place of four.
+
+The RIA extends a short signed argument with its sign, so two bytes
+carry -32768 to 32767. The RIA fills a short unsigned argument with
+zeros.
+
+.. warning::
+
+   Size a short push by the signed range. An offset of 200 pushed as the
+   single byte 0xC8 arrives as -56, because the top bit of 0xC8 is the
+   sign. Push 0x00 and then 0xC8 to send 200.
+
+Shorter AX
+----------
+
+Many API calls do not read ``RIA_X`` for their last argument, so a
+program can save a few cycles when it does not set ``RIA_X``. Many API
+calls also return a value that fits in ``RIA_A``. The RIA still sets
+``RIA_X`` for C integer promotion, so a returned integer always has at
+least 16 bits. The ``a regs`` field of each section of `Application
+Programming Interface`_ lists these arguments and return values.
+
+Bulk Data
+---------
+
+The RIA cannot read or write 6502 RAM, so a pointer to RAM has no
+meaning to the RIA. Bulk data moves through the XSTACK or through XRAM,
+and the API calls that move it come in two forms, one for each.
+
+Bulk Data on the XSTACK
+~~~~~~~~~~~~~~~~~~~~~~~
+
+These API calls move at most 512 bytes, the size of the XSTACK. A
+pointer in the C declaration gives the type of the data, and its
+direction: ``const`` marks data that goes to the host.
+
+A string that ends the data on the XSTACK, the one pushed first and
+pulled last, needs no terminator, because a read of the empty XSTACK
+returns 0. A program may push that terminator or leave it out. The host
+leaves it out, except in a structure, such as ``f_stat_t`` or the argv
+data. A string that other data follows, such as the new name of
+`RENAME`_, needs its terminator. An API call that returns data of
+variable size returns the number of bytes of that data that it pushed,
+which for a string is its length. Data of fixed size, such as a
+structure or the position byte of `RLN_PEEK`_, is not counted.
+
+Some examples:
+
+.. code-block:: C
+
+   int open(const char *path, int oflag);
+
+Put ``oflag`` in ``RIA_A``. `OPEN`_ lists ``oflag`` under ``a regs``,
+so ``RIA_X`` can stay unset. Push the path to the XSTACK, from its last
+character to its first. A path has a length of at most 255. In C, the
+library pushes the string.
+
+.. code-block:: C
+
+   int read_xstack(void *buf, unsigned count, int fildes)
+
+Push ``count``, which can be short. Put ``fildes`` in ``RIA_A``.
+`READ_XSTACK`_ lists ``fildes`` under ``a regs``, so ``RIA_X`` can stay
+unset. The API call returns the number of bytes to pull from the
+XSTACK. In C, the library copies them into ``buf``.
+
+.. code-block:: C
+
+   int write_xstack(const void *buf, unsigned count, int fildes)
+
+Put ``fildes`` in ``RIA_A``, and ``RIA_X`` can stay unset. Push the data
+to the XSTACK from its last byte to its first, so that the first byte is
+on top. Do not push ``count``, because the host takes it from the XSTACK
+pointer. In C, the library pushes ``count`` bytes of ``buf``.
+
+``read()`` and ``write()`` are functions of the C library, not API
+calls. C requires them to take counts larger than the XSTACK holds, so
+they make as many API calls as the count requires.
+
+Bulk Data in XRAM
+~~~~~~~~~~~~~~~~~
+
+`READ_XRAM`_ and `WRITE_XRAM`_ move data between a file and XRAM with no
+pass through 6502 RAM, so a program can load its assets directly.
+
+.. code-block:: C
+
+   int read_xram(unsigned xaddr, unsigned count, int fildes)
+   int write_xram(unsigned xaddr, unsigned count, int fildes)
+
+Push ``xaddr`` and then ``count`` as integers. Put ``fildes`` in
+``RIA_A``. The 6502 reads and writes the data in XRAM through
+``RIA_RW0`` or ``RIA_RW1``.
+
+These API calls are fast, and they run while the 6502 does other work.
+They move up to 800 KB per second, depending on the size of the request.
+One call moves at most 0x7FFF bytes, so 64 KB takes three calls. A full
+64 KB of XRAM loads or saves several times per second, with no wait
+states and no work by the 6502.
+
+READ_XRAM and WRITE_XRAM are why the Picocomputer 6502 has no paged
+memory.
+You don't need it when "disk" access has zero seek time and DMA to XRAM.
+
+Chaining Time Calls
+-------------------
+
+cc65 has integers of at most 32 bits, so its ``time_t`` holds only the
+years 1970 to 2106. A chain of time API calls works around this limit,
+and keeps assembly programs small. In a chain, the time stays on the
+XSTACK and never passes through a ``time_t``, so it keeps all 64 bits.
+
+This program prints the local time with a chain of three API calls:
+
+#. `TIME_GET`_ returns the current time on the XSTACK.
+#. `LOCALTIME`_ uses that time as its argument, and returns a
+   ``struct tm`` on the XSTACK.
+#. The program pushes the format string, with its terminator, on top of
+   the ``struct tm``.
+#. `STRFTIME`_ uses the format string and the ``struct tm`` as its
+   arguments. It returns the formatted time as a string on the XSTACK,
+   and returns the length of the string.
+#. The program pulls the string from the XSTACK.
+
+The ``#pragma`` lines are for cc65, which does not support
+``volatile``, as :ref:`the RIA datasheet <ria-volatile>` describes.
+
+.. code-block:: C
+
+   #include <rp6502.h>
+   #include <stdio.h>
+
+   #pragma optimize (push, off) // for cc65
+   int main(void)
+   {
+       static const char format[] = "%Y-%m-%d %H:%M:%S";
+       char buf[32];
+       int i, n;
+       RIA.op = RIA_OP_TIME_GET;
+       if (ria_spin() < 0)
+           return 1;
+       RIA.op = RIA_OP_LOCALTIME;
+       if (ria_spin() < 0)
+           return 1;
+       RIA.xstack = 0;
+       for (i = sizeof format - 1; i;)
+           RIA.xstack = format[--i];
+       RIA.op = RIA_OP_STRFTIME;
+       n = ria_spin();
+       if (n < 0)
+           return 1;
+       for (i = 0; i < n; i++)
+           buf[i] = RIA.xstack;
+       buf[n] = 0;
+       puts(buf);
+       return 0;
+   }
+   #pragma optimize (pop)
+
+The other time API calls chain in the same way. The seconds that
+`TIME_GET`_ or `MKTIME`_ returns can be the argument of `GMTIME`_,
+`LOCALTIME`_, or `TIME_SET`_. The ``struct tm`` that `GMTIME`_ or
+`LOCALTIME`_ returns can be the argument of `MKTIME`_ or `STRFTIME`_.
 
 
 Errno Translations
 ==================
 
-An API call that fails sets ``RIA_ERRNO``. cc65 and llvm-mos give the
-errno names different numbers, so ``RIA_ATTR_ERRNO_OPT`` selects the
-numbers that the API uses. In C, ``errno`` uses the numbers of the
-compiler, and the program does not need to set the option. The option
-is 0 when a ROM starts, and while it is 0, every error sets
-``RIA_ERRNO`` to $FFFF. To get errno numbers without a C runtime, set
-the option before the first API call that can fail.
+``errno`` in C is ``RIA_ERRNO``, the register that a failed API call
+sets. cc65 and llvm-mos give the errno names different numbers, so
+``RIA_ATTR_ERRNO_OPT`` selects the numbers that ``RIA_ERRNO`` uses: 1
+for cc65, or 2 for llvm-mos. In a C program, the C runtime has already
+selected the numbers of its compiler before ``main()`` starts. An
+assembly program must select its own. Until it does, the option is 0,
+and every failed API call sets ``RIA_ERRNO`` to $FFFF.
 
-cc65 does not define EDOM and EILSEQ. A cc65 program gets EUNKNOWN, 18,
-for them.
+cc65 has no EDOM or EILSEQ, so a cc65 program gets EUNKNOWN, 18, in
+their place.
 
 .. list-table::
    :header-rows: 1
@@ -1599,12 +1873,11 @@ for them.
 Host Error Codes
 ================
 
-A program never gets a host's own error codes. Each host maps them onto
-the errno values in the left column, and the table shows which become
-which, for a developer porting code from POSIX or Windows. ``ENOTDIR``,
-for one, has no errno of its own here and arrives as ``ENOENT``. The
-littlefs codes are shown without their ``LFS_ERR_`` prefix and the Windows
-codes without their ``ERROR_`` prefix. Any other code becomes ``EIO``.
+Every library and every operating system has its own error codes. The
+RIA maps them to the errno names that cc65 and llvm-mos both have. The
+table shows the littlefs codes without their ``LFS_ERR_`` prefix, and
+the Windows codes without their ``ERROR_`` prefix. A code that is not in
+the table becomes ``EIO``.
 
 .. list-table::
    :header-rows: 1
@@ -1617,17 +1890,17 @@ codes without their ``ERROR_`` prefix. Any other code becomes ``EIO``.
      - Windows
    * - ENOENT
      - FR_NO_FILE, FR_NO_PATH
-     - NOENT
+     - NOENT, NOTDIR
      - ENOENT, ENOTDIR
      - FILE_NOT_FOUND, PATH_NOT_FOUND, NO_MORE_FILES, DIRECTORY
    * - EACCES
      - FR_DENIED, FR_WRITE_PROTECTED
-     -
-     - EACCES, EPERM, EROFS, EISDIR, ENOTEMPTY
-     - ACCESS_DENIED, SHARING_VIOLATION, LOCK_VIOLATION, WRITE_PROTECT, DIR_NOT_EMPTY
+     - ISDIR
+     - EACCES, EPERM, EROFS, EISDIR
+     - ACCESS_DENIED, WRITE_PROTECT
    * - EINVAL
      - FR_INVALID_NAME, FR_INVALID_PARAMETER
-     - NOTDIR, ISDIR, NOTEMPTY, INVAL, NAMETOOLONG
+     - INVAL, NAMETOOLONG
      - EINVAL, ENAMETOOLONG
      - FILENAME_EXCED_RANGE, INVALID_NAME, INVALID_PARAMETER, NEGATIVE_SEEK
    * - ENODEV
@@ -1636,15 +1909,15 @@ codes without their ``ERROR_`` prefix. Any other code becomes ``EIO``.
      - ENODEV, ENXIO, EXDEV
      - NOT_READY, BAD_UNIT, INVALID_DRIVE, NOT_SAME_DEVICE
    * - ENOSPC
-     -
+     - FR_NO_SPACE
      - FBIG, NOSPC
-     - ENOSPC, EFBIG
-     - DISK_FULL, HANDLE_DISK_FULL
+     - ENOSPC, EFBIG, EDQUOT
+     - DISK_FULL, HANDLE_DISK_FULL, DISK_QUOTA_EXCEEDED, CANNOT_MAKE, FILE_TOO_LARGE
    * - EEXIST
-     - FR_EXIST
-     - EXIST
-     - EEXIST
-     - ALREADY_EXISTS, FILE_EXISTS
+     - FR_EXIST, FR_NOT_EMPTY
+     - EXIST, NOTEMPTY
+     - EEXIST, ENOTEMPTY
+     - ALREADY_EXISTS, FILE_EXISTS, DIR_NOT_EMPTY
    * - EMFILE
      - FR_TOO_MANY_OPEN_FILES
      -
@@ -1658,8 +1931,8 @@ codes without their ``ERROR_`` prefix. Any other code becomes ``EIO``.
    * - EBUSY
      - FR_LOCKED
      -
-     - EBUSY
-     - BUSY, PIPE_BUSY
+     - EBUSY, ETXTBSY
+     - BUSY, PIPE_BUSY, SHARING_VIOLATION, LOCK_VIOLATION
    * - EBADF
      - FR_INVALID_OBJECT
      - BADF
@@ -1673,7 +1946,7 @@ codes without their ``ERROR_`` prefix. Any other code becomes ``EIO``.
    * - EINTR
      -
      -
-     -
+     - EINTR
      - OPERATION_ABORTED
    * - ESPIPE
      -
@@ -1690,312 +1963,3 @@ codes without their ``ERROR_`` prefix. Any other code becomes ``EIO``.
      - IO, CORRUPT, NOATTR
      - EIO
      -
-
-On POSIX, a read or write on a descriptor opened the wrong way fails with
-``EBADF`` from the host and ``EACCES`` here.
-
-The Pocket sets errno itself rather than mapping a host's codes, so it has
-no column. The calls it lacks are listed under
-:ref:`Compatibility <port-compatibility>`.
-
-
-Errno Translations
-==================
-
-API calls set ``RIA_ERRNO`` when an error occurs. Because cc65 and llvm-mos
-each define their own errno constants, the errno option selects which set
-of numeric values to use. In C, ``errno`` maps directly to ``RIA_ERRNO``,
-and both C runtimes set the option at startup whenever the program links
-``errno``. Assembly programs must set ``RIA_ATTR_ERRNO_OPT`` themselves
-before any API call that can fail.
-
-.. list-table::
-   :header-rows: 1
-   :widths: 34 33 33
-
-   * -
-     - cc65
-     - llvm-mos
-   * - option
-     - 1
-     - 2
-   * - ENOENT
-     - 1
-     - 2
-   * - ENOMEM
-     - 2
-     - 12
-   * - EACCES
-     - 3
-     - 13
-   * - ENODEV
-     - 4
-     - 19
-   * - EMFILE
-     - 5
-     - 24
-   * - EBUSY
-     - 6
-     - 16
-   * - EINVAL
-     - 7
-     - 22
-   * - ENOSPC
-     - 8
-     - 28
-   * - EEXIST
-     - 9
-     - 17
-   * - EAGAIN
-     - 10
-     - 11
-   * - EIO
-     - 11
-     - 5
-   * - EINTR
-     - 12
-     - 4
-   * - ENOSYS
-     - 13
-     - 38
-   * - ESPIPE
-     - 14
-     - 29
-   * - ERANGE
-     - 15
-     - 34
-   * - EBADF
-     - 16
-     - 9
-   * - ENOEXEC
-     - 17
-     - 8
-   * - EDOM
-     - 18
-     - 33
-   * - EILSEQ
-     - 18
-     - 84
-   * - EUNKNOWN
-     - 18
-     - 85
-
-
-Launcher
-========
-
-A ROM is the whole state of the machine as it comes out of reset, like a
-cartridge, so running one normally replaces whatever ran before. A ROM
-also takes arguments through `ARGV`_ and returns an exit status through
-`EXIT`_, like a program. The launcher puts the two together: a ROM that
-starts other ROMs with `EXEC`_ gets control back when each one stops.
-
-A ROM registers as the launcher by setting ``RIA_ATTR_LAUNCHER`` to 1
-with :c:func:`ria_attr_set`. From then on, when a ROM it started stops,
-whether it calls exit(), returns from main() or fails, the launcher ROM
-runs again from the start, and ``RIA_ATTR_EXIT_CODE`` holds the exit
-status of the ROM that stopped. The launcher starts fresh each time, so
-it keeps anything it needs between runs in a file. When the launcher
-itself stops, the registration clears.
-
-For example, a shell ROM can run a compiler, a linker and a packager,
-each a ROM of its own, as three steps. It starts each one with EXEC and
-its arguments, reads the exit code when it runs again, and ends the chain
-when a step fails. The same mechanism serves a menu for an anthology of
-games, which comes back when a game exits. That works best when every
-game in it has a way to exit, such as an Exit item in its menu.
-
-
-Application Binary Interface
-============================
-
-.. seealso::
-
-   :ref:`RIA registers <ria-registers>` — the hardware register map
-   referenced throughout this section.
-
-A compiler turns each call of a C function into machine code in a
-standard way: where each argument goes, in what order, and where the
-result comes back. That byte-level convention is an Application Binary
-Interface (ABI). This section describes the ABI of the API calls: how a
-6502 program passes the arguments to the RIA, starts the call, and reads
-the result back from the host.
-
-The ABI is based on fastcall from the `cc65 internals
-<https://cc65.github.io/doc/cc65-intern.html>`__. The compiler's library
-follows it for every C program, so a C programmer can skip this section.
-An assembly programmer, or anyone bringing another compiler to the
-Picocomputer, needs all of it.
-
-At its core, the ABI is four rules:
-
-* Stack arguments are pushed left to right.
-* Last argument passed by register A, AX, or AXSREG.
-* Return value in register AX or AXSREG.
-* May return data on the stack.
-
-A and X are the 6502 registers. The pseudo-register AX combines them
-into 16 bits, and AXSREG extends that to 32 bits with the 16 SREG bits.
-Every API call is specified as a C declaration, like so:
-
-.. c:function:: int doit(int arg0, int arg1);
-   :no-index-entry:
-   :no-contents-entry:
-
-The RIA has registers called ``RIA_A``, ``RIA_X``, and ``RIA_SREG``. An
-int is 16 bits, so arg1 goes into the ``RIA_A`` and ``RIA_X``
-registers. Throughout this explanation, "A" means the 6502 register and
-"RIA_A" means the RIA register.
-
-arg0 goes on the extended stack (XSTACK), 512 bytes of memory in the
-RIA. Reading ``RIA_XSTACK`` pops bytes; writing pushes them. It's a
-top-down stack, so push the arguments left to right, and push each value
-high byte first so that it lies in memory low byte first.
-
-To execute the call, store the operation ID in ``RIA_OP``; the operation
-begins immediately. You can keep the 6502 busy with other work, such as a
-loading animation, by polling ``RIA_BUSY``, or just JSR to ``RIA_SPIN``
-to block until it's done.
-
-``JSR RIA_SPIN`` can unblock within 3 clock cycles and loads A and X for
-you. Sequential operations run fastest this way. Under the hood, you're
-jumping into a self-modifying program that runs out of the RIA registers.
-
-.. code-block:: asm
-
-   FFF1: BRA #$??   ; RIA_BUSY {-2 or 0}
-   FFF3: LDA #$??   ; RIA_A
-   FFF5: LDX #$??   ; RIA_X
-   FFF7: RTS
-
-Polling is just snooping on that same program. The ``RIA_BUSY`` register
-is the -2 or 0 in the BRA above. Per the :ref:`RIA registers
-<ria-registers>`, bit 7 signals busy, which the 6502 can test quickly
-with the BIT operator to set flag N. Once it clears, read ``RIA_A`` and
-``RIA_X`` with absolute instructions.
-
-.. code-block:: asm
-
-   wait: BIT RIA_BUSY
-         BMI wait
-         LDA RIA_A
-         LDX RIA_X
-
-Any operation that returns ``RIA_A`` also returns ``RIA_X`` to help with
-C integer promotion. Loading X last allows fast testing for negative
-return values. ``RIA_SREG`` is updated only for 32-bit returns, and
-``RIA_ERRNO`` only when there's an error.
-
-Some operations return strings or structures on the stack. Pull the
-entire stack before the next call, or use `ria_drop() <DROP_>`_
-to abandon the stack in O(1) time without a loop. One operation's output
-can also be the next one's input. `read_xstack() <READ_XSTACK_>`_ leaves
-its data on the XSTACK where `write_xstack() <WRITE_XSTACK_>`_ takes it,
-so the two copy a file without touching any RAM or XRAM.
-
-The time operations chain the same way, without cycling the XSTACK:
-`TIME_GET`_ returns seconds positioned as the input to `GMTIME`_,
-`LOCALTIME`_, or `TIME_SET`_; their struct tm feeds `MKTIME`_ directly,
-or `STRFTIME`_ after pushing only the zero-terminated format on top;
-and `MKTIME`_ returns seconds ready for another conversion.
-
-Short Stacking
---------------
-
-In the pursuit of saving every cycle, you can trim a few off the stack
-push when you don't need the full range. This applies only to the first
-stack argument pushed. Take `LSEEK`_:
-
-.. code-block:: C
-
-   ABI long f_lseek(long offset, unsigned char whence, int fildes)
-
-Here you push a 32-bit value, and — not by coincidence — it sits in the
-right position for short stacking. If the offset always fits in 16 bits,
-push two bytes instead of four.
-
-Signed arguments are sign-extended, so two bytes carry -32768 to 32767.
-Unsigned arguments are zero-filled.
-
-.. warning::
-
-   Size a short push by the signed range. An offset of 200 pushed as the
-   single byte 0xC8 arrives as -56, because the top bit of 0xC8 is the
-   sign. Push 0x00 and then 0xC8 to send 200.
-
-Shorter AX
-----------
-
-A program can save a few cycles by leaving ``RIA_X`` alone. Returned
-integers are always at least 16 bits, to help with C integer promotion,
-but many operations ignore ``RIA_X`` on the way in and keep their return
-value within ``RIA_A``. Those are listed under ``a regs`` in each
-operation of the `Application Programming Interface`_.
-
-Bulk Data
----------
-
-Functions that move bulk data come in two flavors, depending on where
-the data lives. A RAM pointer means nothing to the RIA, since it can't
-touch 6502 RAM, so bulk data moves through the XSTACK or XRAM instead.
-
-Bulk XSTACK Operations
-~~~~~~~~~~~~~~~~~~~~~~
-
-These work only for sizes of 512 bytes or less — the size of the XSTACK
-they pass data on. A pointer in the C prototype marks the type and
-direction (to or from the OS) of the data. A few examples:
-
-.. code-block:: C
-
-   int open(const char *path, int oflag);
-
-Send ``oflag`` in ``RIA_A``; per the `OPEN`_ docs, ``RIA_X`` doesn't need
-to be set. Send the path on the XSTACK by pushing the string from its
-last character backward. You can skip the terminating zero, but strings
-are capped at 255 bytes. In C, the library pushes the string for you.
-
-.. code-block:: C
-
-   int read_xstack(void *buf, unsigned count, int fildes)
-
-Send ``count`` as a short stack and ``fildes`` in ``RIA_A``; per the
-`READ_XSTACK`_ docs, ``RIA_X`` doesn't need to be set. The value returned
-in AX is the number of bytes to pull from the stack. In C, the library
-copies the XSTACK into buf[] for you.
-
-.. code-block:: C
-
-   int write_xstack(const void *buf, unsigned count, int fildes)
-
-Send ``fildes`` in ``RIA_A``; per the `WRITE_XSTACK`_ docs, ``RIA_X``
-doesn't need to be set. Push the buf data onto the XSTACK. Don't send
-``count``; the OS takes it from the XSTACK pointer. In C, the library
-copies count bytes of buf[] onto the XSTACK for you.
-
-Note that read() and write() are part of the C library, not API calls. C
-requires them to handle counts larger than the XSTACK can return, so the
-implementation makes as many API calls as it takes.
-
-Bulk XRAM Operations
-~~~~~~~~~~~~~~~~~~~~
-
-These load and save XRAM directly through `READ_XRAM`_ and `WRITE_XRAM`_,
-so you can pull assets straight in without routing them through 6502 RAM.
-
-.. code-block:: C
-
-   int read_xram(unsigned buf, unsigned count, int fildes)
-   int write_xram(unsigned buf, unsigned count, int fildes)
-
-The OS takes ``buf`` and ``count`` on the XSTACK as integers, with
-``fildes`` in ``RIA_A``. The 6502 reads and writes XRAM through
-``RIA_RW0`` or ``RIA_RW1``.
-
-These operations stand out for their speed and for running in the
-background while the 6502 does other work. Depending on the request size,
-expect up to 800 KB/sec. A full 64 KB of XRAM loads or saves multiple times
-per second with no wait states or 6502 work.
-
-Bulk XRAM operations are why the Picocomputer 6502 has no paged memory.
-You don't need it when "disk" access has zero seek time and DMA to XRAM.

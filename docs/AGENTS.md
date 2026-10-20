@@ -7,6 +7,9 @@ English, without its restricted dictionary.
 
 ## Write for the reader
 
+**Most important rule:** Write for a reader - someone learning about the
+machine or referencing the manual.
+
 The reader is a programmer who works through the manual in order. The
 reader of the documentation is expected to also have access to C and
 POSIX documentation. Write each passage for what that reader is trying

@@ -334,7 +334,8 @@ A seek past the end of a file opened only for reading stops at the end.
 
 STAT of a drive root, such as ``/`` or ``MSC0:/``, returns one fixed
 entry: a directory named ``/``, with size 0 and zero dates. STAT of an
-empty path or a bare drive name, such as ``MSC0:``, fails with EINVAL.
+empty path fails with ENOENT, and STAT of a bare drive name, such as
+``MSC0:``, fails with EINVAL.
 
 A RENAME that replaces an entry is atomic on Linux and macOS, on the
 :doc:`web`, and for a file on Windows. On an :doc:`pico`, and for a
@@ -343,8 +344,9 @@ then renames. When the rename fails after that, the entry at the new name
 is gone and the old name stays in place.
 
 REMOVE removes a file or an empty directory. A REMOVE of a read-only
-file, or of a directory that is not empty, fails with EACCES. On an
-:doc:`pico`, so does a REMOVE of the current directory.
+file fails with EACCES, and a REMOVE of a directory that is not empty
+fails with EEXIST. On an :doc:`pico` and on Windows, a REMOVE of the
+current directory fails with EBUSY.
 
 No machine changes the Directory attribute with CHMOD. On the :doc:`emu`
 on Linux and macOS, and on the :doc:`web`, CHMOD changes only Read Only,
@@ -380,7 +382,7 @@ one fixed folder, so every CHDIR fails there with ENOSYS.
 drive, such as ``MSC0:/games``, ``C:/Users/me`` or ``FS:/home/me``. A
 drive is always in its long form, ``MSC0:`` and never ``0:``. Each
 folder name in the path appears as it does in a listing, as described in
-`Names`_. GETCWD fails with ENOMEM when the path is longer than 255
+`Names`_. GETCWD fails with ERANGE when the path is longer than 255
 bytes.
 
 A portable program keeps its saves out of the working directory, because
@@ -667,8 +669,8 @@ error for a full card.
    * - Volume label
      - the FAT label
      - ENOSYS
-     - EACCES
-     - EACCES
+     - ENOSYS
+     - ENOSYS
    * - GETFREE
      - the FAT volume
      - ENOSYS
