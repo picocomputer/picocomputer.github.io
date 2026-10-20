@@ -1256,6 +1256,8 @@ VSYNC
    :C proto: rp6502.h
 
 
+.. _api-irq:
+
 IRQ
 ~~~
 
@@ -1518,6 +1520,8 @@ based on `cc65 fastcall <https://cc65.github.io/doc/cc65-intern.html>`__:
 the last argument goes in registers, and the arguments before it go on a
 stack.
 
+.. _api-call:
+
 Making an API Call
 ------------------
 
@@ -1738,6 +1742,8 @@ Any call that returns seconds, `TIME_GET`_ or `MKTIME`_, chains into
 ``struct tm``, `GMTIME`_ or `LOCALTIME`_, chains into `MKTIME`_ or
 `STRFTIME`_.
 
+
+.. _api-errno:
 
 Errno Translations
 ==================

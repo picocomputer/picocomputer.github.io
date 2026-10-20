@@ -9,35 +9,43 @@ Introduction
 ============
 
 The RP6502 Interface Adapter (RIA) is the boundary between a WDC W65C02S
-microprocessor and the host. A RIA is 32 registers at $FFE0-$FFFF, and it
-controls RESB and PHI2, the reset and the clock of the 6502. Those are the
-only hard requirements. What is behind the registers depends on the
-implementation.
+microprocessor and the host. The host is the modern computer on the other
+side, such as the Pico 2 of an :doc:`pico` or the computer that runs the
+:doc:`emu`. Through the RIA, a 6502 program uses the services of the
+operating system of the host, such as Windows or Linux. The RP6502-PICO
+runs an operating system written for the Pico 2, so that the machine
+needs only minimal hardware.
 
-Every call of the :doc:`api` is made through these registers. This page
-describes the registers themselves, the second 64 KB of memory that they
-reach, the extended RAM (XRAM), and the devices that use XRAM: keyboard,
-mouse, tablet and gamepad input, and the PSG and OPL2 sound generators.
+The RIA provides the operating system calls of the :doc:`api`, such as
+files, the console, and the real-time clock. It also provides keyboard,
+mouse, tablet, and gamepad input, and two sound generators: a
+programmable sound generator (:ref:`PSG <ria-psg>`) and a Yamaha FM sound
+generator (:ref:`OPL2 <ria-opl2>`). This page describes these devices,
+and the registers that a program uses to reach them.
 
 
-Implementations
-===============
+Reset
+=====
 
-- :doc:`pico` — The RIA software fits entirely on a Raspberry Pi Pico 2.
-  Registers are implemented in PIO for connecting to a 65C02.
-- :doc:`fpga` — The same software on a Hazard3 RISC-V soft CPU. The 65C02,
-  65C22, and registers are in fabric.
-- :doc:`emu` — The RIA software runs natively on the host CPU along with
-  a 65C02 and 65C22 software emulator.
-- :doc:`web` — The RIA software and the software 65C02 and 65C22, built
-  as WebAssembly and run in a browser.
+The RIA controls RESB, the reset line of the 6502 and the 65C22 VIA. Think
+of reset as two states rather than a pulse on RESB. While RESB is low, the
+6502 and the VIA are stopped. To start a program, the RIA brings RESB
+high, and the 6502 begins at its reset vector at $FFFC. When the program
+exits or the user stops it, the RIA brings RESB low again.
 
-A Picocomputer always has a companion CPU and operating system. For example,
-one :doc:`emu` runs on Linux with an ARM processor. The :doc:`pico` is
-special because it hosts itself. The RIA runs an operating system, and a
-6502 program calls it through the :doc:`api`. That operating system is an
-abstraction on all other hosts, but it is the native operating system on
-the :doc:`pico`.
+
+PHI2
+====
+
+PHI2 is the clock signal of the 6502, and the RIA generates it. A program
+starts with PHI2 at 8 MHz, unless the user has set the machine to a lower
+frequency. The program can change the frequency with
+:ref:`RIA_ATTR_PHI2_KHZ <api-ria-attributes>`, to anything from 100 kHz
+to 8 MHz, and the change lasts until the program stops. The frequency is
+set in steps of 1 kHz, and every machine except the RP6502-PICO generates
+it exactly. The RP6502-PICO rounds up to the next frequency that it can
+generate, so a program that needs to know the frequency reads the
+attribute back.
 
 
 .. _ria-registers:
@@ -45,8 +53,9 @@ the :doc:`pico`.
 Registers
 =========
 
-The RIA registers are mapped into 32 bytes of the 6502's address space at
-$FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
+The RIA is 32 registers at $FFE0-$FFFF in the address space of the 6502.
+Every :ref:`API call <api-call>` goes through them. The last six bytes
+hold the vectors of the 6502 and work as RAM.
 
 .. list-table::
    :widths: 5 5 90
@@ -57,104 +66,99 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
      - Description
    * - $FFE0
      - READY
-     - Flow control for UART FIFO.
+     - The status of the console `UART`_.
 
-       * bit 7 - TX FIFO not full. OK to send.
-       * bit 6 - RX FIFO has data ready.
+       * bit 7 - TX is ready to transmit a byte.
+       * bit 6 - RX holds a received byte.
 
    * - $FFE1
      - TX
-     - Write bytes to the UART.
+     - Writing a byte transmits it to the console.
    * - $FFE2
      - RX
-     - Read bytes from the UART.
+     - Reading returns a byte received from the console.
    * - $FFE3
      - VSYNC
-     - Increments every 1/60 second when :doc:`PIX VGA <vga>` device 1 is
-       connected.
+     - Increments every 1/60 second while the :doc:`vga` is connected.
    * - $FFE4
      - RW0
-     - Read or write the `Extended RAM (XRAM)`_ referenced by ADDR0.
+     - Reading or writing accesses the XRAM byte at ADDR0, as
+       `XRAM Portals`_ describes.
    * - $FFE5
      - STEP0
      - Signed byte added to ADDR0 after every access to RW0.
    * - | $FFE6 -
        | $FFE7
      - ADDR0
-     - Address of `Extended RAM (XRAM)`_ for RW0.
+     - The XRAM address that RW0 accesses.
    * - $FFE8
      - RW1
-     - Read or write the `Extended RAM (XRAM)`_ referenced by ADDR1.
+     - Reading or writing accesses the XRAM byte at ADDR1, as
+       `XRAM Portals`_ describes.
    * - $FFE9
      - STEP1
      - Signed byte added to ADDR1 after every access to RW1.
    * - | $FFEA -
        | $FFEB
      - ADDR1
-     - Address of `Extended RAM (XRAM)`_ for RW1.
+     - The XRAM address that RW1 accesses.
    * - $FFEC
      - XSTACK
-     - 512 bytes for `Extended Stack (XSTACK)`_.
-   * - $FFED
-     - ERRNO_LO
-     - Low byte of errno. All errors fit in this byte.
-   * - $FFEE
-     - ERRNO_HI
-     - Ensures errno is optionally a 16-bit int.
+     - Writing pushes a byte on the `Extended Stack (XSTACK)`_, and
+       reading pulls one.
+   * - | $FFED -
+       | $FFEE
+     - ERRNO
+     - The errno of the last failed API call, as :ref:`Errno Translations
+       <api-errno>` describes.
    * - $FFEF
      - OP
-     - Write an :doc:`api` op here to begin an API call.
+     - Writing an operation ID starts an :ref:`API call <api-call>`.
    * - $FFF0
      - IRQ
-     - Interrupts. A write enables the interrupt of each event whose
-       bit is 1, and disables the others. A read returns a 1 in the bit
-       of each event that happened, enabled or not, and clears the bits.
+     - Interrupt enable and status, as :ref:`IRQ <api-irq>` describes.
 
        * bit 7 - VSYNC
        * bit 6 - SIGINT
 
    * - $FFF1
      - SPIN
-     - Always $80 (the BRA opcode). JSR here to spin-wait
-       for an API call. The CPU loops on this BRA until BUSY clears, then
-       falls through to LDA and LDX below.
+     - $80, the BRA opcode. JSR SPIN returns when the :ref:`API call
+       <api-call>` finishes, with the return value in A and X.
    * - $FFF2
      - BUSY
-     - Bit 7 high while an API call is running.
+     - Bit 7 is 1 while an :ref:`API call <api-call>` runs.
    * - $FFF3
      - LDA
-     - Always $A9 (the LDA immediate opcode). Part of the
-       spin-loop return sequence.
+     - $A9, the LDA immediate opcode, part of SPIN.
    * - $FFF4
      - A
-     - API call register A.
+     - The A register of an :ref:`API call <api-call>`.
    * - $FFF5
      - LDX
-     - Always $A2 (the LDX immediate opcode). Part of the
-       spin-loop return sequence.
+     - $A2, the LDX immediate opcode, part of SPIN.
    * - $FFF6
      - X
-     - API call register X.
+     - The X register of an :ref:`API call <api-call>`.
    * - $FFF7
      - RTS
-     - Always $60 (the RTS opcode). Ends the spin-loop return
-       sequence, returning to the caller with A and X loaded.
+     - $60, the RTS opcode, part of SPIN.
    * - | $FFF8 -
        | $FFF9
      - SREG
-     - 32-bit extension to AX - AXSREG.
+     - The SREG register of an :ref:`API call <api-call>`.
    * - | $FFFA -
        | $FFFB
      - NMIB
-     - 6502 vector.
+     - The NMI vector of the 6502.
    * - | $FFFC -
        | $FFFD
      - RESB
-     - 6502 vector.
+     - The reset vector of the 6502.
    * - | $FFFE -
        | $FFFF
      - BRK/IRQB
-     - 6502 vector.
+     - The IRQ and BRK vector of the 6502.
 
 .. _ria-volatile:
 
@@ -178,33 +182,45 @@ accesses RIA or VIA registers directly in an optimize pragma:
 UART
 ----
 
-A program uses the UART directly through the registers at $FFE0-$FFE2,
-and the ready flags on bits 6-7 can be tested with the BIT operator. Use
-these or the stdio functions of the :doc:`api`, but not both at once.
-Driving the UART directly while a stdio API call is in progress is
-undefined behavior.
+READY, TX, and RX connect a program to the console the way a serial port
+does. They exist for one narrow use: porting machine code that drives a
+serial port, by patching the code in place. A test of READY is one BIT
+instruction and uses no registers, so it fits in place of the serial code
+of almost any existing program. A new program has no existing machine
+code to fit, so it should use the stdio functions of the :doc:`api`,
+which do not go through these registers.
+
+BIT copies bit 7 of READY to N and bit 6 to V, so BPL waits for TX and
+BVC waits for RX:
+
+.. code-block:: ca65
+
+  tx: BIT RIA_READY
+      BPL tx
+      STA RIA_TX
+
+  rx: BIT RIA_READY
+      BVC rx
+      LDA RIA_RX
+
+A program must not use these registers while a stdio function of the
+:doc:`api` runs.
 
 .. _ria-xram-portals:
 
 XRAM Portals
 ------------
 
-The two XRAM portals are independent pointers into the same 64 KB of XRAM.
-Portal 0 consists of the registers RW0, STEP0 and ADDR0, and portal 1 of
-RW1, STEP1 and ADDR1. A read or write of RW0 accesses the XRAM byte at
-ADDR0, and then STEP0 is added to ADDR0. Portal 1 works the same way. A
-single portal would make moving XRAM slow, since data would have to be
-buffered in 6502 RAM. Ideally you won't move XRAM at all and can use the
-pair for smarter optimizations.
+`Extended RAM (XRAM)`_ is outside the address space of the 6502, so a
+program reaches it through the two portals of the RIA. A portal is three
+registers. ADDR holds an XRAM address, and RW is the byte at that
+address: a load from RW reads it, and a store to RW writes it. After each
+load or store, the RIA adds STEP to ADDR. STEP is signed, so a portal
+steps forward or backward through XRAM. Portal 0 is ADDR0, RW0, and
+STEP0, and portal 1 is ADDR1, RW1, and STEP1.
 
-STEP0 and STEP1 default to 1 after reset. Both are signed, so negative
-values step through XRAM in reverse. These auto-increment adders make
-sequential access very fast — more than enough to offset the slightly
-slower random access compared to 6502 system RAM.
-
-Assembly programs use these registers directly, with the names from
-``rp6502.inc``. In this example, $12 is written to $1000 and $34 to $1001
-through portal 0:
+This example points portal 0 at $1000 and writes two bytes, $12 to $1000
+and $34 to $1001, with the register names from ``rp6502.inc``:
 
 .. tab:: ca65
 
@@ -237,26 +253,26 @@ through portal 0:
       lda #$34
       sta RIA_RW0 ; $1001
 
-C programs use the ``xram0_`` and ``xram1_`` functions of the :doc:`api`,
-such as :c:func:`xram0_read` and :c:func:`xram0_poke16`. The 0 or 1 in a
-function name selects the portal. This is the same write in C, with the
-value stored low byte first:
+In C, the ``xram0_`` and ``xram1_`` functions of :ref:`Extended Memory
+<api-extended-memory>` read and write XRAM through portal 0 and portal 1.
+This is the same write in C, with :c:func:`xram0_poke16` storing the
+value low byte first:
 
 .. code-block:: C
 
   xram0_poke16(0x1000, 0x3412);
 
-When an interrupt handler and the main program use the same portal, the
-ADDR and STEP registers of that portal must be saved when the handler
-starts and restored before it returns. When the two use different
-portals, no registers have to be saved.
+The portals are safe to use in interrupt handlers. When a handler uses a
+portal that the main program also uses, it only has to save the ADDR and
+STEP of that portal, and restore them when it is done.
 
 Extended Stack (XSTACK)
 -----------------------
 
-This is a 512-byte, top-down, last-in-first-out stack used by the
-fastcall mechanism of the :doc:`api`. Reading past the end is guaranteed
-to return zeros. Write to push, read to pull.
+The XSTACK is a 512-byte stack in the RIA that carries the arguments and
+the returned data of API calls. The C library handles it for a C program.
+An assembly program pushes and pulls bytes on it, as :ref:`Making an API
+Call <api-call>` shows. Reading the XSTACK when it is empty returns zeros.
 
 
 .. _ria-pix:
@@ -1986,6 +2002,8 @@ and R2 should expect analog values of just 0 or 255.
       GAMEPAD_SIZE = GAMEPAD_PLAYER + GAMEPAD_PLAYERS * GAMEPAD_PLAYER_SIZE
 
 
+.. _ria-psg:
+
 Programmable Sound Generator
 ============================
 
@@ -2235,6 +2253,8 @@ Volume attenuation is logarithmic.
       PSG_SIZE = PSG_CHANNEL + PSG_CHANNELS * PSG_CHANNEL_SIZE
 
 
+.. _ria-opl2:
+
 Yamaha OPL2 FM Sound Generator
 ==============================
 
@@ -2308,14 +2328,3 @@ The system console is the terminal connected to the RIA, and the
 ``stdin``, ``stdout``, ``stderr``, and the ``CON:`` and ``TTY:`` device
 names. See :doc:`term` for cooked and raw reads, the non-blocking
 variants, and the line editor.
-
-
-Reset
-=====
-
-Think of reset as two states rather than a pulse on RESB. While reset
-is low, the 6502 is stopped. On an :doc:`pico`, the :ref:`monitor
-<pico-reset>` is connected to the console while in reset. On the Pocket,
-the system waits for a new ROM to be loaded from the settings menu. On
-the :doc:`emu`, some hosts wait for a new ROM to load while others exit
-the host process.
