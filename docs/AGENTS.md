@@ -10,6 +10,10 @@ English, without its restricted dictionary.
 **Most important rule:** Write for a reader - someone learning about the
 machine or referencing the manual.
 
+**Reread every paragraph.** After you write a paragraph, reread it, and
+make sure that it is written for the reader. Do this after every
+paragraph, every time.
+
 The reader is a programmer who works through the manual in order. The
 reader of the documentation is expected to also have access to C and
 POSIX documentation. Write each passage for what that reader is trying

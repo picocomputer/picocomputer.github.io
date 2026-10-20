@@ -53,9 +53,8 @@ device.
 Under the C functions is the Application Binary Interface (ABI), the
 register-level form of each call. The C library implements the ABI, so
 a C program needs it only to make an API call itself. `Application
-Binary Interface`_, at the end of this page, describes it for assembly
-programs, for a port of another compiler, and for a C program that makes
-API calls itself.
+Binary Interface`_ describes it for assembly programs, and for a C
+program that makes API calls itself.
 
 
 Application Programming Interface
@@ -1047,7 +1046,7 @@ TIME_GET
    1970-01-01T00:00:00Z. llvm-mos has 64-bit integers, and its ``time_t``
    is a ``long long``. cc65 has integers of at most 32 bits, so its
    ``time_t`` is an ``unsigned long``, and its ``time()`` fails with
-   ERANGE when the seconds do not fit. `Chaining Time Calls`_, in the ABI
+   ERANGE when the seconds do not fit. `Chaining API Calls`_, in the ABI
    section, shows how a cc65 program keeps all 64 bits of the time.
 
    :Operation: RIA_OP_TIME_GET 0x3F
@@ -1515,59 +1514,57 @@ Exit item in its menu.
 Application Binary Interface
 ============================
 
-A compiler turns each call of a C function into machine code in a
-standard way: where each argument goes, in what order, and where the
-result comes back. That byte-level convention is an Application Binary
-Interface (ABI).
+Every API call goes through the RIA registers. The calling convention is
+based on `cc65 fastcall <https://cc65.github.io/doc/cc65-intern.html>`__:
+the last argument goes in registers, and the arguments before it go on a
+stack.
 
-The ABI is based on fastcall from the `cc65 internals
-<https://cc65.github.io/doc/cc65-intern.html>`__. The C library of each
-compiler follows it for every C program, so a C programmer needs this
-section only to make API calls itself. An assembly programmer, or a
-programmer who brings another compiler to the Picocomputer, needs all of
-it.
+Making an API Call
+------------------
 
-The ABI has five rules:
+In the declarations on this page, a char is 8 bits, an int is 16 bits,
+and a long is 32 bits. An API call takes five steps:
 
-* The program pushes the stack arguments to the XSTACK from left to
-  right.
-* The XSTACK holds only the stack arguments. An API call that takes
-  arguments or returns data on the XSTACK fails with EINVAL when the
-  XSTACK holds more than its stack arguments.
-* The last argument goes in ``RIA_A`` for 8 bits, in ``RIA_A`` and
-  ``RIA_X`` for 16 bits, and in ``RIA_A``, ``RIA_X``, and ``RIA_SREG``
-  for 32 bits. A last argument of 64 bits goes on the XSTACK.
-* The return value comes back in ``RIA_A`` and ``RIA_X``, and also in
-  ``RIA_SREG`` for 32 bits.
-* An API call can also return data on the XSTACK.
+#. Push each argument except the last to the extended stack (XSTACK) of
+   the RIA, from left to right. A write of ``RIA_XSTACK`` pushes a byte.
+   Push each value high byte first, so that it is in memory low byte
+   first.
+#. Put the last argument in ``RIA_A`` for 8 bits, in ``RIA_A`` and
+   ``RIA_X`` for 16 bits, or in ``RIA_A``, ``RIA_X``, and ``RIA_SREG``
+   for 32 bits. A last argument of 64 bits goes on the XSTACK instead.
+#. Store the operation ID in ``RIA_OP``. The call starts at once.
+#. ``JSR RIA_SPIN``. It returns when the call finishes, with the return
+   value in A and X. The high 16 bits of a 32-bit return value are in
+   ``RIA_SREG``.
+#. Before the next call, pull any data that the call returned on the
+   XSTACK with reads of ``RIA_XSTACK``, or discard it with
+   ``STZ RIA_OP``, as `DROP`_ describes.
 
-A and X are the 6502 registers. The pseudo-register AX combines them
-into 16 bits, and AXSREG extends AX to 32 bits with the 16 bits of SREG.
-The ABI of each API call is a C declaration, such as:
+This call of :c:func:`ria_attr_set` runs the 6502 at 4 MHz:
 
-.. c:function:: int doit(int arg0, int arg1)
-   :no-index-entry:
-   :no-contents-entry:
+.. code-block:: asm
 
-``RIA_A``, ``RIA_X``, and ``RIA_SREG`` are :ref:`RIA registers
-<ria-registers>`. An int is 16 bits, so arg1 goes in ``RIA_A`` and
-``RIA_X``. In this section, "A" is the 6502 register and "RIA_A" is the
-RIA register.
+   LDA #$0F              ; 4000 is $0FA0
+   STA RIA_XSTACK
+   LDA #$A0
+   STA RIA_XSTACK
+   LDA #RIA_ATTR_PHI2_KHZ
+   STA RIA_A
+   LDA #RIA_OP_ATTR_SET
+   STA RIA_OP
+   JSR RIA_SPIN
+   BMI error
 
-arg0 goes on the extended stack (XSTACK), 512 bytes of memory in the
-RIA. A read of ``RIA_XSTACK`` pulls a byte, and a write pushes one. The
-XSTACK is a top-down stack, so push the arguments from left to right.
-Push each value high byte first, so that it is in memory low byte first.
+``val`` is a long, but 4000 fits in 16 bits, so the example pushes only
+two bytes, as `Short Stacking`_ describes.
 
-To make the call, store the operation ID in ``RIA_OP``. The API call
-starts at once. To wait until the call finishes, ``JSR RIA_SPIN``. To do
-other work while the call runs, such as a loading animation, poll
-``RIA_BUSY``.
+When a call fails, ``RIA_A``, ``RIA_X``, and ``RIA_SREG`` hold -1,
+``RIA_ERRNO`` holds the errno, and the XSTACK is empty, so there is
+nothing to pull. A call changes ``RIA_SREG`` only when it returns 32 bits
+or fails.
 
-``JSR RIA_SPIN`` leaves its loop within 3 clock cycles after the API call
-finishes, and returns with A and X loaded. A sequence of API calls runs fastest
-this way. ``RIA_SPIN`` is a short program in the RIA registers, and the RIA
-changes the program as the call runs:
+``RIA_SPIN`` is a short program in the RIA registers, and the RIA changes
+the program as the call runs:
 
 .. code-block:: asm
 
@@ -1576,54 +1573,29 @@ changes the program as the call runs:
    FFF5: LDX #$??   ; RIA_X
    FFF7: RTS
 
-A program that polls reads the same registers as data. ``RIA_BUSY`` is
-the -2 or 0 in the BRA above. Bit 7 of ``RIA_BUSY`` is 1 while the call
-runs, and the BIT instruction copies bit 7 to flag N. When bit 7 is 0,
-read ``RIA_A`` and ``RIA_X`` with absolute instructions.
+``RIA_BUSY`` is the offset of the BRA. While the call runs, it is -2, and
+the BRA branches to itself. When the call finishes, it is 0, and the
+program goes on to load A and X. X is loaded last, so when ``RIA_SPIN``
+returns, flag N is the top bit of X. For a 16-bit return value, that bit
+is the sign, so the BMI after ``JSR RIA_SPIN`` branches on an error.
 
-.. code-block:: asm
-
-   wait: BIT RIA_BUSY
-         BMI wait
-         LDA RIA_A
-         LDX RIA_X
-
-An API call that returns ``RIA_A`` also returns ``RIA_X``, for C integer
-promotion. Load X last, so that flag N shows a negative return value. The
-RIA changes ``RIA_SREG`` only for a 32-bit return or an error, and
-``RIA_ERRNO`` only on an error. A failed API call returns -1 in
-``RIA_A``, ``RIA_X``, and ``RIA_SREG``, and empties the XSTACK.
-
-Some API calls return strings or structures on the XSTACK. Pull all of
-the data before the next call, or discard it with
-`ria_drop() <DROP_>`_, which takes constant time with no loop.
-
-The data that one API call returns on the XSTACK can also be an argument
-of the next API call. `READ_XSTACK`_ returns the data of a file on the
-XSTACK, and `WRITE_XSTACK`_ writes the data on the XSTACK to a file, so
-the two API calls copy a file with no pass through RAM or XRAM. The C
-functions ``read_xstack()`` and ``write_xstack()`` copy the
-data through ``buf`` in RAM, so a program that copies this way makes the
-API calls itself.
+To do other work while a call runs, poll ``RIA_BUSY`` in place of
+``JSR RIA_SPIN``, as `XRAM Transfers`_ shows.
 
 Short Stacking
 --------------
 
-A program can push fewer bytes of an argument when the value fits, to
-save cycles. Only the first stack argument that the program pushes can
-be short. Take `LSEEK`_:
+Only the first argument that a program pushes can be shorter than its
+type, and only when the value fits. For this reason, ``offset`` is the
+first argument of `LSEEK`_:
 
 .. code-block:: C
 
    long f_lseek(long offset, char whence, int fildes)
 
-``offset`` is a 32-bit value, and the ABI puts it first so that it can
-be short. When the offset always fits in 16 bits, push two bytes in
-place of four.
-
-The RIA extends a short signed argument with its sign, so two bytes
-carry -32768 to 32767. The RIA fills a short unsigned argument with
-zeros.
+Push an offset that fits in 16 bits as two bytes in place of four. The
+RIA extends a short signed argument with its sign, so two bytes carry
+-32768 to 32767, and it fills a short unsigned argument with zeros.
 
 .. warning::
 
@@ -1634,154 +1606,138 @@ zeros.
 Shorter AX
 ----------
 
-Many API calls do not read ``RIA_X`` for their last argument, so a
-program can save a few cycles when it does not set ``RIA_X``. Many API
-calls also return a value that fits in ``RIA_A``. The RIA still sets
-``RIA_X`` for C integer promotion, so a returned integer always has at
-least 16 bits. The ``a regs`` field of each section of `Application
-Programming Interface`_ lists these arguments and return values.
+Many calls need only ``RIA_A``. When the ``a regs`` field of a call lists
+its last argument, put that argument in ``RIA_A`` and skip ``RIA_X``.
+When ``a regs`` lists ``return``, read the return value from A alone, or
+from A and X as a 16-bit int.
 
-Bulk Data
----------
+Strings and Structures
+----------------------
 
-The RIA cannot read or write 6502 RAM, so a pointer to RAM has no
-meaning to the RIA. Bulk data moves through the XSTACK or through XRAM,
-and the API calls that move it come in two forms, one for each.
+The RIA cannot read or write 6502 RAM, so strings, structures, and
+buffers go on the XSTACK, up to 512 bytes for each call. In a C
+declaration, a pointer gives the type of that data and its direction.
+Push the data of a ``const`` pointer before the call, and pull the data
+of any other pointer after it.
 
-Bulk Data on the XSTACK
-~~~~~~~~~~~~~~~~~~~~~~~
+A program may leave out the terminator of the string at the bottom of
+the XSTACK, the one pushed first and pulled last, because a pull from the
+empty XSTACK returns 0. A returned string comes without it, except inside
+a structure, such as ``f_stat_t`` or the argv data. A string pushed on
+top of other data, such as the new name of `RENAME`_, needs its
+terminator. A call that returns data of variable size returns its length
+in bytes. The length does not include data of fixed size, such as a
+structure or the position byte of `RLN_PEEK`_.
 
-These API calls move at most 512 bytes, the size of the XSTACK. A
-pointer in the C declaration gives the type of the data, and its
-direction: ``const`` marks data that goes to the host.
-
-A string that ends the data on the XSTACK, the one pushed first and
-pulled last, needs no terminator, because a read of the empty XSTACK
-returns 0. A program may push that terminator or leave it out. The host
-leaves it out, except in a structure, such as ``f_stat_t`` or the argv
-data. A string that other data follows, such as the new name of
-`RENAME`_, needs its terminator. An API call that returns data of
-variable size returns the number of bytes of that data that it pushed,
-which for a string is its length. Data of fixed size, such as a
-structure or the position byte of `RLN_PEEK`_, is not counted.
-
-Some examples:
+Three examples:
 
 .. code-block:: C
 
-   int open(const char *path, int oflag);
+   int open(const char *path, int oflag)
 
-Put ``oflag`` in ``RIA_A``. `OPEN`_ lists ``oflag`` under ``a regs``,
-so ``RIA_X`` can stay unset. Push the path to the XSTACK, from its last
-character to its first. A path has a length of at most 255. In C, the
-library pushes the string.
+Push the path from its last character to its first. A path has a length
+of at most 255. Put ``oflag`` in ``RIA_A``.
 
 .. code-block:: C
 
    int read_xstack(void *buf, unsigned count, int fildes)
 
-Push ``count``, which can be short. Put ``fildes`` in ``RIA_A``.
-`READ_XSTACK`_ lists ``fildes`` under ``a regs``, so ``RIA_X`` can stay
-unset. The API call returns the number of bytes to pull from the
-XSTACK. In C, the library copies them into ``buf``.
+Push ``count``, and put ``fildes`` in ``RIA_A``. The call returns the
+number of bytes to pull from the XSTACK.
 
 .. code-block:: C
 
    int write_xstack(const void *buf, unsigned count, int fildes)
 
-Put ``fildes`` in ``RIA_A``, and ``RIA_X`` can stay unset. Push the data
-to the XSTACK from its last byte to its first, so that the first byte is
-on top. Do not push ``count``, because the host takes it from the XSTACK
-pointer. In C, the library pushes ``count`` bytes of ``buf``.
+Push the data from its last byte to its first, and put ``fildes`` in
+``RIA_A``. Do not push ``count``, because the RIA takes it from the size
+of the data on the XSTACK.
 
-``read()`` and ``write()`` are functions of the C library, not API
-calls. C requires them to take counts larger than the XSTACK holds, so
-they make as many API calls as the count requires.
+XRAM Transfers
+--------------
 
-Bulk Data in XRAM
-~~~~~~~~~~~~~~~~~
-
-`READ_XRAM`_ and `WRITE_XRAM`_ move data between a file and XRAM with no
-pass through 6502 RAM, so a program can load its assets directly.
+`READ_XRAM`_ and `WRITE_XRAM`_ move data between a file and XRAM without
+passing it through 6502 RAM. They work like DMA: start a transfer, and
+the 6502 is free to do other work while it runs.
 
 .. code-block:: C
 
    int read_xram(unsigned xaddr, unsigned count, int fildes)
    int write_xram(unsigned xaddr, unsigned count, int fildes)
 
-Push ``xaddr`` and then ``count`` as integers. Put ``fildes`` in
-``RIA_A``. The 6502 reads and writes the data in XRAM through
-``RIA_RW0`` or ``RIA_RW1``.
+Push ``xaddr`` and then ``count``, and put ``fildes`` in ``RIA_A``.
 
-These API calls are fast, and they run while the 6502 does other work.
-They move up to 800 KB per second, depending on the size of the request.
-One call moves at most 0x7FFF bytes, so 64 KB takes three calls. A full
-64 KB of XRAM loads or saves several times per second, with no wait
-states and no work by the 6502.
+An :doc:`pico` moves up to 800 KB per second, and most other machines are
+faster. Even well below that speed, all 64 KB of XRAM loads several times
+per second, with no wait states for the 6502. READ_XRAM and WRITE_XRAM
+are why the Picocomputer 6502 has no paged memory: data moves between
+storage and XRAM fast enough that paged memory is not worth its cost and
+complication.
 
-READ_XRAM and WRITE_XRAM are why the Picocomputer 6502 has no paged
-memory.
-You don't need it when "disk" access has zero seek time and DMA to XRAM.
+A program does not have to wait for a transfer. It can start one, go on
+with its other work, and check ``RIA_BUSY`` each time through its main
+loop. Bit 7 of ``RIA_BUSY`` is 1 while the transfer runs:
 
-Chaining Time Calls
--------------------
+.. code-block:: asm
 
-cc65 has integers of at most 32 bits, so its ``time_t`` holds only the
-years 1970 to 2106. A chain of time API calls works around this limit,
-and keeps assembly programs small. In a chain, the time stays on the
-XSTACK and never passes through a ``time_t``, so it keeps all 64 bits.
+   loop:  BIT RIA_BUSY
+          BMI work          ; still transferring
+          ...               ; done: start the next transfer
+   work:  ...               ; other work
+          JMP loop
 
-This program prints the local time with a chain of three API calls:
+The C functions ``read_xram()`` and ``write_xram()`` wait for the
+transfer to finish. To transfer in the background from C, set up the call
+with ``RIA.xstack``, ``RIA.a``, and ``RIA.op``, and test
+``RIA.busy & 0x80``.
 
-#. `TIME_GET`_ returns the current time on the XSTACK.
-#. `LOCALTIME`_ uses that time as its argument, and returns a
-   ``struct tm`` on the XSTACK.
-#. The program pushes the format string, with its terminator, on top of
-   the ``struct tm``.
-#. `STRFTIME`_ uses the format string and the ``struct tm`` as its
-   arguments. It returns the formatted time as a string on the XSTACK,
-   and returns the length of the string.
-#. The program pulls the string from the XSTACK.
+Chaining API Calls
+------------------
 
-The ``#pragma`` lines are for cc65, which does not support
-``volatile``, as :ref:`the RIA datasheet <ria-volatile>` describes.
+Some calls return data on the XSTACK that another call takes as its
+argument. Make the second call without pulling the data first, and the
+data goes straight from one call to the next. A program that copies a
+file this way needs no buffer for the data:
 
 .. code-block:: C
 
    #include <rp6502.h>
-   #include <stdio.h>
 
    #pragma optimize (push, off) // for cc65
-   int main(void)
+   int copy(int src, int dst)
    {
-       static const char format[] = "%Y-%m-%d %H:%M:%S";
-       char buf[32];
-       int i, n;
-       RIA.op = RIA_OP_TIME_GET;
-       if (ria_spin() < 0)
-           return 1;
-       RIA.op = RIA_OP_LOCALTIME;
-       if (ria_spin() < 0)
-           return 1;
-       RIA.xstack = 0;
-       for (i = sizeof format - 1; i;)
-           RIA.xstack = format[--i];
-       RIA.op = RIA_OP_STRFTIME;
-       n = ria_spin();
-       if (n < 0)
-           return 1;
-       for (i = 0; i < n; i++)
-           buf[i] = RIA.xstack;
-       buf[n] = 0;
-       puts(buf);
-       return 0;
+       int n;
+       for (;;)
+       {
+           RIA.xstack = 0x02;            // count: 512, high byte first
+           RIA.xstack = 0x00;
+           RIA.a = src;
+           RIA.op = RIA_OP_READ_XSTACK;  // read a block onto the XSTACK
+           n = ria_spin();
+           if (n <= 0)
+               return n;                 // 0 at the end of the file
+           RIA.a = dst;
+           RIA.op = RIA_OP_WRITE_XSTACK; // write the block from the XSTACK
+           if (ria_spin() != n)
+               return -1;
+       }
    }
    #pragma optimize (pop)
 
-The other time API calls chain in the same way. The seconds that
-`TIME_GET`_ or `MKTIME`_ returns can be the argument of `GMTIME`_,
-`LOCALTIME`_, or `TIME_SET`_. The ``struct tm`` that `GMTIME`_ or
-`LOCALTIME`_ returns can be the argument of `MKTIME`_ or `STRFTIME`_.
+Time calls chain too. A cc65 program needs the chain to keep all 64 bits
+of the time, because its 32-bit ``time_t`` cannot hold them. In
+assembly, a chain also keeps the code small. To format the local time:
+
+#. Call `TIME_GET`_. Leave the time on the XSTACK.
+#. Call `LOCALTIME`_. Leave the ``struct tm`` on the XSTACK.
+#. Push the format string on top, with its terminator.
+#. Call `STRFTIME`_.
+#. Pull as many bytes as `STRFTIME`_ returns.
+
+Any call that returns seconds, `TIME_GET`_ or `MKTIME`_, chains into
+`GMTIME`_, `LOCALTIME`_, or `TIME_SET`_. Any call that returns a
+``struct tm``, `GMTIME`_ or `LOCALTIME`_, chains into `MKTIME`_ or
+`STRFTIME`_.
 
 
 Errno Translations
