@@ -38,16 +38,7 @@ assist with configuration and ROM loading.
 The console is not tied to a single physical device. Several terminals
 can be attached at once, and their input and output are combined into
 one console; this is the **console manifold**. On an :doc:`pico`, a
-terminal can be attached in three ways:
-
-* **VGA and USB keyboard.** In the standard configuration with a
-  :doc:`vga` module, the console is accessed with a VGA monitor and a
-  USB keyboard plugged into the RIA.
-* **USB CDC ACM.** Connect the USB port on the VGA module to a computer
-  and access the console over the USB CDC ACM serial port that appears.
-  No driver is needed.
-* **Telnet.** On an :doc:`ria_w`, the console is also on the network. See
-  :ref:`Telnet Console <ria-w-telnet-console>` for setup.
+terminal can be attached in :ref:`three ways <pico-console>`.
 
 Any terminal on the console manifold can be used for development and
 scripting. The limits show up when software needs the terminal to report
@@ -59,13 +50,8 @@ Size and Feature Detection
 The monitor and some ROMs, like MS-BASIC, send ANSI commands that
 terminals reply to, which is how they detect screen size and features.
 At the start of every cooked stdin read, the active terminal is queried
-with a Cursor Position Report (CPR) sequence.
-
-The :doc:`pico` VGA terminal stops responding to these queries if a telnet
-or USB terminal is connected. **If both
-USB and telnet terminals are connected at the same time and both reply,
-the system may get confused.** If pagination or word-wrap seem wrong,
-check what terminals are attached to the console manifold.
+with a Cursor Position Report (CPR) sequence. The :ref:`Console
+<pico-console>` section of :doc:`pico` lists which terminals reply.
 
 Locking the Size
 ----------------

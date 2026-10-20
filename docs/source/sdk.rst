@@ -326,10 +326,10 @@ breakpoints or stepping, so a common debugging technique is ``printf()``
 to the console.
 
 An RP6502-PICO may connect through the USB port of the VGA module or
-over telnet with an :doc:`ria_w`, so the launch configuration requires a
-setting for the connection. Its first run fills in a hint for ``device``
-in the `settings file <RP6502-PICO_>`_. Unless your RP6502-PICO happens
-to be on that port, the run fails with an error until you set
+over :ref:`telnet <pico-telnet-console>`, so the launch configuration
+requires a setting for the connection. Its first run fills in a hint for
+``device`` in the `settings file <RP6502-PICO_>`_. Unless your RP6502-PICO
+happens to be on that port, the run fails with an error until you set
 ``device``.
 
 The **RP6502-WEB** launch configuration builds the project and opens a
@@ -471,9 +471,9 @@ several can be open at once.
 
   open("ROM:help", O_RDONLY);
 
-The asset named ``help`` is the ROM's help text. An :doc:`pico` monitor
-shows it with the HELP and INFO commands, and the emulator shows it in the
-ROM Help window.
+The asset named ``help`` is the ROM's help text. The :ref:`monitor
+<pico-monitor>` of an RP6502-PICO shows it, and the emulator shows it in
+the ROM Help window.
 
 The build can also make an asset, such as an image converted from a PNG.
 Create the asset with ``add_custom_command()``. Pass its output file to
@@ -1069,7 +1069,7 @@ of the "RP6502-PICO" launch configuration adds it:
        with ``:port``. The default port is 23.
    * - ``key``
      - Passkey for telnet. Leave it empty to use a serial port. See
-       :ref:`Telnet Console <ria-w-telnet-console>`.
+       :ref:`Telnet Console <pico-telnet-console>`.
    * - ``workdir``
      - The directory to work in, from the root of the current drive. The
        launch configuration uploads the ROM to this directory and runs it

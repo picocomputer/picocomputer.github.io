@@ -1113,8 +1113,7 @@ LOCALTIME
 
    ``localtime()`` converts seconds since the Unix epoch to local
    broken-down time, in the time zone of the machine. On an :doc:`pico`,
-   the monitor command ``SET TZ`` sets the time zone, and ``HELP SET TZ``
-   shows how.
+   the time zone is a :ref:`setting <pico-settings>` of the monitor.
 
    :Operation: RIA_OP_LOCALTIME 0x3B
    :C proto: time.h
@@ -1151,8 +1150,8 @@ STRFTIME
    fit.
 
    ``%z %Z`` follow the time zone of the machine, and ``%a %A %b %B %c %p
-   %r %x %X`` follow its locale. On an :doc:`pico`, the monitor commands
-   ``SET LOC`` and ``SET TZ`` set the locale and the time zone. The
+   %r %x %X`` follow its locale. On an :doc:`pico`, the locale and the
+   time zone are :ref:`settings <pico-settings>` of the monitor. The
    :doc:`emu` uses the locale of the computer that runs it. The :doc:`web`
    and the :doc:`fpga` use the C locale, in English. The format and the
    result are code page text. The ``%E`` and ``%O`` modifiers have no effect.

@@ -39,12 +39,6 @@ special because it hosts itself. The RIA runs an operating system, and a
 abstraction on all other hosts, but it is the native operating system on
 the :doc:`pico`.
 
-One other special feature of the :doc:`pico` is its monitor. Every
-``load``, ``reset``, ``set``, and ``status`` command on this page applies
-only to an :doc:`pico`. The :doc:`fpga` uses the Pocket's own menus
-instead, the :doc:`emu` takes command-line arguments, and the :doc:`web`
-takes settings in its page.
-
 
 .. _ria-registers:
 
@@ -363,14 +357,13 @@ A failed call sets ``errno`` to one of these:
   are not valid.
 - EIO: on an :doc:`pico`, the VGA did not answer a write to CANVAS or
   MODE, as when no VGA is connected.
-- EACCES: the call wrote to channel $F of the VGA, which the RIA
-  manages. On an :doc:`pico`, the call fails this way only while a VGA
-  is connected.
+- EACCES: the call wrote to :ref:`channel $F <vga-control-channel>` of
+  the VGA, which the RIA manages.
 
 A device 2-6 cannot refuse a value, so a valid call to one always
-succeeds. On an :doc:`pico`, hardware that you build for the PIX bus is a
-device 2-6, and takes its settings through ``xreg()``. The other machines
-have no PIX bus, and discard the values for devices 2-6.
+succeeds. On an :doc:`pico`, hardware that you build for the
+:ref:`PIX bus <pico-pix>` is a device 2-6, and takes its settings
+through ``xreg()``.
 
 An assembly program uses the ``xreg`` macro of ``rp6502.inc``, which
 takes the same arguments as ``xreg()``:
@@ -1669,10 +1662,9 @@ call an assembly version in place of the C one. A multi-touch program reads a
 Gamepads
 ========
 
-The RIA supports up to four gamepads. :doc:`pico` firmware includes drivers
-for Generic HID, XInput, and PlayStation controllers. Where the layout
-comes from, and how a game works with nearly every gamepad, is covered in
-the :ref:`Gamepads <port-gamepads>` section of :doc:`port`.
+The RIA supports up to four gamepads. Where the layout comes from, and
+how a game works with nearly every gamepad, is covered in the
+:ref:`Gamepads <port-gamepads>` section of :doc:`port`.
 
 Enable and disable the RIA gamepad data by setting its extended
 register. The register value is the XRAM start address of the gamepad
@@ -2317,373 +2309,13 @@ The system console is the terminal connected to the RIA, and the
 names. See :doc:`term` for cooked and raw reads, the non-blocking
 variants, and the line editor.
 
-Virtual COM Port
-================
-
-If you need serial ports beyond the console UART, USB adapters are
-available for CMOS/TTL, RS-232, RS-422, and RS-485, and each one appears
-as a Virtual COM Port (VCP). :doc:`pico` firmware includes drivers for FTDI,
-CP210X, CH34X, PL2303, and CDC ACM.
-
-The ``status`` command lists any connected VCP devices. Open one like a
-file, using a special name. By default ``"VCP0:"`` opens at 115200 bps
-with 8 data bits, no parity, and 1 stop bit. Set the baud rate with
-``"VCP0:115200"``, or the full bit configuration with
-``"VCP0:115200,8N1"``. The file won't open if your hardware can't
-support the requested configuration.
-
-.. code-block:: C
-
-  open("VCP0:1200,7E2", O_RDWR);
-  // then read and write
-
-Generous FIFO buffers serve both directions, and both reads and writes
-are non-blocking. Reads can return 0 bytes, and writes may send less than
-you asked for — resubmit any remaining bytes on a later call.
-
-
-MIDI
-====
-
-MIDI instruments attached to the machine appear as devices, and the
-``status`` command lists them. :doc:`pico` firmware includes a USB MIDI
-host driver, so a USB instrument plugs right in. Each virtual cable is
-its own device — ``"MIDI0:"`` onward, assigned in the order cables
-appear, up to four at a time. A simple keyboard is one cable (1X1); a
-multi-port interface is several. Open one like a file.
-
-A cable opens in one of two modes, chosen by the open name. Bare
-``"MIDI0:"`` is **raw** — reads and writes are plain wire MIDI, the same
-bytes a 5-pin DIN cable carries, with no timing and nothing added or
-removed. Give a division instead, ``"MIDI0:480"``, and the cable is
-**timed**: the RIA handles timing for you using the event format from
-Standard MIDI Files, prefixing every message with a variable length
-quantity delta time measured in ticks. The rest of this section is the
-timed format.
-
-In timed mode, time starts at the open. The first byte in either
-direction is a delta measuring from the open itself, and a delta of zero
-means right now. Writes are scheduled — the RIA holds each message and
-sends it to the instrument exactly on time, so your program only needs to
-keep the buffer fed. Reads are a recording — incoming messages arrive
-with delta times measuring when they actually happened, ready to store in
-a file or play back later.
-
-The division is ticks per quarter note, the value an SMF carries in its header.
-It accepts 1 to 32767 and is fixed while open; reopen between songs to change
-it. A cable can be input, output, or both; reading an output-only cable or
-writing an input-only one returns an error.
-
-Tempo changes on the fly with the standard SMF Set Tempo meta event,
-which the RIA consumes locally and never forwards to the instrument. The
-event is ``FF``, a type, a length, then that many data bytes:
-
-.. list-table::
-   :widths: 32 68
-   :header-rows: 1
-
-   * - Control event
-     - Effect
-   * - ``FF 51 03 tt tt tt``
-     - Set tempo in microseconds per quarter note — the standard SMF
-       event. The tick rate becomes tempo × 1000 ÷ division.
-   * - ``FF FF``
-     - A wire System Reset. The doubled escape is the whole event, with no
-       length byte. Unlike the others, it is sent to the instrument.
-
-Tempo defaults to 500000 µs per quarter note — 120 BPM, a 1041667 ns
-tick at 480 PPQN. Every other ``FF`` event, including the rest of the
-SMF meta set, is swallowed without effect, so a Standard MIDI File track
-plays through nearly verbatim — division from the file header, tempo
-events straight from the track:
-
-.. code-block:: C
-
-  open("MIDI0:96", O_RDWR); // division from the MThd header
-  // FF 51 03 07 A1 20  tempo = 500000 (120 BPM at 96 PPQN)
-  // then delta-timed events; the RIA paces them and tracks tempo changes
-
-The RIA echoes every tempo event onto the read stream at the moment it
-takes effect, so a recording is self-describing. A rejected event is
-malformed, or carries a value of zero or out of range. The RIA echoes it
-with its value zeroed and the tempo unchanged; zero is never a valid tempo,
-so it unambiguously marks an event that didn't apply. Your read parser must
-handle ``FF``: a second ``FF`` is a System Reset, and anything else is
-a meta type and length to skip.
-
-The stream carries raw wire MIDI messages after each delta time: channel
-voice messages (running status accepted on writes), system common, and
-single-byte real-time messages F8-FE. System Reset travels as the
-``FF FF`` escape in both directions: write a delta then ``FF FF`` to
-send one, and a reset from the instrument is recorded the same way. The
-undefined bytes F4 and F5 are quietly dropped.
-
-System Exclusive, or sysex, is how instruments move the big stuff, like
-patch banks and sample dumps, in one long message: ``F0``, any number of
-data bytes, then ``F7`` to finish. Only the opening ``F0`` takes a delta
-time; the data bytes flow without timing until the ``F7``, on writes and
-recordings alike. Real MIDI lets real-time messages like clock barge
-into the middle of a sysex — the RIA passes them through in place, so
-expect the occasional F8-FE byte inside a recorded dump. And if a tempo
-echo comes due during a dump, the recording closes the sysex early and
-reopens it after — everything arrives, just split into two
-``F0`` ... ``F7`` fragments.
-
-Delta times measure from the previous event, so timing stays exact over
-any song length. Events are anchored to an absolute tick count, and
-ticks are kept internally in nanoseconds, holding arithmetic rounding
-below one part per million. The error left over comes from the machine's
-clock and transport. Where the RIA is paced by a crystal-driven microsecond
-timer and delivers over USB full speed, the crystal drifts single-digit
-milliseconds over a several-minute song and framing sets the
-moment-to-moment jitter near one millisecond — the same pace as the
-classic MIDI wire itself.
-
-If your program stops feeding the buffer and resumes, messages already
-past due play immediately and the timeline continues from there. If you
-stop reading, the recording drops whole messages rather than backing up,
-and the timing of everything that survives stays exact. Reads and writes
-are non-blocking with the same short read/write rules as other
-non-blocking devices.
-
-Closing a timed output cable blocks until its buffered tail has played
-out on schedule. The final notes reach the instrument before close returns,
-along with the note-offs that end them, and nothing is left ringing.
-``sync`` does the same without closing. It waits for the schedule to catch
-up between songs. Both follow the timeline, so a far-future delta
-still in the buffer makes them wait that long. If a sysex is still open
-when a timed cable closes, the RIA sends its ``F7`` so the instrument is
-not left waiting mid-dump. A raw cable has no schedule, so close and
-``sync`` flush what is buffered, and they inject no ``F7``.
-
-
-Near Field Communications (NFC)
-===============================
-
-NFC cards have become a popular media replacement in the retro
-community, and they map neatly onto the RP6502's use of "ROM files" in
-place of "ROM cartridges". In 1983 you might have grabbed a cartridge
-with colorful stickers to home in on the exact dopamine hit you were
-after. NFC cards are cheap and just as easy to decorate, whether with
-stickers or direct printing. Grab a card, tap it on the reader, and the
-ROM you want loads instantly.
-
-You'll need a PN532 card reader with a USB interface. It's the only
-reader RIA firmware drives, and it's cheap — around $10 USD. You'll also want a
-card (or fob, or sticker) for each ROM you plan to support. New to NFC?
-Buy a pack of NTAG215 cards and a sharpie.
-
-Do **not** buy a kit of separate USB-to-UART and PN532 boards unless you
-want an unsupported project on your hands. Buy a single board with
-everything already engineered and ready to use.
-
-With the reader plugged in, run the monitor command ``SET NFC 2`` to
-start USB detection. It may probe your other VCP devices with PN532 data
-along the way; that's normal. You'll hear an error buzz, or two beeps for
-success. You can also run ``status`` to see whether ``(NFC)`` is listed
-next to one of your VCP devices.
-
-``SET NFC 1`` turns the reader on and ``SET NFC 0`` turns it off; the
-choice persists across reboots (a successful ``SET NFC 2`` also leaves it
-on). ``SET NFC 86`` forgets the paired reader so a later ``SET NFC 2`` can
-pair a different one.
-
-From now on, scanning a card produces one of three sounds: an error buzz
-if something went wrong, two beeps for success, or a single beep for a
-partial success.
-
-Program each card with the filename and arguments of the ROM to launch.
-If you'd load the ROM with ``LOAD /jigsaw.rp6502``, put an NDEF TEXT
-record on the card holding just ``/jigsaw.rp6502`` — no load command. A
-leading ``/`` is implied if you leave it off, and the current working
-directory is ignored.
-
-Paths with spaces need quotes, and you can include arguments:
-``"/My Games/jigsaw.rp6502" cat.bmp``
-
-When a card is read, every mounted drive is scanned for the ROM file. On
-a match, you get two beeps, the 6502 stops, the current drive and
-directory switch to the ROM's location, and the new ROM starts loading.
-If that ROM is already running, you get a single beep and nothing else
-happens.
-
-To search just one drive, name it in the text record:
-``MSC0:/encabulator.rp6502``
-
-A card may also name an installed ROM, ``:NAME``. That ROM launches the
-same way, with the same beeps, except that no drive is scanned and the
-current drive and directory stay where they are. A name that is not
-installed gives the error buzz.
-
-NFC Device API
---------------
-
-Applications can take over the NFC reader for advanced uses, or to help
-program NFC tags. While the ``"NFC:"`` device is open, automatic ROM
-launching is suppressed.
-
-.. code-block:: text
-
-   int fd = open("NFC:", O_RDWR);
-
-The PN532 reader runs autonomously on the RIA. The 6502 arms operations
-with ``write()`` and polls results with ``read()``: ``NFC_CMD_READ``
-returns the current tag data immediately, ``NFC_CMD_WRITE`` arms a write,
-and ``NFC_CMD_CANCEL`` disarms a pending one. State changes and write
-completions are posted to ``read()`` automatically.
-
-write() -- Commands
-~~~~~~~~~~~~~~~~~~~
-
-``write()`` is non-blocking and streaming. A call may consume less than
-you passed; resubmit the remaining bytes on a later call.
-
-.. list-table::
-   :widths: 40 60
-   :header-rows: 1
-
-   * - Byte
-     - Command
-   * - ``NFC_CMD_WRITE`` (0x01), page, lenLo, lenHi, tag data...
-     - Arm a write
-   * - ``NFC_CMD_CANCEL`` (0x02)
-     - Disarm pending write
-   * - ``NFC_CMD_READ`` (0x03)
-     - Return current tag data
-   * - ``NFC_CMD_SUCCESS1`` (0x04)
-     - Play success tone 1
-   * - ``NFC_CMD_SUCCESS2`` (0x05)
-     - Play success tone 2
-   * - ``NFC_CMD_ERROR`` (0x06)
-     - Play error tone
-
-The ``NFC_CMD_WRITE`` payload starts with the start page, a two-byte
-length, then the tag data. ``page`` is the NTAG page to begin writing at
-(page 4 is the start of user data). Data is written in 4-byte pages, and
-the final page is zero-padded if the payload isn't a multiple of 4. The
-write arms once the full payload arrives and runs on the current card or
-the next one presented. A second ``NFC_CMD_WRITE`` overwrites the first.
-
-The payload may be at most 888 bytes; a longer length is rejected with the
-error tone and never armed. A write also fails (error tone) if it would run
-past the card's NDEF data area or target a page below 4, and a zero-length
-payload completes immediately as a no-op.
-
-``NFC_CMD_READ`` always returns ``NFC_RESP_READ`` on the next ``read()``;
-if no card data is available, the length is zero.
-
-read() -- Responses
-~~~~~~~~~~~~~~~~~~~
-
-``read()`` is non-blocking and streaming. It returns 0 bytes when there's
-nothing new. Responses may be split across multiple calls, so callers
-must buffer and reassemble them. State changes are sent once per change,
-including once right after ``open()``. Only the latest state is tracked, so
-a rapid transition (such as ``NFC_RESP_CARD_INSERTED`` immediately followed
-by ``NFC_RESP_CARD_READY``) may be coalesced to the later state if you don't
-``read()`` in between.
-
-.. list-table::
-   :widths: 40 60
-   :header-rows: 1
-
-   * - Byte
-     - Meaning
-   * - ``NFC_RESP_READ`` (0x01), lenLo, lenHi, tag data...
-     - Read result
-   * - ``NFC_RESP_WRITE`` (0x02)
-     - Armed write complete
-   * - ``NFC_RESP_NO_READER`` (0x03)
-     - State: no reader attached
-   * - ``NFC_RESP_NO_CARD`` (0x04)
-     - State: no card present
-   * - ``NFC_RESP_CARD_INSERTED`` (0x05)
-     - State: card present, tag data not ready
-   * - ``NFC_RESP_CARD_READY`` (0x06)
-     - State: card present, tag data ready
-
-The ``NFC_RESP_READ`` payload is a two-byte length followed by raw tag
-data starting at page 0, and it may span multiple ``read()`` calls.
-In the page layout, pages 0-2 are UID/lock bytes, page 3 is the Capability
-Container (CC[2] * 8 = max NDEF bytes), and pages 4+ are user data
-(TLV-wrapped NDEF records terminated with ``0xFE``).
-
-After ``NFC_RESP_READ`` or ``NFC_RESP_WRITE``, send one or more tone
-commands or play your own sounds. Typically you request reads on
-``NFC_RESP_CARD_READY`` and arm writes on ``NFC_RESP_NO_CARD``, but you
-can also arm a write after reading and verifying a card. The cached
-tag image is not refreshed by a write, so re-present the card before the
-next ``NFC_CMD_READ`` if you want to read back what you wrote.
-
 
 Reset
 =====
 
 Think of reset as two states rather than a pulse on RESB. While reset
-is low, the 6502 is stopped. On an :doc:`pico`, the monitor is connected
-to the console while in reset. On the Pocket, the system waits for a new
-ROM to be loaded from the settings menu. On the :doc:`emu`, some hosts
-wait for a new ROM to load while others exit the host process.
-
-Reset is mostly handled automatically and this works well for all hosts
-except the :doc:`pico`. Here we need a way to stop a wedged 6502. The monitor
-also provides two commands that will bring reset high.
-Either ``load`` a ROM that has a reset vector, or use the ``reset`` command
-if you've prepared RAM some other way.
-To drop reset from high to low and return to the monitor, even from a
-wedged 6502, use any terminal on the
-:ref:`console manifold <term-console-manifold>`:
-
-1. Press Ctrl-Alt-Del from a USB keyboard.
-2. Send a break from a serial terminal.
-3. Send a break from a telnet terminal.
-
-
-PIX Physical Layer
-==================
-
-None of this is needed to program the machine. What follows is the bus
-itself, for anyone building a device to put on it.
-
-On the :doc:`pico`, PIX is a physical bus between the RP6502-RIA and the
-RP6502-VGA. High-bandwidth devices like video systems need a bus of their
-own. PIX is that bus: an addressable broadcast system that any number of
-devices can receive, narrow enough to fit the GPIO budget of a Raspberry
-Pi Pico, wide enough to move data as fast as the 6502 writes.
-
-The signals are PHI2 and PIX0-3. This is a double-data-rate bus. It
-shifts PIX0-3 left on both transitions of PHI2, so a 32-bit frame is
-sent in just 4 PHI2 cycles. A PIO block on a Raspberry Pi Pico decodes
-it, since PIO is essentially a shift register.
-
-Bit 28 (0x10000000) is the framing bit, set in every message. When the
-bus is idle, an all-zero payload repeats on device ID 7. A receiver
-synchronizes by checking that PIX0 is high on a falling transition of
-PHI2; if it isn't, stall until the next clock cycle.
-
-Bits 31-29 (0xE0000000) hold the device ID of a message:
-
-- **Device 0** — XRAM broadcasts only. The extended registers of device
-  0 are handled inside the RIA and are never sent on the bus.
-- **Device 1** — the :doc:`vga`.
-- **Devices 2-6** — open for user expansion.
-- **Device 7** — synchronization. (0xF0000000 is hard to miss on test
-  equipment.)
-
-For devices 1-6, the remaining bits address an extended register:
-
-- **Bits 27-24** (0x0F000000) — the channel ID; each device can have 16
-  channels.
-- **Bits 23-16** (0x00FF0000) — the index of the register within that
-  channel.
-- **Bits 15-0** (0x0000FFFF) — the value to store in the register.
-
-The RIA broadcasts every change to XRAM as a device 0 message, with the
-XRAM address in bits 15-0 and the XRAM data in bits 23-16. Each device
-keeps a local replica of the XRAM it uses, typically all 64 KB.
-
-One ``xreg()`` call sends one message for each value. The messages to
-the VGA follow the order that :ref:`Extended Registers <ria-xreg>`
-describes. After each write to a key register of the VGA, the RIA waits
-for the ack or the nak of the VGA. The RIA does not wait after a write
-to any other register, so a device 2-6 cannot refuse a value.
+is low, the 6502 is stopped. On an :doc:`pico`, the :ref:`monitor
+<pico-reset>` is connected to the console while in reset. On the Pocket,
+the system waits for a new ROM to be loaded from the settings menu. On
+the :doc:`emu`, some hosts wait for a new ROM to load while others exit
+the host process.

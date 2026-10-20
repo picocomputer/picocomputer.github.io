@@ -368,8 +368,8 @@ core runs there, and the root, ``FS:/``, on an :doc:`web`.
 The :doc:`emu` and the :doc:`web` never change the current drive or
 directory themselves. Only CHDIR from a program changes them, and a ROM
 starts with the drive and directory that the ROM before it left. The one
-exception is an NFC card on an :doc:`pico`: the ROM it names starts in
-the folder that holds the ROM.
+exception is an :ref:`NFC card <pico-nfc>` on an :doc:`pico`: the ROM
+it names starts in the folder that holds the ROM.
 
 A CHDIR into a folder on another drive also makes that drive current.
 Each drive keeps the last folder used on it, so a later CHDIR to the
@@ -590,15 +590,16 @@ Installed ROMs
 --------------
 
 The null drive, ``:``, holds ROMs that come from outside the filesystem.
-On an :doc:`pico`, the monitor's INSTALL command puts a ROM in flash,
-where it stays. On an :doc:`emu`, ``--install`` puts a file there for one
-run, and on an :doc:`web`, the ``install`` setting of the page puts one
-there for one visit. The RP6502-EMU and the RP6502-WEB also run a ROM
-from the null drive when no program could name its path, as when the path is
-longer than 255 bytes or has a character that the code page cannot hold
-or that FAT refuses. A program runs an installed ROM with EXEC and the
-name ``:name``. On the RP6502-EMU and the RP6502-WEB, a program can also
-open an installed file for reading, such as a BASIC program. Case does not matter in an
+On an :doc:`pico`, the INSTALL command of the :ref:`monitor
+<pico-monitor>` puts a ROM in flash, where it stays. On an :doc:`emu`,
+``--install`` puts a file there for one run, and on an :doc:`web`, the
+``install`` setting of the page puts one there for one visit. The
+RP6502-EMU and the RP6502-WEB also run a ROM from the null drive when no
+program could name its path, as when the path is longer than 255 bytes
+or has a character that the code page cannot hold or that FAT refuses. A
+program runs an installed ROM with EXEC and the name ``:name``. On the
+RP6502-EMU and the RP6502-WEB, a program can also open an installed file
+for reading, such as a BASIC program. Case does not matter in an
 installed name. Every other call on a ``:`` path fails with ENODEV.
 
 argv[0] is the absolute path of the ROM, with its drive, however the ROM

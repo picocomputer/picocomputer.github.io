@@ -19,9 +19,9 @@ further work from the 6502.
 The VGA is a specification for a video system that is connected to the
 :doc:`ria` by PIX and programmed with extended registers (XREGs). On the
 :doc:`pico`, the VGA is a second Raspberry Pi Pico 2, connected to the
-RIA by a 5-wire PIX bus. More than one VGA device can be connected to a
-PIX bus, but all of them share the same 64 KB of XRAM, and only the
-first generates frame numbers and VSYNC interrupts.
+RIA by a 5-wire :ref:`PIX bus <pico-pix>`. More than one VGA device can
+be connected to a PIX bus, but all of them share the same 64 KB of XRAM,
+and only the first generates frame numbers and VSYNC interrupts.
 
 Video Programming
 =================
@@ -1409,6 +1409,8 @@ image in 4-bit color. Each row of the image starts on a byte boundary.
 
 
 
+.. _vga-control-channel:
+
 Control Channel $F
 ==================
 
@@ -1440,7 +1442,8 @@ applications are denied access to them.
      - Used by the telnet server to suppress term responses.
    * - $1:F:03
      - UART_TX
-     - Alternate path for UART Tx when using backchannel.
+     - Alternate path for UART Tx when using :ref:`backchannel
+       <pico-backchannel>`.
    * - $1:F:04
      - BACKCHAN
      - Control using UART Tx as backchannel.
@@ -1455,39 +1458,3 @@ applications are denied access to them.
      - FLASH_PROGRAM
      - Program XRAM[0..255] into the 256 byte page at this index. The page's
        sector is erased first when the page does not already read as erased.
-
-
-Backchannel
-===========
-
-The :doc:`pico` hardware is constrained by GPIO pins, which is why it
-uses two Raspberry Pi Pico 2 boards. The backchannel is a hack to
-recover a single pin. The 6502 programmer never has to think about any
-of this.
-
-Because the PIX bus is unidirectional, the VGA system can't send data
-straight back to the RIA. The UART Rx path won't do either — it would
-add framing overhead or unusable control characters. But the PIX bus has
-plenty of idle bandwidth (it only carries data when the 6502 writes to
-XRAM), so all Tx data is routed over PIX, leaving the UART Tx pin free to
-reverse directions and serve as the backchannel.
-
-Values 0x00 to 0x7F send a version string as ASCII, terminated by 0x0D
-or 0x0A. Sent immediately after the backchannel-enable message
-arrives for it to appear in the boot message.
-
-When bit 0x80 is set, the 0x70 bits give the command type and the 0x0F
-bits give a scalar for that command.
-
-0x80 VSYNC - The scalar will increment and be used for the LSB of the
-:ref:`RIA VSYNC <ria-registers>` register.
-
-0x90 OP_ACK - Some XREG locations are triggers for remote calls which
-may fail or take time to complete. This acknowledges a successful
-completion.
-
-0xA0 OP_NAK - This acknowledges a failure.
-
-Because waiting for an entire character to decode over UART is lost time
-for VSYNC, a predictive algorithm suspends ACK/NAK around the expected
-window for a VSYNC so it can be edge triggered on the first bit.

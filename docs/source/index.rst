@@ -16,10 +16,17 @@
    :caption: Machine
 
    RP6502-PICO <pico>
-   RP6502-PICO-W <ria_w>
    RP6502-FPGA <fpga>
    RP6502-EMU <emu>
    RP6502-WEB <web>
+
+.. toctree::
+   :hidden:
+   :caption: Build
+
+   With Soldering <pico-solder>
+   Without Soldering <pico-socket>
+   Parts Substitution <pico-parts>
 
 .. toctree::
    :hidden:
@@ -143,8 +150,8 @@ Picocomputers.
 
 - :doc:`pico` — the standalone machine, which you build yourself. 100%
   through-hole, no IC programmer, and you don't even have to solder.
-  Built with a Pi Pico 2 W, it is the :doc:`ria_w`, with Wi-Fi and
-  Bluetooth.
+  Build it :doc:`with soldering <pico-solder>` or :doc:`without
+  <pico-socket>`.
 - :doc:`fpga` — the machine in fabric, on an Analogue Pocket today and
   MiSTer next.
 - :doc:`emu` — the machine on the device you use every day, for
