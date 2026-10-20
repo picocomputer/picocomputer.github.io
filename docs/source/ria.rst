@@ -211,7 +211,7 @@ A program must not use these registers while a stdio function of the
 XRAM Portals
 ------------
 
-`Extended RAM (XRAM)`_ is outside the address space of the 6502, so a
+Extended RAM (XRAM) is outside the address space of the 6502, so a
 program reaches it through the two portals of the RIA. A portal is three
 registers. ADDR holds an XRAM address, and RW is the byte at that
 address: a load from RW reads it, and a store to RW writes it. After each
@@ -280,124 +280,31 @@ Call <api-call>` shows. Reading the XSTACK when it is empty returns zeros.
 Peripheral Information Exchange (PIX)
 =====================================
 
-Keyboards, mice and gamepads are connected over USB and Bluetooth, and
-the video and sound are made by modern hardware. A 6502 cannot use any of
-these directly, so each one is given a simple interface of bytes in
-extended RAM (XRAM). The RIA writes keyboard, mouse and gamepad input into
-XRAM for a program to read, and the sound generators and the video system
-read settings and data that a program writes into XRAM. This arrangement
-is called Peripheral Information Exchange (PIX). A program maps each
-device to an XRAM address by setting an extended register (XREG). Until
-then, the device is off and has no XRAM address.
+The Peripheral Information Exchange (PIX) is how a 6502 program uses
+keyboards, mice, gamepads, sound, and video. A 6502 has no way to talk to
+a USB or Bluetooth device, or to make sound or video by itself, so the
+RIA and the VGA do that work and present each device to the program as
+bytes in extended RAM (XRAM). The program reads the keyboard, mouse,
+tablet, and gamepads from XRAM, and it controls the sound generators and
+the video system by writing to XRAM.
 
-Extended RAM (XRAM)
--------------------
-
-XRAM is 64 KB of memory outside the 6502's address space. A program reads
-and writes it through the `XRAM Portals`_, and every device uses the same
-64 KB.
-
-.. _ria-xreg:
-
-Extended Registers (XREG)
--------------------------
-
-An extended register (XREG) is a 16-bit register of a PIX device.
-Device 0 is the RIA, device 1 is the :doc:`vga`, and devices 2-6 are
-open for expansion. Each PIX device has 16 channels of 256 registers. A
-program sets XREGs to map devices, such as the keyboard, to XRAM. XREGs
-are not in the address space of the 6502, so a load or a store cannot
-access one. A program sets them with the :ref:`xreg() <api-xreg>` API
-call, and cannot read them back.
-
-This call maps the keyboard to XRAM $1000:
+To use a device, a program maps it to an address in XRAM with
+:ref:`xreg() <api-xreg>`. This call maps the keyboard to $1000, and from
+then on the program finds the state of the keyboard in the 32 bytes at
+$1000-$101F:
 
 .. code-block:: C
 
   xreg(0x0, 0x0, 0x00, 0x1000);
 
-The first three arguments are the PIX device, the channel, and the index
-of the register in the channel. Together they are the address of the
-XREG, written $device:channel:index, so the keyboard XREG is $0:0:00.
-The last argument is the value. After the call, the RIA keeps the state
-of the keyboard in the 32 bytes at $1000-$101F.
+All the devices share the same 64 KB of XRAM. :ref:`XRAM Memory Map
+<sdk-xram-memory-map>` in the :doc:`sdk` shows how to lay out their areas.
 
-An XREG is a key register or an argument register. When a program sets
-a key register, the device applies the value, such as the XRAM address
-of the keyboard, before ``xreg()`` returns. ``xreg()`` returns 0 when
-the device accepts the value, or -1 with ``errno`` set when the device
-refuses it. An argument register holds a value for a key register, and
-has no effect until the program sets that key register.
-
-Every XREG of the RIA is a key register. The VGA has two key registers,
-as :ref:`Key Registers <vga-key-registers>` in the :doc:`vga` datasheet
-describes. CANVAS selects the size of the canvas, the grid of pixels
-that the VGA draws. MODE programs a video mode from the argument
-registers above it. One ``xreg()`` call can set MODE and its arguments
-together, because the first value goes to the register at the index, and
-each next value to the next register up:
-
-.. code-block:: C
-
-  xreg(0x1, 0x0, 0x01, 3, 2, 0xFF00);
-
-This call sets MODE ($1:0:01) to 3, the :ref:`bitmap mode <vga-mode-3>`.
-It sets $1:0:02 to 2, which selects 4-bit color, and $1:0:03 to $FF00,
-the XRAM address of the configuration structure of the mode. Mode 3
-takes 2 and $FF00 as its arguments, and then the VGA clears the argument
-registers. A program can also set the arguments with one call and MODE
-with a later call. The argument registers keep their values until a
-write to CANVAS or MODE clears them, or until the ROM stops.
-
-One ``xreg()`` call logically sets all of its registers at once. The RIA
-receives every value of the call before it sets a register. Then it sets
-the key registers in order, from the lowest index, and sets the
-argument registers of each key register before that key register. So
-one call to the VGA can select the canvas and program the first video
-mode, which is all the video setup that many programs need:
-
-.. code-block:: C
-
-  xreg(0x1, 0x0, 0x00, 1, 3, 2, 0xFF00);
-
-This call selects the 320x240 canvas, and then programs mode 3 as the
-call above does.
-
-When a key register refuses its value, the call ends and fails. The
-registers that the RIA set before the failure keep their new values, and
-the RIA does not set the others. A device refuses a value that it does
-not support, so a program can set a key register to test for a feature.
-A failed call sets ``errno`` to one of these:
-
-- EINVAL: a key register refused its value, or the arguments of the call
-  are not valid.
-- EIO: on an :doc:`pico`, the VGA did not answer a write to CANVAS or
-  MODE, as when no VGA is connected.
-- EACCES: the call wrote to :ref:`channel $F <vga-control-channel>` of
-  the VGA, which the RIA manages.
-
-A device 2-6 cannot refuse a value, so a valid call to one always
-succeeds. On an :doc:`pico`, hardware that you build for the
-:ref:`PIX bus <pico-pix>` is a device 2-6, and takes its settings
-through ``xreg()``.
-
-An assembly program uses the ``xreg`` macro of ``rp6502.inc``, which
-takes the same arguments as ``xreg()``:
-
-.. code-block:: ca65
-
-  xreg $1, $0, $01, 3, 2, $FF00
-
-The macro loads each argument as an immediate operand, so an argument
-must be a constant or a symbol. The macro pushes the device, the
-channel, and the index, one byte each, and then each value, high byte
-first. ``RIA_A`` and ``RIA_X`` carry no argument.
-
-The XREGs of the RIA, device 0, are in the table below. Each one maps a
-device to XRAM at the address written to it. Writing ``$FFFF`` turns the
-device off and always succeeds. Any other address that is invalid for
-the device also turns it off, and the call fails with ``EINVAL``. A write
-to a register that the table does not list fails with ``EINVAL``.
+The table lists the devices of the RIA, each with the first three
+arguments of ``xreg()`` that map it, written $device:channel:index. A
+program unmaps a device by passing ``$FFFF`` as the address, which always
+succeeds. An address that is not valid for the device also unmaps it, and
+``xreg()`` fails with ``EINVAL``.
 
 .. list-table::
    :widths: 5 5 90

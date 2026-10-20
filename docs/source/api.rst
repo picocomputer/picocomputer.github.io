@@ -230,8 +230,10 @@ XREG
    When a program maps a device, the device can refuse a value, and the
    call fails. A refusal usually means that the value is not valid, but
    it can also mean that the machine does not have the feature.
-   :ref:`Extended Registers <ria-xreg>` in the :doc:`ria` datasheet
-   describes the errors.
+
+   An assembly program pushes the device, the channel, and the index, one
+   byte each, and then each value, high byte first. ``RIA_A`` and
+   ``RIA_X`` carry no argument.
 
    :Operation: RIA_OP_XREG 0x01
    :C proto: rp6502.h

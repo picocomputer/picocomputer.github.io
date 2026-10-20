@@ -68,7 +68,7 @@ then program the mode. The configuration structure holds the address of
 the data, its size, and its position on the canvas. Each mode has its
 own, given in its section below.
 
-You program the VGA device with :ref:`PIX extended registers <ria-xreg>`
+You program the VGA device with :ref:`PIX extended registers <api-xreg>`
 (XREGs). The VGA is PIX device ID 1. Registers are 16-bit values
 addressed as $device:channel:index — for example, $1:0:0F.
 ``xaddr`` in the examples below is the XRAM address of that mode's
@@ -90,10 +90,38 @@ configuration structure.
 Key Registers
 -------------
 
-CANVAS and MODE are the key registers of channel 0. The registers above
-them, $1:0:02-$1:0:FF, hold arguments for MODE and have no effect until a
-key register is set. Setting a key register may fail, returning -1 with
-errno EINVAL.
+CANVAS and MODE are the key registers of channel 0: setting one of them
+changes the picture. The VGA can refuse a value that it does not
+support, and then ``xreg()`` fails with EINVAL. The registers that the
+call set before the refusal keep their new values.
+
+A video mode needs more values than MODE holds, such as its options and
+the XRAM address of its configuration. These values go in the argument
+registers after MODE, $1:0:02-$1:0:FF, and the VGA reads them when the
+program sets MODE. The first value of an ``xreg()`` call goes to the
+register at the index, and each next value to the next register up, so
+one call sets MODE and its arguments together:
+
+.. code-block:: C
+
+  xreg(0x1, 0x0, 0x01, 3, 2, 0xFF00);
+
+This call sets MODE ($1:0:01) to 3, the :ref:`bitmap mode <vga-mode-3>`.
+It also sets $1:0:02 to 2, which selects 4-bit color, and $1:0:03 to
+$FF00, the XRAM address of the configuration structure of the mode. MODE
+gets its arguments even though they come after it in the call, because
+the RIA sets the argument registers of a key register before the key
+register. The arguments can also come from an earlier call.
+
+One call can also select the canvas and program the first mode, which is
+all the video setup that many programs need:
+
+.. code-block:: C
+
+  xreg(0x1, 0x0, 0x00, 1, 3, 2, 0xFF00);
+
+The RIA sets the key registers in order, from the lowest index, so this
+call selects the 320x240 canvas first, and then programs mode 3.
 
 .. list-table::
    :widths: 5 5 90
