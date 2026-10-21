@@ -1312,8 +1312,8 @@ The example reads the tablet with ``tablet_read()`` instead of
 position while a program is partway through reading the old one. That read
 comes back with part of each, a spot where the pointer never was.
 ``tablet_read()`` reads the tablet twice and compares. If the two reads
-differ, it reads a third time, and that read is clean, because the RIA
-writes at most once every millisecond.
+differ, the RIA wrote in between, and it reads a third time. The RIA
+writes at most once every millisecond, so that third read is clean.
 
 .. tab:: C
 
@@ -1417,9 +1417,9 @@ the 320x240 and 320x180 canvases, the top bits of y are always 0, so
 A touchscreen can track several fingers, so the tablet has room for eight
 contacts after its four-byte header. A mouse or a pen uses only the first
 contact. A program that doesn't do multi-touch reads only the header and
-the first contact, ``tablet_pointer_t``, as the example does. The program's
-layout still has to hold all eight, ``tablet_t``, because the RIA writes
-all of them. A multi-touch program reads a ``tablet_t`` instead.
+the first contact, ``tablet_pointer_t``, as the example does. The RIA
+writes all eight contacts, so the program's layout still has to hold a
+whole ``tablet_t``. A multi-touch program reads a ``tablet_t`` instead.
 
 Each contact has flags for the buttons. The tip of a pen and a finger on a
 touchscreen count as the left button. ``TABLET_FLAG_HOVER`` is set while a
@@ -1937,9 +1937,8 @@ and stereo panning.
 
 The PSG takes 64 bytes of XRAM, eight for each channel. They must start
 at an even address and fit inside one 256-byte page.
-``PSG_PAGE_CHECK()`` checks the page when the program compiles. Mapping
-the PSG turns off the OPL2, because only one sound generator plays at a
-time.
+``PSG_PAGE_CHECK()`` checks the page when the program compiles. You can
+use the PSG or the OPL2, but not both. Mapping one turns the other off.
 
 This plays an A on channel 0, as a square wave:
 
@@ -2198,24 +2197,42 @@ logarithmic scale. A rate is how long a full change of volume takes:
 Yamaha OPL2 FM Sound Generator
 ==============================
 
-The RIA includes a YM3812 FM Sound Generator (OPL2), configured through
-extended register device 0, channel 1, address 0x01.
+The OPL2 works like the Yamaha YM3812, the nine-channel FM synthesizer
+chip of the AdLib and Sound Blaster cards. It has the same registers, so
+an OPL2 guide such as `Programming the AdLib/SoundBlaster FM Music Chips
+<https://www.shipbrook.net/jeff/sb.html>`_ explains them.
 
-Enable and disable the OPL2 by setting its extended register. The value
-is the XRAM start address for the 256 OPL2 registers, which must begin
-on a page boundary. So if xaddr is 0x4200, the 256 OPL2 registers map into
-XRAM from 0x4200 to 0x42FF. Enabling the OPL2 disables the PSG.
+The OPL2 takes one whole page of XRAM, 256 bytes starting at a page
+boundary, and register n of the OPL2 is byte n of that page.
+``OPL_PAGE_CHECK()`` checks the boundary when the program compiles.
+Mapping the OPL2 resets it, clears the page to zero, and turns off the
+PSG.
+
+This plays an A on channel 0:
 
 .. code-block:: C
 
-  xreg(0x0, 0x1, 0x01, xaddr);  // enable
-  xreg(0x0, 0x1, 0x01, 0xFFFF); // disable
-  xreg_ria_opl(xaddr);          // macro shortcut
+  xreg_ria_opl(XRAM_OPL);
 
+  xram0_poke8(XRAM_OPL + 0x20, 0x01); // modulator: multiple 1
+  xram0_poke8(XRAM_OPL + 0x40, 0x10); // modulator: level
+  xram0_poke8(XRAM_OPL + 0x60, 0xF0); // modulator: quick attack, long decay
+  xram0_poke8(XRAM_OPL + 0x80, 0x77); // modulator: medium sustain, release
+  xram0_poke8(XRAM_OPL + 0x23, 0x01); // carrier: multiple 1
+  xram0_poke8(XRAM_OPL + 0x43, 0x00); // carrier: full volume
+  xram0_poke8(XRAM_OPL + 0x63, 0xF0); // carrier: quick attack, long decay
+  xram0_poke8(XRAM_OPL + 0x83, 0x77); // carrier: medium sustain, release
+  xram0_poke8(XRAM_OPL + 0xA0, 0x44); // channel 0: frequency, low byte
+  xram0_poke8(XRAM_OPL + 0xB0, 0x32); // channel 0: key on, octave 4
 
-Timers, interrupts, and the status register are not supported. Those
-features existed mainly to cost-reduce consumer devices; computers of
-the era had their own timers and rarely used the chip's.
+Clearing the key-on bit lets the note fade out:
+
+.. code-block:: C
+
+  xram0_poke8(XRAM_OPL + 0xB0, 0x12);
+
+The OPL2 has no timers, interrupts, or status register. Computers of the
+time had their own timers and rarely used the chip's.
 
 .. tab:: C
 
