@@ -754,6 +754,8 @@ Your program defines each XRAM address once, and the build and the tests
 use the same definition. You can find the format of ``hello.sym`` in `The
 .sym File`_.
 
+.. _sdk-symbols-in-cmake:
+
 Symbols in CMake
 ----------------
 
