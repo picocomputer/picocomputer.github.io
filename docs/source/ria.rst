@@ -1198,8 +1198,9 @@ The ``x`` and ``y`` values are just counters. ``x`` counts up as the mouse
 moves right, and ``y`` counts up as it moves down. Both roll over at 255.
 That's why the example subtracts the last reading: the difference is how
 far the mouse moved, and keeping it in an ``int8_t`` makes the rollover
-come out right. The ``wheel`` and ``pan`` counters work the same way. The
-buttons are bits, such as ``MOUSE_BUTTON_LEFT``.
+come out right. ``wheel`` counts the scroll wheel and ``pan`` counts
+sideways scrolling, and they work the same way. The buttons are bits,
+such as ``MOUSE_BUTTON_LEFT``.
 
 A count is one pixel on a 640-wide canvas and half a pixel on a 320-wide
 one. Reading the mouse once a frame, at 60 Hz, is period-correct but slow
@@ -1284,70 +1285,160 @@ input, read the mouse from an interrupt handler every 8 ms or faster.
 Tablet
 ======
 
-The RIA can give applications an *absolute* pointer — a "tablet" — instead of
-the relative mouse. It reports a canvas pixel position directly: a plain mouse
-is integrated and clamped to the canvas, and an absolute digitizer or
-touchscreen is scaled to it. Enable and disable it by mapping it to an address
-in XRAM.
+The tablet interface reports where the pointer is on the canvas, in
+pixels, and which buttons are down. A mouse moves the pointer, which stops
+at the edges of the canvas. A pen or a touchscreen points straight at a
+spot, because its whole surface is scaled to the canvas. This is the
+interface for menus, buttons, painting, and anything else where the player
+points at things on the canvas.
+
+This finds where the pointer is, and checks the left button:
 
 .. code-block:: C
 
-  xreg(0x0, 0x0, 0x03, xaddr);  // enable
-  xreg(0x0, 0x0, 0x03, 0xFFFF); // disable
-  xreg_ria_tablet(xaddr);       // macro shortcut
+  tablet_pointer_t tab;
+  unsigned x, y;
 
-The block is a four-byte header followed by eight contact records for
-multi-touch; a mouse or pen uses only the first. The layout always reserves
-the whole block, ``tablet_t``, because the RIA writes all eight contacts. A
-program for a mouse or pen reads only the header and the first contact,
-``tablet_pointer_t``.
+  xreg_ria_tablet(XRAM_TABLET);
 
-``wheel`` and ``pan`` are scroll counters in the same format as the
-mouse's: subtract the previous reading to get the change. Reading them
-once per VSYNC is enough for normal use.
+  tablet_read(&tab);
+  x = (tab.contact.yx_hi & 0x0F) << 8 | tab.contact.x_lo;
+  y = (tab.contact.yx_hi >> 4) << 8 | tab.contact.y_lo;
+  if (tab.contact.flags & TABLET_FLAG_LEFT)
+      click(x, y);
 
-Each coordinate is 12 bits. ``y_lo`` and ``x_lo`` hold the low bytes, and
-``yx_hi`` holds the high four bits of Y in its upper half and the high four
-bits of X in its lower half. On the 320x240 and 320x180 canvases the high bits
-of Y are always 0, so ``x_lo`` and ``yx_hi`` are X as a little-endian 16-bit
-value. A released contact has flags of 0 and keeps its last position.
+The example reads the tablet with ``tablet_read()`` instead of
+``xram0_read()``. A position takes three bytes, and the RIA can write a new
+position while a program is partway through reading the old one. That read
+comes back with part of each, a spot where the pointer never was.
+``tablet_read()`` reads the tablet twice and compares. If the two reads
+differ, it reads a third time, and that read is clean, because the RIA
+writes at most once every millisecond.
 
-.. code-block:: C
+.. tab:: C
 
-  x = (c.yx_hi & 0x0F) << 8 | c.x_lo;
-  y = (c.yx_hi >> 4) << 8 | c.y_lo;
+   .. code-block:: C
 
-Contact flags are a bitfield:
+      // Read the block again to check that the host did not write it during the
+      // read. Writes are at least 1 ms apart, so a third read will not overlap one.
+      void tablet_read(tablet_pointer_t *tablet)
+      {
+          tablet_pointer_t check;
 
-- 0 - LEFT / tip
-- 1 - RIGHT
-- 2 - MIDDLE
-- 3 - BACKWARD
-- 4 - FORWARD
-- 7 - HOVER
+          xram0_read(tablet, XRAM_TABLET, sizeof(tablet_pointer_t));
+          xram0_read(&check, XRAM_TABLET, sizeof(tablet_pointer_t));
+          if (memcmp(tablet, &check, sizeof(tablet_pointer_t)))
+              xram0_read(tablet, XRAM_TABLET, sizeof(tablet_pointer_t));
+      }
 
-HOVER is set when the contact tracks a position without a press. It is
-always set for a mouse, set for a pen while the pen is in range, and clear
-for a touchscreen.
+.. tab:: ca65
 
-The application and the RIA exchange pointer preferences through the header.
-``status`` bit 0 (host cursor) is set only for a mouse on the :doc:`emu`
-or on the :doc:`web`, where the host can draw a cursor for the
-application. The bit is always clear on the :doc:`pico` and the
-:doc:`fpga`, in :ref:`RetroArch <emu-retroarch>`, and for touch input.
-``control`` selects the host cursor shape, or hides the cursor so the
-application can draw its own. Mapping the tablet sets it to ARROW.
+   .. code-block:: ca65
 
-- 0 - OFF (host cursor hidden; the application draws its own pointer)
-- 1 - ARROW
-- 2 - CROSSHAIR
-- 3 - IBEAM
-- 4 - HAND
-- 5 - RESIZE_EW
-- 6 - RESIZE_NS
+      .importzp ptr1
+      .export _tablet_read
 
-When the host cursor bit is clear the application must draw its own
-pointer, and ``control`` has no effect.
+      ; void tablet_read(tablet_pointer_t *tablet);
+      ; Read the block again to check that the host did not write it during the
+      ; read. Writes are at least 1 ms apart, so a third read will not overlap one.
+      _tablet_read:
+          sta ptr1
+          stx ptr1+1
+          lda #1
+          sta RIA_STEP0
+          jsr @read
+          jsr @read
+          beq @done           ; Done when the two reads match, else read a third time
+      @read:
+          lda #<XRAM_TABLET
+          sta RIA_ADDR0
+          lda #>XRAM_TABLET
+          sta RIA_ADDR0+1
+          ldx #0
+          ldy #0
+      @loop:
+          lda RIA_RW0
+          cmp (ptr1),y
+          beq @same
+          inx                 ; A byte changed
+      @same:
+          sta (ptr1),y
+          iny
+          cpy #.sizeof(tablet_pointer_t)
+          bne @loop
+          txa
+      @done:
+          rts
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :force:
+
+      .include "imag.inc"
+      .globl tablet_read
+
+      ; void tablet_read(tablet_pointer_t *tablet);
+      ; Read the block again to check that the host did not write it during the
+      ; read. Writes are at least 1 ms apart, so a third read will not overlap one.
+      tablet_read:
+          lda #1
+          sta RIA_STEP0
+          jsr 1f
+          jsr 1f
+          beq 4f              ; Done when the two reads match, else read a third time
+      1:
+          lda #(XRAM_TABLET & $FF)
+          sta RIA_ADDR0
+          lda #((XRAM_TABLET >> 8) & $FF)
+          sta RIA_ADDR0+1
+          ldx #0
+          ldy #0
+      2:
+          lda RIA_RW0
+          cmp (__rc2),y
+          beq 3f
+          inx                 ; A byte changed
+      3:
+          sta (__rc2),y
+          iny
+          cpy #TABLET_POINTER_SIZE
+          bne 2b
+          txa
+      4:
+          rts
+
+Each coordinate is 12 bits. ``x_lo`` and ``y_lo`` hold the low eight bits,
+and ``yx_hi`` holds the top four bits of y in its upper half and the top
+four bits of x in its lower half. The example puts them back together. On
+the 320x240 and 320x180 canvases, the top bits of y are always 0, so
+``x_lo`` and ``yx_hi`` read together as x, a little-endian 16-bit value.
+
+A touchscreen can track several fingers, so the tablet has room for eight
+contacts after its four-byte header. A mouse or a pen uses only the first
+contact. A program that doesn't do multi-touch reads only the header and
+the first contact, ``tablet_pointer_t``, as the example does. The program's
+layout still has to hold all eight, ``tablet_t``, because the RIA writes
+all of them. A multi-touch program reads a ``tablet_t`` instead.
+
+Each contact has flags for the buttons. The tip of a pen and a finger on a
+touchscreen count as the left button. ``TABLET_FLAG_HOVER`` is set while a
+contact has a position without touching: always for a mouse, for a pen
+while it is in range, and never for a touchscreen. When a finger lifts or
+a pen moves out of range, the flags of its contact go to 0, and the
+contact keeps its last position.
+
+``wheel`` and ``pan`` count the scroll wheel and sideways scrolling, the
+same way as the counters of the `Mouse`_. Reading them once a frame is
+enough for normal use.
+
+Sometimes the pointer is already on the screen, and sometimes you have to
+draw it. ``TABLET_STATUS_HOST_CURSOR`` in ``status`` is set when it's
+already there, which happens only with a mouse on the :doc:`emu` or the
+:doc:`web`. Writing one of the ``TABLET_CURSOR_`` values to ``control``
+changes its shape, and ``TABLET_CURSOR_OFF`` hides it. If
+``TABLET_STATUS_HOST_CURSOR`` is clear, there's no pointer for ``control``
+to change, so you need to draw your own.
 
 .. tab:: C
 
@@ -1500,134 +1591,45 @@ pointer, and ``control`` has no effect.
       TABLET_SIZE = TABLET_CONTACT + TABLET_CONTACTS * TABLET_CONTACT_SIZE
       TABLET_POINTER_SIZE = TABLET_CONTACT + TABLET_CONTACT_SIZE
 
-XRAM is atomic for single bytes only, so the RIA can write the block while a
-program reads it, and that read mixes two positions. ``tablet_read`` copies the
-block, then reads it again to check that the RIA did not write it during the
-first read. Writes are at least 1 ms apart, so when the two reads differ, a
-third read will not overlap one. All three versions have the same C
-prototype, ``void tablet_read(tablet_pointer_t *tablet)``, so a C program can
-call an assembly version in place of the C one. A multi-touch program reads a
-``tablet_t`` in place of ``tablet_pointer_t``.
-
-.. tab:: C
-
-   .. code-block:: C
-
-      // Read the block again to check that the host did not write it during the
-      // read. Writes are at least 1 ms apart, so a third read will not overlap one.
-      void tablet_read(tablet_pointer_t *tablet)
-      {
-          tablet_pointer_t check;
-
-          xram0_read(tablet, XRAM_TABLET, sizeof(tablet_pointer_t));
-          xram0_read(&check, XRAM_TABLET, sizeof(tablet_pointer_t));
-          if (memcmp(tablet, &check, sizeof(tablet_pointer_t)))
-              xram0_read(tablet, XRAM_TABLET, sizeof(tablet_pointer_t));
-      }
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-
-      .importzp ptr1
-      .export _tablet_read
-
-      ; void tablet_read(tablet_pointer_t *tablet);
-      ; Read the block again to check that the host did not write it during the
-      ; read. Writes are at least 1 ms apart, so a third read will not overlap one.
-      _tablet_read:
-          sta ptr1
-          stx ptr1+1
-          lda #1
-          sta RIA_STEP0
-          jsr @read
-          jsr @read
-          beq @done           ; Done when the two reads match, else read a third time
-      @read:
-          lda #<XRAM_TABLET
-          sta RIA_ADDR0
-          lda #>XRAM_TABLET
-          sta RIA_ADDR0+1
-          ldx #0
-          ldy #0
-      @loop:
-          lda RIA_RW0
-          cmp (ptr1),y
-          beq @same
-          inx                 ; A byte changed
-      @same:
-          sta (ptr1),y
-          iny
-          cpy #.sizeof(tablet_pointer_t)
-          bne @loop
-          txa
-      @done:
-          rts
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :force:
-
-      .include "imag.inc"
-      .globl tablet_read
-
-      ; void tablet_read(tablet_pointer_t *tablet);
-      ; Read the block again to check that the host did not write it during the
-      ; read. Writes are at least 1 ms apart, so a third read will not overlap one.
-      tablet_read:
-          lda #1
-          sta RIA_STEP0
-          jsr 1f
-          jsr 1f
-          beq 4f              ; Done when the two reads match, else read a third time
-      1:
-          lda #(XRAM_TABLET & $FF)
-          sta RIA_ADDR0
-          lda #((XRAM_TABLET >> 8) & $FF)
-          sta RIA_ADDR0+1
-          ldx #0
-          ldy #0
-      2:
-          lda RIA_RW0
-          cmp (__rc2),y
-          beq 3f
-          inx                 ; A byte changed
-      3:
-          sta (__rc2),y
-          iny
-          cpy #TABLET_POINTER_SIZE
-          bne 2b
-          txa
-      4:
-          rts
-
 
 .. _ria-gamepads:
 
 Gamepads
 ========
 
-The RIA supports up to four gamepads. Where the layout comes from, and
-how a game works with nearly every gamepad, is covered in the
-:ref:`Gamepads <port-gamepads>` section of :doc:`port`.
+The RIA supports up to four gamepads at once. These are modern gamepads,
+with two analog sticks and two analog triggers, the kind you'd play any
+current game with. The RP6502 isn't recreating an old console, so there's
+no old controller to copy. To learn about supporting different kinds of
+gamepads, see :ref:`Gamepads <port-gamepads>` in :doc:`port`.
 
-Enable and disable the RIA gamepad data by setting its extended
-register. The register value is the XRAM start address of the gamepad
-data.
+This checks the first gamepad for left on the d-pad, and the A button:
 
 .. code-block:: C
 
-  xreg(0x0, 0x0, 0x02, xaddr);  // enable
-  xreg(0x0, 0x0, 0x02, 0xFFFF); // disable
-  xreg_ria_gamepad(xaddr);      // macro shortcut
+  gamepad_player_t p1;
 
-The RIA continuously updates extended memory with gamepad state. The
-10-byte structure below repeats four times — 40 bytes total, one block
-per gamepad.
+  xreg_ria_gamepad(XRAM_GAMEPAD);
 
-The upper bits of the DPAD register report readiness and type. The
-connected bit is high when a gamepad occupies that player slot.
+  xram0_read(&p1, XRAM_GAMEPAD, sizeof(p1));
+  if (p1.dpad & GAMEPAD_DPAD_LEFT)
+      move_left();
+  if (p1.btn0 & GAMEPAD_BTN0_A)
+      jump();
+
+The example reads only the first gamepad. A ``gamepad_t`` holds all four,
+and ``GAMEPAD_FEAT_CONNECTED`` in ``dpad`` is set for each one that's
+connected.
+
+If your game doesn't need analog input, you can ignore the analog values.
+Every stick and trigger also has digital bits, set once it moves far
+enough, and you read them just like the d-pad and the buttons.
+
+``GAMEPAD_FEAT_STICKS`` in ``dpad`` is set when the gamepad has both analog
+sticks. Some retro-style gamepads report sticks they don't have.
+
+For gamepads with a known layout, the type bits in ``dpad`` give the labels
+of the face buttons:
 
 .. list-table::
    :widths: 1 1 1 1 1
@@ -1654,16 +1656,7 @@ connected bit is high when a gamepad occupies that player slot.
      - Square, west
      - Triangle, north
 
-The sticks bit is high when the gamepad has both analog sticks. Some
-retro-style gamepads indicate they have sticks when they do not. They may
-also map buttons in unusual ways. The RIA does the best it can with the
-provided metadata.
-
-Both digital and analog values are available for the sticks and the
-L2/R2 triggers.
-
-Some gamepads report only digital data; in that case, code that uses L2
-and R2 should expect analog values of just 0 or 255.
+Here's what each field holds:
 
 .. list-table::
    :widths: 1 1 20
@@ -1937,32 +1930,48 @@ and R2 should expect analog values of just 0 or 255.
 Programmable Sound Generator
 ============================
 
-The RIA includes a Programmable Sound Generator (PSG), configured
-through extended register device 0, channel 1, address 0x00.
+The Programmable Sound Generator (PSG) is a simple synthesizer for music
+and sound effects. It has eight channels, and each one plays a sine,
+square, sawtooth, triangle, or noise wave, with an ADSR volume envelope
+and stereo panning.
 
-* Eight 16-bit oscillator channels.
-* Five waveforms: Sine, Square, Sawtooth, Triangle, Noise.
-* ADSR envelope: Attack, Decay, Sustain, Release.
-* Stereo panning.
-* PWM for all waveforms.
+The PSG takes 64 bytes of XRAM, eight for each channel. They must start
+at an even address and fit inside one 256-byte page.
+``PSG_PAGE_CHECK()`` checks the page when the program compiles. Mapping
+the PSG turns off the OPL2, because only one sound generator plays at a
+time.
 
-Each of the eight oscillators uses eight bytes of XRAM for
-configuration. The structure size is a power of two, so indexing into
-the oscillator array is a bit shift.
-
-Enable and disable the PSG by setting its extended register. The value
-is the XRAM start address for the 64 bytes of config; it must be
-int-aligned and must not cross a page boundary. Only one sound generator
-plays at a time, so enabling the PSG disables the OPL2.
+This plays an A on channel 0, as a square wave:
 
 .. code-block:: C
 
-  xreg(0x0, 0x1, 0x00, xaddr);  // enable
-  xreg(0x0, 0x1, 0x00, 0xFFFF); // disable
-  xreg_ria_psg(xaddr);          // macro shortcut
+  psg_channel_t ch;
 
-Configuration changes take effect immediately, which opens the door to
-panning, slide instruments, and other CPU-driven shenanigans.
+  xreg_ria_psg(XRAM_PSG);
+
+  ch.freq = PSG_FREQ_HZ(440);              // the A above middle C
+  ch.duty = 128;                           // an even square wave
+  ch.attack = 0x02;                        // rise quickly to full volume
+  ch.decay = 0x48;                         // then settle a little softer
+  ch.release_wave = PSG_WAVE_SQUARE | 0x6; // fade out in about 200 ms
+  ch.pan_gate = PSG_PAN(0) | PSG_GATE;     // centered, and start the note
+  xram0_write(XRAM_PSG, &ch, sizeof(ch));
+
+Clearing ``PSG_GATE`` later lets the note fade out:
+
+.. code-block:: C
+
+  xram0_poke8(XRAM_PSG + offsetof(psg_channel_t, pan_gate), PSG_PAN(0));
+
+The ADSR envelope shapes the volume of each note. While the gate is set,
+the volume rises to the attack level, falls to the decay level, and stays
+there. When the gate is cleared, the volume falls to silence. Each of the
+three steps has its own rate. To start a new note on a channel that's
+still playing, clear the gate and then set it again.
+
+Changes take effect immediately, even in the middle of a note, which
+opens the door to panning, slide instruments, and other CPU-driven
+shenanigans.
 
 .. list-table::
    :widths: 5 90
@@ -1971,38 +1980,39 @@ panning, slide instruments, and other CPU-driven shenanigans.
    * - Name
      - Description
    * - freq
-     - 0-65535 Oscillator frequency as Hertz * 3. This results in a
-       resolution of 1/3 Hz.
+     - Frequency in hertz times 3, from 0 to 65535, for a resolution of
+       1/3 Hz. ``PSG_FREQ_HZ()`` converts from hertz.
    * - duty
-     - 0-255 (0-100%) Duty cycle of oscillator. This affects all
-       waveforms.
+     - The pulse width: how much of each cycle plays, from 0 to 255 for
+       0% to 100%. It affects every waveform.
    * - attack
-     - Attack phase volume and rate.
+     - The attack level and rate.
 
-       * bits 7-4 - 0-15 volume attenuation.
+       * bits 7-4 - 0-15 level the volume rises to.
        * bits 3-0 - 0-15 attack rate.
 
    * - decay
-     - Decay phase volume and rate.
+     - The decay level and rate.
 
-       * bits 7-4 - 0-15 volume attenuation.
+       * bits 7-4 - 0-15 level the volume falls to and stays at.
        * bits 3-0 - 0-15 decay rate.
 
    * - release_wave
-     - Waveform and release rate.
+     - The waveform and the release rate.
 
        * bits 7-4 - 0=sine, 1=square, 2=sawtooth, 3=triangle,
          4=noise.
        * bits 3-0 - 0-15 release rate.
 
    * - pan_gate
-     - Stereo pan and gate.
+     - The stereo position and the gate.
 
-       * bits 7-1 - Pan -63(left) to 63(right).
-       * bit 0 - 1=attack/decay/sustain, 0=release.
+       * bits 7-1 - Pan from -63 (left) to 63 (right). ``PSG_PAN()``
+         puts it in place.
+       * bit 0 - Gate. 1 starts the note and holds it, 0 releases it.
 
-Value table. ADR rates are the time it takes for a full volume change.
-Volume attenuation is logarithmic.
+A level is an attenuation: 0 is full volume and 15 is silent, on a
+logarithmic scale. A rate is how long a full change of volume takes:
 
 .. list-table::
    :widths: 1 1 1 20
