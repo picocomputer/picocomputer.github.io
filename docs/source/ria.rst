@@ -2275,13 +2275,3 @@ time had their own timers and rarely used the chip's.
 
       OPL_REG  = 0
       OPL_SIZE = 256
-
-
-Console
-=======
-
-The system console is the terminal connected to the RIA, and the
-`UART`_ registers above are its rawest form. The OS wraps that same port as
-``stdin``, ``stdout``, ``stderr``, and the ``CON:`` and ``TTY:`` device
-names. See :doc:`term` for cooked and raw reads, the non-blocking
-variants, and the line editor.
