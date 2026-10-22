@@ -26,285 +26,246 @@ Video Layout
 
 The VGA system provides virtual video hardware modeled on the home
 computers and arcades of the 8-bit and early-16-bit era. It has six
-modes: mode 0 draws the console, mode 1 draws text that the program
-writes into XRAM, mode 2 draws tiles, mode 3 draws a bitmap, and modes 4
-and 5 draw sprites. A program can mix and match the modes freely, on
-different planes and on different ranges of scanlines.
+modes. Mode 0 is the console, mode 1 is colored text, mode 2 is tiles,
+mode 3 is a bitmap, and modes 4 and 5 are sprites. A mode isn't a
+setting for the whole canvas. A program puts each mode on a plane, over
+a range of scanlines, and can mix and match the modes freely.
 
-Modes 1 to 5 draw from XRAM. A program puts its images, palettes, and
-fonts there, along with a configuration structure for each mode that
-holds the address of the data and its place on the canvas. In your
-project, each of these is a member of ``xram_layout_t`` in ``xram.h``
-and has an ``XRAM_`` address, as :ref:`XRAM Memory Map
-<sdk-xram-memory-map>` in the :doc:`sdk` describes. That part of the
-XRAM layout is the video layout. A call to ``xreg()`` programs a mode to
-draw from it onto one layer of one plane, over a range of scanlines.
+Modes 1 to 5 draw from XRAM. The program puts its images, palettes, and
+fonts there. For each mode that it programs, the program also puts a
+configuration structure in XRAM. The configuration structure connects
+the mode to its data. It holds the XRAM address of the data, the size of
+the image, and where the image goes on the canvas. A sprite mode takes a
+sprite array instead, with one structure for each sprite. Together,
+these are the video layout, the part of your XRAM layout that the VGA
+system draws from.
 
-A program puts an image on the canvas in four steps:
+In your project, each part of the video layout is a member of
+``xram_layout_t`` in ``xram.h``, with an ``XRAM_`` address, as
+:ref:`XRAM Memory Map <sdk-xram-memory-map>` in the :doc:`sdk`
+describes. The macros and structures on this page are in its ``xram.h``
+code blocks, for you to copy into ``xram.h``.
+
+Configuration structures, sprite arrays, and palettes must be at even
+XRAM addresses. Neither cc65 nor llvm-mos pads a structure, so in
+``xram_layout_t``, a member of odd size moves every member after it by
+one byte, and an even address becomes odd. Add a pad byte after that
+member, or put it last. :ref:`Symbols in CMake <sdk-symbols-in-cmake>`
+in the :doc:`sdk` shows how the build checks the addresses.
+
+Putting a picture on the canvas takes four steps:
 
 #. Select a canvas, for example with
-   ``xreg_vga_canvas(CANVAS_320X240)``. A ROM starts on the console
-   canvas, which shows only the console, so a program that draws must
-   select a graphics canvas. Do this first, because selecting a canvas
-   removes every mode. It does not change XRAM, so data that the program
-   loaded earlier stays.
+   ``xreg_vga_canvas(CANVAS_320X240)``. Selecting a canvas removes every
+   mode, so do it before you program a mode. It leaves XRAM as it is, so
+   data already in XRAM stays, such as an :ref:`asset <sdk-assets>` that
+   the RIA loaded before the program started.
 #. Load the data into XRAM: the bitmap, the tile map and its tiles, the
-   cells of text, or the sprite images, and each palette or font that
-   they use.
-#. Write the mode's configuration structure into XRAM. It holds the XRAM
-   address of the data, the size of the image, and its position on the
-   canvas. A sprite mode uses a sprite array instead, with one structure
-   for each sprite, and mode 0 uses neither. Each mode's code block in
-   `Reference`_ declares its structure, such as ``mode3_config_t``.
-#. Program the mode with its macro, such as ``xreg_vga_mode3()``, as
-   `Programming a Mode`_ describes.
+   text, or the sprite images, and the palettes and fonts that they use.
+#. Write the mode's configuration structure or sprite array into XRAM.
+   Mode 0 needs neither. Each mode's code block in `Reference`_ declares
+   its structure, such as ``mode3_config_t``.
+#. Program the mode with its macro, such as ``xreg_vga_mode3()``, which
+   puts the mode on a plane, over a range of scanlines. From then on,
+   the VGA system draws the mode on every frame. `Programming a Mode`_
+   explains the arguments.
 
-`Example`_ shows the four steps in a complete program.
+`Example`_ puts the four steps together in a complete program.
 
 
 Canvas
 ------
 
-Everything that the VGA system draws is on the canvas, a grid of pixels
-such as 320x240. Scanlines are the rows of the canvas, numbered from 0
-at the top. The canvas does not set the resolution of the video output.
-The VGA system scales the canvas to fit the display, so 320x240 and
-640x480 canvases cover the same area, and a pixel on the 320x240 canvas
-is twice as wide and twice as tall. A program can select any canvas on
-any display.
+The canvas is the grid of pixels that the VGA system draws, such as
+320x240. Its rows are scanlines, numbered from 0 at the top.
 
-Canvas 0 is the console canvas. It shows only the console, and the VGA
-system refuses any mode on it. The other four are the graphics canvases:
-320x240 and 640x480 are 4:3, and 320x180 and 640x360 are 16:9. `Key
-Registers`_ gives the value of CANVAS for each. A graphics canvas starts
-with no modes, not even the console, so text that the program prints
-stays hidden until the program puts mode 0 on a plane. When a ROM stops,
-the VGA system returns to the console canvas.
+The canvas doesn't set the resolution of the video output. The VGA
+system scales the canvas to fit the display, so a 320x240 canvas and a
+640x480 canvas cover the same area, and a pixel on the 320x240 canvas is
+twice as wide and twice as tall. A program can select any canvas on any
+display.
 
-A program places bitmaps, tile maps, sprites, and mode 1 text on the
-canvas at an x and y position in canvas pixels. A bitmap or a tile map
-can be a different size than the canvas. One that is smaller covers part
-of the canvas, and a program scrolls one that is larger by changing its
-position.
+There are four graphics canvases. 320x240 and 640x480 are 4:3, and
+320x180 and 640x360 are 16:9. `Key Registers`_ gives the CANVAS value
+of each.
+
+A ROM starts on canvas 0, the console canvas. It shows the console and
+nothing else, and the VGA system refuses any mode on it, so a program
+that draws has to select a graphics canvas. A graphics canvas starts
+empty. It doesn't even have the console, so text that the program
+prints stays hidden until the program puts mode 0 on a plane. When the
+ROM stops, the VGA system goes back to the console canvas.
+
+Bitmaps, tile maps, sprites, and mode 1 text each have an x and y
+position on the canvas, in canvas pixels. A bitmap or a tile map doesn't
+have to be the size of the canvas. A smaller one covers part of the
+canvas, and the layer is transparent around it, unless the image wraps.
+A larger one shows only the part that lies on the canvas, so changing
+its position scrolls it.
 
 
 Planes
 ------
 
-The VGA system draws the canvas from three planes. Each plane has two
-layers, a fill layer and a sprite layer, and the VGA system draws a
-plane's sprite layer over its fill layer. Plane 0 is at the back and
-plane 2 is at the front, so a plane's sprites go over its own fill layer
-but under the fill layers of the planes in front of it, wherever their
-pixels are opaque. In the figure, the status bar on plane 2 covers part
-of the sun, a sprite on plane 0.
+The VGA system draws the canvas from three planes, and each plane has
+two layers: a fill layer, and a sprite layer over it. In the figure, a
+program draws a picture on plane 0, a tile map on plane 1, and a status
+bar on plane 2, with sprites on each.
 
-.. raw:: html
+.. image:: _static/vga/planes-light.svg
+   :class: only-light
+   :width: 762
+   :alt: The VGA system draws the canvas from three planes, each with a fill
+         layer and a sprite layer. Plane 0 is at the back and plane 2 is at the
+         front. The six layers make the canvas, and the status bar of plane 2
+         covers part of the sun, a sprite of plane 0.
 
-   <figure class="vga-planes">
-   <svg viewBox="0 0 762 516" width="762" role="img" aria-label="The VGA system draws the canvas from three planes, each with a fill layer and a sprite layer. Plane 0 is at the back and plane 2 is at the front. The six layers make the canvas, and the status bar of plane 2 covers part of the sun, a sprite of plane 0." style="display:block;max-width:100%;height:auto;margin:0 auto" font-size="13" fill="currentColor">
-   <defs>
-   <g id="vga-l0f"><rect width="160" height="120" fill="#6fb3e8"/>
-   <path d="M0 96 Q40 72 80 92 T160 84 L160 120 L0 120 Z" fill="#4a9e4f"/></g>
-   <g id="vga-l0s"><circle cx="130" cy="18" r="11" fill="#f4c542"/>
-   <g fill="#dfe8ef" stroke="#5d7a91" stroke-width="1.5"><ellipse cx="38" cy="38" rx="18" ry="8"/><ellipse cx="49" cy="32" rx="11" ry="8"/></g></g>
-   <g id="vga-l1f"><g fill="#b0703a" stroke="#6e431d" stroke-width="1"><rect x="0" y="104" width="16" height="16"/><rect x="16" y="104" width="16" height="16"/><rect x="32" y="104" width="16" height="16"/><rect x="48" y="104" width="16" height="16"/><rect x="64" y="104" width="16" height="16"/><rect x="80" y="104" width="16" height="16"/><rect x="96" y="104" width="16" height="16"/><rect x="112" y="104" width="16" height="16"/><rect x="128" y="104" width="16" height="16"/><rect x="144" y="104" width="16" height="16"/><rect x="96" y="72" width="16" height="16"/><rect x="112" y="72" width="16" height="16"/><rect x="128" y="72" width="16" height="16"/></g></g>
-   <g id="vga-l1s"><rect x="38" y="78" width="16" height="26" rx="2" fill="#e0483e"/>
-   <rect x="46" y="84" width="5" height="5" fill="#ffffff"/>
-   <circle cx="120" cy="60" r="6" fill="#f4c542" stroke="#b58a12" stroke-width="1"/></g>
-   <g id="vga-l2f"><rect width="160" height="16" fill="#1d2742" stroke="#8796b8" stroke-width="1"/><g fill="#e8e8e8"><rect x="6" y="5" width="4" height="6"/><rect x="12" y="5" width="4" height="6"/><rect x="18" y="5" width="4" height="6"/><rect x="24" y="5" width="4" height="6"/><rect x="30" y="5" width="4" height="6"/><rect x="46" y="5" width="4" height="6"/><rect x="52" y="5" width="4" height="6"/><rect x="58" y="5" width="4" height="6"/><rect x="64" y="5" width="4" height="6"/></g></g>
-   <g id="vga-l2s"><polygon points="92,40 92,64 97.5,58.5 103,69 107,67 102,57 109,57" fill="#ffffff" stroke="#222222" stroke-width="1.2" stroke-linejoin="round"/></g>
-   <clipPath id="vga-clip"><rect width="160" height="120"/></clipPath>
-   <marker id="vga-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="currentColor"/></marker>
-   </defs>
-   <g transform="matrix(1 0 0.45 0.5 150 420)">
-   <rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
-   <use href="#vga-l0f" clip-path="url(#vga-clip)"/>
-   <rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
-   </g>
-   <text x="144" y="448.0" text-anchor="end">fill layer</text>
-   <text x="144" y="463.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 3: bitmap</text>
-   <g transform="matrix(1 0 0.45 0.5 150 354)">
-   <rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
-   <use href="#vga-l0s" clip-path="url(#vga-clip)"/>
-   <rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
-   </g>
-   <text x="144" y="382.0" text-anchor="end">sprite layer</text>
-   <text x="144" y="397.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 5: sprites</text>
-   <g transform="matrix(1 0 0.45 0.5 150 266)">
-   <rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
-   <use href="#vga-l1f" clip-path="url(#vga-clip)"/>
-   <rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
-   </g>
-   <text x="144" y="294.0" text-anchor="end">fill layer</text>
-   <text x="144" y="309.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 2: tiles</text>
-   <g transform="matrix(1 0 0.45 0.5 150 200)">
-   <rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
-   <use href="#vga-l1s" clip-path="url(#vga-clip)"/>
-   <rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
-   </g>
-   <text x="144" y="228.0" text-anchor="end">sprite layer</text>
-   <text x="144" y="243.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 5: sprites</text>
-   <g transform="matrix(1 0 0.45 0.5 150 112)">
-   <rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
-   <use href="#vga-l2f" clip-path="url(#vga-clip)"/>
-   <rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
-   </g>
-   <text x="144" y="140.0" text-anchor="end">fill layer</text>
-   <text x="144" y="155.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 1: text</text>
-   <g transform="matrix(1 0 0.45 0.5 150 46)">
-   <rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
-   <use href="#vga-l2s" clip-path="url(#vga-clip)"/>
-   <rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
-   </g>
-   <text x="144" y="74.0" text-anchor="end">sprite layer</text>
-   <text x="144" y="89.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 5: sprites</text>
-   <path d="M378.0 76.0 h6 V142.0 h-6" fill="none" stroke="currentColor" stroke-opacity="0.6"/>
-   <text x="390.0" y="113.5" font-weight="600">plane 2</text>
-   <path d="M378.0 230.0 h6 V296.0 h-6" fill="none" stroke="currentColor" stroke-opacity="0.6"/>
-   <text x="390.0" y="267.5" font-weight="600">plane 1</text>
-   <path d="M378.0 384.0 h6 V450.0 h-6" fill="none" stroke="currentColor" stroke-opacity="0.6"/>
-   <text x="390.0" y="421.5" font-weight="600">plane 0</text>
-   <line x1="22" y1="476.0" x2="22" y2="54" stroke="currentColor" stroke-opacity="0.6" marker-end="url(#vga-arrow)"/>
-   <text x="22" y="42" text-anchor="middle" fill-opacity="0.65" font-size="11.5">front</text>
-   <text x="22" y="494.0" text-anchor="middle" fill-opacity="0.65" font-size="11.5">back</text>
-   <path d="M456.0 76.0 h6 V450.0 h-6" fill="none" stroke="currentColor" stroke-opacity="0.6"/>
-   <line x1="462.0" y1="263.0" x2="550" y2="263.0" stroke="currentColor" stroke-opacity="0.6" marker-end="url(#vga-arrow)"/>
-   <g transform="translate(560 191.0) scale(1.2)">
-   <use href="#vga-l0f"/>
-   <use href="#vga-l0s"/>
-   <use href="#vga-l1f"/>
-   <use href="#vga-l1s"/>
-   <use href="#vga-l2f"/>
-   <use href="#vga-l2s"/>
-   <rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" vector-effect="non-scaling-stroke"/>
-   </g>
-   <text x="656.0" y="355.0" text-anchor="middle" font-weight="600">canvas</text>
-   </svg>
-   <figcaption style="text-align:center;font-size:var(--font-size--small);margin-top:0.5em">The six layers of the canvas, with an example of what a program might draw on each layer.</figcaption>
-   </figure>
+.. image:: _static/vga/planes-dark.svg
+   :class: only-dark
+   :width: 762
+   :alt: The VGA system draws the canvas from three planes, each with a fill
+         layer and a sprite layer. Plane 0 is at the back and plane 2 is at the
+         front. The six layers make the canvas, and the status bar of plane 2
+         covers part of the sun, a sprite of plane 0.
 
-A program picks the plane when it programs a mode, with the mode's PLANE
-argument. The layer depends on the mode: modes 0 to 3 draw on a fill
-layer, and modes 4 and 5 draw on a sprite layer. A layer has at most one
-mode on each scanline, so one scanline can show up to six modes. A layer
-is not a frame buffer: on each scanline, it shows what its mode draws,
-and it is transparent on scanlines where it has no mode.
+Plane 0 is at the back and plane 2 is at the front. A plane's sprites
+cover its own fill layer, but the planes in front of it cover its
+sprites, wherever those planes have opaque pixels. That's why the status
+bar on plane 2 covers part of the sun, a sprite on plane 0.
 
-Text and a bitmap both draw on a fill layer, so on the same scanlines
-they need different planes. To show text over a bitmap, put the text on
-a plane in front of the bitmap.
+Modes 0 to 3 draw on a fill layer, and modes 4 and 5 draw on a sprite
+layer. The program picks the plane with the mode's PLANE argument. A
+layer has at most one mode on each scanline, so one scanline can show up
+to six modes. That's also why text and a bitmap, which both draw on a
+fill layer, need different planes on the same scanlines. To show text
+over a bitmap, put the text on a plane in front of the bitmap.
 
-A pixel whose color has the alpha bit clear is transparent, and shows
-the layer behind it. The fill layer of plane 0 has nothing behind it, so
-it ignores the alpha bit and draws every pixel in its color. Where no
-layer draws a pixel, the canvas is black. `Colors, Palettes, and Fonts`_
-describes the alpha bit.
+A layer isn't a frame buffer, and it has no pixels of its own. On each
+scanline, it shows what its mode draws. On a scanline with no mode, it's
+transparent.
 
-Fill layers never run out of time: a program can fill all three planes
-at any color depth on any canvas, on every machine. Sprite layers can.
-There is no limit on the number of sprites, only on how many the VGA
+Each color has an alpha bit, which `Colors, Palettes, and Fonts`_
+describes. A pixel whose color has the alpha bit clear is transparent,
+and the layer behind it shows through. The fill layer of plane 0 has
+nothing behind it, so it ignores the alpha bit and draws every pixel in
+its color. Where no layer draws a pixel, the canvas is black.
+
+The VGA system has a fixed time to draw each scanline. Fill layers never
+run out of that time. A program can fill all three planes at any color
+depth on any canvas, on every machine. Sprite layers can run out.
+There's no limit on the number of sprites, only on how many the VGA
 system can draw in the time of one scanline. :ref:`Sprite Limits
-<port-sprite-limits>` in :doc:`port` shows how to count them.
+<port-sprite-limits>` in :doc:`port` shows how to count them. When a
+scanline runs out of time, what happens depends on the machine:
+
+- On the :doc:`pico`, the scanline shows part blue and part black
+  instead of the picture.
+- On the :doc:`fpga`, the sprites that don't fit in the time don't show.
+- On the :doc:`emu` and the :doc:`web`, every sprite shows, but the host
+  computer slows down. The emulator no longer runs at 60 frames a
+  second, and the time of the 6502 falls behind the time of the clock on
+  the wall.
 
 
 Programming a Mode
 ------------------
 
-Each mode has a macro in its ``xram.h`` code block in `Reference`_, such
-as ``xreg_vga_mode3()``, that programs the mode with one call to
-``xreg()``. The macro sets MODE to the mode's number, and puts its
-arguments in the argument registers after MODE, in the order of the
-mode's register table. For modes 1 to 3, that order is OPTIONS, CONFIG,
-PLANE, BEGIN, and END. Modes 4 and 5 have LENGTH, the number of sprites,
-after CONFIG, and mode 0 has only PLANE, BEGIN, and END.
+Each mode has a macro that programs the mode with one call to
+``xreg()``. This line from `Example`_ puts an 8-bit bitmap on plane 0,
+on scanlines 0 to 159:
 
-Setting CANVAS or MODE clears the argument registers to 0, so a call
-that leaves out PLANE, BEGIN, and END puts its mode on plane 0, over the
-whole canvas. The VGA system reads the arguments only when a call sets
-MODE. To change a mode's options, plane, or scanlines later, program the
-mode again with all of its arguments.
+.. code-block:: C
 
-BEGIN is the first scanline of the mode, and END is one past the last.
-An END of 0 means the height of the canvas, so BEGIN and END both 0
-cover the whole canvas, except for mode 0 on a 16:9 canvas, which `Mode
-0: Console`_ describes. A mode draws only on its own scanlines, so a
-sprite that crosses END is cut off there.
+  xreg_vga_mode3(MODE3_8BPP, XRAM_BITMAP_CONFIG, 0, 0, 160);
 
-To change the picture partway down the canvas, give each part of the
-canvas its own range of scanlines. Different ranges of the same layer
-can have different modes. That is how you might implement a graphical
-text adventure, with half the screen for text and the other half for
-graphics. `Example`_ shows a program like this. The VGA system has no
-scanline interrupt and needs none: this happens without interrupts,
-leaving more CPU headroom for your game logic.
+The macro is in the mode's ``xram.h`` code block in `Reference`_, and it
+takes its arguments in the order of the mode's register table. Modes 1
+to 3 take these:
 
-Each range can have its own configuration structure and scroll on its
-own. BEGIN and END only choose the scanlines that a mode draws on. They
-do not move its image, which stays at its own position, counted from
-the top left of the canvas. For example, a bitmap at 0, 0 on scanlines
-100 and down shows its rows from row 100 down, not its top rows.
+- OPTIONS holds the mode's options, such as its color depth.
+  ``MODE3_8BPP`` selects 8-bit color.
+- CONFIG is the XRAM address of the configuration structure.
+- PLANE is the plane, 0 to 2.
+- BEGIN and END choose the scanlines.
 
-Programming a mode replaces the old mode of its layer from BEGIN to END,
-and the other scanlines keep their modes. Mode 0 is the exception: only
-one console can be visible, so programming mode 0 also removes the
-console from its old place. There is no call that removes a single mode.
-To remove one, select the canvas again, which removes every mode, and
-then reprogram the modes that you still need.
+The sprite modes add LENGTH, the number of sprites, after CONFIG, and
+their CONFIG is the XRAM address of the sprite array. Mode 0 takes only
+PLANE, BEGIN, and END. The macro sets the VGA system's MODE register to
+the mode's number, and puts its arguments in the argument registers
+after MODE. `Key Registers`_ describes these registers.
 
-When the VGA system refuses a value, such as a configuration structure
-at an odd XRAM address, ``xreg()`` returns -1 and fails with EINVAL.
-`Key Registers`_ describes what a refused call leaves set.
+BEGIN is the first scanline of the mode, and END is one past the last,
+so the example's BEGIN 0 and END 160 are scanlines 0 to 159. An END of 0
+means the height of the canvas, so BEGIN and END both 0 cover the whole
+canvas. The one exception is mode 0 on a 16:9 canvas, which `Mode 0:
+Console`_ explains. A mode draws only on its own scanlines, so a sprite
+that crosses END is cut off there.
+
+Each call that sets CANVAS or MODE clears the argument registers when
+it's done. So the next call can leave out arguments at the end, and
+they're 0. A call that leaves out PLANE, BEGIN, and END puts its mode on
+plane 0, over the whole canvas. In `Example`_, ``xreg_vga_mode0(0,
+160)`` leaves out only END, so the console goes from scanline 160 to the
+bottom of the canvas.
+
+The VGA system reads the arguments only when a call sets MODE. To change
+a mode's options later, program the mode again, with all of its
+arguments. The new mode replaces the old mode of its layer from BEGIN to
+END, and the other scanlines keep their modes. The console is the
+exception. Only one console can be visible at a time, so programming
+mode 0 also removes the console from where it was.
+
+There's no call that removes a single mode. To remove one, or to move a
+mode to another plane or onto fewer scanlines, select the canvas again,
+which removes every mode, and then program the modes that you still
+need.
+
+To change the picture partway down the canvas, give each part its own
+range of scanlines. Different ranges of the same layer can have
+different modes, which is how you might implement a graphical text
+adventure with half the screen for text and the other half for graphics.
+`Example`_ is a program like that. On many computers of the era, a split
+like this took a scanline interrupt. The VGA system doesn't have one,
+because it changes modes at each BEGIN and END by itself. That leaves
+more CPU headroom for your game logic.
+
+Each range can have its own configuration structure, so each part of
+the canvas can scroll on its own. BEGIN and END only choose the
+scanlines that a mode draws on. They don't move its image. The image
+stays at its own position, counted from the top left of the canvas. For
+example, a bitmap at 0, 0 on scanlines 100 and down shows its rows from
+row 100 down, not its top rows.
+
+The VGA system refuses a value that it can't use, such as a
+configuration structure at an odd XRAM address. When it does, ``xreg()``
+returns -1 and fails with EINVAL. `Key Registers`_ describes what a
+refused call leaves set.
 
 
 Configuration Structures
 ------------------------
 
-A program can change a configuration structure, a sprite array, or the
-data that they point to at any time, without programming the mode again.
-
-A change takes effect from the next scanline that the VGA system draws,
-even partway through a frame, so one frame can show the top of the old
-image and the bottom of the new one. To change the whole canvas at once,
-wait for the RIA's :ref:`VSYNC register <ria-registers>` to change, and
-then make your changes before the VGA system starts the next frame.
-:c:func:`ria_vsync` does not wait. It returns the value of the VSYNC
-register, so call it in a loop until the value changes:
-
-.. code-block:: C
-
-  unsigned char frame = ria_vsync();
-  while (ria_vsync() == frame)
-      ;
-
-A program can also make its changes after the :ref:`VSYNC interrupt
-<api-irq>`.
-
 The configuration structures of modes 1 to 3 start with the same
-members:
+members. ``xram_data_ptr`` is the XRAM address of the data: the cells of
+mode 1, the tile map of mode 2, or the bitmap of mode 3.
+``xram_palette_ptr`` is the XRAM address of the palette, as `Colors,
+Palettes, and Fonts`_ describes. :ref:`Mode 1 <vga-mode-1>` adds
+``xram_font_ptr``, and :ref:`mode 2 <vga-mode-2>` adds
+``xram_tile_ptr``.
 
-- When ``x_wrap`` is true, the VGA system repeats the image across the
-  canvas, and when ``y_wrap`` is true, down the canvas. Without wrap,
-  the layer is transparent outside the image.
-- ``x_pos_px`` and ``y_pos_px`` are the canvas position of the image's
-  top left pixel, counted from the top left of the canvas, not from
-  BEGIN. They may be negative.
-- The size of the image is ``width_chars`` and ``height_chars`` in mode
-  1, ``width_tiles`` and ``height_tiles`` in mode 2, and ``width_px``
-  and ``height_px`` in mode 3.
-- ``xram_data_ptr`` is the XRAM address of the data: the cells of mode
-  1, the tile map of mode 2, or the bitmap of mode 3.
-- ``xram_palette_ptr`` is the XRAM address of the palette, as `Colors,
-  Palettes, and Fonts`_ describes.
+The size of the image is ``width_chars`` and ``height_chars`` in mode 1,
+``width_tiles`` and ``height_tiles`` in mode 2, and ``width_px`` and
+``height_px`` in mode 3. ``x_pos_px`` and ``y_pos_px`` are where the
+image's top left pixel goes on the canvas. They can be negative, so an
+image can start above or to the left of the canvas.
 
-:ref:`Mode 1 <vga-mode-1>` adds ``xram_font_ptr``, and :ref:`mode 2
-<vga-mode-2>` adds ``xram_tile_ptr``.
+When ``x_wrap`` is true, the VGA system repeats the image across the
+canvas, and when ``y_wrap`` is true, down the canvas.
 
 In a sprite array, each sprite has its own ``x_pos_px`` and
-``y_pos_px``, the canvas position of its top left pixel. To move a
-sprite, write its new position. This code moves sprite ``n`` of a
-:ref:`mode 5 <vga-mode-5>` sprite array at ``XRAM_SPRITES`` to ``x``,
-``y``:
+``y_pos_px``, where its top left pixel goes on the canvas. To move a
+sprite, write its new position. This moves sprite ``n`` of a :ref:`mode
+5 <vga-mode-5>` sprite array at ``XRAM_SPRITES`` to ``x``, ``y``:
 
 .. code-block:: C
 
@@ -312,38 +273,197 @@ sprite, write its new position. This code moves sprite ``n`` of a
   xram0_poke16(addr + offsetof(mode5_sprite_t, x_pos_px), x);
   xram0_poke16(addr + offsetof(mode5_sprite_t, y_pos_px), y);
 
-Each sprite covers the sprites before it in the array. To hide a sprite,
-move it off the canvas. A hidden sprite still takes time on each
-scanline, as :ref:`Sprite Limits <port-sprite-limits>` shows. To stop
-the time that unused sprites take, program the mode again with a smaller
-LENGTH.
+Sprites later in the array cover the sprites before them. To hide a
+sprite, move it off the canvas. A sprite off the canvas still takes time
+on each scanline, as :ref:`Sprite Limits <port-sprite-limits>` shows.
+To stop unused sprites from taking time, program the mode again with a
+smaller LENGTH.
 
-Configuration structures, sprite arrays, and palettes must be at even
-XRAM addresses. Neither cc65 nor llvm-mos pads a layout, so a member of
-odd size puts every member after it one byte off. Add a pad byte after
-it, or put it last. :ref:`Symbols in CMake <sdk-symbols-in-cmake>` in
-the :doc:`sdk` shows how the build checks the addresses.
+Once a mode is programmed, the program changes the picture by changing
+XRAM. It can change a configuration structure, a sprite array, or the
+data that they point to at any time, without programming the mode again.
+That's how a program scrolls a map, moves sprites, and changes images.
+`VSYNC`_ explains when to make the changes.
+
+
+.. _vga-vsync:
+
+VSYNC
+-----
+
+The VGA system draws the canvas one scanline at a time, from the top, 60
+times a second. A change to XRAM appears on the next scanline that the
+VGA system draws, even partway through a frame, so one frame can show
+the top of the old image and the bottom of the new one. To change the
+whole canvas at once, make your changes between frames. VSYNC tells a
+program when that time starts.
+
+The last scanline that the VGA system draws triggers VSYNC. That's the
+bottom of the lowest mode, or the bottom of the canvas when there are no
+modes. A mode programmed lower on the canvas moves VSYNC down, but
+nothing moves it back up until the program selects the canvas again.
+Part of a scanline after the trigger, the RIA's :ref:`VSYNC register
+<ria-registers>` increments, and the :ref:`VSYNC interrupt <api-irq>`
+fires if the program has enabled it.
+
+:c:func:`ria_vsync` doesn't wait. It returns the value of the VSYNC
+register, so to wait for VSYNC, call it in a loop until the value
+changes:
+
+.. code-block:: C
+
+  unsigned char frame = ria_vsync();
+  while (ria_vsync() == frame)
+      ;
+
+Instead of the loop, a program can enable the VSYNC interrupt and make
+its changes in the interrupt handler.
+
+How much time a program has depends on what it changes and where that
+change shows. A change must be in XRAM before the VGA system draws the
+first scanline that shows it. For a configuration structure, that's the
+first scanline of its mode. For a sprite, it's the top scanline of the
+sprite, at its old position or its new one, whichever is higher. After
+VSYNC, the VGA system draws nothing until the next frame, so a change at
+the top of the canvas has the time between the end of the canvas and the
+start of the next one. A change lower on the canvas also has the time
+that the VGA system takes to draw the scanlines above it.
+
+The time depends on the video timing:
+
+.. list-table::
+   :widths: 20 20 20 20 20
+   :header-rows: 1
+
+   * - Timing
+     - Lines per frame
+     - Visible lines
+     - Line time
+     - Cycles per line at 8 MHz
+   * - 640x480
+     - 525
+     - 480
+     - 31.75 µs
+     - 254
+   * - 1280x720
+     - 750
+     - 720
+     - 22.22 µs
+     - 178
+   * - 1280x1024
+     - 1066
+     - 1024
+     - 15.63 µs
+     - 125
+
+The :doc:`fpga`, the :doc:`emu`, and the :doc:`web` always use 640x480
+timing. On the :doc:`pico`, the display type chooses the timing, and
+``SET VGA`` in the monitor selects the display type. Display type 0 uses
+640x480. Display type 1 uses 1280x720 for the 16:9 canvases and 640x480
+for the others. Display type 2 uses 1280x1024.
+
+Each scanline of the canvas takes the same number of video lines. A
+320-wide canvas takes 2 lines with 640x480 timing and 4 with the others.
+A 640-wide canvas takes 1 line with 640x480 timing and 2 with the
+others.
+
+A canvas that doesn't fill the visible lines leaves blank lines, and
+they add to the time between frames. On the RP6502-PICO, the VGA system
+centers the canvas, so the blank lines are half above it and half below:
+it starts at line 60 for a 16:9 canvas with 640x480 timing, at line 32
+for a 4:3 canvas with 1280x1024 timing, and at line 152 for a 16:9
+canvas with 1280x1024 timing. On the other machines, the canvas starts
+at line 0, and the blank lines all come after it. The total is the same
+either way. This table gives the time between the end of the canvas and
+the start of the next one, when the modes reach the bottom of the
+canvas:
+
+.. list-table::
+   :widths: 20 20 20 20 20
+   :header-rows: 1
+
+   * - Timing
+     - Canvas
+     - Lines
+     - Time
+     - Cycles at 8 MHz
+   * - 640x480
+     - 4:3
+     - 45
+     - 1.43 ms
+     - 11,400
+   * - 640x480
+     - 16:9
+     - 165
+     - 5.24 ms
+     - 41,900
+   * - 1280x720
+     - 16:9
+     - 30
+     - 0.67 ms
+     - 5,300
+   * - 1280x1024
+     - 4:3
+     - 106
+     - 1.66 ms
+     - 13,300
+   * - 1280x1024
+     - 16:9
+     - 346
+     - 5.41 ms
+     - 43,300
+
+A 16:9 canvas has more than three times the time of a 4:3 one, except
+with 1280x720 timing. There, the canvas fills the display, and the time
+is the shortest of all. A program whose modes end higher on the canvas
+gets VSYNC sooner, and has the time of the scanlines below its modes
+too.
+
+The machines agree to within one scanline, so leave one scanline of
+margin. The RP6502-PICO is the reason for the margin. Its VGA system
+draws up to 10 scanlines ahead of the display, into a buffer, and it
+sends VSYNC when it draws the last scanline, so VSYNC comes early by the
+same amount. It draws on two processor cores at once, so when VSYNC
+comes, the other core can still be drawing the scanline above. At the
+start of a frame, it draws the top 10 scanlines together, from 10 video
+lines before the canvas starts, so count a change to any of them as a
+change at the top.
+
+For example, take the program of `Example`_ with 640x480 timing. Its
+console reaches the bottom of the 320x240 canvas, so VSYNC comes after
+video line 479, and the next frame starts 45 lines later. Less one
+scanline of margin, which is 2 lines, a change at the top of the canvas
+has 43 lines: 1.37 ms, or about 10,900 cycles at 8 MHz. Scanline 100 of
+the canvas starts at video line 200, so a change that shows there has
+200 lines more, about 7.7 ms in all.
 
 
 Colors, Palettes, and Fonts
 ---------------------------
 
-All three planes use RGB555 color plus transparency. A color is a 16-bit
-value: red is in bits 0-4, the alpha bit is bit 5, green is in bits
-6-10, and blue is in bits 11-15. The macros below build colors.
+All three planes use RGB555 color plus transparency. The macros below
+build colors. This is opaque red:
+
+.. code-block:: C
+
+  uint16_t red = COLOR_FROM_RGB8(255, 0, 0) | COLOR_ALPHA_MASK;
+
+Transparency is one bit of each color, the alpha bit. Setting it makes a
+color opaque, and clearing it makes the color transparent. Despite the
+name, alpha here is a binary flag, not a blending factor.
+
 ``COLOR_FROM_RGB8`` takes red, green, and blue from 0 to 255, and
-``COLOR_FROM_RGB5`` takes them from 0 to 31.
+``COLOR_FROM_RGB5`` takes them from 0 to 31. In C, they leave the alpha
+bit clear, so an opaque color needs ``COLOR_ALPHA_MASK`` too, as in the
+example. In assembly, each macro emits a ``.word`` and takes
+``COLOR_ALPHA_MASK`` as an optional fourth argument:
 
-Setting the alpha bit makes a color opaque, and clearing it makes the
-color transparent. Despite the name, alpha here is a binary flag, not a
-blending factor.
+.. code-block:: ca65
 
-In C, ``COLOR_FROM_RGB8`` and ``COLOR_FROM_RGB5`` leave the alpha bit
-clear, so an opaque color needs ``COLOR_ALPHA_MASK``.
-``COLOR_FROM_RGB8(255, 0, 0) | COLOR_ALPHA_MASK`` is opaque red. In
-assembly, each macro emits a ``.word``, and takes ``COLOR_ALPHA_MASK``
-as an optional fourth argument. ``COLOR_FROM_RGB8 255, 0, 0,
-COLOR_ALPHA_MASK`` is opaque red.
+  COLOR_FROM_RGB8 255, 0, 0, COLOR_ALPHA_MASK ; opaque red
+
+Inside, a color is a 16-bit value: red is in bits 0-4, the alpha bit is
+bit 5, green is in bits 6-10, and blue is in bits 11-15.
 
 .. tab:: C
 
@@ -395,40 +515,44 @@ COLOR_ALPHA_MASK`` is opaque red.
           .word (((\b) << 11) | ((\g) << 6) | (\r) | (\alpha))
       .endm
 
-In 1-, 2-, 4-, and 8-bit color, each pixel is an index into a palette,
-an array of colors. The colors of a mode 1 cell are palette indexes too.
-In 16-bit color, each pixel is its own color, and the VGA system ignores
-the palette.
+In 1-, 2-, 4-, and 8-bit color, each pixel is an index into a palette.
+A palette is just an array of colors:
 
 .. code-block:: C
 
   uint16_t palette[1 << bits_per_pixel];
 
-A palette address of $FFFF selects the built-in palette. In 1-bit color,
-it is black and white. In 8-bit color, it has 256 colors. Colors 0 to 15
-are the 16 ANSI colors: black, red, green, yellow, blue, magenta, cyan,
-and white, and then bright versions of them. Colors 16 to 231 are a
-6x6x6 color cube: the color with red r, green g, and blue b, each from 0
-to 5, is ``16 + 36 * r + 6 * g + b``. Colors 232 to 255 are 24 grays,
-from dark to light. 2-bit color uses the first 4 of these colors, and
-4-bit color uses the first 16.
+The colors of each character in mode 1 are palette indexes too. In
+16-bit color, each pixel is its own color, and the VGA system ignores
+the palette.
 
-At every color depth, the built-in palette's color 0 (black) is
-transparent, and every other color is opaque. Color 16 is also black,
-and it is opaque. Only 8-bit color reaches color 16, so in 1-, 2-, and
-4-bit color the built-in palette has no opaque black.
+A palette address of $FFFF selects the built-in palette: the 16 ANSI
+colors, a 6x6x6 color cube, and 24 grays. `Built-in Palette`_ shows and
+names every color.
 
-In a bitmap, a tile, or a mode 5 sprite in 1-, 2-, or 4-bit color, each
-byte holds 8, 4, or 2 pixels. The leftmost pixel is in the most
-significant bits, unless bit 3 of mode 3's OPTIONS reverses the order.
-In 4-bit color, the byte $12 is a pixel of color 1 and then a pixel of
-color 2.
+In the built-in palette, color 0 (black) is transparent at every color
+depth, and every other color is opaque. That gives mode 5 sprites and
+text a transparent background. In 8-bit color, color 16,
+``ANSI_BLACK_OPAQUE``, is also black, and it's opaque. Only 8-bit color
+reaches color 16, so in 1-, 2-, and 4-bit color, the built-in palette
+has no opaque black.
 
-Mode 1 draws each cell with a glyph from a font. A font holds 256
-glyphs, each 8 pixels wide and 8 or 16 pixels tall, in a wide format:
-the first 256 bytes hold the first row of every glyph, the next 256
-bytes the second row, and so on. In each byte, bit 7 is the leftmost
-pixel, and a 1 bit is a pixel in the foreground color.
+Bitmaps, tiles, and mode 5 sprites pack their pixels into bytes. In 1-,
+2-, and 4-bit color, a byte holds 8, 4, or 2 pixels. The leftmost pixel
+is in the most significant bits, so in 4-bit color, the byte $12 is a
+pixel of color 1 and then a pixel of color 2. :ref:`Mode 3 <vga-mode-3>`
+can reverse the order.
+
+Mode 1 draws each character with a glyph from a font. A font holds 256
+glyphs, each 8 pixels wide and 8 or 16 pixels tall. A font address of
+$FFFF selects the built-in 8x8 or 8x16 font. Its glyphs 0-127 are
+ASCII, and glyphs 128-255 vary by code page, which
+:ref:`RIA_ATTR_CODE_PAGE <api-ria-attributes>` selects.
+
+A font of your own is in a wide format: the first 256 bytes hold the
+first row of every glyph, the next 256 bytes the second row, and so on.
+In each byte, bit 7 is the leftmost pixel, and a 1 bit is a pixel in
+the foreground color.
 
 .. code-block:: C
 
@@ -438,74 +562,30 @@ pixel, and a 1 bit is a pixel in the foreground color.
     } row[height];
   } font;
 
-A font address of $FFFF selects the built-in 8x8 or 8x16 font. Glyphs
-0-127 are ASCII, and glyphs 128-255 vary by code page, which
-:ref:`RIA_ATTR_CODE_PAGE <api-ria-attributes>` selects.
-
 
 Example
 =======
 
-This program draws a graphical text adventure on a 320x240 canvas: a
-picture at the top, and the console under it, where you type. Mode 3
-draws the picture, a bitmap of sky and grass in 8-bit color, on
+This is the start of a graphical text adventure. It draws a picture at
+the top of a 320x240 canvas, and under it the console, where you type.
+Mode 3 draws the picture, a bitmap of sky and grass in 8-bit color, on
 scanlines 0 to 159. Mode 0 draws the console on scanlines 160 to 239.
 Both modes are on plane 0. They can share its fill layer because each
 one has its own range of scanlines.
 
-.. raw:: html
+.. image:: _static/vga/ranges-light.svg
+   :class: only-light
+   :width: 560
+   :alt: A 320 by 240 canvas. Mode 3 draws a bitmap of sky and grass on
+         scanlines 0 to 159, and mode 0 draws the console on scanlines 160 to
+         239, both on the fill layer of plane 0.
 
-   <figure class="vga-ranges">
-   <svg viewBox="0 0 560 226" width="560" role="img" aria-label="A 320 by 240 canvas. Mode 3 draws a bitmap of sky and grass on scanlines 0 to 159, and mode 0 draws the console on scanlines 160 to 239, both on the fill layer of plane 0." style="display:block;max-width:100%;height:auto;margin:0 auto" font-size="13" fill="currentColor">
-   <g transform="translate(70 20) scale(0.75)">
-   <rect width="320" height="110" fill="#87afff"/>
-   <rect y="110" width="320" height="50" fill="#00af00"/>
-   <rect y="160" width="320" height="80" fill="#000000"/>
-   <rect x="2" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="10" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="18" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="34" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="42" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="50" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="66" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="74" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="90" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="98" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="114" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="122" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="138" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="146" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="154" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="162" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="178" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="186" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="202" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="210" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="218" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="226" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="242" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="250" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="258" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="266" y="164" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="2" y="172" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="10" y="172" width="6" height="6" fill="#e5e5e5"/>
-   <rect x="18" y="172" width="2" height="7" fill="#e5e5e5"/>
-   </g>
-   <rect x="70" y="20" width="240.0" height="180.0" fill="none" stroke="currentColor" stroke-opacity="0.6"/>
-   <line x1="64" y1="140.0" x2="316.0" y2="140.0" stroke="currentColor" stroke-dasharray="4 3"/>
-   <text x="60" y="24.5" text-anchor="end" fill-opacity="0.65" font-size="11.5">0</text>
-   <text x="60" y="144.5" text-anchor="end" fill-opacity="0.65" font-size="11.5">160</text>
-   <text x="60" y="204.5" text-anchor="end" fill-opacity="0.65" font-size="11.5">240</text>
-   <text x="60" y="220.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">scanline</text>
-   <path d="M324.0 22.0 h6 V138.0 h-6" fill="none" stroke="currentColor" stroke-opacity="0.6"/>
-   <text x="338.0" y="77.0" font-weight="600">mode 3: bitmap</text>
-   <text x="338.0" y="93.0" fill-opacity="0.65" font-size="11.5">BEGIN 0, END 160</text>
-   <path d="M324.0 142.0 h6 V198.0 h-6" fill="none" stroke="currentColor" stroke-opacity="0.6"/>
-   <text x="338.0" y="167.0" font-weight="600">mode 0: console</text>
-   <text x="338.0" y="183.0" fill-opacity="0.65" font-size="11.5">BEGIN 160, END 0</text>
-   </svg>
-   <figcaption style="text-align:center;font-size:var(--font-size--small);margin-top:0.5em">The canvas of the example: two modes on the fill layer of plane 0, each on its own range of scanlines.</figcaption>
-   </figure>
+.. image:: _static/vga/ranges-dark.svg
+   :class: only-dark
+   :width: 560
+   :alt: A 320 by 240 canvas. Mode 3 draws a bitmap of sky and grass on
+         scanlines 0 to 159, and mode 0 draws the console on scanlines 160 to
+         239, both on the fill layer of plane 0.
 
 The program is in C, for llvm-mos or cc65. To write it in assembly, use
 the ``xram.inc`` code blocks of this page, and write XRAM through the
@@ -613,10 +693,9 @@ in your project:
             }
         }
 
-When you build and run the program, the sky and the grass fill the top
-of the canvas. Under them, the console shows "You are standing in an
-open field." and a prompt. After each line that you type, the program
-prints "Nothing happens."
+When you run it, sky and grass fill the top of the canvas. Under them,
+the console shows "You are standing in an open field." and a prompt.
+After each line that you type, the program prints "Nothing happens."
 
 The program starts with the bitmap's configuration structure. The bitmap
 is 320 pixels wide and 160 tall, its pixels are at ``XRAM_BITMAP``, and
@@ -624,41 +703,41 @@ the palette address $FFFF selects the built-in palette. This is the
 only place where the two programs differ. llvm-mos supports C99
 designated initializers, so its program lists only these four members,
 and every other member is 0: the bitmap is at 0, 0, with no wrap. cc65
-does not support them, so its program sets each member.
+doesn't support them, so its program sets each member.
 
-Then the program follows the four steps of `Video Layout`_.
-``xreg_vga_canvas()`` selects the 320x240 canvas. Two calls to
+Then come the four steps of `Video Layout`_. First,
+``xreg_vga_canvas()`` selects the 320x240 canvas. Next, two calls to
 :c:func:`xram0_set` load the bitmap. In 8-bit color, each byte is one
-pixel. The first call fills the top 110 rows with color 111, a light
-blue of the built-in palette, and the second fills the bottom 50 rows
-with color 34, a green. :c:func:`xram0_write` copies the configuration
-structure into XRAM.
+pixel, so the first call fills the top 110 rows with color 111, a light
+blue from the built-in palette, and the second fills the bottom 50 rows
+with color 34, a green. Then :c:func:`xram0_write` copies the
+configuration structure into XRAM.
 
-Last come the two modes. ``xreg_vga_mode3()`` puts the bitmap on plane
-0, on scanlines 0 to 159: its last three arguments are PLANE 0, BEGIN 0,
-and END 160. ``xreg_vga_mode0()`` puts the console on plane 0, from
-scanline 160 to the bottom of the canvas. It leaves out END, so END is
-0, which means the height of the canvas. Scanlines 160 to 239 hold 10
-rows of 40 columns. The bitmap gets its position from its configuration
-structure, but the console has none: its first row is at BEGIN, scanline
-160.
+Last, two calls program the modes. ``xreg_vga_mode3()`` puts the bitmap
+on plane 0, on scanlines 0 to 159. Its last three arguments are PLANE 0,
+BEGIN 0, and END 160. ``xreg_vga_mode0()`` puts the console on plane 0,
+from scanline 160 to the bottom of the canvas. It leaves out END, so END
+is 0, the height of the canvas. That's 80 scanlines, room for 10 rows of
+40 columns. The bitmap gets its position from its configuration
+structure, but the console doesn't have one. Its first row is at BEGIN,
+scanline 160.
 
 If the VGA system refuses either mode, ``xreg()`` returns -1, and the
-program prints a message and exits. The message appears when the ROM
-stops, because the VGA system goes back to the console canvas at that
-point.
+program prints a message and exits. The message shows once the ROM
+stops, because that's when the VGA system goes back to the console
+canvas.
 
 The form feed, ``\f``, at the start of the first line clears the
 console. Then the program reads lines with ``fgets()`` in a loop that
-never ends. The picture stays on the canvas only while the ROM runs, and
-the loop keeps it running.
+never ends. The picture stays on the canvas only while the ROM runs,
+and the loop keeps it running.
 
-A program usually gets its bitmap from an :ref:`asset <sdk-assets>`
+A program usually gets its picture from an :ref:`asset <sdk-assets>`
 instead of drawing it with ``xram0_set()``. The RIA loads an asset into
-XRAM before the program starts. An asset for this program is a 320x160
-bitmap in 8-bit color, a file of 51,200 bytes. This line in
-``CMakeLists.txt`` packages ``img/picture.bin``, and the RIA loads it at
-``XRAM_BITMAP``:
+XRAM before the program starts. For this program, the asset is a
+320x160 bitmap in 8-bit color, a file of 51,200 bytes. This line in
+``CMakeLists.txt`` packages ``img/picture.bin``, and the RIA loads it
+at ``XRAM_BITMAP``:
 
 .. code-block:: cmake
 
@@ -670,9 +749,10 @@ A program can also read a bitmap from a file with :c:func:`read_xram`.
 Reference
 =========
 
-Each section below covers the canvas or one mode, with its registers and
-its code blocks for ``xram.h`` and ``xram.inc``. The code blocks of the
-color macros are in `Colors, Palettes, and Fonts`_.
+This part is for looking things up. Each section covers the canvas, one
+mode, or the built-in palette: its registers, and its code blocks for
+``xram.h`` and ``xram.inc``. The code blocks of the color macros are in
+`Colors, Palettes, and Fonts`_.
 
 
 .. _vga-key-registers:
@@ -680,13 +760,15 @@ color macros are in `Colors, Palettes, and Fonts`_.
 Key Registers
 -------------
 
+Two registers set up the picture. CANVAS selects the canvas, and MODE
+programs a mode on it. They're the key registers of channel 0: setting
+either one changes the picture, and the VGA system can refuse a value
+that it doesn't support. When it refuses one, ``xreg()`` fails with
+EINVAL.
+
 The VGA system is PIX device 1, and each of its registers holds 16 bits.
 The tables below give each register's address as $device:channel:index,
 the first three arguments of :ref:`xreg() <api-xreg>`.
-
-CANVAS and MODE are the key registers of channel 0: setting one of them
-changes the picture. The VGA system can refuse a value that it does not
-support, and then ``xreg()`` fails with EINVAL.
 
 .. list-table::
    :widths: 5 5 90
@@ -726,24 +808,23 @@ Each of these calls selects the 320x240 canvas:
   xreg(0x1, 0x0, 0x00, 1);         // 320x240 canvas
   xreg_vga_canvas(CANVAS_320X240); // macro shortcut
 
-A mode needs more values than MODE holds, such as its options and the
-XRAM address of its configuration structure. These values go in the
-argument registers after MODE, $1:0:02-$1:0:FF, and the VGA system
-reads them when the program sets MODE. One ``xreg()`` call sets MODE
-and its arguments together:
+MODE holds only the number of the mode, but a mode needs more values
+than that, such as its options and the XRAM address of its
+configuration structure. These go in the argument registers after MODE,
+$1:0:02-$1:0:FF. The VGA system reads them when the program sets MODE,
+so one ``xreg()`` call can set MODE and its arguments together:
 
 .. code-block:: C
 
   xreg(0x1, 0x0, 0x01, 3, 2, 0xFF00);
 
-This call sets MODE ($1:0:01) to 3, the :ref:`bitmap mode <vga-mode-3>`.
-It also sets $1:0:02 to 2, which selects 4-bit color, and $1:0:03 to
-$FF00, the XRAM address of the mode's configuration structure. The
-arguments come after MODE in the call, but the RIA sets them before
-MODE, so they are ready when the VGA system reads them. Every value
-after MODE in a call goes to an argument register, so one call programs
-at most one mode. An earlier call can also set the arguments, and a
-later call then sets MODE alone.
+This sets MODE ($1:0:01) to 3, the :ref:`bitmap mode <vga-mode-3>`. It
+also sets $1:0:02 to 2, for 4-bit color, and $1:0:03 to $FF00, the XRAM
+address of the configuration structure. The arguments come after MODE
+in the call, but the RIA sets them first, so they're ready when the VGA
+system reads them. Every value after MODE in a call goes to an argument
+register, so one call programs at most one mode. You can also set the
+arguments in one call, and then set MODE alone in a later call.
 
 One call can also select the canvas and program the first mode, which is
 all the video setup that many programs need:
@@ -752,16 +833,23 @@ all the video setup that many programs need:
 
   xreg(0x1, 0x0, 0x00, 1, 3, 2, 0xFF00);
 
-The RIA sets the key registers in order, from the lowest index, so this
-call selects the 320x240 canvas first, and then programs mode 3.
-Selecting the canvas clears the argument registers, but the RIA sets 2
-and $FF00 after that, so mode 3 still gets them.
+The RIA sets the key registers, CANVAS and MODE, in order from the
+lowest index. So this call selects the 320x240 canvas, then sets 2 and
+$FF00, and then programs mode 3. Selecting the canvas clears the
+argument registers, but 2 and $FF00 come after that, so mode 3 still
+gets them.
 
-When the VGA system refuses a value, the registers that the call set
-before the refusal keep their new values. If the VGA system refuses this
-call's mode, the 320x240 canvas stays selected with no modes. The canvas
-is black, and the console is not visible until the program selects the
-console canvas or programs mode 0, or until the ROM stops.
+A refused value changes nothing on the canvas. After a refused MODE,
+every mode stays where it was, and VSYNC still comes at the same
+scanline. After a refused CANVAS, the canvas and its modes stay as they
+were, and the call stops there, so a MODE later in the same call isn't
+set. Either refusal still clears the argument registers.
+
+A refusal doesn't undo what the call set before it. If the VGA system
+refuses this call's mode, the 320x240 canvas stays selected with no
+modes. The canvas is black, and the console stays hidden until the
+program selects the console canvas or programs mode 0, or until the ROM
+stops.
 
 .. tab:: C
 
@@ -816,22 +904,9 @@ Mode 0: Console
 Mode 0 draws the console on a plane of a graphics canvas. :doc:`term`
 describes the console and its escape sequences.
 
-The default background of console text is ANSI color 0 (black), which is
-transparent. Console text on a plane in front of an image shows the
-image around the glyphs.
-
-On a canvas 640 pixels wide, the console uses an 8x16 font for 80
-columns. On a canvas 320 pixels wide, it uses an 8x8 font for 40
-columns. Each row of text is one glyph tall, 8 or 16 scanlines, and the
-first row is at BEGIN. The scanlines from BEGIN to END must hold a whole
-number of rows, or the VGA system refuses the mode. On a 320x240 canvas,
-for example, BEGIN 200 and END 0 give 40 scanlines, which hold 5 rows of
-8x8 text. BEGIN and END both 0 always work. The 320x180 and 640x360
-canvases are 22½ rows tall, so there, BEGIN and END both 0 put 22 rows
-of text in the middle of the canvas.
-
-Only one console can be visible at a time. Programming another removes
-the previous one.
+The console's default background is ANSI color 0 (black), which is
+transparent. So console text on a plane in front of a picture shows the
+picture around the glyphs.
 
 .. list-table::
    :widths: 5 5 90
@@ -859,6 +934,21 @@ Each of these calls programs the console on plane 0:
 
   xreg(0x1, 0x0, 0x01, 0, 0); // console on plane 0
   xreg_vga_mode0(0);          // macro shortcut
+
+On a canvas 640 pixels wide, the console uses an 8x16 font for 80
+columns. On a canvas 320 pixels wide, it uses an 8x8 font for 40
+columns. Each row of text is one glyph tall, 8 or 16 scanlines, and the
+first row is at BEGIN. The scanlines from BEGIN to END must hold a whole
+number of rows, or the VGA system refuses the mode. For example, BEGIN
+200 and END 0 on a 320x240 canvas give the console the bottom 40
+scanlines, room for 5 rows of 8x8 text.
+
+BEGIN and END both 0 always work, even on the 320x180 and 640x360
+canvases, which are 22½ rows tall. There, they put 22 rows of text in
+the middle of the canvas.
+
+Only one console can be visible at a time. Programming another removes
+the previous one.
 
 .. tab:: C
 
@@ -892,14 +982,16 @@ Each of these calls programs the console on plane 0:
 Mode 1: Character
 -----------------
 
-Character modes carry color information for every cell, so each
-character can have its own foreground and background. This is the mode
-you want for colorful text — menus, status bars, anything where the
-glyphs change color. A cell is one character on the canvas: a glyph code
-and its colors. Unlike the console, which shows what a program writes to
-``stdout``, mode 1 draws cells that the program writes into XRAM. It has
-no cursor, and when the last row is full, it does not scroll its text up
-the way the console does.
+Mode 1 draws text in cells. A cell is one character on the canvas, and
+it holds a glyph code. Character modes carry color information for every
+cell, so each character can have its own foreground and background. This
+is the mode you want for colorful text — menus, status bars, anything
+where the glyphs change color.
+
+Mode 1 isn't a terminal. The console shows what a program writes to
+``stdout``, but mode 1 shows cells that the program writes into XRAM, at
+any position. There's no cursor, and when the last row is full, the
+text doesn't scroll up the way it does on the console.
 
 .. list-table::
    :widths: 5 5 90
@@ -936,12 +1028,13 @@ configuration structure at ``xaddr``:
   xreg(0x1, 0x0, 0x01, 1, 3, xaddr, 0); // 8-bit color on plane 0
   xreg_vga_mode1(MODE1_8BPP, xaddr, 0); // macro shortcut
 
-The configuration structure is ``mode1_config_t``, and `Configuration
+The configuration structure is ``mode1_config_t``. `Configuration
 Structures`_ describes the members that it shares with modes 2 and 3.
-``xram_font_ptr`` is the XRAM address of the font, in the format that
-`Colors, Palettes, and Fonts`_ describes, or $FFFF for the built-in
-font. ``MODE1_8X8`` or ``MODE1_8X16`` in OPTIONS selects the glyph size,
-and unlike the console, mode 1 can use either size on any canvas.
+The one member that it adds is ``xram_font_ptr``, the XRAM address of
+the font. The font is in the format that `Colors, Palettes, and Fonts`_
+describes, and an address of $FFFF selects the built-in font.
+``MODE1_8X8`` or ``MODE1_8X16`` in OPTIONS selects the glyph size.
+Unlike the console, mode 1 can use either size on any canvas.
 
 The data is an array of cells, ``width_chars`` * ``height_chars`` long,
 stored row by row from the top left. Each cell is 8 pixels wide and one
@@ -970,16 +1063,17 @@ for each format, such as ``mode1_8bpp_data_t``.
 
 In 1-bit color, a cell holds only a glyph code, and every cell uses
 color 1 of the palette for the foreground and color 0 for the
-background. In 4-bit color, the high four bits of ``bg_fg_index`` are
-the background and the low four bits are the foreground. The reversed
-index swaps the two colors in the byte, not the order of its bits, so
-the high four bits of ``fg_bg_index`` are the foreground.
-In C, ``MODE1_BG_FG()`` and ``MODE1_FG_BG()`` build these bytes.
+background. In 4-bit color, one byte holds both colors. In
+``bg_fg_index``, the background is in the high four bits and the
+foreground is in the low four bits. The reversed index swaps the two
+halves, so in ``fg_bg_index``, the foreground is in the high four bits.
+The bits of each color keep their order. In C, ``MODE1_BG_FG()`` and
+``MODE1_FG_BG()`` build these bytes.
 
 With the built-in palette, color 0 is transparent, so a background of
 color 0 shows the layer behind it, or black on plane 0. For an opaque
-black background, use 8-bit color with a ``bg_index`` of 16, or a
-palette of your own.
+black background, use 8-bit color with a ``bg_index`` of 16,
+``ANSI_BLACK_OPAQUE``, or a palette of your own.
 
 .. tab:: C
 
@@ -1160,9 +1254,10 @@ palette of your own.
 Mode 2: Tile
 ------------
 
-Tile modes bake the color information into each tile's bitmap. This is
-the mode you want for a video game playfield, where a small set of tiles
-is repeated across a large map.
+Mode 2 draws a tile map, a grid of small bitmaps called tiles. Tile
+modes bake the color information into each tile's bitmap. This is the
+mode you want for a video game playfield, where a small set of tiles is
+repeated across a large map.
 
 .. list-table::
    :widths: 5 5 90
@@ -1217,10 +1312,11 @@ The data is a tile map: an array of tile IDs, ``width_tiles`` *
   } data[width_tiles * height_tiles];
 
 Each tile ID is an index into the tile array at ``xram_tile_ptr``. The
-array holds up to 256 tiles, but it needs only the tiles up to the
-highest tile ID that the map uses. A tile ID past the last tile that the
-program stored draws whatever bytes follow it in XRAM, and a tile whose
-data would extend past the end of XRAM draws as transparent black.
+array holds up to 256 tiles, but you only need to store the tiles up to
+the highest tile ID that your map uses. A tile ID past the last tile
+that you stored draws whatever bytes come after your tiles in XRAM. A
+tile whose data would extend past the end of XRAM draws as transparent
+black.
 
 An entry of the map holds only a tile ID, so every tile of a map uses
 the one palette at ``xram_palette_ptr``.
@@ -1235,12 +1331,11 @@ MODE2_TILE(4, 8) tile_t;`` is an 8x8 tile in 4-bit color.
 
 With trim, the VGA system draws tiles of other sizes, such as 12x12,
 from tiles stored at 8x8 or 16x16. X trim drops columns off the right of
-each tile, and Y trim drops rows off the bottom. In C, ``MODE2_X_TRIM()``
-and ``MODE2_Y_TRIM()`` put them in OPTIONS. Each tile keeps its full
-base size in XRAM, and the VGA system does not draw the dropped pixels.
-A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10, and the VGA
-system places the tiles of the map 11 pixels apart across and 10 pixels
-apart down.
+each tile, and Y trim drops rows off the bottom. Each tile keeps its
+full size in XRAM, and the VGA system doesn't draw the dropped pixels.
+A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10, and the tiles of
+the map are 11 pixels apart across and 10 pixels apart down. In C,
+``MODE2_X_TRIM()`` and ``MODE2_Y_TRIM()`` put the trim in OPTIONS.
 
 .. tab:: C
 
@@ -1362,9 +1457,9 @@ apart down.
 Mode 3: Bitmap
 --------------
 
-Every pixel can be its own color. The 64 KB of XRAM caps the color depth
-of an image that fills the canvas: monochrome at 640x480, 16 colors at
-320x240, or 256 colors at 320x180 (16:9).
+Mode 3 draws a bitmap. Every pixel can be its own color. The 64 KB of
+XRAM caps the color depth of an image that fills the canvas: monochrome
+at 640x480, 16 colors at 320x240, or 256 colors at 320x180 (16:9).
 
 .. list-table::
    :widths: 5 5 90
@@ -1415,7 +1510,8 @@ boundary. In 16-bit color, each pixel is a 16-bit color, low byte first.
   } data;
 
 Bit order traditionally follows the canvas, so that left and right bit
-shifts move pixels the way you'd expect. In 1-, 2-, and 4-bit color,
+shifts move pixels the way you'd expect: the leftmost pixel is in the
+most significant bits. In 1-, 2-, and 4-bit color,
 ``MODE3_REVERSE_BITS`` (bit 3 of OPTIONS) reverses the order of the
 pixels in each byte, so that the leftmost pixel is in the least
 significant bits. The bits of each pixel keep their order. The reversed
@@ -1555,16 +1651,16 @@ sprite array at ``xaddr``:
   xreg(0x1, 0x0, 0x01, 4, 0, xaddr, length, 1); // sprites on plane 1
   xreg_vga_mode4(0, xaddr, length, 1);          // macro shortcut
 
-When bit 0 of OPTIONS, ``MODE4_AFFINE_BIT``, is clear, the sprite array
-holds ``mode4_sprite_t``. When it is set, the sprite array holds
-``mode4_asprite_t``, for affine sprites. `Configuration Structures`_
-describes how a program moves sprites and in what order the VGA system
-draws them. ``xram_sprite_ptr`` is the XRAM address of the image of the
-sprite.
+The sprite array holds ``mode4_sprite_t``. For affine sprites, set bit
+0 of OPTIONS, ``MODE4_AFFINE_BIT``, and the sprite array holds
+``mode4_asprite_t`` instead. In both, ``xram_sprite_ptr`` is the XRAM
+address of the sprite's image. `Configuration Structures`_ describes how
+a program moves sprites and in what order the VGA system draws them.
 
-The image is an array of 16-bit colors. A sprite is a square of
-2^log_size pixels a side, from 1x1 up to 128x128. A ``log_size`` above 7
-describes a square too large for XRAM, and the sprite does not appear.
+The image is an array of 16-bit colors. A sprite is a square, and each
+side is 2 to the power ``log_size`` pixels: a ``log_size`` of 0 is 1x1,
+and 7 is 128x128, the largest. A ``log_size`` above 7 describes a square
+too large for XRAM, and the sprite doesn't appear.
 ``MODE4_IMAGE`` declares the structure of one image from its
 ``log_size``, so ``typedef MODE4_IMAGE(4) image_t;`` is a 16x16 image.
 
@@ -1573,37 +1669,39 @@ ends of each row, so a sprite with transparent ends can take less time
 on each scanline. When ``has_opacity_metadata`` is true, one
 little-endian 32-bit value for each row follows the image. Each value
 gives the opaque span of its row, in pixels from the left of the image.
-Bits 15-0 are the end of the span (exclusive), and bits 30-16 are its
-start. The VGA system does not draw the pixels outside the span.
-``MODE4_SPAN`` builds one row of opacity metadata.
+Bits 30-16 are the start of the span, and bits 15-0 are its end, one
+past its last pixel. The VGA system doesn't draw the pixels outside the
+span. ``MODE4_SPAN`` builds one row of opacity metadata.
 
-When bit 31 is set, the span is solid. The VGA system draws all of a
-solid span without checking the alpha bit of each color. Mark a span
-solid only when every color in it is opaque.
+Bit 31 marks a span as solid. The VGA system draws all of a solid span
+without checking the alpha bit of each color. Mark a span solid only
+when every color in it is opaque.
 
 An image and its metadata must fit in XRAM together, or the VGA system
-draws nothing for the sprite. Affine sprites do not use the metadata,
+draws nothing for the sprite. Affine sprites don't use the metadata,
 but when ``has_opacity_metadata`` is true, the metadata still counts
 toward that size.
 
-Affine sprites apply a 3x3 matrix transform, which makes them slower
-than plain sprites. Only the first two rows of the matrix matter, which
-is why there are just six transform values. They are in signed 8.8
-fixed-point format, in the order {a00, a01, b0, a10, a11, b1}, and
-``MODE4_AFFINE_A00`` to ``MODE4_AFFINE_B1`` are their indexes in
-``transform``. The matrix maps a position within the sprite on the
-canvas to a position in the image. The pixel at x, y from the top left
-of the sprite shows the pixel of the image at u, v:
+Affine sprites can be rotated and scaled. They apply a 3x3 matrix
+transform, which makes them slower than plain sprites. Only the first
+two rows of the matrix matter, which is why there are just six
+transform values. They're in signed 8.8 fixed-point format, in the
+order {a00, a01, b0, a10, a11, b1}. ``MODE4_AFFINE_A00`` to
+``MODE4_AFFINE_B1`` are their indexes in ``transform``.
+
+The matrix maps a position within the sprite on the canvas to a position
+in the image. The pixel at x, y from the top left of the sprite shows
+the pixel of the image at u, v:
 
 .. code-block:: text
 
   u = a00 * x + a01 * y + b0
   v = a10 * x + a11 * y + b1
 
-With the transform {``MODE4_AFFINE_ONE``, 0, 0, 0, ``MODE4_AFFINE_ONE``,
-0} draws the image as it is. Because the matrix maps the canvas to the
-image, it is the inverse of the change that you see on the canvas. With
-$0200 (2.0) in a00 and a11, the image appears at half size, not double,
+The transform {``MODE4_AFFINE_ONE``, 0, 0, 0, ``MODE4_AFFINE_ONE``, 0}
+draws the image as it is. The matrix maps the canvas to the image, so
+it's the inverse of the change that you see on the canvas. With $0200
+(2.0) in a00 and a11, the image appears at half size, not double,
 because the VGA system steps through the image two pixels for each pixel
 of the canvas.
 
@@ -1774,8 +1872,9 @@ or its corners are cut off.
 Mode 5: Sprite 1,2,4,8-bit
 --------------------------
 
-This is a memory-efficient sprite system that uses palettes to cut the
-color depth. The VGA system can draw these sprites over any fill layer,
+Mode 5 draws sprites in 1-, 2-, 4-, or 8-bit color. This is a
+memory-efficient sprite system that uses palettes to cut the color
+depth. The VGA system can draw these sprites over any fill layer,
 including an empty one. For example, you might put affine sprites of
 mode 4 for explosions and the player on one plane, 16x16 enemy sprites
 in 4-bit color on a second, and 8x8 bullets in 1-bit color on the third.
@@ -1831,8 +1930,8 @@ custom sprites on plane 2, from a second sprite array at ``xaddr2``:
 
 The sprite array holds ``mode5_sprite_t``. `Configuration Structures`_
 describes how a program moves sprites and in what order the VGA system
-draws them. ``xram_sprite_ptr`` is the XRAM address of the image of the
-sprite, and ``palette_ptr`` is the XRAM address of its palette, so each
+draws them. ``xram_sprite_ptr`` is the XRAM address of the sprite's
+image, and ``palette_ptr`` is the XRAM address of its palette, so each
 sprite can have its own palette. On the :doc:`fpga`, the VGA system
 draws sprites fastest when all their palettes are within 1 KB of
 contiguous XRAM, as :ref:`Sprite Limits <port-sprite-limits>` explains.
@@ -2065,6 +2164,154 @@ boundary.
       MODE5_CSPRITE_SIZE            = 10
 
 
+.. _vga-built-in-palette:
+
+Built-in Palette
+----------------
+
+A palette address of $FFFF selects the built-in palette. In 8-bit color,
+it has 256 colors:
+
+- Colors 0 to 15 are the 16 ANSI colors: black, red, green, yellow,
+  blue, magenta, cyan, and white, and then bright versions of them.
+- Colors 16 to 231 are a 6x6x6 color cube. The color with red r, green
+  g, and blue b, each from 0 to 5, is ``16 + 36 * r + 6 * g + b``. The
+  values 0 to 5 give the levels 0, 95, 135, 175, 215, and 255.
+- Colors 232 to 255 are 24 grays, from dark to light. Each has equal
+  red, green, and blue: 8 for color 232, and 10 more for each color
+  after it, up to 238 for color 255.
+
+2-bit color uses the first 4 of these colors, and 4-bit color uses the
+first 16. 1-bit color has a palette of its own: color 0 is black, and
+color 1 is white, with red, green, and blue all 229, the same as
+color 7.
+
+The code blocks below name the colors. ``ANSI_BLACK`` is color 0, and
+``ANSI_BLACK_OPAQUE`` is color 16, the black of the cube.
+``ANSI_CUBE(r, g, b)`` gives the color of the cube with red r, green g,
+and blue b. ``ANSI_GRAY(k)`` gives a gray, with k from 0 for black to 25
+for white. ``ANSI_GRAY(0)`` is color 16, ``ANSI_GRAY(1)`` to
+``ANSI_GRAY(24)`` are colors 232 to 255, and ``ANSI_GRAY(25)`` is color
+231, the white of the cube. In C and ca65, each name gives a constant,
+so you can use it anywhere that a number goes, such as in math. In
+llvm-mc, the code block gives the formulas of ``ANSI_CUBE`` and
+``ANSI_GRAY`` in a comment.
+
+The chart shows the grays in the order of ``ANSI_GRAY``. Color 0 is
+black, with a dashed outline because it's transparent.
+
+.. image:: _static/vga/palette-light.svg
+   :class: only-light
+   :width: 672
+   :alt: The built-in palette in 8-bit color, in three groups: the 16 ANSI
+         colors in two rows of 8, the 6x6x6 color cube as six blocks of 6 by 6
+         with red by block, green by row, and blue by column, and the grays
+         from dark to light, from color 16, the black of the cube, through
+         colors 232 to 255, to color 231, the white of the cube. Color 0 is
+         black and transparent.
+
+.. image:: _static/vga/palette-dark.svg
+   :class: only-dark
+   :width: 672
+   :alt: The built-in palette in 8-bit color, in three groups: the 16 ANSI
+         colors in two rows of 8, the 6x6x6 color cube as six blocks of 6 by 6
+         with red by block, green by row, and blue by column, and the grays
+         from dark to light, from color 16, the black of the cube, through
+         colors 232 to 255, to color 231, the white of the cube. Color 0 is
+         black and transparent.
+
+.. tab:: C
+
+   .. code-block:: C
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
+
+      #define ANSI_BLACK           0 // #000000, transparent
+      #define ANSI_RED             1 // #CD0000
+      #define ANSI_GREEN           2 // #00CD00
+      #define ANSI_YELLOW          3 // #CDCD00
+      #define ANSI_BLUE            4 // #0000EE
+      #define ANSI_MAGENTA         5 // #CD00CD
+      #define ANSI_CYAN            6 // #00CDCD
+      #define ANSI_WHITE           7 // #E5E5E5
+      #define ANSI_BRIGHT_BLACK    8 // #7F7F7F
+      #define ANSI_BRIGHT_RED      9 // #FF0000
+      #define ANSI_BRIGHT_GREEN   10 // #00FF00
+      #define ANSI_BRIGHT_YELLOW  11 // #FFFF00
+      #define ANSI_BRIGHT_BLUE    12 // #5C5CFF
+      #define ANSI_BRIGHT_MAGENTA 13 // #FF00FF
+      #define ANSI_BRIGHT_CYAN    14 // #00FFFF
+      #define ANSI_BRIGHT_WHITE   15 // #FFFFFF
+      #define ANSI_BLACK_OPAQUE   16 // #000000
+
+      // r, g, and b are 0 to 5, for the levels 0, 95, 135, 175, 215, and 255.
+      #define ANSI_CUBE(r, g, b) (16 + (r) * 36 + (g) * 6 + (b))
+
+      // k is 0 to 25: black, then #080808 to #EEEEEE in steps of #0A0A0A,
+      // then white.
+      #define ANSI_GRAY(k) ((k) ? 231 + (k) % 25 : 16)
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
+
+      ANSI_BLACK          = 0  ; #000000, transparent
+      ANSI_RED            = 1  ; #CD0000
+      ANSI_GREEN          = 2  ; #00CD00
+      ANSI_YELLOW         = 3  ; #CDCD00
+      ANSI_BLUE           = 4  ; #0000EE
+      ANSI_MAGENTA        = 5  ; #CD00CD
+      ANSI_CYAN           = 6  ; #00CDCD
+      ANSI_WHITE          = 7  ; #E5E5E5
+      ANSI_BRIGHT_BLACK   = 8  ; #7F7F7F
+      ANSI_BRIGHT_RED     = 9  ; #FF0000
+      ANSI_BRIGHT_GREEN   = 10 ; #00FF00
+      ANSI_BRIGHT_YELLOW  = 11 ; #FFFF00
+      ANSI_BRIGHT_BLUE    = 12 ; #5C5CFF
+      ANSI_BRIGHT_MAGENTA = 13 ; #FF00FF
+      ANSI_BRIGHT_CYAN    = 14 ; #00FFFF
+      ANSI_BRIGHT_WHITE   = 15 ; #FFFFFF
+      ANSI_BLACK_OPAQUE   = 16 ; #000000
+
+      ; r, g, and b are 0 to 5, for the levels 0, 95, 135, 175, 215, and 255.
+      .define ANSI_CUBE(r, g, b) (16 + (r) * 36 + (g) * 6 + (b))
+
+      ; k is 0 to 25: black, then #080808 to #EEEEEE in steps of #0A0A0A,
+      ; then white.
+      .define ANSI_GRAY(k) (231 + (k) .mod 25 - ((k) = 0) * 215)
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
+      :force:
+
+      ANSI_BLACK          = 0  ; #000000, transparent
+      ANSI_RED            = 1  ; #CD0000
+      ANSI_GREEN          = 2  ; #00CD00
+      ANSI_YELLOW         = 3  ; #CDCD00
+      ANSI_BLUE           = 4  ; #0000EE
+      ANSI_MAGENTA        = 5  ; #CD00CD
+      ANSI_CYAN           = 6  ; #00CDCD
+      ANSI_WHITE          = 7  ; #E5E5E5
+      ANSI_BRIGHT_BLACK   = 8  ; #7F7F7F
+      ANSI_BRIGHT_RED     = 9  ; #FF0000
+      ANSI_BRIGHT_GREEN   = 10 ; #00FF00
+      ANSI_BRIGHT_YELLOW  = 11 ; #FFFF00
+      ANSI_BRIGHT_BLUE    = 12 ; #5C5CFF
+      ANSI_BRIGHT_MAGENTA = 13 ; #FF00FF
+      ANSI_BRIGHT_CYAN    = 14 ; #00FFFF
+      ANSI_BRIGHT_WHITE   = 15 ; #FFFFFF
+      ANSI_BLACK_OPAQUE   = 16 ; #000000
+
+      ; llvm-mc has no macro that works inside an expression, so this file
+      ; can't define ANSI_CUBE and ANSI_GRAY. These are their formulas.
+      ; ANSI_CUBE(r, g, b) is 16 + 36 * r + 6 * g + b, with r, g, and b
+      ; from 0 to 5 for the levels 0, 95, 135, 175, 215, and 255.
+      ; ANSI_GRAY(k) is 16 for k = 0, 231 + k for k = 1 to 24, and 231 for
+      ; k = 25: black, then #080808 to #EEEEEE in steps of #0A0A0A, then
+      ; white.
+
 
 .. _vga-control-channel:
 
@@ -2072,9 +2319,9 @@ Control Channel $F
 ==================
 
 The RIA uses the registers of channel $F to control the VGA system. A
-program cannot set them: ``xreg()`` fails with EACCES. On an
-RP6502-PICO, it fails only while the VGA module, the Pico 2 that runs
-the VGA firmware, is connected.
+program can't set them, and an ``xreg()`` call that sets one fails with
+EACCES. On an RP6502-PICO, the call fails only while the VGA module, the
+Pico 2 that runs the VGA firmware, is connected.
 
 .. list-table::
    :widths: 5 5 90
@@ -2094,8 +2341,8 @@ the VGA firmware, is connected.
 
    * - $1:F:01
      - CODE_PAGE
-     - Sets the code page of the built-in fonts. Matches
-       :ref:`RIA_ATTR_CODE_PAGE <api-ria-attributes>`.
+     - Sets the code page of the built-in fonts. It holds the same value
+       as :ref:`RIA_ATTR_CODE_PAGE <api-ria-attributes>`.
    * - $1:F:02
      - SUPPRESS_TERM_REPLY
      - Suppresses replies from the VGA system's terminal. The telnet
