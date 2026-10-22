@@ -113,17 +113,17 @@ on scanlines 160 to 239. The split takes just two calls.
          scanlines 0 to 159, and mode 0 draws the console on scanlines 160 to
          239, both on the fill layer of plane 0.
 
-The program keeps its bitmap and the configuration structure of the
-bitmap in XRAM, so its ``xram.h`` has a layout with room for both.
-`Video Layout`_ explains this layout. The comment at the top of the file
-names the code blocks from `Programming`_ that the file needs, one for
-the canvas and one for each mode:
+The program keeps two things in XRAM: the bitmap, and the configuration
+structure that holds where the bitmap is. Its ``xram.h`` makes room for
+both. The comment at the top marks where the code blocks from this page
+go. You copy those in, and the layout after them is the only part you
+write yourself:
 
 .. code-block:: C
    :caption: xram.h
 
    // From the Programming part of the VGA page, paste the
-   // code blocks of Canvas, Mode 0, and Mode 3 here.
+   // code blocks of Canvas Types, Mode 0, and Mode 3 here.
 
    typedef struct
    {
@@ -224,56 +224,50 @@ the configuration structure:
           }
       }
 
-That is a lot to take in at once, so this section does not explain it
-line by line. Instead, it shows you where to look. Each step leads to a
-part of this page, and by the end of step 4, you know how the page is
-laid out.
+That is a lot to take in at once, and you do not need to understand
+every line yet. Instead of going through the program line by line, the
+rest of this section shows you where this page covers each step. By the
+end of step 4, you know your way around.
 
-**Step 1** selects the 320x240 canvas. :ref:`Canvas <vga-canvas>`, in
-`Programming`_, lists every canvas you can select, and :ref:`Canvas
-<vga-canvas-layout>`, in `Video Layout`_, explains how a canvas fits the
-display.
+**Step 1** selects the 320x240 :ref:`canvas <vga-canvas-layout>`.
+`Canvas Types`_ lists the other canvases that you can choose.
 
-**Step 2** fills the bitmap with two calls to :c:func:`xram0_set`: 110
-rows of color 111, a light blue, and 50 rows of color 34, a green. In
-8-bit color, each byte of the bitmap is one pixel, as `Mode 3: Bitmap`_
-describes. `Built-in Palette`_ shows colors 111 and 34, and every other
-color the program can use without a palette of its own.
+**Step 2** draws the picture. The two calls to :c:func:`xram0_set` fill
+the bitmap: 110 rows of color 111, a light blue, and 50 rows of color
+34, a green. In 8-bit color, each byte is one pixel, as `Mode 3:
+Bitmap`_ describes. `Built-in Palette`_ shows both colors, along with
+every other color that you can use without making a palette.
 
-**Step 3** writes ``mode3_config_t``, the configuration structure of
-mode 3, which `Mode 3: Bitmap`_ declares. `Structures`_ explains its
-members, and `Colors and Palettes`_ explains the palette address $FFFF.
-The llvm-mos program sets only four members, because C99 designated
-initializers make every other member 0. cc65 does not have them, so its
-program sets each one.
+**Step 3** fills in ``mode3_config_t``, the configuration structure that
+`Mode 3: Bitmap`_ declares, and copies it into XRAM. `Structures`_
+explains each member, and `Colors and Palettes`_ explains why the
+palette address $FFFF gives you the built-in palette. The two tabs
+differ only here. The llvm-mos program fills in just four members,
+because C99 designated initializers set the rest to 0. cc65 does not
+have designated initializers, so its program sets every member.
 
-**Step 4** programs the two modes. Their sections, `Mode 3: Bitmap`_ and
-`Mode 0: Console`_, give the arguments of each macro. The bitmap is on
-scanlines 0 to 159. The console starts at scanline 160, and its call
-leaves off END, so it runs to the bottom of the canvas. `Modes`_
-explains the range of scanlines and the arguments that a call leaves
-off. `Planes`_ explains how modes stack, and why both modes can be on
-plane 0: they draw on different scanlines.
+**Step 4** programs the two modes, and the picture appears.
+``xreg_vga_mode3()`` puts the bitmap on scanlines 0 to 159, and
+``xreg_vga_mode0()`` puts the console on scanline 160 and below. The
+console call leaves off END, so the console runs to the bottom of the
+canvas. `Mode 3: Bitmap`_ and `Mode 0: Console`_ give the arguments of
+each macro, `Modes`_ explains the range of scanlines, and `Planes`_
+explains why both modes can share plane 0: they draw on different
+scanlines.
 
-The four steps sent you into three parts of this page. `Video Layout`_,
-right after this section, explains the ideas one at a time: the canvas,
-planes, modes, structures, VSYNC, and colors. Read it next, in order.
-`Programming`_ has a section for the canvas and for each mode, with its
-registers and its code blocks for ``xram.h`` and ``xram.inc``. Look up a
-mode there when you use it. `Built-in Palette`_ shows every color that
-you can use without a palette of your own. Two more parts close the
-page: `Frame Timing`_, for when you count cycles between frames, and
-`Control Channel $F`_, the registers that the RIA uses to control the
-VGA system.
+Those four steps took you through the three main parts of this page.
+`Video Layout`_, right after this section, explains the ideas one at a
+time, and it is worth reading next, in order. `Programming`_ has the
+canvas types and a section for each mode, with its registers and its
+code blocks for ``xram.h`` and ``xram.inc``. Look up a mode there when
+you use it. `Built-in Palette`_ shows every color that you can use
+without a palette of your own. The page ends with `Frame Timing`_, for
+when you count cycles between frames, and `Control Channel $F`_, the
+registers that the RIA uses to control the VGA system.
 
 
 Video Layout
 ============
-
-The sections below explain how your picture is put together, one idea at
-a time: where the picture goes, how the layers stack, how you program a
-mode, how you move things around, when to make changes, and how colors
-work.
 
 The video layout is the part of your XRAM layout that the VGA system
 draws from: the data of modes 1 to 5, such as images, palettes, and
@@ -309,8 +303,8 @@ scanline to as many video lines, the lines of the signal to the display,
 as the display needs. You do not set anything for the scaling.
 
 There are four graphics canvases. 320x240 and 640x480 are 4:3, and
-320x180 and 640x360 are 16:9. :ref:`Canvas <vga-canvas>`, in
-`Programming`_, gives the CANVAS value of each.
+320x180 and 640x360 are 16:9. `Canvas Types`_ gives the CANVAS value of
+each.
 
 Your ROM starts on the console canvas, which shows only the console. To
 draw, select a graphics canvas. A graphics canvas starts blank, without
@@ -674,23 +668,23 @@ Programming
 This part is for looking things up when you program the VGA system. The
 VGA system is PIX device 1, and each of its registers holds 16 bits. The
 tables give the address of each register as $device:channel:index, the
-first three arguments of :ref:`xreg() <api-xreg>`. :ref:`Canvas
-<vga-canvas>` and the section of each mode give the registers and the
-code blocks for ``xram.h`` and ``xram.inc``. The section of each mode
-also gives the format of its data: `Mode 1: Character`_ describes fonts,
-and `Mode 3: Bitmap`_ describes how pixels pack into bytes. The code
-blocks of the color macros are in `Colors and Palettes`_. After this
-part, `Frame Timing`_ gives how much time a program has to change XRAM
-between frames, `Built-in Palette`_ names every color of the built-in
-palette, with its own code blocks, and `Control Channel $F`_ lists the
-registers that the RIA uses to control the VGA system.
+first three arguments of :ref:`xreg() <api-xreg>`. `Canvas Types`_ and
+the section of each mode give the registers and the code blocks for
+``xram.h`` and ``xram.inc``. The section of each mode also gives the
+format of its data: `Mode 1: Character`_ describes fonts, and `Mode 3:
+Bitmap`_ describes how pixels pack into bytes. The code blocks of the
+color macros are in `Colors and Palettes`_. After this part, `Frame
+Timing`_ gives how much time a program has to change XRAM between
+frames, `Built-in Palette`_ names every color of the built-in palette,
+with its own code blocks, and `Control Channel $F`_ lists the registers
+that the RIA uses to control the VGA system.
 
 
 .. _vga-canvas:
 .. _vga-key-registers:
 
-Canvas
-------
+Canvas Types
+------------
 
 CANVAS selects the canvas. The VGA system refuses a value that it
 doesn't support, and then ``xreg()`` fails with EINVAL.
