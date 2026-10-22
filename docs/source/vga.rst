@@ -290,20 +290,22 @@ and 320x180 and 640x360, which are 16:9. Your program has one canvas at
 a time, and every mode draws on it. `Canvas Types`_ gives the CANVAS
 value of each size.
 
-Your ROM starts on the console canvas, which shows only the console. To
-draw, select one of the four sizes. A new canvas starts blank, without
-even the console, so anything that you print stays hidden until you put
-mode 0 on a plane. When your ROM stops, the VGA system goes back to the
-console canvas.
+Your ROM starts on the console canvas. It shows only the console, and
+you cannot program a mode on it, so before any graphics, select a canvas
+of one of the four sizes. A new canvas starts blank, without even the
+console, so anything that you print stays hidden until you put mode 0 on
+a plane. When your ROM stops, the VGA system goes back to the console
+canvas.
 
 
 Planes
 ------
 
-The VGA system draws the canvas from three planes, and each plane has
-two layers: a fill layer, and a sprite layer over it. In the figure, a
-program draws a picture on plane 0, a tile map on plane 1, and a status
-bar on plane 2, with sprites on each.
+The VGA system draws the canvas from three planes. Each plane has two
+layers: one for a fill mode, such as text, tiles, or a bitmap, and one
+for a sprite mode, drawn over the fill. In the figure, a program draws a
+picture on plane 0, a tile map on plane 1, and a status bar on plane 2,
+with sprites on each.
 
 .. image:: _static/vga/planes-light.svg
    :class: only-light
@@ -321,32 +323,27 @@ bar on plane 2, with sprites on each.
          front. The six layers make the canvas, and the status bar of plane 2
          covers part of the sun, a sprite of plane 0.
 
-Modes 0 to 3 draw on a fill layer, and modes 4 and 5 draw on a sprite
-layer. You pick the plane with the PLANE argument of the mode. A layer
-has at most one mode on each scanline, so text and a bitmap on the same
-scanlines need different planes.
-
 The six layers stack like the layers of an image editor, with plane 0 at
-the back and plane 2 at the front. The sprites of a plane cover its own
-fill layer, and the planes in front of it cover its sprites. That is why
-the status bar on plane 2 covers part of the sun, a sprite on plane 0.
-To show text over a bitmap, put the text on a plane in front of the
-bitmap.
+the back and plane 2 at the front. That is why the status bar on plane 2
+covers part of the sun, a sprite on plane 0. You pick the plane of a
+mode with its PLANE argument. On any scanline, a plane has at most one
+fill mode and one sprite mode, so to show text over a bitmap, put the
+text on a plane in front of the bitmap.
 
-A pixel in a transparent color shows the layer behind it, and `Colors
-and Palettes`_ describes which colors are transparent. A layer with no
-mode on a scanline is transparent on that scanline. The fill layer of
+A transparent pixel shows the layer behind it, and `Colors and
+Palettes`_ describes which colors are transparent. The fill layer of
 plane 0 has nothing behind it, so it draws every pixel, even one in a
-transparent color. Where no layer draws a pixel, the canvas is black.
+transparent color. Where nothing draws, the canvas is black.
 
 The VGA system has a fixed time to draw each scanline. Fill layers
 always fit in that time, so you can fill all three planes at any color
 depth on any canvas, on every machine. Sprites can run out of that time.
-The limit is not on the number of sprites, but on how many the VGA
-system can draw on one scanline. In practice, the 6502 and the 64 KB of
-XRAM limit a game first. :ref:`Sprite Limits <port-sprite-limits>` in
-:doc:`port` shows how to count sprites, and `Mode 4: Sprite 16-bit`_
-describes what happens when they do not fit.
+There is no fixed number of sprites. The limit depends on how many
+sprites the VGA system checks on a scanline and how many of them it
+draws, because both take time. If you plan to use an unusually large
+number of sprites, :ref:`Sprite Limits <port-sprite-limits>` in
+:doc:`port` shows how to count them, and what happens when they do not
+fit.
 
 
 .. _vga-modes:
@@ -1479,19 +1476,9 @@ same 16-bit sprite system used by Pi Pico Playground and Luke Wren's
 RISCBoy. Its appetite for memory is offset by something mode 5 can't do
 — affine transforms.
 
-There is no fixed number of sprites. For a game near the limits, see
-:ref:`Sprite Limits <port-sprite-limits>`. A sprite off the canvas still
-takes time on each scanline. To stop unused sprites from taking time,
-program the mode again with a smaller LENGTH. When the sprites of a
-scanline do not fit in its time, the result depends on the machine:
-
-- On the :doc:`pico`, the scanline shows part blue and part black
-  instead of the picture.
-- On the :doc:`fpga`, the sprites that do not fit do not show.
-- On the :doc:`emu` and the :doc:`web`, every sprite shows, but the
-  host computer slows down. The emulator no longer runs at 60 frames a
-  second, and the time of the 6502 falls behind the time of the clock
-  on the wall.
+There is no fixed number of sprites. The limit comes from the fill rate
+and the cost of each sprite, and :ref:`Sprite Limits
+<port-sprite-limits>` shows the math.
 
 .. list-table::
    :widths: 5 5 90
@@ -1760,8 +1747,9 @@ in 4-bit color on a second, and 8x8 bullets in 1-bit color on the third.
 Custom sprites, described below, let one plane mix sprites of different
 sizes, color depths, and orientations.
 
-There is no fixed number of sprites. `Mode 4: Sprite 16-bit`_ describes
-the limits of sprites, which apply to mode 5 too.
+There is no fixed number of sprites. The limit comes from the fill rate
+and the cost of each sprite, and :ref:`Sprite Limits
+<port-sprite-limits>` shows the math.
 
 .. list-table::
    :widths: 5 5 90

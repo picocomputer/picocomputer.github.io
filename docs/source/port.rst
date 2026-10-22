@@ -38,6 +38,17 @@ built in programmable logic, a real video chip. The :doc:`pico`,
 :doc:`emu` and :doc:`web` render in software, which modern CPUs can do
 significantly faster than an affordable FPGA.
 
+When the sprites of a row do not fit in its time, the result depends on
+the machine:
+
+- On the :doc:`pico`, the row shows part blue and part black instead of
+  the picture.
+- On the :doc:`fpga`, the sprites that do not fit do not show.
+- On the :doc:`emu` and the :doc:`web`, every sprite shows, but the host
+  computer slows down. The emulator no longer runs at 60 frames a
+  second, and the time of the 6502 falls behind the time of the clock on
+  the wall.
+
 The video logic of the FPGA runs at 50.4 MHz, twice the 25.2 MHz pixel
 clock, and each row of the video signal is 800 pixel clocks long, of
 which 640 are visible. That gives 1,600 clocks per row. A 320-wide canvas
@@ -90,6 +101,11 @@ are measured on the FPGA.
 The once-per-row cost is for sprites in one plane. Each further plane
 with sprites on the row adds 8 clocks, and each plane without sprites that
 comes before one with sprites adds 2.
+
+Every sprite in the list costs its list entry on every row, even a
+sprite off the canvas. If you run out of sprite time with a long sprite
+array in which few sprites are visible, use a shorter array with fewer
+unused entries.
 
 Paletted, custom and 16-bit sprites are drawn two pixels per clock.
 Affine sprites are drawn one texel per clock, where a texel is a pixel of
