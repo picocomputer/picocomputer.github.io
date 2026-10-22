@@ -30,6 +30,8 @@ html_theme = 'furo'
 html_title = 'Picocomputer 6502'
 html_logo = '_static/logo.png'
 html_favicon = '_static/favicon.ico'
+pygments_style = 'a11y_pygments.github_light.style.Theme'
+pygments_dark_style = 'a11y_pygments.github_dark.style.Theme'
 c_id_attributes = ['ABI', 'lib']
 
 html_static_path = ['_static']
@@ -87,6 +89,23 @@ html_theme_options = {
             'class': '',
         },
     ],
+    # The GitHub styles have the page's own background, so code keeps the
+    # backgrounds of furo's default styles, a11y-light and native. C
+    # signatures take the colors that the GitHub styles give a declaration.
+    'light_css_variables': {
+        'color-code-background': '#f2f2f2',
+        'color-api-name': '#0550ae',
+        'color-api-pre-name': '#0550ae',
+        'color-api-keyword': '#cf222e',
+        'color-api-overall': '#24292f',
+    },
+    'dark_css_variables': {
+        'color-code-background': '#202020',
+        'color-api-name': '#79c0ff',
+        'color-api-pre-name': '#79c0ff',
+        'color-api-keyword': '#ff7b72',
+        'color-api-overall': '#c9d1d9',
+    },
 }
 
 # -- Options for Open Graph link previews ------------------------------------
