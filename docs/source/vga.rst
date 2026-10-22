@@ -749,9 +749,9 @@ A program can also read a bitmap from a file with :c:func:`read_xram`.
 Reference
 =========
 
-This part is for looking things up. Each section covers the canvas, one
-mode, or the built-in palette: its registers, and its code blocks for
-``xram.h`` and ``xram.inc``. The code blocks of the color macros are in
+This part is for looking things up. Each section covers the canvas or
+one mode: its registers, and its code blocks for ``xram.h`` and
+``xram.inc``. The code blocks of the color macros are in
 `Colors, Palettes, and Fonts`_.
 
 
@@ -2167,7 +2167,7 @@ boundary.
 .. _vga-built-in-palette:
 
 Built-in Palette
-----------------
+================
 
 A palette address of $FFFF selects the built-in palette. In 8-bit color,
 it has 256 colors:
