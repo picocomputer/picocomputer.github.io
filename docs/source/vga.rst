@@ -8,32 +8,25 @@ Introduction
 ============
 
 The RP6502 Video Graphics Array (VGA) is virtual video hardware modeled
-on the home computers and arcades of the 8-bit and early-16-bit era. You
-set it up with a few register writes and put your graphics in XRAM.
-From then on, it draws every frame by itself while the 6502 runs your
-program.
+on the home computers and arcades of the 8-bit and early-16-bit era. A
+program sets it up with a few register writes and puts the graphics in
+XRAM. From then on, the VGA system draws the video canvas on its own
+while the 6502 keeps running the program.
 
 It has the parts that the games of that era were built from. Text in
 cells, tile maps, and bitmaps all scroll to the pixel. Sprites in 1-,
 2-, 4-, or 8-bit color can each have their own palette, and sprites in
 16-bit color can rotate and scale. Three planes stack all of these from
 back to front, with transparency, so a status bar can sit over a
-scrolling playfield. You can also switch to a different mode partway
-down the screen, without a scanline interrupt.
-
-The VGA system is built around the real analog VGA output of the
-:doc:`pico`. That output uses standard VGA timing at 60 Hz. Colors have
-5 bits each of red, green, and blue, so you have 32,768 colors to choose
-from.
+scrolling playfield. A plane can also switch from a bitmap to text
+partway down the screen, without a scanline interrupt.
 
 
 Getting Started
 ===============
 
-You draw your picture on the canvas, a grid of pixels such as 320x240.
-Each row of the canvas is a scanline, and scanline 0 is at the top. The
-VGA system has six rendering modes, and each one draws one kind of
-picture:
+Your program draws on the canvas, a grid of pixels such as 320x240. The
+VGA system has six rendering modes:
 
 .. list-table::
    :widths: 20 80
@@ -54,17 +47,13 @@ picture:
    * - :ref:`Mode 5 <vga-mode-5>`
      - Sprites in 1-, 2-, 4-, or 8-bit color, each with its own palette.
 
-A mode does not have to cover the whole canvas. You can program a range
-of scanlines with one mode, and the scanlines below it with a different
-mode. You can also program the same scanlines with more than one mode,
-one in front of another, such as sprites over a tile map.
+A mode can render on only a portion of the canvas, a range of scanlines
+(rows of pixels). This lets you program several modes, one below
+another, without using interrupts.
 
-Most modes need two things from you in XRAM. The first is the data that
-they draw, such as a bitmap. The second is a configuration structure,
-which holds where that data is in XRAM and where it goes on the canvas.
-A sprite mode takes a sprite array in place of the configuration
-structure, with one structure for each sprite. The console, mode 0,
-needs nothing in XRAM.
+Most modes need a configuration structure in XRAM. It holds the address
+of the mode's data and where that data goes on the canvas. The console,
+mode 0, needs nothing in XRAM.
 
 Putting a picture on the canvas takes four steps.
 
@@ -79,29 +68,26 @@ sprite images, plus any palette or font that they use.
 sprite mode, write its sprite array.
 
 **4. Program the scanlines** with mode macros, such as
-``xreg_vga_mode3()``. Each call programs a range of scanlines, on one of
-the three planes, with one mode. From then on, the VGA system draws your
-picture on every frame.
+``xreg_vga_mode3()``. Each call programs a range of scanlines with one
+mode.
 
-Here are the four steps in a program. This one is the start of a
-graphical text adventure. It splits the canvas in two: a picture at the
-top, and the console under it, where you type. Mode 3 draws a bitmap of
-sky and grass on scanlines 0 to 159, and mode 0 draws the console on
-scanlines 160 to 239. The split takes just two calls.
+Here are the four steps in a program, the start of a graphical text
+adventure. It splits the canvas in two: a picture at the top, and the
+console under it, where you type. The split takes just two calls.
 
 .. image:: _static/vga/ranges-light.svg
    :class: only-light
    :width: 560
    :alt: A 320 by 240 canvas. Mode 3 draws a bitmap of sky and grass on
          scanlines 0 to 159, and mode 0 draws the console on scanlines 160 to
-         239, both on the fill layer of plane 0.
+         239.
 
 .. image:: _static/vga/ranges-dark.svg
    :class: only-dark
    :width: 560
    :alt: A 320 by 240 canvas. Mode 3 draws a bitmap of sky and grass on
          scanlines 0 to 159, and mode 0 draws the console on scanlines 160 to
-         239, both on the fill layer of plane 0.
+         239.
 
 You lay out XRAM in your program's ``xram.h``. The one below makes room
 for the bitmap and its configuration structure. The comment at the top
@@ -223,11 +209,10 @@ it.
 
 **Step 2** draws the picture in XRAM. The first call to
 :c:func:`xram0_set` makes the sky: 110 rows of color 111, a light blue.
-The second makes the grass under it: 50 rows of color 34, a green. In
+The second makes the grass under it: 50 rows of color 34, a green. Both
+colors come from the `built-in palette <Colors and Palettes_>`_. In
 8-bit color, each byte is one pixel, so each row is 320 bytes. `Mode 3:
 Bitmap`_ describes how pixels pack into bytes at every color depth.
-Colors 111 and 34 come from the `built-in palette <Colors and
-Palettes_>`_.
 
 **Step 3** fills in the bitmap's configuration structure and copies it
 into XRAM. The structure holds the bitmap's size, 320x160, and where the
@@ -239,12 +224,12 @@ cc65 does not have designated initializers, so its program sets every
 member.
 
 **Step 4** programs the scanlines, and the picture appears.
-``xreg_vga_mode3()`` puts the bitmap on scanlines 0 to 159 of plane 0.
-``xreg_vga_mode0()`` puts the console on plane 0, from scanline 160. The
-call leaves off END, so the console runs to the bottom of the canvas.
-Both modes can share plane 0 because they are on different scanlines, as
-`Planes`_ describes. `Modes`_ explains the range of scanlines. `Mode 3:
-Bitmap`_ and `Mode 0: Console`_ give each macro's arguments.
+``xreg_vga_mode3()`` puts the bitmap on scanlines 0 to 159.
+``xreg_vga_mode0()`` puts the console on the scanlines from 160 down. It
+leaves off END, so the console runs to the bottom of the canvas. The
+first 0 in each call is the plane, which `Planes`_ describes. `Modes`_
+explains the range of scanlines, and `Mode 3: Bitmap`_ and `Mode 0:
+Console`_ give each macro's arguments.
 
 Last, the program prints "You are standing in an open field." Then,
 after each line that you type, it prints "Nothing happens." This
