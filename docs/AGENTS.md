@@ -38,33 +38,13 @@ person does not need. Decoration that the owner wrote stays.
 
 ## Rules
 
-**Never lose a fact.** Do not change what a fact says. You may remove a
-repeated statement of a fact, but at least one statement of it must
-remain. A statement in the C or POSIX documentation counts. This rule
-covers facts about the interface, not about the implementation.
-
-**One word for one meaning.** Use one word for one meaning, and use the
-same word every time.
-
-**Use each word in its exact meaning.** "Name" means to give a thing its
-name. It does not mean to use, give or refer to a thing.
-
-**Present tense and active voice.** Use the present tense and the active
-voice.
-
-**Short sentences.** Prefer short sentences. A sentence is as long as its
-content requires.
-
-**One instruction per sentence.** Write one instruction in each sentence.
+**Never change a fact.** Do not change what a fact says.
 
 **Serial comma.** Put a comma before the "and" or "or" that ends a list
 of three or more items.
 
-**Noun clusters.** Do not use noun clusters of more than three words.
-
-**No figures of speech, idioms or decoration.** Do not add humor, hype,
-metaphor or idioms. The owner writes these where they matter. Leave the
-ones already in the text.
+**No hype, jokes, or idioms.** Do not add them. The owner writes these
+where they matter. Leave the ones already in the text.
 
 **RFC 2119 words.** Use the RFC 2119 words with their RFC meanings. "Must"
 and "must not" state a requirement. "Should" and "should not" state a
@@ -74,9 +54,8 @@ govern the RFC words when the text uses them. They do not require the text
 to use them.
 
 **Machines are not beings.** Machines and software have no motives,
-feelings or personalities. State what they do as fact. Give a machine
-only verbs for operations it performs. A verb for a human act, even a
-plain one, gives it a personality. Use the established term of the field.
+feelings or personalities. State what they do as fact. Use the
+established term of the field.
 
 **No first person.** No I, me, my, we, our, us. The manual is not a letter
 from its author.

@@ -227,17 +227,17 @@ it.
 The second makes the grass under it: 50 rows of color 34, a green. In
 8-bit color, each byte is one pixel, so each row is 320 bytes. `Mode 3:
 Bitmap`_ describes how pixels pack into bytes at every color depth.
-`Built-in Palette`_ shows both colors, along with every other color that
-you can use without making a palette.
+Colors 111 and 34 come from the `built-in palette <Colors and
+Palettes_>`_.
 
 **Step 3** fills in the bitmap's configuration structure and copies it
 into XRAM. The structure holds the bitmap's size, 320x160, and where the
-bitmap is in XRAM. Its palette address, $FFFF, selects the built-in
-palette, as `Colors and Palettes`_ describes. `Mode 3: Bitmap`_ declares
-``mode3_config_t``, and `Structures`_ explains each member. The llvm-mos
-program sets just four members, because C99 designated initializers set
-the rest to 0. cc65 does not have designated initializers, so its
-program sets every member.
+bitmap is in XRAM. To use the built-in palette, the program sets the
+palette address to $FFFF. `Mode 3: Bitmap`_ declares ``mode3_config_t``,
+and `Structures`_ explains each member. The llvm-mos program sets just
+four members, because C99 designated initializers set the rest to 0.
+cc65 does not have designated initializers, so its program sets every
+member.
 
 **Step 4** programs the scanlines, and the picture appears.
 ``xreg_vga_mode3()`` puts the bitmap on scanlines 0 to 159 of plane 0.
@@ -420,6 +420,10 @@ In modes 1 to 3, the configuration structure starts with these members:
 :ref:`Mode 1 <vga-mode-1>` adds ``xram_font_ptr`` for its font, and
 :ref:`mode 2 <vga-mode-2>` adds ``xram_tile_ptr`` for its tiles.
 
+In 1-, 2-, 4-, and 8-bit color, a pixel does not hold a color. It holds
+an index into a palette, which is an array of colors. In 16-bit color,
+each pixel is its own color, and the VGA system ignores the palette.
+
 An image does not have to be the size of the canvas. A smaller image
 covers part of the canvas, and the layer around it is transparent,
 unless the image wraps. A larger image shows only the part that is on
@@ -500,59 +504,44 @@ canvas and display.
 Programming
 ===========
 
-This part is the reference for everything that goes in your ``xram.h``
-or ``xram.inc``, and for programming the registers of the VGA system
-with ``xreg()``. Copy the code blocks of each section that you use.
-
-The VGA system is PIX device 1, and each of its registers holds 16 bits.
-The tables give each register's address as $device:channel:index. Those
-are the first three arguments of :ref:`xreg() <api-xreg>`. When you call
-``xreg()`` yourself, set MODE and the registers after it in one call,
-the way the macros do.
+From here on, this page is a reference. It covers everything that you
+can program the VGA system to do: colors and palettes, the canvas types,
+and each mode. Each section gives the code blocks to copy into your
+``xram.h`` or ``xram.inc``, and explains what each macro and register
+does.
 
 
 Colors and Palettes
 -------------------
 
-All three planes use RGB555 color. Each color is a 16-bit value: 5 bits
-each of red, green, and blue, and an alpha bit. Set the alpha bit, and
-the color is opaque. Clear it, and the color is transparent.
+Each color is a 16-bit RGB555 value: 5 bits each of red, green, and
+blue, and an alpha bit. Set the alpha bit, and the color is opaque.
+Clear it, and the color is transparent.
 
-The code blocks below define two macros that build colors.
-``COLOR_FROM_RGBA8`` takes red, green, blue, and alpha from 0 to 255,
-and an alpha of 128 or more makes the color opaque. ``COLOR_FROM_RGBA5``
-takes them from 0 to 31, and an alpha of 16 or more makes the color
-opaque. This is opaque red:
+The code blocks below define ``COLOR_FROM_RGBA``, a macro that builds a
+color. It takes red, green, blue, and alpha from 0 to 255, and an alpha
+of 128 or more makes the color opaque. This is opaque red:
 
 .. code-block:: C
 
-  uint16_t red = COLOR_FROM_RGBA8(255, 0, 0, 255);
-
-In assembly, each macro emits a ``.word``.
+  uint16_t red = COLOR_FROM_RGBA(255, 0, 0, 255);
 
 .. tab:: C
 
    .. code-block:: C
       :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
-      #define COLOR_FROM_RGBA8(r, g, b, alpha)                            \
+      #define COLOR_FROM_RGBA(r, g, b, alpha)                             \
           ((((unsigned)(b) >> 3) << 11) | (((unsigned)(g) >> 3) << 6) | \
            (((unsigned)(alpha) >> 7) << 5) | ((unsigned)(r) >> 3))
-      #define COLOR_FROM_RGBA5(r, g, b, alpha)              \
-          (((unsigned)(b) << 11) | ((unsigned)(g) << 6) | \
-           (((unsigned)(alpha) >> 4) << 5) | (unsigned)(r))
 
 .. tab:: ca65
 
    .. code-block:: ca65
       :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
-      .macro COLOR_FROM_RGBA8 r, g, b, alpha
+      .macro COLOR_FROM_RGBA r, g, b, alpha
           .word (((b) >> 3) << 11) | (((g) >> 3) << 6) | (((alpha) >> 7) << 5) | ((r) >> 3)
-      .endmacro
-
-      .macro COLOR_FROM_RGBA5 r, g, b, alpha
-          .word ((b) << 11) | ((g) << 6) | (((alpha) >> 4) << 5) | (r)
       .endmacro
 
 .. tab:: llvm-mc
@@ -561,41 +550,77 @@ In assembly, each macro emits a ``.word``.
       :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
-      .macro COLOR_FROM_RGBA8 r, g, b, alpha
+      .macro COLOR_FROM_RGBA r, g, b, alpha
           .word ((((\b) >> 3) << 11) | (((\g) >> 3) << 6) | (((\alpha) >> 7) << 5) | ((\r) >> 3))
       .endm
 
-      .macro COLOR_FROM_RGBA5 r, g, b, alpha
-          .word (((\b) << 11) | ((\g) << 6) | (((\alpha) >> 4) << 5) | (\r))
-      .endm
-
-In 1-, 2-, 4-, and 8-bit color, a pixel does not hold a color. It holds
-an index into a palette, and a palette is just an array of colors:
+A palette is an array of colors:
 
 .. code-block:: C
 
   uint16_t palette[1 << bits_per_pixel];
 
-In 16-bit color, each pixel is its own color, and the VGA system
-ignores the palette.
+A palette address of $FFFF selects a built-in palette. In 1-bit color,
+it is black and white. In 2-, 4-, and 8-bit color, it is the 256-color
+ANSI palette in this chart:
 
-You do not have to make a palette to get started. A palette address of
-$FFFF selects one of the :ref:`built-in palettes <vga-built-in-palette>`.
+.. image:: _static/vga/palette-light.svg
+   :class: only-light
+   :width: 672
+   :alt: The built-in palette in 8-bit color, in three groups: the 16 ANSI
+         colors in two rows of 8, the 6x6x6 color cube as six blocks of 6 by 6
+         with red by block, green by row, and blue by column, and the grays
+         from dark to light, from color 16, the black of the cube, through
+         colors 232 to 255, to color 231, the white of the cube. Color 0 is
+         black and transparent.
 
+.. image:: _static/vga/palette-dark.svg
+   :class: only-dark
+   :width: 672
+   :alt: The built-in palette in 8-bit color, in three groups: the 16 ANSI
+         colors in two rows of 8, the 6x6x6 color cube as six blocks of 6 by 6
+         with red by block, green by row, and blue by column, and the grays
+         from dark to light, from color 16, the black of the cube, through
+         colors 232 to 255, to color 231, the white of the cube. Color 0 is
+         black and transparent.
 
-Programming
-===========
+.. tab:: C
 
-This part is for looking things up while you program. Each section gives
-you the registers and a code block to copy into your ``xram.h`` or
-``xram.inc``. The color macros in `Colors and Palettes`_ and the color
-names in `Built-in Palette`_ have code blocks too.
+   .. code-block:: C
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
-The VGA system is PIX device 1, and each of its registers holds 16 bits.
-The tables give each register's address as $device:channel:index. Those
-are the first three arguments of :ref:`xreg() <api-xreg>`. When you call
-``xreg()`` yourself, set MODE and the registers after it in one call,
-the way the macros do.
+      // r, g, and b are 0 to 5, for the levels 0, 95, 135, 175, 215, and 255.
+      #define ANSI_CUBE(r, g, b) (16 + (r) * 36 + (g) * 6 + (b))
+
+      // k is 0 to 25: black, then #080808 to #EEEEEE in steps of #0A0A0A,
+      // then white.
+      #define ANSI_GRAY(k) ((k) ? 231 + (k) % 25 : 16)
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
+
+      ; r, g, and b are 0 to 5, for the levels 0, 95, 135, 175, 215, and 255.
+      .define ANSI_CUBE(r, g, b) (16 + (r) * 36 + (g) * 6 + (b))
+
+      ; k is 0 to 25: black, then #080808 to #EEEEEE in steps of #0A0A0A,
+      ; then white.
+      .define ANSI_GRAY(k) (231 + (k) .mod 25 - ((k) = 0) * 215)
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
+      :force:
+
+      ; llvm-mc has no macro that works inside an expression, so this file
+      ; can't define ANSI_CUBE and ANSI_GRAY. These are their formulas.
+      ; ANSI_CUBE(r, g, b) is 16 + 36 * r + 6 * g + b, with r, g, and b
+      ; from 0 to 5 for the levels 0, 95, 135, 175, 215, and 255.
+      ; ANSI_GRAY(k) is 16 for k = 0, 231 + k for k = 1 to 24, and 231 for
+      ; k = 25: black, then #080808 to #EEEEEE in steps of #0A0A0A, then
+      ; white.
 
 
 .. _vga-canvas:
@@ -604,8 +629,8 @@ the way the macros do.
 Canvas Types
 ------------
 
-CANVAS selects the canvas. The VGA system refuses a value that it
-doesn't support, and then ``xreg()`` fails with EINVAL.
+Write one of the values in the table to CANVAS. Any other value fails
+with EINVAL.
 
 .. list-table::
    :widths: 5 5 90
@@ -616,8 +641,10 @@ doesn't support, and then ``xreg()`` fails with EINVAL.
      - Description
    * - $1:0:00
      - CANVAS
-     - Selects a canvas, removes all modes, and clears $1:0:02-$1:0:FF.
-       The VGA system refuses any mode on the console canvas.
+     - Selects a canvas. A canvas other than the console canvas starts
+       with no scanlines programmed. The console canvas shows only the
+       console, and every call that programs scanlines fails with
+       EINVAL.
 
        * 0 - console (4:3 or 5:4)
        * 1 - 320x240 (4:3)
@@ -625,12 +652,11 @@ doesn't support, and then ``xreg()`` fails with EINVAL.
        * 3 - 640x480 (4:3)
        * 4 - 640x360 (16:9)
 
-Each of these calls selects the 320x240 canvas:
+This call selects the 320x240 canvas:
 
 .. code-block:: C
 
-  xreg(0x1, 0x0, 0x00, 1);         // 320x240 canvas
-  xreg_vga_canvas(CANVAS_320X240); // macro shortcut
+  xreg_vga_canvas(CANVAS_320X240);
 
 .. tab:: C
 
@@ -682,12 +708,12 @@ Each of these calls selects the 320x240 canvas:
 Mode 0: Console
 ---------------
 
-Mode 0 draws the console on a plane of the canvas. :doc:`term` describes
-the console and its escape sequences.
+Mode 0 draws the console, with the text that your program prints.
+:doc:`term` describes the console and its escape sequences.
 
 The console's default background is ANSI color 0 (black), which is
-transparent. So console text on a plane in front of a picture shows the
-picture around the glyphs.
+transparent. Put the console on a plane in front of a picture, and the
+picture shows around the text.
 
 .. list-table::
    :widths: 5 5 90
@@ -709,27 +735,27 @@ picture around the glyphs.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-Each of these calls programs the console on plane 0:
+This call puts the console on plane 0:
 
 .. code-block:: C
 
-  xreg(0x1, 0x0, 0x01, 0, 0); // console on plane 0
-  xreg_vga_mode0(0);          // macro shortcut
+  xreg_vga_mode0(0);
 
-On a canvas 640 pixels wide, the console uses an 8x16 font for 80
-columns. On a canvas 320 pixels wide, it uses an 8x8 font for 40
-columns. Each row of text is one glyph tall, 8 or 16 scanlines, and the
-first row is at BEGIN. The scanlines from BEGIN to END must hold a whole
-number of rows, or the VGA system refuses the mode. For example, BEGIN
-200 and END 0 on a 320x240 canvas give the console the bottom 40
-scanlines, room for 5 rows of 8x8 text.
+On a canvas 640 pixels wide, the console has 80 columns of text in an
+8x16 font. On a canvas 320 pixels wide, it has 40 columns in an 8x8
+font. The first row of text is at BEGIN, and each row is 8 or 16
+scanlines tall. The scanlines from BEGIN to END must hold a whole number
+of rows, or the call fails with EINVAL. For example, BEGIN 200 and END
+0 on a 320x240 canvas give the console the bottom 40 scanlines, room for
+5 rows of 8x8 text.
 
-BEGIN and END both 0 always work, even on the 320x180 and 640x360
-canvases, which are 22½ rows tall. There, they put 22 rows of text in
-the middle of the canvas.
+To put the console over the whole canvas, set BEGIN and END to 0. That
+works on every canvas, even a 16:9 one, which is 22½ rows tall. There,
+the console has 22 rows, in the middle of the canvas: scanlines 2 to 177
+of a 320x180 canvas, or scanlines 4 to 355 of a 640x360 canvas.
 
-Only one console can be visible at a time. Programming another removes
-the previous one.
+There is only one console. When you program scanlines with mode 0 again,
+the console moves to the new plane and scanlines.
 
 .. tab:: C
 
@@ -2094,163 +2120,13 @@ start of a frame, it draws the top 10 scanlines together, from 10 video
 lines before the canvas starts, so count a change to any of them as a
 change at the top.
 
-For example, take the program of `Getting Started`_ with 640x480 timing. Its
-console reaches the bottom of the 320x240 canvas, so VSYNC comes after
-video line 479, and the next frame starts 45 lines later. Less one
-scanline of margin, which is 2 lines, a change at the top of the canvas
-has 43 lines: 1.37 ms, or about 10,900 cycles at 8 MHz. Scanline 100 of
-the canvas starts at video line 200, so a change that shows there has
-200 lines more, about 7.7 ms in all.
-
-
-.. _vga-built-in-palette:
-
-Built-in Palette
-================
-
-A palette address of $FFFF selects the built-in palette. In 8-bit color,
-it has 256 colors:
-
-- Colors 0 to 15 are the 16 ANSI colors: black, red, green, yellow,
-  blue, magenta, cyan, and white, and then bright versions of them.
-- Colors 16 to 231 are a 6x6x6 color cube. The color with red r, green
-  g, and blue b, each from 0 to 5, is ``16 + 36 * r + 6 * g + b``. The
-  values 0 to 5 give the levels 0, 95, 135, 175, 215, and 255.
-- Colors 232 to 255 are 24 grays, from dark to light. Each has equal
-  red, green, and blue: 8 for color 232, and 10 more for each color
-  after it, up to 238 for color 255.
-
-2-bit color uses the first 4 of these colors, and 4-bit color uses the
-first 16. 1-bit color has a palette of its own: color 0 is black, and
-color 1 is white, with red, green, and blue all 229, the same as
-color 7. So in 1-, 2-, and 4-bit color, the built-in palette has no
-opaque black.
-
-The code blocks below name the colors. ``ANSI_BLACK`` is color 0, and
-``ANSI_BLACK_OPAQUE`` is color 16, the black of the cube.
-``ANSI_CUBE(r, g, b)`` gives the color of the cube with red r, green g,
-and blue b. ``ANSI_GRAY(k)`` gives a gray, with k from 0 for black to 25
-for white. ``ANSI_GRAY(0)`` is color 16, ``ANSI_GRAY(1)`` to
-``ANSI_GRAY(24)`` are colors 232 to 255, and ``ANSI_GRAY(25)`` is color
-231, the white of the cube. In C and ca65, each name gives a constant,
-so you can use it anywhere that a number goes, such as in math. In
-llvm-mc, the code block gives the formulas of ``ANSI_CUBE`` and
-``ANSI_GRAY`` in a comment.
-
-The chart shows the grays in the order of ``ANSI_GRAY``. Color 0 is
-black, with a dashed outline because it's transparent.
-
-.. image:: _static/vga/palette-light.svg
-   :class: only-light
-   :width: 672
-   :alt: The built-in palette in 8-bit color, in three groups: the 16 ANSI
-         colors in two rows of 8, the 6x6x6 color cube as six blocks of 6 by 6
-         with red by block, green by row, and blue by column, and the grays
-         from dark to light, from color 16, the black of the cube, through
-         colors 232 to 255, to color 231, the white of the cube. Color 0 is
-         black and transparent.
-
-.. image:: _static/vga/palette-dark.svg
-   :class: only-dark
-   :width: 672
-   :alt: The built-in palette in 8-bit color, in three groups: the 16 ANSI
-         colors in two rows of 8, the 6x6x6 color cube as six blocks of 6 by 6
-         with red by block, green by row, and blue by column, and the grays
-         from dark to light, from color 16, the black of the cube, through
-         colors 232 to 255, to color 231, the white of the cube. Color 0 is
-         black and transparent.
-
-.. tab:: C
-
-   .. code-block:: C
-      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
-
-      #define ANSI_BLACK           0 // #000000, transparent
-      #define ANSI_RED             1 // #CD0000
-      #define ANSI_GREEN           2 // #00CD00
-      #define ANSI_YELLOW          3 // #CDCD00
-      #define ANSI_BLUE            4 // #0000EE
-      #define ANSI_MAGENTA         5 // #CD00CD
-      #define ANSI_CYAN            6 // #00CDCD
-      #define ANSI_WHITE           7 // #E5E5E5
-      #define ANSI_BRIGHT_BLACK    8 // #7F7F7F
-      #define ANSI_BRIGHT_RED      9 // #FF0000
-      #define ANSI_BRIGHT_GREEN   10 // #00FF00
-      #define ANSI_BRIGHT_YELLOW  11 // #FFFF00
-      #define ANSI_BRIGHT_BLUE    12 // #5C5CFF
-      #define ANSI_BRIGHT_MAGENTA 13 // #FF00FF
-      #define ANSI_BRIGHT_CYAN    14 // #00FFFF
-      #define ANSI_BRIGHT_WHITE   15 // #FFFFFF
-      #define ANSI_BLACK_OPAQUE   16 // #000000
-
-      // r, g, and b are 0 to 5, for the levels 0, 95, 135, 175, 215, and 255.
-      #define ANSI_CUBE(r, g, b) (16 + (r) * 36 + (g) * 6 + (b))
-
-      // k is 0 to 25: black, then #080808 to #EEEEEE in steps of #0A0A0A,
-      // then white.
-      #define ANSI_GRAY(k) ((k) ? 231 + (k) % 25 : 16)
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
-
-      ANSI_BLACK          = 0  ; #000000, transparent
-      ANSI_RED            = 1  ; #CD0000
-      ANSI_GREEN          = 2  ; #00CD00
-      ANSI_YELLOW         = 3  ; #CDCD00
-      ANSI_BLUE           = 4  ; #0000EE
-      ANSI_MAGENTA        = 5  ; #CD00CD
-      ANSI_CYAN           = 6  ; #00CDCD
-      ANSI_WHITE          = 7  ; #E5E5E5
-      ANSI_BRIGHT_BLACK   = 8  ; #7F7F7F
-      ANSI_BRIGHT_RED     = 9  ; #FF0000
-      ANSI_BRIGHT_GREEN   = 10 ; #00FF00
-      ANSI_BRIGHT_YELLOW  = 11 ; #FFFF00
-      ANSI_BRIGHT_BLUE    = 12 ; #5C5CFF
-      ANSI_BRIGHT_MAGENTA = 13 ; #FF00FF
-      ANSI_BRIGHT_CYAN    = 14 ; #00FFFF
-      ANSI_BRIGHT_WHITE   = 15 ; #FFFFFF
-      ANSI_BLACK_OPAQUE   = 16 ; #000000
-
-      ; r, g, and b are 0 to 5, for the levels 0, 95, 135, 175, 215, and 255.
-      .define ANSI_CUBE(r, g, b) (16 + (r) * 36 + (g) * 6 + (b))
-
-      ; k is 0 to 25: black, then #080808 to #EEEEEE in steps of #0A0A0A,
-      ; then white.
-      .define ANSI_GRAY(k) (231 + (k) .mod 25 - ((k) = 0) * 215)
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
-      :force:
-
-      ANSI_BLACK          = 0  ; #000000, transparent
-      ANSI_RED            = 1  ; #CD0000
-      ANSI_GREEN          = 2  ; #00CD00
-      ANSI_YELLOW         = 3  ; #CDCD00
-      ANSI_BLUE           = 4  ; #0000EE
-      ANSI_MAGENTA        = 5  ; #CD00CD
-      ANSI_CYAN           = 6  ; #00CDCD
-      ANSI_WHITE          = 7  ; #E5E5E5
-      ANSI_BRIGHT_BLACK   = 8  ; #7F7F7F
-      ANSI_BRIGHT_RED     = 9  ; #FF0000
-      ANSI_BRIGHT_GREEN   = 10 ; #00FF00
-      ANSI_BRIGHT_YELLOW  = 11 ; #FFFF00
-      ANSI_BRIGHT_BLUE    = 12 ; #5C5CFF
-      ANSI_BRIGHT_MAGENTA = 13 ; #FF00FF
-      ANSI_BRIGHT_CYAN    = 14 ; #00FFFF
-      ANSI_BRIGHT_WHITE   = 15 ; #FFFFFF
-      ANSI_BLACK_OPAQUE   = 16 ; #000000
-
-      ; llvm-mc has no macro that works inside an expression, so this file
-      ; can't define ANSI_CUBE and ANSI_GRAY. These are their formulas.
-      ; ANSI_CUBE(r, g, b) is 16 + 36 * r + 6 * g + b, with r, g, and b
-      ; from 0 to 5 for the levels 0, 95, 135, 175, 215, and 255.
-      ; ANSI_GRAY(k) is 16 for k = 0, 231 + k for k = 1 to 24, and 231 for
-      ; k = 25: black, then #080808 to #EEEEEE in steps of #0A0A0A, then
-      ; white.
+For example, take the program of `Getting Started`_ with 640x480 timing.
+Its console reaches the bottom of the 320x240 canvas, so VSYNC comes
+after video line 479, and the next frame starts 45 video lines later.
+Take away one scanline of margin, which is 2 video lines, and a change
+at the top of the canvas has 43 video lines: 1.37 ms, or about 10,900
+cycles at 8 MHz. Scanline 100 of the canvas starts at video line 200, so
+a change that shows there has 200 video lines more, about 7.7 ms in all.
 
 
 .. _vga-control-channel:
