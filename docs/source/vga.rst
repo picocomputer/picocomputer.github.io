@@ -596,8 +596,12 @@ ANSI palette in this chart:
 Canvas Types
 ------------
 
-Write one of the values in the table to CANVAS. Any other value fails
-with EINVAL.
+The CANVAS register selects the console canvas or a graphics canvas in
+one of four sizes. Selecting a graphics canvas always starts it blank,
+with no scanlines programmed, even if it was already selected. The
+console canvas shows only the console and cannot be programmed. Your ROM
+starts on the console canvas, and the VGA system goes back to it when
+your ROM stops.
 
 .. list-table::
    :widths: 5 5 90
@@ -608,12 +612,7 @@ with EINVAL.
      - Description
    * - $1:0:00
      - CANVAS
-     - Selects a canvas. A canvas other than the console canvas starts
-       with no scanlines programmed. The console canvas shows only the
-       console, and every call that programs scanlines fails with
-       EINVAL.
-
-       * 0 - console (4:3 or 5:4)
+     - * 0 - console (4:3 or 5:4)
        * 1 - 320x240 (4:3)
        * 2 - 320x180 (16:9)
        * 3 - 640x480 (4:3)
@@ -783,7 +782,7 @@ text doesn't scroll up the way it does on the console.
        | bit 3 - font size 0=8x8, 1=8x16
    * - $1:0:03
      - CONFIG
-     - The XRAM address of the configuration structure. Must be even.
+     - The XRAM address of the configuration structure.
    * - $1:0:04
      - PLANE
      - The plane, 0-2.
@@ -1069,7 +1068,7 @@ repeated across a large map.
        | bit 8:11 - Y trim, rows dropped off the tile bottom (0-15)
    * - $1:0:03
      - CONFIG
-     - The XRAM address of the configuration structure. Must be even.
+     - The XRAM address of the configuration structure.
    * - $1:0:04
      - PLANE
      - The plane, 0-2.
@@ -1269,7 +1268,7 @@ at 640x480, 16 colors at 320x240, or 256 colors at 320x180 (16:9).
        | bit 3 - reverse bit order
    * - $1:0:03
      - CONFIG
-     - The XRAM address of the configuration structure. Must be even.
+     - The XRAM address of the configuration structure.
    * - $1:0:04
      - PLANE
      - The plane, 0-2.
@@ -1425,7 +1424,7 @@ and the cost of each sprite, and :ref:`Sprite Limits
      - | bit 0 - affine
    * - $1:0:03
      - CONFIG
-     - The XRAM address of the sprite array. Must be even.
+     - The XRAM address of the sprite array.
    * - $1:0:04
      - LENGTH
      - The number of sprites in the sprite array.
@@ -1701,7 +1700,7 @@ and the cost of each sprite, and :ref:`Sprite Limits
          in the sprite array sets its own size and color depth.
    * - $1:0:03
      - CONFIG
-     - The XRAM address of the sprite array. Must be even.
+     - The XRAM address of the sprite array.
    * - $1:0:04
      - LENGTH
      - The number of sprites in the sprite array.
