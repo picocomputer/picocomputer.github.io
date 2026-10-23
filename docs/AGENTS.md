@@ -9,36 +9,13 @@ person. Write each passage the way you would explain it to that person.
 **Most important rule:** Write for a person - a person learning about the
 machine or referencing the manual.
 
-**Reread every paragraph.** After you write a paragraph, reread it, and
-make sure that it is written for a person reading it. Do this after
-every paragraph, every time.
-
-The reader is a person: a programmer who works through the manual in
-order. That person also has the C and POSIX documentation. Write each
-passage for what that person is trying to do at that point, not for how
-the system is arranged inside.
-
 **Edit the passage, not the sentence.** Before any change, read the
-section from its start, as the person who arrives there. Decide what
-that person needs from the passage at that point. Make every sentence serve
-that need, and remove a sentence that does not. A change to one sentence
-is a change to its passage, so read the whole passage again after the
-change, and before you report it.
+section from its start, as the person who arrives there.
 
-**Document the interface.** Do not describe how a host does the work or
-what it stores. The source code that you read before an edit is not
-content for the manual.
-
-**State a rule once.** A rule that a general section states, such as the
-ABI rules or the errno contract, does not appear again in each entry.
-
-**Test each sentence.** Before you report a change, read the section from
-its heading as a person reading the manual. Delete a sentence that the
-person does not need. Decoration that the owner wrote stays.
+**Test each passage.** Before you report a change, read the section from
+its heading as a person reading the manual.
 
 ## Rules
-
-**Never change a fact.** Do not change what a fact says.
 
 **Serial comma.** Put a comma before the "and" or "or" that ends a list
 of three or more items.
@@ -169,8 +146,7 @@ MSC9:.
 **VGA.** The RP6502 Video Graphics Array. "The VGA"
 alone can read as if a word is missing, because VGA also names other
 things, such as the VGA connector and a VGA monitor, so the owner may
-add a modifier, as in "the VGA system". Do not remove a modifier that
-the owner adds.
+add a modifier, as in "the VGA system".
 
 **web player.** `rp6502-<version>-web.zip`, and the files that
 `rp6502_web()` makes from it with a ROM.
