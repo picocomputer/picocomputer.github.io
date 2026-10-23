@@ -749,10 +749,10 @@ Mode 1: Character
 -----------------
 
 Mode 1 draws text in cells. A cell is one character on the canvas, and
-it holds a glyph code. Character modes carry color information for every
-cell, so each character can have its own foreground and background. This
-is the mode you want for colorful text — menus, status bars, anything
-where the glyphs change color.
+it holds a glyph code. In most color depths, each cell also holds its
+own foreground and background colors. This is the mode you want for
+colorful text — menus, status bars, anything where the glyphs change
+color.
 
 .. list-table::
    :widths: 5 5 90
@@ -781,72 +781,22 @@ where the glyphs change color.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-This call programs mode 1 in 8-bit color on plane 0, with the
-configuration structure at ``xaddr``:
+This call puts mode 1 on plane 0, in 8-bit color with the 8x16 font,
+using the configuration structure at ``xaddr``:
 
 .. code-block:: C
 
-  xreg_vga_mode1(MODE1_8BPP, xaddr, 0);
+  xreg_vga_mode1(MODE1_8BPP | MODE1_8X16, xaddr, 0);
 
-The configuration structure is ``mode1_config_t``. `Structures`_
-describes the members that it shares with modes 2 and 3. The one member
-that it adds is ``xram_font_ptr``, the XRAM address of the font, as
-described below. ``MODE1_8X8`` or ``MODE1_8X16`` in OPTIONS selects the
-glyph size. Unlike the console, mode 1 can use either size on any
-canvas.
-
-The data is an array of cells, ``width_chars`` * ``height_chars`` long,
-stored row by row from the top left. Each cell is 8 pixels wide and one
-glyph tall, so 40 cells span a canvas 320 pixels wide. The format of a
-cell depends on the color depth, and the code blocks below give a type
-for each format, such as ``mode1_8bpp_data_t``.
-
-.. list-table::
-   :widths: 30 70
-   :header-rows: 1
-
-   * - Colors
-     - Cell
-   * - 2-color, 1-bit
-     - glyph_code
-   * - 16-color reversed index, 4-bit
-     - glyph_code, fg_bg_index
-   * - 16-color, 4-bit
-     - glyph_code, bg_fg_index
-   * - 256-color, 8-bit
-     - glyph_code, fg_index, bg_index
-   * - 32768-color, 16-bit (no palette)
-     - glyph_code, attributes, fg_color, bg_color. The colors are 16-bit.
-       The VGA system ignores the attributes, so a program can use them
-       for its own data.
-
-In 1-bit color, a cell holds only a glyph code, and every cell uses
-color 1 of the palette for the foreground and color 0 for the
-background. In 4-bit color, one byte holds both colors. In
-``bg_fg_index``, the background is in the high four bits and the
-foreground is in the low four bits. The reversed index swaps the two
-halves, so in ``fg_bg_index``, the foreground is in the high four bits.
-The bits of each color keep their order. In C, ``MODE1_BG_FG()`` and
-``MODE1_FG_BG()`` build these bytes.
-
-Mode 1 draws each character with a glyph from a font. A font holds 256
-glyphs, each 8 pixels wide and 8 or 16 pixels tall. A font address of
-$FFFF selects the built-in 8x8 or 8x16 font. Its glyphs 0-127 are
-ASCII, and glyphs 128-255 vary by code page, which
-:ref:`RIA_ATTR_CODE_PAGE <api-ria-attributes>` selects.
-
-A font of your own is in a wide format: the first 256 bytes hold the
-first row of every glyph, the next 256 bytes the second row, and so on.
-In each byte, bit 7 is the leftmost pixel, and a 1 bit is a pixel in
-the foreground color.
-
-.. code-block:: C
-
-  struct {
-    struct {
-        uint8_t col[256];
-    } row[height];
-  } font;
+Every color depth uses the same configuration structure,
+``mode1_config_t``, with the members described in `Structures`_ plus
+``xram_font_ptr`` for the font. Each color depth has its own structure
+for a cell, named to match its constant: ``MODE1_1BPP`` cells are
+``mode1_1bpp_data_t``, ``MODE1_4BPP`` cells are ``mode1_4bpp_data_t``,
+and so on. The cells are stored row by row from the top left. Each is 8
+pixels wide, so a row of 40 cells spans a canvas 320 pixels wide. In
+16-bit color, the VGA system ignores a cell's ``attributes``, so your
+program can keep its own data there.
 
 .. tab:: C
 
@@ -1021,6 +971,24 @@ the foreground color.
       MODE1_16BPP_DATA_BG_COLOR   = 4
       MODE1_16BPP_DATA_SIZE       = 6
 
+Glyphs are 8x8 or 8x16. Set ``xram_font_ptr`` to $FFFF for the built-in
+font. Its first 128 glyphs are the lower half of code page 437, the IBM
+PC character set: ASCII, with symbols in place of the control codes. The
+other 128 come from the code page that :ref:`RIA_ATTR_CODE_PAGE
+<api-ria-attributes>` selects.
+
+To use your own font, put it in XRAM and point ``xram_font_ptr`` at it.
+It holds 256 glyphs, stored a row at a time: the top row of every glyph,
+then the second row of every glyph, and so on. In each byte, bit 7 is
+the leftmost pixel, and a set bit draws in the foreground color:
+
+.. code-block:: C
+
+  struct {
+      struct {
+          uint8_t glyph[256];
+      } row[height];
+  } font;
 
 .. _vga-mode-2:
 
