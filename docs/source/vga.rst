@@ -497,12 +497,26 @@ down the canvas. `Frame Timing`_ gives the time from VSYNC to scanline 0 for eve
 canvas and display.
 
 
+Programming
+===========
+
+This part is the reference for everything that goes in your ``xram.h``
+or ``xram.inc``, and for programming the registers of the VGA system
+with ``xreg()``. Copy the code blocks of each section that you use.
+
+The VGA system is PIX device 1, and each of its registers holds 16 bits.
+The tables give each register's address as $device:channel:index. Those
+are the first three arguments of :ref:`xreg() <api-xreg>`. When you call
+``xreg()`` yourself, set MODE and the registers after it in one call,
+the way the macros do.
+
+
 Colors and Palettes
 -------------------
 
 All three planes use RGB555 color. Each color is a 16-bit value: 5 bits
 each of red, green, and blue, and an alpha bit. Set the alpha bit, and
-the color is opaque. Clear it, and the color is transparen.
+the color is opaque. Clear it, and the color is transparent.
 
 The code blocks below define two macros that build colors.
 ``COLOR_FROM_RGBA8`` takes red, green, blue, and alpha from 0 to 255,

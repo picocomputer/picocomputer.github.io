@@ -241,7 +241,7 @@ more than one face button. The low four bits of DPAD and of STICKS are up,
 down, left and right in the same order, so a bitwise OR merges them. A
 game can map both A and X to jump and both B and Y to fire, because the
 two buttons of each pair are side by side on every layout. After
-``xreg(0x0, 0x0, 0x02, 0xFF00)``, the report of player 1 is kept current at
+``xreg_ria_gamepad(0xFF00)``, the report of player 1 is kept current at
 ``$FF00`` in extended RAM (XRAM), and its first three bytes are DPAD,
 STICKS and BTN0. This function reads them with ``xram0_peek8()``:
 

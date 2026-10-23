@@ -541,16 +541,16 @@ XRAM has no memory map until your program defines one. The program can
 use XRAM for virtual devices or for general purpose storage. The virtual
 devices are the keyboard, mouse, tablet, and gamepad inputs; the PSG and
 OPL2 sound generators; and the VGA modes with the pixels, tiles, and
-sprites they draw. A call to :ref:`xreg() <api-xreg>` maps a device to
-an address in XRAM, and the section of each device on the :doc:`ria` and
-:doc:`vga` pages shows its ``xreg()`` call.
+sprites they draw. Each device has a macro that maps it to an address in
+XRAM, and the section of each device on the :doc:`ria` and :doc:`vga`
+pages gives the macro.
 
-Before the first ``xreg()`` call, decide the XRAM address of each device and of
-each block of general purpose storage. A spreadsheet with every address laid
-out by hand is one way, but it is tedious and error-prone. Instead, it is
-strongly recommended to keep your XRAM map in one file, ``xram.h`` for C or
-``xram.inc`` for assembly. Your project already has an ``xram.h``, and the rest
-of this section describes how to change it.
+Before your program maps its first device, decide the XRAM address of each
+device and of each block of general purpose storage. A spreadsheet with every
+address laid out by hand is one way, but it is tedious and error-prone.
+Instead, it is strongly recommended to keep your XRAM map in one file,
+``xram.h`` for C or ``xram.inc`` for assembly. Your project already has an
+``xram.h``, and the rest of this section describes how to change it.
 
 The file holds the structure of each device that your program uses, and
 a layout, ``xram_layout_t``, with a member for each device and each block

@@ -288,14 +288,14 @@ bytes in extended RAM (XRAM). The program reads the keyboard, mouse,
 tablet, and gamepads from XRAM, and it controls the sound generators and
 the video system by writing to XRAM.
 
-To use a device, a program maps it to an address in XRAM with
-:ref:`xreg() <api-xreg>`. This call maps the keyboard to $1000, and from
-then on the program finds the state of the keyboard in the 32 bytes at
-$1000-$101F:
+To use a device, a program maps it to an address in XRAM with its
+macro, which calls :ref:`xreg() <api-xreg>` for you. This call maps the
+keyboard to $1000, and from then on the program finds the state of the
+keyboard in the 32 bytes at $1000-$101F:
 
 .. code-block:: C
 
-  xreg(0x0, 0x0, 0x00, 0x1000);
+  xreg_ria_keyboard(0x1000);
 
 All the devices share the same 64 KB of XRAM. :ref:`XRAM Memory Map
 <sdk-xram-memory-map>` in the :doc:`sdk` shows how to lay out their areas.
@@ -304,7 +304,7 @@ The table lists the devices of the RIA, each with the first three
 arguments of ``xreg()`` that map it, written $device:channel:index. A
 program unmaps a device by passing ``$FFFF`` as the address, which always
 succeeds. An address that is not valid for the device also unmaps it, and
-``xreg()`` fails with ``EINVAL``.
+the call fails with ``EINVAL``.
 
 .. list-table::
    :widths: 5 5 90

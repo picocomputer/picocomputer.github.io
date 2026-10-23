@@ -44,7 +44,7 @@ the start of another ROM.
 
 The API has no calls for the video, the sound, or the state of the
 keyboard, mouse, and gamepads. A program maps each of those devices to
-an XRAM address with ``xreg()``, as :ref:`XRAM Memory Map
+an XRAM address with the device's macro, as :ref:`XRAM Memory Map
 <sdk-xram-memory-map>` in the :doc:`sdk` shows. Then the program reads
 and writes the XRAM of the device with the XRAM functions of
 ``rp6502.h``. The :doc:`ria` and :doc:`vga` pages describe each
@@ -215,7 +215,13 @@ XREG
    devices, such as the keyboard and the video modes, to XRAM. Then the
    program uses each device through its XRAM, with the XRAM functions.
    The section of each device on the :doc:`ria` and :doc:`vga`
-   pages gives its registers and its ``xreg()`` call.
+   pages gives its registers and its macro.
+
+   You are unlikely to call ``xreg()`` yourself. The code block of each
+   device has a macro that makes the call for you, such as
+   ``xreg_ria_keyboard()``, and the macro is easier to read. Only someone
+   who experiments with a custom device on the PIX bus calls ``xreg()``
+   directly.
 
    The manual writes the address of an extended register (XREG) as
    $device:channel:index. These are the first three arguments of
