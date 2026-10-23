@@ -507,7 +507,7 @@
 <rect x="378" y="606" width="30" height="30" fill="#6c6c6c" stroke="currentColor" stroke-opacity="0.2"/>
 <text x="393" y="624.5" text-anchor="middle" fill="#ffffff">242</text>
 <rect x="412" y="606" width="30" height="30" fill="#767676" stroke="currentColor" stroke-opacity="0.2"/>
-<text x="427" y="624.5" text-anchor="middle" fill="#000000">243</text>
+<text x="427" y="624.5" text-anchor="middle" fill="#ffffff">243</text>
 <rect x="4" y="640" width="30" height="30" fill="#808080" stroke="currentColor" stroke-opacity="0.2"/>
 <text x="19" y="658.5" text-anchor="middle" fill="#000000">244</text>
 <rect x="38" y="640" width="30" height="30" fill="#8a8a8a" stroke="currentColor" stroke-opacity="0.2"/>

@@ -489,68 +489,56 @@ calls it until the value changes:
   while (ria_vsync() == frame)
       ;
 
-The time between frames is short. In the emulator, the text adventure
-from `Getting Started`_ has about 1.4 ms to change the top of the
-canvas. That is roughly 11,000 cycles of a 6502 at 8 MHz. A change
-lower on the canvas has more time, because the VGA system draws the
-scanlines above it first. When you need to count cycles, `Frame
-Timing`_ gives the time between frames for every canvas and display.
+The time between frames is short. With VGA timing, VSYNC comes about
+1.4 ms before the VGA system starts to draw scanline 0. That's roughly
+11,000 cycles of a 6502 at 8 MHz, and it's how long you have to get a
+change in before the first scanline. You have longer for things further
+down the canvas. `Frame Timing`_ gives the time from VSYNC to scanline 0 for every
+canvas and display.
 
 
 Colors and Palettes
 -------------------
 
-All three planes use RGB555 color: 5 bits each of red, green, and blue.
-A color is a 16-bit value, with red in bits 0-4, green in bits 6-10,
-and blue in bits 11-15. Bit 5 is the alpha bit, which holds the
-transparency of the color. Setting the alpha bit makes a color opaque,
-and clearing it makes the color transparent. Despite the name, alpha
-here is a binary flag, not a blending factor.
+All three planes use RGB555 color. Each color is a 16-bit value: 5 bits
+each of red, green, and blue, and an alpha bit. Set the alpha bit, and
+the color is opaque. Clear it, and the color is transparen.
 
-The macros below build colors. ``COLOR_FROM_RGB8`` takes red, green,
-and blue from 0 to 255, and ``COLOR_FROM_RGB5`` takes them from 0 to 31.
-In C, they leave the alpha bit clear, so an opaque color needs
-``COLOR_ALPHA_MASK`` too. This is opaque red:
+The code blocks below define two macros that build colors.
+``COLOR_FROM_RGBA8`` takes red, green, blue, and alpha from 0 to 255,
+and an alpha of 128 or more makes the color opaque. ``COLOR_FROM_RGBA5``
+takes them from 0 to 31, and an alpha of 16 or more makes the color
+opaque. This is opaque red:
 
 .. code-block:: C
 
-  uint16_t red = COLOR_FROM_RGB8(255, 0, 0) | COLOR_ALPHA_MASK;
+  uint16_t red = COLOR_FROM_RGBA8(255, 0, 0, 255);
 
-In assembly, each macro emits a ``.word`` and takes
-``COLOR_ALPHA_MASK`` as an optional fourth argument.
+In assembly, each macro emits a ``.word``.
 
 .. tab:: C
 
    .. code-block:: C
       :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
-      #define COLOR_FROM_RGB8(r, g, b) \
-          ((((unsigned)(b) >> 3) << 11) | (((unsigned)(g) >> 3) << 6) | ((unsigned)(r) >> 3))
-      #define COLOR_FROM_RGB5(r, g, b) \
-          (((unsigned)(b) << 11) | ((unsigned)(g) << 6) | (unsigned)(r))
-      #define COLOR_ALPHA_MASK (1u << 5)
+      #define COLOR_FROM_RGBA8(r, g, b, alpha)                            \
+          ((((unsigned)(b) >> 3) << 11) | (((unsigned)(g) >> 3) << 6) | \
+           (((unsigned)(alpha) >> 7) << 5) | ((unsigned)(r) >> 3))
+      #define COLOR_FROM_RGBA5(r, g, b, alpha)              \
+          (((unsigned)(b) << 11) | ((unsigned)(g) << 6) | \
+           (((unsigned)(alpha) >> 4) << 5) | (unsigned)(r))
 
 .. tab:: ca65
 
    .. code-block:: ca65
       :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
-      COLOR_ALPHA_MASK = 1 << 5
-
-      .macro COLOR_FROM_RGB8 r, g, b, alpha
-        .ifblank alpha
-          .word (((b) >> 3) << 11) | (((g) >> 3) << 6) | ((r) >> 3)
-        .else
-          .word (((b) >> 3) << 11) | (((g) >> 3) << 6) | ((r) >> 3) | (alpha)
-        .endif
+      .macro COLOR_FROM_RGBA8 r, g, b, alpha
+          .word (((b) >> 3) << 11) | (((g) >> 3) << 6) | (((alpha) >> 7) << 5) | ((r) >> 3)
       .endmacro
 
-      .macro COLOR_FROM_RGB5 r, g, b, alpha
-        .ifblank alpha
-          .word ((b) << 11) | ((g) << 6) | (r)
-        .else
-          .word ((b) << 11) | ((g) << 6) | (r) | (alpha)
-        .endif
+      .macro COLOR_FROM_RGBA5 r, g, b, alpha
+          .word ((b) << 11) | ((g) << 6) | (((alpha) >> 4) << 5) | (r)
       .endmacro
 
 .. tab:: llvm-mc
@@ -559,50 +547,41 @@ In assembly, each macro emits a ``.word`` and takes
       :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
-      COLOR_ALPHA_MASK = 1 << 5
-
-      .macro COLOR_FROM_RGB8 r, g, b, alpha=0
-          .word ((((\b) >> 3) << 11) | (((\g) >> 3) << 6) | ((\r) >> 3) | (\alpha))
+      .macro COLOR_FROM_RGBA8 r, g, b, alpha
+          .word ((((\b) >> 3) << 11) | (((\g) >> 3) << 6) | (((\alpha) >> 7) << 5) | ((\r) >> 3))
       .endm
 
-      .macro COLOR_FROM_RGB5 r, g, b, alpha=0
-          .word (((\b) << 11) | ((\g) << 6) | (\r) | (\alpha))
+      .macro COLOR_FROM_RGBA5 r, g, b, alpha
+          .word (((\b) << 11) | ((\g) << 6) | (((\alpha) >> 4) << 5) | (\r))
       .endm
 
-In 1-, 2-, 4-, and 8-bit color, each pixel is an index into a palette.
-A palette is just an array of colors:
+In 1-, 2-, 4-, and 8-bit color, a pixel does not hold a color. It holds
+an index into a palette, and a palette is just an array of colors:
 
 .. code-block:: C
 
   uint16_t palette[1 << bits_per_pixel];
 
-In 16-bit color, each pixel is its own color, and the VGA system ignores
-the palette.
+In 16-bit color, each pixel is its own color, and the VGA system
+ignores the palette.
 
 You do not have to make a palette to get started. A palette address of
-$FFFF selects the built-in palette: the 16 ANSI colors, a 6x6x6 color
-cube, and 24 grays. `Built-in Palette`_ shows and names every color. In
-the built-in palette, color 0 (black) is transparent at every color
-depth, and every other color is opaque, so sprites and text that use it
-get a transparent background.
+$FFFF selects one of the :ref:`built-in palettes <vga-built-in-palette>`.
 
 
 Programming
 ===========
 
-This part is for looking things up when you program the VGA system. The
-VGA system is PIX device 1, and each of its registers holds 16 bits. The
-tables give the address of each register as $device:channel:index, the
-first three arguments of :ref:`xreg() <api-xreg>`. `Canvas Types`_ and
-the section of each mode give the registers and the code blocks for
-``xram.h`` and ``xram.inc``. The section of each mode also gives the
-format of its data: `Mode 1: Character`_ describes fonts, and `Mode 3:
-Bitmap`_ describes how pixels pack into bytes. The code blocks of the
-color macros are in `Colors and Palettes`_. After this part, `Frame
-Timing`_ gives how much time a program has to change XRAM between
-frames, `Built-in Palette`_ names every color of the built-in palette,
-with its own code blocks, and `Control Channel $F`_ lists the registers
-that the RIA uses to control the VGA system.
+This part is for looking things up while you program. Each section gives
+you the registers and a code block to copy into your ``xram.h`` or
+``xram.inc``. The color macros in `Colors and Palettes`_ and the color
+names in `Built-in Palette`_ have code blocks too.
+
+The VGA system is PIX device 1, and each of its registers holds 16 bits.
+The tables give each register's address as $device:channel:index. Those
+are the first three arguments of :ref:`xreg() <api-xreg>`. When you call
+``xreg()`` yourself, set MODE and the registers after it in one call,
+the way the macros do.
 
 
 .. _vga-canvas:
