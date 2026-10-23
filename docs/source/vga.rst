@@ -393,10 +393,6 @@ In modes 1 to 3, the configuration structure starts with these members:
 :ref:`Mode 1 <vga-mode-1>` adds ``xram_font_ptr`` for its font, and
 :ref:`mode 2 <vga-mode-2>` adds ``xram_tile_ptr`` for its tiles.
 
-In 1-, 2-, 4-, and 8-bit color, a pixel does not hold a color. It holds
-an index into a palette, which is an array of colors. In 16-bit color,
-each pixel is its own color, and the VGA system ignores the palette.
-
 An image does not have to be the size of the canvas. A smaller image
 covers part of the canvas, and the layer around it is transparent,
 unless the image wraps. A larger image shows only the part that is on
@@ -409,14 +405,9 @@ scanlines 100 and down with mode 3, you see the bitmap's rows from row
 100 down, not its top rows. To show its top rows there, set ``y_pos_px``
 to 100.
 
-Each range can have its own configuration structure, so each part of
-the canvas can scroll on its own. Hills at the top of the canvas, for
-example, can scroll slowly while the road below them scrolls fast.
-
-Each sprite in a sprite array has its own ``x_pos_px`` and
-``y_pos_px``, which set where its top left pixel goes on the canvas.
-This code moves sprite ``n`` of a :ref:`mode 5 <vga-mode-5>` sprite
-array at ``XRAM_SPRITES`` to ``x``, ``y``:
+A sprite mode reads a sprite array in place of a configuration
+structure. This code moves sprite ``n`` of a :ref:`mode 5 <vga-mode-5>`
+sprite array at ``XRAM_SPRITES`` to ``x``, ``y``:
 
 .. code-block:: C
 
@@ -427,13 +418,6 @@ array at ``XRAM_SPRITES`` to ``x``, ``y``:
 A sprite later in the array covers the sprites before it, so put the
 sprites that you want in front at the end of the array. To hide a
 sprite, move it off the canvas.
-
-Configuration structures, sprite arrays, and palettes must begin at even
-XRAM addresses. Neither cc65 nor llvm-mos pads a structure, so check
-your ``xram_layout_t`` for members with an odd size. Put a pad byte
-after each one, or move them to the end of the layout. :ref:`Symbols in
-CMake <sdk-symbols-in-cmake>` in the :doc:`sdk` shows how your build can
-check the addresses for you.
 
 
 .. _vga-vsync:
@@ -482,6 +466,11 @@ and each mode. Each section gives the code blocks to copy into your
 ``xram.h`` or ``xram.inc``, and explains what each macro and register
 does.
 
+Configuration structures, sprite arrays, and palettes must start at even
+XRAM addresses. The ``rp6502_align()`` call in your ``CMakeLists.txt``
+checks them, as :ref:`Symbols in CMake <sdk-symbols-in-cmake>` in the
+:doc:`sdk` describes.
+
 
 Colors and Palettes
 -------------------
@@ -526,7 +515,9 @@ of 128 or more makes the color opaque. This is opaque red:
           .word ((((\b) >> 3) << 11) | (((\g) >> 3) << 6) | (((\alpha) >> 7) << 5) | ((\r) >> 3))
       .endm
 
-A palette is an array of colors:
+In 1-, 2-, 4-, and 8-bit color, a pixel holds an index into a palette.
+In 16-bit color, each pixel is its own color, and the VGA system ignores
+the palette. A palette is an array of colors:
 
 .. code-block:: C
 
