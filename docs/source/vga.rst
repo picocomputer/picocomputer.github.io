@@ -674,12 +674,11 @@ This call selects the 320x240 canvas:
 Mode 0: Console
 ---------------
 
-Mode 0 draws the console, with the text that your program prints.
-:doc:`term` describes the console and its escape sequences.
-
-The console's default background is ANSI color 0 (black), which is
-transparent. Put the console on a plane in front of a picture, and the
-picture shows around the text.
+Mode 0 draws the console, the built-in terminal that a program prints
+to. :doc:`term` describes the terminal and its escape sequences. The
+console can be composited with graphics and sprites. Its default
+background, ANSI color 0, is transparent, so a picture on a plane behind
+the console shows as the background of every character.
 
 .. list-table::
    :widths: 5 5 90
@@ -701,24 +700,18 @@ picture shows around the text.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-This call puts the console on plane 0:
+This call puts the console on plane 0, over the whole canvas:
 
 .. code-block:: C
 
   xreg_vga_mode0(0);
 
-On a canvas 640 pixels wide, the console has 80 columns of text in an
-8x16 font. On a canvas 320 pixels wide, it has 40 columns in an 8x8
-font. The first row of text is at BEGIN, and each row is 8 or 16
-scanlines tall. The scanlines from BEGIN to END must hold a whole number
-of rows, or the call fails with EINVAL. For example, BEGIN 200 and END
-0 on a 320x240 canvas give the console the bottom 40 scanlines, room for
-5 rows of 8x8 text.
-
-To put the console over the whole canvas, set BEGIN and END to 0. That
-works on every canvas, even a 16:9 one, which is 22½ rows tall. There,
-the console has 22 rows, in the middle of the canvas: scanlines 2 to 177
-of a 320x180 canvas, or scanlines 4 to 355 of a 640x360 canvas.
+On a canvas 640 pixels wide, the console has 80 columns in an 8x16 font.
+On a canvas 320 pixels wide, it has 40 columns in an 8x8 font. With
+BEGIN and END at 0, the console fits the canvas, whatever its size. For
+any other BEGIN and END, the number of scanlines between them must be a
+multiple of the font height, so that the console has a whole number of
+rows.
 
 There is only one console. When you program scanlines with mode 0 again,
 the console moves to the new plane and scanlines.
@@ -761,11 +754,6 @@ cell, so each character can have its own foreground and background. This
 is the mode you want for colorful text — menus, status bars, anything
 where the glyphs change color.
 
-Mode 1 isn't a terminal. The console shows what a program writes to
-``stdout``, but mode 1 shows cells that the program writes into XRAM, at
-any position. There's no cursor, and when the last row is full, the
-text doesn't scroll up the way it does on the console.
-
 .. list-table::
    :widths: 5 5 90
    :header-rows: 1
@@ -793,13 +781,12 @@ text doesn't scroll up the way it does on the console.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-Each of these calls programs mode 1 in 8-bit color on plane 0, with the
+This call programs mode 1 in 8-bit color on plane 0, with the
 configuration structure at ``xaddr``:
 
 .. code-block:: C
 
-  xreg(0x1, 0x0, 0x01, 1, 3, xaddr, 0); // 8-bit color on plane 0
-  xreg_vga_mode1(MODE1_8BPP, xaddr, 0); // macro shortcut
+  xreg_vga_mode1(MODE1_8BPP, xaddr, 0);
 
 The configuration structure is ``mode1_config_t``. `Structures`_
 describes the members that it shares with modes 2 and 3. The one member
@@ -841,11 +828,6 @@ foreground is in the low four bits. The reversed index swaps the two
 halves, so in ``fg_bg_index``, the foreground is in the high four bits.
 The bits of each color keep their order. In C, ``MODE1_BG_FG()`` and
 ``MODE1_FG_BG()`` build these bytes.
-
-With the built-in palette, color 0 is transparent, so a background of
-color 0 shows the layer behind it, or black on plane 0. For an opaque
-black background, use 8-bit color with a ``bg_index`` of 16,
-``ANSI_BLACK_OPAQUE``, or a palette of your own.
 
 Mode 1 draws each character with a glyph from a font. A font holds 256
 glyphs, each 8 pixels wide and 8 or 16 pixels tall. A font address of
@@ -1079,13 +1061,12 @@ repeated across a large map.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-Each of these calls programs mode 2 with 8x8 tiles in 4-bit color on
-plane 0, with the configuration structure at ``xaddr``:
+This call programs mode 2 with 8x8 tiles in 4-bit color on plane 0,
+with the configuration structure at ``xaddr``:
 
 .. code-block:: C
 
-  xreg(0x1, 0x0, 0x01, 2, 2, xaddr, 0);             // 4-bit color 8x8 tiles on plane 0
-  xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, xaddr, 0); // macro shortcut
+  xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, xaddr, 0);
 
 The configuration structure is ``mode2_config_t``, and `Structures`_
 describes the members that it shares with modes 1 and 3. To scroll the
@@ -1279,13 +1260,12 @@ at 640x480, 16 colors at 320x240, or 256 colors at 320x180 (16:9).
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-Each of these calls programs mode 3 in 4-bit color on plane 0, with the
+This call programs mode 3 in 4-bit color on plane 0, with the
 configuration structure at ``xaddr``:
 
 .. code-block:: C
 
-  xreg(0x1, 0x0, 0x01, 3, 2, xaddr, 0); // 4-bit color on plane 0
-  xreg_vga_mode3(MODE3_4BPP, xaddr, 0); // macro shortcut
+  xreg_vga_mode3(MODE3_4BPP, xaddr, 0);
 
 The configuration structure is ``mode3_config_t``, and `Structures`_
 describes its members. The data is a bitmap of ``height_px`` rows, from
@@ -1438,13 +1418,12 @@ and the cost of each sprite, and :ref:`Sprite Limits
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-Each of these calls programs ``length`` sprites on plane 1, from the
-sprite array at ``xaddr``:
+This call programs ``length`` sprites on plane 1, from the sprite array
+at ``xaddr``:
 
 .. code-block:: C
 
-  xreg(0x1, 0x0, 0x01, 4, 0, xaddr, length, 1); // sprites on plane 1
-  xreg_vga_mode4(0, xaddr, length, 1);          // macro shortcut
+  xreg_vga_mode4(0, xaddr, length, 1);
 
 The sprite array holds ``mode4_sprite_t``. For affine sprites, set bit
 0 of OPTIONS, ``MODE4_AFFINE_BIT``, and the sprite array holds
@@ -1714,15 +1693,14 @@ and the cost of each sprite, and :ref:`Sprite Limits
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-Each of the first two calls programs 16x16 sprites in 4-bit color on
-plane 1, from the sprite array at ``xaddr``. The third call programs
-custom sprites on plane 2, from a second sprite array at ``xaddr2``:
+The first call programs 16x16 sprites in 4-bit color on plane 1, from
+the sprite array at ``xaddr``. The second call programs custom sprites
+on plane 2, from a second sprite array at ``xaddr2``:
 
 .. code-block:: C
 
-  xreg(0x1, 0x0, 0x01, 5, 0x0A, xaddr, length, 1);            // 16x16 4-bit, plane 1
-  xreg_vga_mode5(MODE5_4BPP | MODE5_16X16, xaddr, length, 1); // macro shortcut
-  xreg_vga_mode5(MODE5_CUSTOM, xaddr2, length2, 2);           // custom sprites, plane 2
+  xreg_vga_mode5(MODE5_4BPP | MODE5_16X16, xaddr, length, 1);
+  xreg_vga_mode5(MODE5_CUSTOM, xaddr2, length2, 2);
 
 The sprite array holds ``mode5_sprite_t``. `Structures`_
 describes how a program moves sprites and in what order the VGA system
