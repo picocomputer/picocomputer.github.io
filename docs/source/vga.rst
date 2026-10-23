@@ -254,8 +254,8 @@ Canvas
 ------
 
 The canvas is where you draw your picture, on a grid of pixels such as
-320x240. There is only one canvas, in a choice of four sizes: 320x240
-and 640x480, which are 4:3, and 320x180 and 640x360, which are 16:9.
+320x240. Your program selects its size from four choices: 320x240 and
+640x480, which are 4:3, and 320x180 and 640x360, which are 16:9.
 `Canvas Types`_ gives the CANVAS value of each size.
 
 The size that you choose is the resolution that you draw at. Standard
@@ -269,11 +269,11 @@ lines rarely match the rows of the canvas. To the program, the display
 renders as many scanlines as the canvas has rows: a 320x240 canvas has
 240 scanlines, even on a 640x480 display.
 
-Your ROM starts on the console canvas, which shows only the console. You
-cannot program its scanlines, so select one of the four canvas sizes
-before you draw. The canvas then starts blank, without even the console.
-Anything that you print stays hidden until you put mode 0 on a plane.
-When your ROM stops, the VGA system goes back to the console canvas.
+Your ROM starts on the console canvas, which shows only the console and
+cannot be programmed. Before you draw, select a graphics canvas in one of
+the four sizes. It starts blank, without even the console. Anything that
+you print stays hidden until you put mode 0 on a plane. When your ROM
+stops, the VGA system goes back to the console canvas.
 
 
 Planes
@@ -281,47 +281,33 @@ Planes
 
 The VGA system draws the canvas from three planes. Each plane has two
 layers: one for a fill mode, such as text, tiles, or a bitmap, and one
-for a sprite mode, drawn over the fill. In the figure, a program draws a
-picture on plane 0, a tile map on plane 1, and a status bar on plane 2,
-with sprites on each.
+for a sprite mode, drawn over the fill. The six layers stack like the
+layers of an image editor, with plane 0 at the back and plane 2 at the
+front. In the figure, a program draws a picture on plane 0, a tile map
+on plane 1, and a status bar on plane 2, with sprites on each.
 
 .. image:: _static/vga/planes-light.svg
    :class: only-light
    :width: 762
-   :alt: The VGA system draws the canvas from three planes, each with a fill
-         layer and a sprite layer. Plane 0 is at the back and plane 2 is at the
-         front. The six layers make the canvas, and the status bar of plane 2
-         covers part of the sun, a sprite of plane 0.
+   :alt: Figure showing the six layers of the three planes combining into
+         one image.
 
 .. image:: _static/vga/planes-dark.svg
    :class: only-dark
    :width: 762
-   :alt: The VGA system draws the canvas from three planes, each with a fill
-         layer and a sprite layer. Plane 0 is at the back and plane 2 is at the
-         front. The six layers make the canvas, and the status bar of plane 2
-         covers part of the sun, a sprite of plane 0.
+   :alt: Figure showing the six layers of the three planes combining into
+         one image.
 
-The six layers stack like the layers of an image editor, with plane 0 at
-the back and plane 2 at the front. That is why the status bar on plane 2
-covers part of the sun, a sprite on plane 0.
+A pixel in a transparent color shows the layer behind it. The fill layer
+of plane 0 is at the back of the stack, so it ignores transparency and
+draws every pixel in its own color. Where no layer draws, the canvas is
+black. `Colors and Palettes`_ describes which colors are transparent.
 
-On each scanline, a plane can have only one fill mode and one sprite
-mode. To show text over a bitmap, put the text on a plane in front of
-the bitmap. You pick a mode's plane with its PLANE argument.
-
-A transparent pixel shows the layer behind it. `Colors and Palettes`_
-describes which colors are transparent. The fill layer of plane 0 has
-nothing behind it, so it draws every pixel, even one in a transparent
-color. Where nothing draws, the canvas is black.
-
-The VGA system has a fixed time to draw each scanline. Fill layers
-always fit in that time, so you can fill all three planes at any color
-depth on any canvas, on every machine. Sprites can run out of that time,
-and how many fit depends on what they cost. Every sprite in a sprite
-array costs a little time on every scanline of its mode, and more on the
-scanlines that it covers. If you plan to use an unusually large number
-of sprites, :ref:`Sprite Limits <port-sprite-limits>` in :doc:`port`
-shows how to count them and what happens when they do not fit.
+The VGA system has a fixed time for each scanline, which limits how many
+sprites it can draw. On a canvas 320 pixels wide, it can usually draw
+more sprites than the 6502 can move each frame. If you're planning a
+game with a lot of sprites, read :ref:`Sprite Limits
+<port-sprite-limits>` in :doc:`port` first.
 
 
 .. _vga-modes:
@@ -329,17 +315,21 @@ shows how to count them and what happens when they do not fit.
 Modes
 -----
 
-You program scanlines with a mode's macro, which makes the :ref:`xreg()
-<api-xreg>` call for you. This line from `Getting Started`_ puts an
-8-bit bitmap on plane 0, on scanlines 0 to 159:
+Each mode's section in `Programming`_ provides a macro and constants for
+that mode. The macro programs scanlines with the mode, making the
+:ref:`xreg() <api-xreg>` call for you. This line from the `earlier text
+adventure <Getting Started_>`_ puts an 8-bit bitmap on plane 0, on
+scanlines 0 to 159:
 
 .. code-block:: C
 
   xreg_vga_mode3(MODE3_8BPP, XRAM_BITMAP_CONFIG, 0, 0, 160);
 
-Each mode's section in `Programming`_ has its macro, in an ``xram.h``
-code block, and a table of its registers. The macro takes its arguments
-in the order of that table. Modes 1 to 3 take these:
+Every name in this line comes from your ``xram.h``: the macro and
+``MODE3_8BPP`` from the code block of `Mode 3: Bitmap`_, and
+``XRAM_BITMAP_CONFIG`` from your layout. A macro takes its arguments in
+the order of the register table in its mode's section. Modes 1 to 3
+take these:
 
 - OPTIONS holds the mode's options, such as its color depth.
   ``MODE3_8BPP`` selects 8-bit color.
@@ -356,13 +346,6 @@ BEGIN 0 and END 160 cover scanlines 0 to 159. With an END of 0, the mode
 runs to the bottom of the canvas. Arguments that you leave off the end
 of a call are 0, so ``xreg_vga_mode3(MODE3_8BPP, XRAM_BITMAP_CONFIG)``
 puts mode 3 on plane 0, over the whole canvas.
-
-The text adventure in `Getting Started`_ splits the canvas with BEGIN
-and END. It puts the picture on scanlines 0 to 159 and the console on
-the scanlines below, both on plane 0. On computers of the era, a split
-like this took a scanline interrupt, which is finicky to get right and
-takes CPU time from your game logic. The VGA system changes modes at
-each BEGIN and END by itself, so your program needs no interrupt.
 
 You can reprogram scanlines at any time. When you change scenes, say
 from a bitmap to a tile map, program the same scanlines with the new
