@@ -700,7 +700,8 @@ the console shows as the background of every character.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-This call puts the console on plane 0, over the whole canvas:
+For example, this call puts the console on plane 0, over the whole
+canvas:
 
 .. code-block:: C
 
@@ -781,8 +782,8 @@ color.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-This call puts mode 1 on plane 0, in 8-bit color with the 8x16 font,
-using the configuration structure at ``xaddr``:
+For example, this call puts mode 1 on plane 0, in 8-bit color with the
+8x16 font, using the configuration structure at ``xaddr``:
 
 .. code-block:: C
 
@@ -1032,8 +1033,8 @@ small set of tiles is repeated across a large map.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-This call puts mode 2 on plane 0, with 8x8 tiles in 4-bit color, using
-the configuration structure at ``xaddr``:
+For example, this call puts mode 2 on plane 0, with 8x8 tiles in 4-bit
+color, using the configuration structure at ``xaddr``:
 
 .. code-block:: C
 
@@ -1204,7 +1205,7 @@ image that fills the canvas: monochrome at 640x480, 16 colors at
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-This call puts mode 3 on plane 0, in 4-bit color, using the
+For example, this call puts mode 3 on plane 0, in 4-bit color, using the
 configuration structure at ``xaddr``:
 
 .. code-block:: C
@@ -1308,12 +1309,9 @@ new byte:
       } rows[height_px];
   } data;
 
-In 8-bit color, a byte is one pixel. In 16-bit color, a pixel is two
-bytes, low byte first. In 1-, 2-, and 4-bit color, a byte holds 8, 4, or
-2 pixels, with the leftmost pixel in the most significant bits, so
-shifting a byte left or right in C moves its pixels left or right on the
-screen. ``MODE3_REVERSE_BITS`` reverses the order of the pixels in each
-byte, so the leftmost pixel is in the least significant bits.
+When a byte holds more than one pixel, the leftmost pixel is in the most
+significant bits. ``MODE3_REVERSE_BITS`` selects the other order, with
+the leftmost pixel in the least significant bits.
 
 
 .. _vga-mode-4:
@@ -1359,8 +1357,8 @@ and the cost of each sprite, and :ref:`Sprite Limits
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-This call programs ``length`` sprites on plane 1, from the sprite array
-at ``xaddr``:
+For example, this call programs ``length`` sprites on plane 1, from the
+sprite array at ``xaddr``:
 
 .. code-block:: C
 
@@ -1634,9 +1632,9 @@ and the cost of each sprite, and :ref:`Sprite Limits
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-The first call programs 16x16 sprites in 4-bit color on plane 1, from
-the sprite array at ``xaddr``. The second call programs custom sprites
-on plane 2, from a second sprite array at ``xaddr2``:
+For example, the first call programs 16x16 sprites in 4-bit color on
+plane 1, from the sprite array at ``xaddr``. The second call programs
+custom sprites on plane 2, from a second sprite array at ``xaddr2``:
 
 .. code-block:: C
 
