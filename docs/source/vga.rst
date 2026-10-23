@@ -433,13 +433,18 @@ the new one. To change the whole picture at once, make your changes
 between frames. VSYNC, short for vertical sync, marks the start of that
 time.
 
+The time between frames is a legacy of CRT displays. A 640x480 VGA
+signal is really 800x525, with 640x480 of it visible. The rest is
+blanking: time for the beam of the CRT to return to the left edge after
+each line, and to the top after each frame. Games of that era updated
+the picture while the beam went back to the top. A Picocomputer program
+does the same. The RP6502-PICO still sends a real VGA signal, and the
+other machines keep its timing.
+
 After the VGA system draws the lowest scanline that you have programmed,
 it sends a VSYNC signal. VSYNC increments the RIA's :ref:`VSYNC register
 <ria-registers>` and, if you enable it, fires the :ref:`VSYNC interrupt
-<api-irq>`.
-
-Most programs can simply wait for VSYNC in a loop. More advanced
-programs may prefer to handle it in an interrupt. :c:func:`ria_vsync`
+<api-irq>`. Most programs wait for VSYNC in a loop. :c:func:`ria_vsync`
 returns the value of the VSYNC register without waiting, so the loop
 calls it until the value changes:
 
@@ -449,12 +454,11 @@ calls it until the value changes:
   while (ria_vsync() == frame)
       ;
 
-The time between frames is short. With VGA timing, VSYNC comes about
-1.4 ms before the VGA system starts to draw scanline 0. That's roughly
-11,000 cycles of a 6502 at 8 MHz, and it's how long you have to get a
-change in before the first scanline. You have longer for things further
-down the canvas. `Frame Timing`_ gives the time from VSYNC to scanline 0
-for every canvas and display.
+With 640x480 timing and a 4:3 canvas, the 45 lines of vertical blanking
+last about 1.4 ms. That's roughly 11,000 cycles of a 6502 at 8 MHz to
+get a change in before the first scanline. Changes lower on the canvas
+have longer. `Frame Timing`_ gives the time for every canvas and
+display.
 
 
 Programming
