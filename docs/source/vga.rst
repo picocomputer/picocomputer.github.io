@@ -1387,8 +1387,8 @@ a program moves sprites and in what order the VGA system draws them.
       #define MODE4_AFFINE_B1 5
       #define MODE4_AFFINE_ONE 0x0100
 
-      #define MODE4_SPAN(start, end, solid)            \
-          (((solid) ? 0x80000000ul : 0ul) |            \
+      #define MODE4_OPACITY_METADATA(start, end, solid) \
+          (((solid) ? 0x80000000ul : 0ul) |             \
            ((unsigned long)(start) << 16) | (unsigned)(end))
 
       #define MODE4_IMAGE(log_size)                \
@@ -1398,6 +1398,16 @@ a program moves sprites and in what order the VGA system draws them.
               {                                    \
                   uint16_t color[1 << (log_size)]; \
               } rows[1 << (log_size)];             \
+          }
+
+      #define MODE4_IMAGE_WITH_METADATA(log_size)         \
+          struct                                          \
+          {                                               \
+              struct                                      \
+              {                                           \
+                  uint16_t color[1 << (log_size)];        \
+              } rows[1 << (log_size)];                    \
+              uint32_t opacity_metadata[1 << (log_size)]; \
           }
 
       typedef struct
@@ -1438,7 +1448,7 @@ a program moves sprites and in what order the VGA system draws them.
       MODE4_AFFINE_B1  = 5
       MODE4_AFFINE_ONE = $0100
 
-      .macro MODE4_SPAN start, end, solid
+      .macro MODE4_OPACITY_METADATA start, end, solid
           .dword ((solid) << 31) | ((start) << 16) | (end)
       .endmacro
 
@@ -1450,6 +1460,18 @@ a program moves sprites and in what order the VGA system draws them.
               .if log_size
                   .res ((1 << (log_size)) - 1) * .sizeof(rows)
               .endif
+          .endstruct
+      .endmacro
+
+      .macro MODE4_IMAGE_WITH_METADATA name, log_size
+          .struct name
+              rows .struct
+                  color .word 1 << (log_size)
+              .endstruct
+              .if log_size
+                  .res ((1 << (log_size)) - 1) * .sizeof(rows)
+              .endif
+              opacity_metadata .dword 1 << (log_size)
           .endstruct
       .endmacro
 
@@ -1490,7 +1512,7 @@ a program moves sprites and in what order the VGA system draws them.
       MODE4_AFFINE_B1  = 5
       MODE4_AFFINE_ONE = $0100
 
-      .macro MODE4_SPAN start, end, solid
+      .macro MODE4_OPACITY_METADATA start, end, solid
           .4byte (((\solid) << 31) | ((\start) << 16) | (\end))
       .endm
 
@@ -1499,6 +1521,14 @@ a program moves sprites and in what order the VGA system draws them.
           \name\()_ROWS_COLOR = 0
           \name\()_ROWS_SIZE  = 2 << (\log_size)
           \name\()_SIZE       = (1 << (\log_size)) * \name\()_ROWS_SIZE
+      .endm
+
+      .macro MODE4_IMAGE_WITH_METADATA name, log_size
+          \name\()_ROWS             = 0
+          \name\()_ROWS_COLOR       = 0
+          \name\()_ROWS_SIZE        = 2 << (\log_size)
+          \name\()_OPACITY_METADATA = (1 << (\log_size)) * \name\()_ROWS_SIZE
+          \name\()_SIZE             = \name\()_OPACITY_METADATA + (4 << (\log_size))
       .endm
 
       MODE4_SPRITE_X_POS_PX             = 0
@@ -1524,33 +1554,40 @@ too large for XRAM, and the sprite doesn't appear.
 ``log_size``, so ``typedef MODE4_IMAGE(4) image_t;`` is a 16x16 image.
 
 Opacity metadata lets the VGA system skip the transparent pixels at the
-ends of each row, so a sprite with transparent ends can take less time
-on each scanline. When ``has_opacity_metadata`` is true, one
-little-endian 32-bit value for each row follows the image. Each value
-gives the opaque span of its row, in pixels from the left of the image.
-Bits 30-16 are the start of the span, and bits 15-0 are its end, one
-past its last pixel. The VGA system doesn't draw the pixels outside the
-span. ``MODE4_SPAN`` builds one row of opacity metadata.
+ends of each row. When ``has_opacity_metadata`` is true, the opacity
+metadata follows the image, one 32-bit value for each row.
+``MODE4_IMAGE_WITH_METADATA`` declares an image with its opacity
+metadata, and ``MODE4_OPACITY_METADATA(start, end, solid)`` builds the
+value for one row. ``start`` is the first opaque pixel of the row, and
+``end`` is one past the last. The VGA system draws only the pixels from
+``start`` up to ``end``. When ``solid`` is true, it draws them without
+checking the alpha bit, so set ``solid`` only when every one of them is
+opaque.
 
-Bit 31 marks a span as solid. The VGA system draws all of a solid span
-without checking the alpha bit of each color. Mark a span solid only
-when every color in it is opaque.
+This code declares a 16x16 image with its opacity metadata, and sets row
+0 to draw pixels 4 to 11, all opaque:
 
-An image and its metadata must fit in XRAM together, or the VGA system
-draws nothing for the sprite. Affine sprites don't use the metadata,
-but when ``has_opacity_metadata`` is true, the metadata still counts
-toward that size.
+.. code-block:: C
 
-Affine sprites can be rotated and scaled. They apply a 3x3 matrix
-transform, which makes them slower than plain sprites. Only the first
-two rows of the matrix matter, which is why there are just six
-transform values. They're in signed 8.8 fixed-point format, in the
-order {a00, a01, b0, a10, a11, b1}. ``MODE4_AFFINE_A00`` to
-``MODE4_AFFINE_B1`` are their indexes in ``transform``.
+  typedef MODE4_IMAGE_WITH_METADATA(4) image_t;
+  image_t image;
 
-The matrix maps a position within the sprite on the canvas to a position
-in the image. The pixel at x, y from the top left of the sprite shows
-the pixel of the image at u, v:
+  image.opacity_metadata[0] = MODE4_OPACITY_METADATA(4, 12, true);
+
+An image and its opacity metadata must fit in XRAM together, or the VGA
+system draws nothing for the sprite. Affine sprites don't use the
+metadata, but when ``has_opacity_metadata`` is true, the metadata still
+counts toward that size.
+
+Affine sprites can be rotated and scaled. Their ``transform`` holds six
+values, the top two rows of a 3x3 affine matrix. The bottom row is
+always 0, 0, 1, so it is left out. The values are signed 8.8 fixed
+point, in the order {a00, a01, b0, a10, a11, b1}. ``MODE4_AFFINE_A00``
+to ``MODE4_AFFINE_B1`` are their indexes in ``transform``, and
+``MODE4_AFFINE_ONE`` is 1.0.
+
+The matrix maps the canvas to the image. The pixel at x, y from the top
+left of the sprite shows the pixel of the image at u, v:
 
 .. code-block:: text
 
@@ -1558,26 +1595,14 @@ the pixel of the image at u, v:
   v = a10 * x + a11 * y + b1
 
 The transform {``MODE4_AFFINE_ONE``, 0, 0, 0, ``MODE4_AFFINE_ONE``, 0}
-draws the image as it is. The matrix maps the canvas to the image, so
-it's the inverse of the change that you see on the canvas. With $0200
-(2.0) in a00 and a11, the image appears at half size, not double,
-because the VGA system steps through the image two pixels for each pixel
-of the canvas.
+draws the image as it is. Because the matrix maps the canvas to the
+image, it is the inverse of the change that you see on the canvas. With
+$0200 (2.0) in a00 and a11, the image appears at half size, not double.
 
-To rotate the image by an angle t about the center of its square, use
-these values. Here size is the width of the square in pixels, and c is
-(size - 1) / 2:
-
-.. code-block:: text
-
-  a00 = cos t    a01 = sin t    b0 = c - c * cos t - c * sin t
-  a10 = -sin t   a11 = cos t    b1 = c + c * sin t - c * cos t
-
-Multiply each value by ``MODE4_AFFINE_ONE`` to put it in 8.8 format. A
-positive t turns the image clockwise. These values fit the 8.8 format
-for sprites up to 64x64. An affine sprite draws only inside its own
-square, so leave a transparent margin around an image that you rotate,
-or its corners are cut off.
+An affine sprite draws only inside its own square, the size that
+``log_size`` gives it, even when the transform scales the image up.
+Whatever the transform moves outside that square is cut off, so leave a
+transparent margin around an image that you scale up or rotate.
 
 
 .. _vga-mode-5:
