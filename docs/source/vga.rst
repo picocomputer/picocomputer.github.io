@@ -1319,14 +1319,13 @@ the leftmost pixel in the least significant bits.
 Mode 4: Sprite 16-bit
 ---------------------
 
-Mode 4 draws sprites in 16-bit color over any fill layer. This is the
-same 16-bit sprite system used by Pi Pico Playground and Luke Wren's
-RISCBoy. Its appetite for memory is offset by something mode 5 can't do
-— affine transforms.
+Mode 4 is the same 16-bit sprite system used by Pi Pico Playground and
+Luke Wren's RISCBoy. Its appetite for memory is offset by something
+mode 5 can't do — affine transforms.
 
 There is no fixed number of sprites. The limit comes from the fill rate
-and the cost of each sprite, and :ref:`Sprite Limits
-<port-sprite-limits>` shows the math.
+and the cost of each sprite. :ref:`Sprite Limits <port-sprite-limits>`
+shows the math.
 
 .. list-table::
    :widths: 5 5 90
@@ -1364,11 +1363,19 @@ sprite array at ``xaddr``:
 
   xreg_vga_mode4(0, xaddr, length, 1);
 
-The sprite array holds ``mode4_sprite_t``. For affine sprites, set bit
-0 of OPTIONS, ``MODE4_AFFINE_BIT``, and the sprite array holds
-``mode4_asprite_t`` instead. In both, ``xram_sprite_ptr`` is the XRAM
-address of the sprite's image. `Structures`_ describes how
-a program moves sprites and in what order the VGA system draws them.
+Each sprite in the sprite array is a ``mode4_sprite_t``, or a
+``mode4_asprite_t`` with ``MODE4_AFFINE`` set in OPTIONS:
+
+- ``x_pos_px`` and ``y_pos_px`` are the position of the sprite on the
+  canvas.
+- ``xram_sprite_ptr`` is the XRAM address of its image.
+- ``log_size`` is the size of the image.
+- ``has_opacity_metadata`` is true when opacity metadata follows the
+  image.
+- ``transform`` rotates and scales an affine sprite.
+
+`Structures`_ describes how a program moves sprites and in what order
+the VGA system draws them.
 
 .. tab:: C
 
@@ -1377,15 +1384,14 @@ a program moves sprites and in what order the VGA system draws them.
 
       #define xreg_vga_mode4(...) xreg(0x1, 0x0, 0x01, 4, __VA_ARGS__)
 
-      #define MODE4_AFFINE_BIT 0x01
+      #define MODE4_AFFINE 0x01
 
-      #define MODE4_AFFINE_A00 0
-      #define MODE4_AFFINE_A01 1
-      #define MODE4_AFFINE_B0 2
-      #define MODE4_AFFINE_A10 3
-      #define MODE4_AFFINE_A11 4
-      #define MODE4_AFFINE_B1 5
-      #define MODE4_AFFINE_ONE 0x0100
+      #define MODE4_A00 0
+      #define MODE4_A01 1
+      #define MODE4_B0 2
+      #define MODE4_A10 3
+      #define MODE4_A11 4
+      #define MODE4_B1 5
 
       #define MODE4_OPACITY_METADATA(start, end, solid) \
           (((solid) ? 0x80000000ul : 0ul) |             \
@@ -1438,15 +1444,14 @@ a program moves sprites and in what order the VGA system draws them.
           xreg $1, $0, $01, 4, options, config, length, plane, begin, end
       .endmacro
 
-      MODE4_AFFINE_BIT = $01
+      MODE4_AFFINE = $01
 
-      MODE4_AFFINE_A00 = 0
-      MODE4_AFFINE_A01 = 1
-      MODE4_AFFINE_B0  = 2
-      MODE4_AFFINE_A10 = 3
-      MODE4_AFFINE_A11 = 4
-      MODE4_AFFINE_B1  = 5
-      MODE4_AFFINE_ONE = $0100
+      MODE4_A00 = 0
+      MODE4_A01 = 1
+      MODE4_B0  = 2
+      MODE4_A10 = 3
+      MODE4_A11 = 4
+      MODE4_B1  = 5
 
       .macro MODE4_OPACITY_METADATA start, end, solid
           .dword ((solid) << 31) | ((start) << 16) | (end)
@@ -1502,15 +1507,14 @@ a program moves sprites and in what order the VGA system draws them.
           xreg $1, $0, $01, 4, \values
       .endm
 
-      MODE4_AFFINE_BIT = $01
+      MODE4_AFFINE = $01
 
-      MODE4_AFFINE_A00 = 0
-      MODE4_AFFINE_A01 = 1
-      MODE4_AFFINE_B0  = 2
-      MODE4_AFFINE_A10 = 3
-      MODE4_AFFINE_A11 = 4
-      MODE4_AFFINE_B1  = 5
-      MODE4_AFFINE_ONE = $0100
+      MODE4_A00 = 0
+      MODE4_A01 = 1
+      MODE4_B0  = 2
+      MODE4_A10 = 3
+      MODE4_A11 = 4
+      MODE4_B1  = 5
 
       .macro MODE4_OPACITY_METADATA start, end, solid
           .4byte (((\solid) << 31) | ((\start) << 16) | (\end))
@@ -1528,7 +1532,7 @@ a program moves sprites and in what order the VGA system draws them.
           \name\()_ROWS_COLOR       = 0
           \name\()_ROWS_SIZE        = 2 << (\log_size)
           \name\()_OPACITY_METADATA = (1 << (\log_size)) * \name\()_ROWS_SIZE
-          \name\()_SIZE             = \name\()_OPACITY_METADATA + (4 << (\log_size))
+          \name\()_SIZE             = (\name\()_ROWS_SIZE + 4) << (\log_size)
       .endm
 
       MODE4_SPRITE_X_POS_PX             = 0
@@ -1546,12 +1550,9 @@ a program moves sprites and in what order the VGA system draws them.
       MODE4_ASPRITE_HAS_OPACITY_METADATA = 19
       MODE4_ASPRITE_SIZE                 = 20
 
-The image is an array of 16-bit colors. A sprite is a square, and each
-side is 2 to the power ``log_size`` pixels: a ``log_size`` of 0 is 1x1,
-and 7 is 128x128, the largest. A ``log_size`` above 7 describes a square
-too large for XRAM, and the sprite doesn't appear.
-``MODE4_IMAGE`` declares the structure of one image from its
-``log_size``, so ``typedef MODE4_IMAGE(4) image_t;`` is a 16x16 image.
+A mode 4 image is always square, and each pixel is a 16-bit color. Each
+side is 2 to the power ``log_size`` pixels, from 1 to 128. For example,
+``typedef MODE4_IMAGE(4) image_t;`` declares a 16x16 image.
 
 Opacity metadata lets the VGA system skip the transparent pixels at the
 ends of each row. When ``has_opacity_metadata`` is true, the opacity
@@ -1562,7 +1563,7 @@ value for one row. ``start`` is the first opaque pixel of the row, and
 ``end`` is one past the last. The VGA system draws only the pixels from
 ``start`` up to ``end``. When ``solid`` is true, it draws them without
 checking the alpha bit, so set ``solid`` only when every one of them is
-opaque.
+opaque. Affine sprites ignore opacity metadata.
 
 This code declares a 16x16 image with its opacity metadata, and sets row
 0 to draw pixels 4 to 11, all opaque:
@@ -1574,30 +1575,11 @@ This code declares a 16x16 image with its opacity metadata, and sets row
 
   image.opacity_metadata[0] = MODE4_OPACITY_METADATA(4, 12, true);
 
-An image and its opacity metadata must fit in XRAM together, or the VGA
-system draws nothing for the sprite. Affine sprites don't use the
-metadata, but when ``has_opacity_metadata`` is true, the metadata still
-counts toward that size.
-
-Affine sprites can be rotated and scaled. Their ``transform`` holds six
-values, the top two rows of a 3x3 affine matrix. The bottom row is
-always 0, 0, 1, so it is left out. The values are signed 8.8 fixed
-point, in the order {a00, a01, b0, a10, a11, b1}. ``MODE4_AFFINE_A00``
-to ``MODE4_AFFINE_B1`` are their indexes in ``transform``, and
-``MODE4_AFFINE_ONE`` is 1.0.
-
-The matrix maps the canvas to the image. The pixel at x, y from the top
-left of the sprite shows the pixel of the image at u, v:
-
-.. code-block:: text
-
-  u = a00 * x + a01 * y + b0
-  v = a10 * x + a11 * y + b1
-
-The transform {``MODE4_AFFINE_ONE``, 0, 0, 0, ``MODE4_AFFINE_ONE``, 0}
-draws the image as it is. Because the matrix maps the canvas to the
-image, it is the inverse of the change that you see on the canvas. With
-$0200 (2.0) in a00 and a11, the image appears at half size, not double.
+Affine sprites can be rotated and scaled. Their ``transform`` is a 3x3
+affine matrix without its bottom row, which is always 0, 0, 1. It holds
+six signed 8.8 fixed-point values, in the order a00, a01, b0, a10, a11,
+b1, and ``MODE4_A00`` to ``MODE4_B1`` are their indexes. The matrix maps
+each pixel of the sprite on the canvas to a pixel of the image.
 
 An affine sprite draws only inside its own square, the size that
 ``log_size`` gives it, even when the transform scales the image up.
@@ -1620,8 +1602,8 @@ Custom sprites, described below, let one plane mix sprites of different
 sizes, color depths, and orientations.
 
 There is no fixed number of sprites. The limit comes from the fill rate
-and the cost of each sprite, and :ref:`Sprite Limits
-<port-sprite-limits>` shows the math.
+and the cost of each sprite. :ref:`Sprite Limits <port-sprite-limits>`
+shows the math.
 
 .. list-table::
    :widths: 5 5 90
