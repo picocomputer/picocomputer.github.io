@@ -979,8 +979,7 @@ other 128 come from the code page that :ref:`RIA_ATTR_CODE_PAGE
 
 To use your own font, put it in XRAM and point ``xram_font_ptr`` at it.
 It holds 256 glyphs, stored a row at a time: the top row of every glyph,
-then the second row of every glyph, and so on. In each byte, bit 7 is
-the leftmost pixel, and a set bit draws in the foreground color:
+then the second row of every glyph, and so on:
 
 .. code-block:: C
 
@@ -990,15 +989,19 @@ the leftmost pixel, and a set bit draws in the foreground color:
       } row[height];
   } font;
 
+In each byte, bit 7 is the leftmost pixel, and a set bit draws in the
+foreground color.
+
 .. _vga-mode-2:
 
 Mode 2: Tile
 ------------
 
-Mode 2 draws a tile map, a grid of small bitmaps called tiles. Tile
-modes bake the color information into each tile's bitmap. This is the
-mode you want for a video game playfield, where a small set of tiles is
-repeated across a large map.
+Mode 2 builds its picture from tiles: small bitmaps, up to 256 of them,
+placed by a map of tile IDs. Tiles can have more than one bit per pixel,
+and you only need to store the ones up to the highest ID that your map
+uses. This is the mode you want for a video game playfield, where a
+small set of tiles is repeated across a large map.
 
 .. list-table::
    :widths: 5 5 90
@@ -1014,8 +1017,8 @@ repeated across a large map.
      - OPTIONS
      - | bit 0:2 - 0=1, 1=2, 2=4, or 3=8 bit color
        | bit 3 - 0=8x8, 1=16x16
-       | bit 4:7 - X trim, columns dropped off the tile right (0-15)
-       | bit 8:11 - Y trim, rows dropped off the tile bottom (0-15)
+       | bit 4:7 - X trim, columns to drop from the right of each tile (0-15)
+       | bit 8:11 - Y trim, rows to drop from the bottom of each tile (0-15)
    * - $1:0:03
      - CONFIG
      - The XRAM address of the configuration structure.
@@ -1029,53 +1032,17 @@ repeated across a large map.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-This call programs mode 2 with 8x8 tiles in 4-bit color on plane 0,
-with the configuration structure at ``xaddr``:
+This call puts mode 2 on plane 0, with 8x8 tiles in 4-bit color, using
+the configuration structure at ``xaddr``:
 
 .. code-block:: C
 
   xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, xaddr, 0);
 
-The configuration structure is ``mode2_config_t``, and `Structures`_
-describes the members that it shares with modes 1 and 3. To scroll the
-map, change ``x_pos_px`` and ``y_pos_px``. For example, an ``x_pos_px``
-of -100 puts pixel column 100 of the map at the left edge of the canvas.
-
-The data is a tile map: an array of tile IDs, ``width_tiles`` *
-``height_tiles`` long, stored row by row from 0,0 at the top left.
-
-.. code-block:: C
-
-  struct {
-      uint8_t tile_id;
-  } data[width_tiles * height_tiles];
-
-Each tile ID is an index into the tile array at ``xram_tile_ptr``. The
-array holds up to 256 tiles, but you only need to store the tiles up to
-the highest tile ID that your map uses. A tile ID past the last tile
-that you stored draws whatever bytes come after your tiles in XRAM. A
-tile whose data would extend past the end of XRAM draws as transparent
-black.
-
-An entry of the map holds only a tile ID, so every tile of a map uses
-the one palette at ``xram_palette_ptr``.
-
-Tiles are in a "tall" bitmap format, where every row of one tile is
-stored, top to bottom, before the next tile begins. A row of a tile is
-``width * bits_per_pixel / 8`` bytes long, so an 8x8 tile in 4-bit color
-has 8 rows of 4 bytes, 32 bytes in all. In 1-, 2-, and 4-bit color, the
-leftmost pixel of a byte is in its most significant bits, as `Mode 3:
-Bitmap`_ describes. ``MODE2_TILE`` declares the structure of one tile
-from its color depth and tile size, so ``typedef MODE2_TILE(4, 8)
-tile_t;`` is an 8x8 tile in 4-bit color.
-
-With trim, the VGA system draws tiles of other sizes, such as 12x12,
-from tiles stored at 8x8 or 16x16. X trim drops columns off the right of
-each tile, and Y trim drops rows off the bottom. Each tile keeps its
-full size in XRAM, and the VGA system doesn't draw the dropped pixels.
-A 16x16 tile with X trim 5 and Y trim 6 draws as 11x10, and the tiles of
-the map are 11 pixels apart across and 10 pixels apart down. In C,
-``MODE2_X_TRIM()`` and ``MODE2_Y_TRIM()`` put the trim in OPTIONS.
+The configuration structure is ``mode2_config_t``, with the members
+described in `Structures`_ plus ``xram_tile_ptr`` for the tiles. The map
+is an array of tile IDs, one byte each, stored row by row from the top
+left. Every tile of a map shares the palette at ``xram_palette_ptr``.
 
 .. tab:: C
 
@@ -1191,15 +1158,24 @@ the map are 11 pixels apart across and 10 pixels apart down. In C,
       MODE2_CONFIG_XRAM_TILE_PTR    = 14
       MODE2_CONFIG_SIZE             = 16
 
+Tiles are 8x8 or 16x16, stored one after another. ``MODE2_TILE``
+declares the type of a tile from its color depth and size:
+``typedef MODE2_TILE(4, 8) tile_t;`` is a 4-bit color tile of size 8x8.
+Pixels pack into bytes as in `Mode 3: Bitmap`_.
+
+Trim cuts tiles down to other sizes. The Apple II's text characters are
+7x8, for example, so ``MODE2_X_TRIM(1)`` on 8x8 tiles lets a game from
+that machine keep its screen layout pixel for pixel.
+
 
 .. _vga-mode-3:
 
 Mode 3: Bitmap
 --------------
 
-Mode 3 draws a bitmap. Every pixel can be its own color. The 64 KB of
-XRAM caps the color depth of an image that fills the canvas: monochrome
-at 640x480, 16 colors at 320x240, or 256 colors at 320x180 (16:9).
+Mode 3 draws a bitmap. The 64 KB of XRAM caps the color depth of an
+image that fills the canvas: monochrome at 640x480, 16 colors at
+320x240, or 256 colors at 320x180 (16:9).
 
 .. list-table::
    :widths: 5 5 90
@@ -1214,7 +1190,7 @@ at 640x480, 16 colors at 320x240, or 256 colors at 320x180 (16:9).
    * - $1:0:02
      - OPTIONS
      - | bit 0:2 - 0=1, 1=2, 2=4, 3=8, or 4=16 bit color
-       | bit 3 - reverse bit order
+       | bit 3 - reverse the order of the pixels in each byte
    * - $1:0:03
      - CONFIG
      - The XRAM address of the configuration structure.
@@ -1228,36 +1204,15 @@ at 640x480, 16 colors at 320x240, or 256 colors at 320x180 (16:9).
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-This call programs mode 3 in 4-bit color on plane 0, with the
+This call puts mode 3 on plane 0, in 4-bit color, using the
 configuration structure at ``xaddr``:
 
 .. code-block:: C
 
   xreg_vga_mode3(MODE3_4BPP, xaddr, 0);
 
-The configuration structure is ``mode3_config_t``, and `Structures`_
-describes its members. The data is a bitmap of ``height_px`` rows, from
-the top down, and each row starts on a byte boundary. In 16-bit color,
-each pixel is a 16-bit color, low byte first.
-
-.. code-block:: C
-
-  struct {
-      struct {
-          uint8_t cols[(width_px * bits_per_pixel + 7) / 8];
-      } rows[height_px];
-  } data;
-
-In 8-bit color, a byte is one pixel. In 1-, 2-, and 4-bit color, a byte
-holds 8, 4, or 2 pixels. Bit order traditionally follows the canvas, so
-that left and right bit shifts move pixels the way you'd expect: the
-leftmost pixel is in the most significant bits. In 4-bit color, the byte
-$12 is a pixel of color 1 and then a pixel of color 2. In 1-, 2-, and
-4-bit color, ``MODE3_REVERSE_BITS`` (bit 3 of OPTIONS) reverses the
-order of the pixels in each byte, so that the leftmost pixel is in the
-least significant bits. The bits of each pixel keep their order. The
-reversed order makes bit-level manipulation code slightly smaller and
-faster.
+The configuration structure is ``mode3_config_t``, with the members
+described in `Structures`_.
 
 .. tab:: C
 
@@ -1341,6 +1296,24 @@ faster.
       MODE3_CONFIG_XRAM_DATA_PTR    = 10
       MODE3_CONFIG_XRAM_PALETTE_PTR = 12
       MODE3_CONFIG_SIZE             = 14
+
+The bitmap is stored row by row from the top, and each row starts on a
+new byte:
+
+.. code-block:: C
+
+  struct {
+      struct {
+          uint8_t cols[(width_px * bits_per_pixel + 7) / 8];
+      } rows[height_px];
+  } data;
+
+In 8-bit color, a byte is one pixel. In 16-bit color, a pixel is two
+bytes, low byte first. In 1-, 2-, and 4-bit color, a byte holds 8, 4, or
+2 pixels, with the leftmost pixel in the most significant bits, so
+shifting a byte left or right in C moves its pixels left or right on the
+screen. ``MODE3_REVERSE_BITS`` reverses the order of the pixels in each
+byte, so the leftmost pixel is in the least significant bits.
 
 
 .. _vga-mode-4:
