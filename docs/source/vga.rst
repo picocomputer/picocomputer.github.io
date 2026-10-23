@@ -57,21 +57,20 @@ picture:
 A mode does not have to cover the whole canvas. You can program a range
 of scanlines with one mode, and the scanlines below it with a different
 mode. You can also program the same scanlines with more than one mode,
-one in front of another, such as sprites over a tile map. As the VGA
-system draws each scanline, it calls the renderer of each mode on that
-scanline, and composites what they draw.
+one in front of another, such as sprites over a tile map.
 
 Most modes need two things from you in XRAM. The first is the data that
 they draw, such as a bitmap. The second is a configuration structure,
 which holds where that data is in XRAM and where it goes on the canvas.
-A sprite mode takes a sprite array instead, with one structure for each
-sprite. The console, mode 0, needs nothing in XRAM.
+A sprite mode takes a sprite array in place of the configuration
+structure, with one structure for each sprite. The console, mode 0,
+needs nothing in XRAM.
 
 Putting a picture on the canvas takes four steps.
 
 **1. Select a canvas,** for example with
 ``xreg_vga_canvas(CANVAS_320X240)``. You get a blank canvas, with no
-scanlines programmed. Your data in XRAM stays as it is.
+scanlines programmed.
 
 **2. Load the data** into XRAM: a bitmap, a tile map and its tiles, or
 sprite images, plus any palette or font that they use.
@@ -314,10 +313,11 @@ with sprites on each.
 
 The six layers stack like the layers of an image editor, with plane 0 at
 the back and plane 2 at the front. That is why the status bar on plane 2
-covers part of the sun, a sprite on plane 0. You pick a mode's plane
-with its PLANE argument. On each scanline, a plane can have only one
-fill mode and one sprite mode. To show text over a bitmap, put the text
-on a plane in front of the bitmap.
+covers part of the sun, a sprite on plane 0.
+
+On each scanline, a plane can have only one fill mode and one sprite
+mode. To show text over a bitmap, put the text on a plane in front of
+the bitmap. You pick a mode's plane with its PLANE argument.
 
 A transparent pixel shows the layer behind it. `Colors and Palettes`_
 describes which colors are transparent. The fill layer of plane 0 has
@@ -348,8 +348,8 @@ You program scanlines with a mode's macro, which makes the :ref:`xreg()
   xreg_vga_mode3(MODE3_8BPP, XRAM_BITMAP_CONFIG, 0, 0, 160);
 
 Each mode's section in `Programming`_ has its macro, in an ``xram.h``
-code block. The macro takes its arguments in the order of the mode's
-register table. Modes 1 to 3 take these:
+code block, and a table of its registers. The macro takes its arguments
+in the order of that table. Modes 1 to 3 take these:
 
 - OPTIONS holds the mode's options, such as its color depth.
   ``MODE3_8BPP`` selects 8-bit color.
@@ -457,10 +457,9 @@ sprite, move it off the canvas.
 
 Configuration structures, sprite arrays, and palettes must begin at even
 XRAM addresses. Neither cc65 nor llvm-mos pads a structure, so check
-your ``xram_layout_t`` for members with an odd size.
-Put a pad byte after odd-sized members, or move them
-to the end of the layout. :ref:`Symbols in CMake
-<sdk-symbols-in-cmake>` in the :doc:`sdk` shows how your build can
+your ``xram_layout_t`` for members with an odd size. Put a pad byte
+after each one, or move them to the end of the layout. :ref:`Symbols in
+CMake <sdk-symbols-in-cmake>` in the :doc:`sdk` shows how your build can
 check the addresses for you.
 
 
@@ -497,8 +496,8 @@ The time between frames is short. With VGA timing, VSYNC comes about
 1.4 ms before the VGA system starts to draw scanline 0. That's roughly
 11,000 cycles of a 6502 at 8 MHz, and it's how long you have to get a
 change in before the first scanline. You have longer for things further
-down the canvas. `Frame Timing`_ gives the time from VSYNC to scanline 0 for every
-canvas and display.
+down the canvas. `Frame Timing`_ gives the time from VSYNC to scanline 0
+for every canvas and display.
 
 
 Programming
