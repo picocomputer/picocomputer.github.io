@@ -796,12 +796,6 @@ The RIA broadcasts every change to XRAM as a device 0 message, with the
 XRAM address in bits 15-0 and the XRAM data in bits 23-16. Each device
 keeps a local replica of the XRAM it uses, typically all 64 KB.
 
-One ``xreg()`` call sends one message for each value. The messages to
-the VGA follow the order that :ref:`Modes <vga-modes>` in
-the :doc:`vga` datasheet describes. After each write to a key register
-of the VGA, the RIA waits for the ack or the nak of the VGA. The RIA does not wait after a write
-to any other register, so a device 2-6 cannot refuse a value.
-
 
 .. _pico-backchannel:
 

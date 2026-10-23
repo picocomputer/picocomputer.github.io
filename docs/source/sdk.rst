@@ -518,7 +518,7 @@ storage, keyboards, mice, gamepads, the RTC, and networking through the
      - VIA, see the `WDC datasheet
        <https://www.westerndesigncenter.com/wdc/w65c22-chip.php>`_
    * - $FFE0-$FFFF
-     - RIA, see the :doc:`RIA datasheet <ria>`
+     - RIA, see the :doc:`RIA page <ria>`
    * - $10000-$1FFFF
      - XRAM, 64 KB, see `XRAM Memory Map`_
 
@@ -542,8 +542,8 @@ use XRAM for virtual devices or for general purpose storage. The virtual
 devices are the keyboard, mouse, tablet, and gamepad inputs; the PSG and
 OPL2 sound generators; and the VGA modes with the pixels, tiles, and
 sprites they draw. A call to :ref:`xreg() <api-xreg>` maps a device to
-an address in XRAM, and the section of each device in the :doc:`ria` and
-:doc:`vga` datasheets shows its ``xreg()`` call.
+an address in XRAM, and the section of each device on the :doc:`ria` and
+:doc:`vga` pages shows its ``xreg()`` call.
 
 Before the first ``xreg()`` call, decide the XRAM address of each device and of
 each block of general purpose storage. A spreadsheet with every address laid
@@ -558,7 +558,7 @@ of storage. The compiler calculates the address of each member, so
 nothing overlaps.
 
 To add support for a device to your program, copy its code block from
-the :doc:`ria` or :doc:`vga` datasheet into the file. Each code block is
+the :doc:`ria` or :doc:`vga` page into the file. Each code block is
 labeled ``xram.h`` or ``xram.inc`` and holds the structure of the device,
 its constants, and the macros for its extended register (XREG). Choose
 the C, ca65, or llvm-mc tab, then use the "Copy to clipboard" button in the
@@ -570,11 +570,11 @@ They provide the API calls, including ``xreg()`` and the XRAM functions,
 but none of the XRAM structures, so your copy is the only definition the
 program uses. Register numbers, field offsets, and sizes never change, so
 a change to the SDK never breaks your copy. Only names can change in the
-datasheets, and you can rename anything in your copy.
+manual, and you can rename anything in your copy.
 
 This ``xram.h`` is for a program that uses only the keyboard. It holds
 the code block of :ref:`Keyboard <ria-keyboard>` from the :doc:`ria`
-datasheet, as copied, and a layout that puts the keyboard at address 0.
+page, as copied, and a layout that puts the keyboard at address 0.
 A type marked ``/* layout */`` is a block that goes in
 ``xram_layout_t``.
 
@@ -727,7 +727,7 @@ presses a key.
 
 The PSG and the OPL2 have placement rules: the 64 bytes of the PSG must
 not cross a 256-byte page, and the OPL2 registers must start on a page.
-Their code blocks in the :doc:`ria` datasheet define ``PSG_PAGE_CHECK``
+Their code blocks on the :doc:`ria` page define ``PSG_PAGE_CHECK``
 and ``OPL_PAGE_CHECK``. For each sound generator that your program uses,
 add its check to ``xram.h``, after the ``XRAM_`` symbols:
 
@@ -1698,7 +1698,7 @@ First, make the project build and run again:
 #. Update the tools as in `Updating the Tools`_.
 #. Add ``xram.h`` to the project, from ``src/`` of the template or as an
    empty file. For an assembly project, add ``xram.inc``. The structures
-   and macros that the table copies from the datasheets go in this file.
+   and macros that the table copies from the manual go in this file.
 #. In a C project, add ``rp6502-compat.h`` from the end of this section.
    Include ``"rp6502-compat.h"`` in place of ``<rp6502.h>``. The header
    defines most of the old names, so the code that uses them builds
@@ -1743,13 +1743,13 @@ This table lists the changes that break an older project:
        layout.
    * - ``xreg_ria_keyboard``, ``xreg_ria_mouse``, ``xreg_ria_gamepad``,
        ``xreg_ria_tablet``
-     - Copy the same macros from the :doc:`ria` datasheet into
+     - Copy the same macros from the :doc:`ria` page into
        ``xram.h``.
    * - ``xreg_vga_canvas``
      - Copy the same macro from :ref:`vga-key-registers` into
        ``xram.h``.
    * - ``xreg_vga_mode(n, ...)``
-     - One macro per mode from the :doc:`vga` datasheet,
+     - One macro per mode from the :doc:`vga` page,
        ``xreg_vga_mode0`` to ``xreg_vga_mode5``. ``xreg_vga_mode(3, ...)``
        becomes ``xreg_vga_mode3(...)``.
    * - ``phi2()``

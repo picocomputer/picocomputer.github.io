@@ -437,7 +437,7 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
        placed with ``at`` always reports hover, and a ``touch`` never
        does. A program that reads the block while an ``at`` is applied
        can get the old X with the new Y, unless it reads the block as
-       :ref:`Tablet <ria-tablet>` in the RIA datasheet shows.
+       :ref:`Tablet <ria-tablet>` on the RIA page shows.
    * - ``expect [stdout|stderr|console] "text"``,
        ``expect-not [stdout|stderr|console] "text"``
      - Check the stream since its last match, stdout if none is named. A

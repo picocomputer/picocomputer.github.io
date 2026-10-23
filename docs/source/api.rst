@@ -47,7 +47,7 @@ keyboard, mouse, and gamepads. A program maps each of those devices to
 an XRAM address with ``xreg()``, as :ref:`XRAM Memory Map
 <sdk-xram-memory-map>` in the :doc:`sdk` shows. Then the program reads
 and writes the XRAM of the device with the XRAM functions of
-``rp6502.h``. The :doc:`ria` and :doc:`vga` datasheets describe each
+``rp6502.h``. The :doc:`ria` and :doc:`vga` pages describe each
 device.
 
 Under the C functions is the Application Binary Interface (ABI), the
@@ -214,8 +214,8 @@ XREG
    Information Exchange (PIX) <ria-pix>`. A program uses it to map
    devices, such as the keyboard and the video modes, to XRAM. Then the
    program uses each device through its XRAM, with the XRAM functions.
-   The section of each device in the :doc:`ria` and :doc:`vga`
-   datasheets gives its registers and its ``xreg()`` call.
+   The section of each device on the :doc:`ria` and :doc:`vga`
+   pages gives its registers and its ``xreg()`` call.
 
    The manual writes the address of an extended register (XREG) as
    $device:channel:index. These are the first three arguments of

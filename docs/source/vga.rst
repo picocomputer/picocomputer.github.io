@@ -9,36 +9,31 @@ Introduction
 
 The RP6502 Video Graphics Array (VGA) is virtual video hardware modeled
 on the home computers and arcades of the 8-bit and early-16-bit era. You
-set it up with a few register writes and put your graphics in XRAM, and
-from then on it draws every frame by itself while the 6502 runs your
+set it up with a few register writes and put your graphics in XRAM.
+From then on, it draws every frame by itself while the 6502 runs your
 program.
 
 It has the parts that the games of that era were built from. Text in
-cells, tile maps, and bitmaps all scroll to the pixel. Sprites come in
-1-, 2-, 4-, and 8-bit color with a palette for each sprite, or in 16-bit
-color, where they can also rotate and scale. Three planes stack these
-from back to front, with transparency, so a status bar can sit over a
-scrolling playfield. The picture can also switch to a different mode
-partway down the screen, without an interrupt.
+cells, tile maps, and bitmaps all scroll to the pixel. Sprites in 1-,
+2-, 4-, or 8-bit color can each have their own palette, and sprites in
+16-bit color can rotate and scale. Three planes stack all of these from
+back to front, with transparency, so a status bar can sit over a
+scrolling playfield. You can also switch to a different mode partway
+down the screen, without a scanline interrupt.
 
-The :doc:`pico` has a real analog VGA output with standard VGA timing at
-60 Hz, and the VGA system is built around it. That output has 5 bits
-each of red, green, and blue, so the picture has 32,768 colors.
+The VGA system is built around the real analog VGA output of the
+:doc:`pico`. That output uses standard VGA timing at 60 Hz. Colors have
+5 bits each of red, green, and blue, so you have 32,768 colors to choose
+from.
 
 
 Getting Started
 ===============
 
-This section is for when you are ready to dig in. It starts with the few
-ideas that every picture is built from: the canvas, the modes, and the
-four steps that put a picture on the canvas. Then it walks you through a
-short program, and shows you where this page explains each part of it,
-so that you know your way around the video system when you are done.
-
-The VGA system draws your picture on the canvas, a grid of pixels such
-as 320x240. The rows of the canvas are scanlines, numbered from 0 at the
-top. The VGA system has six rendering modes, and each one draws one kind
-of picture:
+You draw your picture on the canvas, a grid of pixels such as 320x240.
+Each row of the canvas is a scanline, and scanline 0 is at the top. The
+VGA system has six rendering modes, and each one draws one kind of
+picture:
 
 .. list-table::
    :widths: 20 80
@@ -59,45 +54,41 @@ of picture:
    * - :ref:`Mode 5 <vga-mode-5>`
      - Sprites in 1-, 2-, 4-, or 8-bit color, each with its own palette.
 
-A mode does not need to cover the whole canvas. You can put a mode on a
-range of scanlines, and a different mode on the scanlines below it. One
-call to ``xreg()`` programs one mode onto a range of scanlines. More
-than one mode can also be on the same scanline, one in front of another.
-As the VGA system draws each scanline, it calls the renderer of each
-mode programmed on that scanline, and composites what they draw into the
-scanline.
+A mode does not have to cover the whole canvas. You can program a range
+of scanlines with one mode, and the scanlines below it with a different
+mode. You can also program the same scanlines with more than one mode,
+one in front of another, such as sprites over a tile map. As the VGA
+system draws each scanline, it calls the renderer of each mode on that
+scanline, and composites what they draw.
 
 Most modes need two things from you in XRAM. The first is the data that
 they draw, such as a bitmap. The second is a configuration structure,
-which holds where that data is and where to draw it on the canvas. Modes
-1 to 3 each take a configuration structure. The sprite modes, 4 and 5,
-take a sprite array instead, with one structure for each sprite. Mode 0,
-the console, has no configuration structure, so you put nothing in XRAM
-for it.
+which holds where that data is in XRAM and where it goes on the canvas.
+A sprite mode takes a sprite array instead, with one structure for each
+sprite. The console, mode 0, needs nothing in XRAM.
 
 Putting a picture on the canvas takes four steps.
 
 **1. Select a canvas,** for example with
-``xreg_vga_canvas(CANVAS_320X240)``. Selecting a canvas gives you a
-blank canvas, with no mode programmed on any of its scanlines. It leaves
-XRAM as it is.
+``xreg_vga_canvas(CANVAS_320X240)``. You get a blank canvas, with no
+scanlines programmed. Your data in XRAM stays as it is.
 
-**2. Load the data** of each mode into XRAM: a bitmap, a tile map and
-its tiles, or sprite images, and any palette or font that they use.
+**2. Load the data** into XRAM: a bitmap, a tile map and its tiles, or
+sprite images, plus any palette or font that they use.
 
-**3. Write the configuration structure** of each mode into XRAM, or the
-sprite array of a sprite mode.
+**3. Write the configuration structure** for each mode into XRAM. For a
+sprite mode, write its sprite array.
 
-**4. Program the VGA system with your modes,** using their macros, such
-as ``xreg_vga_mode3()``. Each call puts a mode on one of three planes,
-over a range of scanlines. From then on, the VGA system draws the modes
-on every frame.
+**4. Program the scanlines** with mode macros, such as
+``xreg_vga_mode3()``. Each call programs a range of scanlines, on one of
+the three planes, with one mode. From then on, the VGA system draws your
+picture on every frame.
 
-Here are the four steps in a program. It is the start of a graphical
-text adventure, and it splits the canvas in two: a picture at the top,
-and the console under it, where you type. Mode 3 draws the picture, a
-bitmap of sky and grass, on scanlines 0 to 159. Mode 0 draws the console
-on scanlines 160 to 239. The split takes just two calls.
+Here are the four steps in a program. This one is the start of a
+graphical text adventure. It splits the canvas in two: a picture at the
+top, and the console under it, where you type. Mode 3 draws a bitmap of
+sky and grass on scanlines 0 to 159, and mode 0 draws the console on
+scanlines 160 to 239. The split takes just two calls.
 
 .. image:: _static/vga/ranges-light.svg
    :class: only-light
@@ -113,16 +104,15 @@ on scanlines 160 to 239. The split takes just two calls.
          scanlines 0 to 159, and mode 0 draws the console on scanlines 160 to
          239, both on the fill layer of plane 0.
 
-The program keeps two things in XRAM: the bitmap, and the configuration
-structure that holds where the bitmap is. Its ``xram.h`` makes room for
-both. The comment at the top marks where the code blocks from this page
-go. You copy those in, and the layout after them is the only part you
-write yourself:
+You lay out XRAM in your program's ``xram.h``. The one below makes room
+for the bitmap and its configuration structure. The comment at the top
+lists the code blocks to copy in from this page. The layout after them
+is the only part that you write yourself:
 
 .. code-block:: C
    :caption: xram.h
 
-   // From the Programming part of the VGA page, paste the
+   // From the Programming part of the VGA page, copy the
    // code blocks of Canvas Types, Mode 0, and Mode 3 here.
 
    typedef struct
@@ -167,7 +157,7 @@ the configuration structure:
           };
           xram0_write(XRAM_BITMAP_CONFIG, &config, sizeof(config));
 
-          // 4. Program the modes: the bitmap above, the console below.
+          // 4. Program the scanlines: the bitmap above, the console below.
           xreg_vga_mode3(MODE3_8BPP, XRAM_BITMAP_CONFIG, 0, 0, 160);
           xreg_vga_mode0(0, 160);
 
@@ -212,7 +202,7 @@ the configuration structure:
           config.xram_palette_ptr = 0xFFFF;
           xram0_write(XRAM_BITMAP_CONFIG, &config, sizeof(config));
 
-          // 4. Program the modes: the bitmap above, the console below.
+          // 4. Program the scanlines: the bitmap above, the console below.
           xreg_vga_mode3(MODE3_8BPP, XRAM_BITMAP_CONFIG, 0, 0, 160);
           xreg_vga_mode0(0, 160);
 
@@ -226,49 +216,51 @@ the configuration structure:
       }
 
 That is a lot to take in at once, and you do not need to understand
-every line yet. Instead of going through the program line by line, the
-rest of this section shows you where this page covers each step. By the
-end of step 4, you know your way around.
+every line yet. Each step below points to where this page explains
+it.
 
 **Step 1** selects the 320x240 :ref:`canvas <vga-canvas-layout>`.
 `Canvas Types`_ lists the other canvas sizes that you can choose.
 
-**Step 2** draws the picture in XRAM. The two calls to
-:c:func:`xram0_set` fill the bitmap: 110 rows of color 111, a light
-blue, and 50 rows of color 34, a green. In 8-bit color, each byte is one
-pixel, as `Mode 3: Bitmap`_ describes. `Built-in Palette`_ shows both
-colors, along with every other color that you can use without making a
-palette.
+**Step 2** draws the picture in XRAM. The first call to
+:c:func:`xram0_set` makes the sky: 110 rows of color 111, a light blue.
+The second makes the grass under it: 50 rows of color 34, a green. In
+8-bit color, each byte is one pixel, so each row is 320 bytes. `Mode 3:
+Bitmap`_ describes how pixels pack into bytes at every color depth.
+`Built-in Palette`_ shows both colors, along with every other color that
+you can use without making a palette.
 
-**Step 3** fills in ``mode3_config_t``, the configuration structure that
-`Mode 3: Bitmap`_ declares, and copies it into XRAM. `Structures`_
-explains each member. The palette address $FFFF selects the built-in
-palette, as `Colors and Palettes`_ describes. The llvm-mos program names
-just four members, because C99 designated initializers set the rest to
-0. cc65 does not have designated initializers, so its program sets every
-member.
+**Step 3** fills in the bitmap's configuration structure and copies it
+into XRAM. The structure holds the bitmap's size, 320x160, and where the
+bitmap is in XRAM. Its palette address, $FFFF, selects the built-in
+palette, as `Colors and Palettes`_ describes. `Mode 3: Bitmap`_ declares
+``mode3_config_t``, and `Structures`_ explains each member. The llvm-mos
+program sets just four members, because C99 designated initializers set
+the rest to 0. cc65 does not have designated initializers, so its
+program sets every member.
 
-**Step 4** programs the two modes, and the picture appears.
-``xreg_vga_mode3()`` puts the bitmap on scanlines 0 to 159.
-``xreg_vga_mode0()`` leaves off END, so the console runs from scanline
-160 to the bottom of the canvas. `Mode 3: Bitmap`_ and `Mode 0:
-Console`_ give the arguments of each macro, and `Modes`_ explains the
-range of scanlines. Both modes share plane 0 because they draw on
-different scanlines, as `Planes`_ describes.
+**Step 4** programs the scanlines, and the picture appears.
+``xreg_vga_mode3()`` puts the bitmap on scanlines 0 to 159 of plane 0.
+``xreg_vga_mode0()`` puts the console on plane 0, from scanline 160. The
+call leaves off END, so the console runs to the bottom of the canvas.
+Both modes can share plane 0 because they are on different scanlines, as
+`Planes`_ describes. `Modes`_ explains the range of scanlines. `Mode 3:
+Bitmap`_ and `Mode 0: Console`_ give each macro's arguments.
 
 Last, the program prints "You are standing in an open field." Then,
-after every line that you type, it prints "Nothing happens.", a
-placeholder for the text adventure that it could become.
+after each line that you type, it prints "Nothing happens." This
+is a placeholder for the text adventure that the program could become.
 
 
 How It Works
 ============
 
-Everything that your program gives the VGA system to draw is in XRAM:
-your images, palettes, and fonts, and the structures that hold where
-they go. You build the ``xram.h`` of your program from the code blocks
-on this page. After them, you lay out XRAM, as :ref:`XRAM Memory Map
-<sdk-xram-memory-map>` in the :doc:`sdk` describes.
+Everything that you give the VGA system to draw is in XRAM: your images,
+palettes, and fonts, and the structures that hold where they go. Your
+program's ``xram.h`` starts with the code blocks that you copy from this
+page. After them, you write ``xram_layout_t``, with a member for each
+thing that you keep in XRAM. :ref:`XRAM Memory Map
+<sdk-xram-memory-map>` in the :doc:`sdk` shows how.
 
 
 .. _vga-canvas-layout:
@@ -277,25 +269,22 @@ Canvas
 ------
 
 The canvas is where you draw your picture, on a grid of pixels such as
-320x240. Its size is the resolution that you draw at. Standard VGA is
-640x480, so on a VGA display, a 320x240 canvas is scaled up to 640x480
-automatically. The emulator scales the canvas to fit its window. Any
-canvas works on any display.
+320x240. You choose from four canvas sizes: 320x240 and 640x480, which
+are 4:3, and 320x180 and 640x360, which are 16:9. Your program has one
+canvas at a time, and every mode draws on it. `Canvas Types`_ gives the
+CANVAS value of each size.
 
-A scanline is always one row of the canvas, even when the canvas is
-scaled to fit a display with more lines.
+The size that you choose is the resolution that you draw at. Standard
+VGA is 640x480, so on a VGA display, the VGA system scales a 320x240
+canvas up to 640x480. A scanline is still one row of the canvas, so that
+canvas has 240 scanlines, not 480. The emulator scales the canvas to fit
+its window. Any canvas works on any display.
 
-You choose from four canvas sizes: 320x240 and 640x480, which are 4:3,
-and 320x180 and 640x360, which are 16:9. Your program has one canvas at
-a time, and every mode draws on it. `Canvas Types`_ gives the CANVAS
-value of each size.
-
-Your ROM starts on the console canvas. It shows only the console, and
-you cannot program a mode on it, so before any graphics, select a canvas
-of one of the four sizes. A new canvas starts blank, without even the
-console, so anything that you print stays hidden until you put mode 0 on
-a plane. When your ROM stops, the VGA system goes back to the console
-canvas.
+Your ROM starts on the console canvas, which shows only the console. You
+cannot program its scanlines, so select one of the four canvas sizes
+before you draw. A new canvas starts blank, without even the console.
+Anything that you print stays hidden until you put mode 0 on a plane.
+When your ROM stops, the VGA system goes back to the console canvas.
 
 
 Planes
@@ -325,25 +314,24 @@ with sprites on each.
 
 The six layers stack like the layers of an image editor, with plane 0 at
 the back and plane 2 at the front. That is why the status bar on plane 2
-covers part of the sun, a sprite on plane 0. You pick the plane of a
-mode with its PLANE argument. On any scanline, a plane has at most one
-fill mode and one sprite mode, so to show text over a bitmap, put the
-text on a plane in front of the bitmap.
+covers part of the sun, a sprite on plane 0. You pick a mode's plane
+with its PLANE argument. On each scanline, a plane can have only one
+fill mode and one sprite mode. To show text over a bitmap, put the text
+on a plane in front of the bitmap.
 
-A transparent pixel shows the layer behind it, and `Colors and
-Palettes`_ describes which colors are transparent. The fill layer of
-plane 0 has nothing behind it, so it draws every pixel, even one in a
-transparent color. Where nothing draws, the canvas is black.
+A transparent pixel shows the layer behind it. `Colors and Palettes`_
+describes which colors are transparent. The fill layer of plane 0 has
+nothing behind it, so it draws every pixel, even one in a transparent
+color. Where nothing draws, the canvas is black.
 
 The VGA system has a fixed time to draw each scanline. Fill layers
 always fit in that time, so you can fill all three planes at any color
-depth on any canvas, on every machine. Sprites can run out of that time.
-There is no fixed number of sprites. The limit depends on how many
-sprites the VGA system checks on a scanline and how many of them it
-draws, because both take time. If you plan to use an unusually large
-number of sprites, :ref:`Sprite Limits <port-sprite-limits>` in
-:doc:`port` shows how to count them, and what happens when they do not
-fit.
+depth on any canvas, on every machine. Sprites can run out of that time,
+and how many fit depends on what they cost. Every sprite in a sprite
+array costs a little time on every scanline of its mode, and more on the
+scanlines that it covers. If you plan to use an unusually large number
+of sprites, :ref:`Sprite Limits <port-sprite-limits>` in :doc:`port`
+shows how to count them and what happens when they do not fit.
 
 
 .. _vga-modes:
@@ -351,103 +339,59 @@ fit.
 Modes
 -----
 
-Each mode has a macro that programs it with one call to :ref:`xreg()
-<api-xreg>`. This line from `Getting Started`_ puts an 8-bit bitmap on
-plane 0, on scanlines 0 to 159:
+You program scanlines with a mode's macro, which makes the :ref:`xreg()
+<api-xreg>` call for you. This line from `Getting Started`_ puts an
+8-bit bitmap on plane 0, on scanlines 0 to 159:
 
 .. code-block:: C
 
   xreg_vga_mode3(MODE3_8BPP, XRAM_BITMAP_CONFIG, 0, 0, 160);
 
-You find the macro in the ``xram.h`` code block of the mode in
-`Programming`_, and it takes its arguments in the order of the register
-table of the mode. Modes 1 to 3 take these:
+Each mode's section in `Programming`_ has its macro, in an ``xram.h``
+code block. The macro takes its arguments in the order of the mode's
+register table. Modes 1 to 3 take these:
 
-- OPTIONS holds the options of the mode, such as its color depth.
+- OPTIONS holds the mode's options, such as its color depth.
   ``MODE3_8BPP`` selects 8-bit color.
 - CONFIG is the XRAM address of the configuration structure.
 - PLANE is the plane, 0 to 2.
 - BEGIN and END set the range of scanlines.
 
-The sprite modes add LENGTH, the number of sprites, after CONFIG, and
-their CONFIG is the XRAM address of the sprite array. Mode 0 takes only
-PLANE, BEGIN, and END.
+The sprite modes add LENGTH after CONFIG. Their CONFIG is the XRAM
+address of the sprite array, and LENGTH is the number of sprites in it.
+Mode 0 takes only PLANE, BEGIN, and END.
 
-BEGIN is the first scanline of the mode, and END is one past the last,
-so BEGIN 0 and END 160 are scanlines 0 to 159. An END of 0 means the
-height of the canvas. Arguments that you leave off the end of a call are
-0, so a call without PLANE, BEGIN, and END puts its mode on plane 0,
-over the whole canvas.
+BEGIN is the mode's first scanline, and END is one past its last, so
+BEGIN 0 and END 160 cover scanlines 0 to 159. With an END of 0, the mode
+runs to the bottom of the canvas. Arguments that you leave off the end
+of a call are 0, so ``xreg_vga_mode3(MODE3_8BPP, XRAM_BITMAP_CONFIG)``
+puts mode 3 on plane 0, over the whole canvas.
 
-The graphical text adventure of `Getting Started`_ splits the canvas
-with two ranges like this, with its picture on the top 160 scanlines and
-its console on the bottom 80. On many computers of the era, a split like
-this took a scanline interrupt. The VGA system does not have one,
-because it changes modes at each BEGIN and END by itself. That leaves
-more CPU headroom for your game logic.
+The text adventure in `Getting Started`_ splits the canvas with BEGIN
+and END. It puts the picture on scanlines 0 to 159 and the console on
+the scanlines below, both on plane 0. On computers of the era, a split
+like this took a scanline interrupt, which is finicky to get right and
+takes CPU time from your game logic. The VGA system changes modes at
+each BEGIN and END by itself, so your program needs no interrupt.
 
-To change the options of a mode, program the mode again with all of its
-arguments. The new mode replaces the old mode of its layer from BEGIN to
-END, and the other scanlines keep their modes. No call removes a single
-mode. To remove one, or to move a mode to another plane or onto fewer
-scanlines, select the canvas again, which leaves no mode on any
-scanline, and then program the modes that you still need.
-
-Each macro sets two kinds of register. MODE, at $1:0:01, holds the
-number of the mode. The arguments go in the argument registers after it,
-$1:0:02 and up, and the VGA system reads them when you set MODE. So one
-``xreg()`` call can set MODE and its arguments together. Without the
-macro, this call puts a bitmap in 4-bit color on plane 0, with its
-configuration structure at $FF00:
-
-.. code-block:: C
-
-  xreg(0x1, 0x0, 0x01, 3, 2, 0xFF00);
-
-It sets MODE to 3, the :ref:`bitmap mode <vga-mode-3>`, $1:0:02 to 2,
-for 4-bit color, and $1:0:03 to $FF00. The arguments come after MODE in
-the call, but the RIA sets them first, so they are ready when the VGA
-system reads them. Every value after MODE in a call goes to an argument
-register, so one call programs at most one mode. Setting CANVAS or MODE
-clears the argument registers afterward, which is why arguments that you
-leave off are 0. You can also set the arguments in one call, and then
-set MODE alone in a later call.
-
-CANVAS and MODE are the key registers of channel 0: setting either one
-changes the picture. One call can select the canvas and program the
-first mode, which is all the video setup that many programs need:
-
-.. code-block:: C
-
-  xreg(0x1, 0x0, 0x00, 1, 3, 2, 0xFF00);
-
-The RIA sets the key registers in order, from the lowest index. So this
-call selects the 320x240 canvas, then sets 2 and $FF00, and then
-programs mode 3. Selecting the canvas clears the argument registers, but
-2 and $FF00 come after that, so mode 3 still gets them.
-
-The VGA system refuses a value that it cannot use, such as a
-configuration structure at an odd XRAM address. Then ``xreg()`` returns
--1 and fails with EINVAL. A refused value changes nothing on the canvas.
-After a refused MODE, every mode stays where it was, and VSYNC still
-comes at the same scanline. After a refused CANVAS, the canvas and its
-modes stay as they were, and the call stops there, so a MODE later in
-the same call is not set. Either refusal still clears the argument
-registers.
-
-A refusal does not undo what the call set before it. If the VGA system
-refuses the mode of that last call, the 320x240 canvas stays selected
-with no modes. The canvas is black, and the console stays hidden until
-the program selects the console canvas or programs mode 0, or until the
-ROM stops.
+You can reprogram scanlines at any time. When you change scenes, say
+from a bitmap to a tile map, program the same scanlines with the new
+mode, and it replaces what its layer had there. The other scanlines keep
+their modes. To start a scene from a blank canvas, select the canvas
+again.
 
 
 Structures
 ----------
 
-A configuration structure holds what a mode draws and where it draws
-it. The configuration structures of modes 1 to 3 start with the same
-members:
+After you program the scanlines, you change the picture by changing
+XRAM. Write a new position into a configuration structure, and the image
+scrolls. Write a sprite's new position into its sprite array, and the
+sprite moves. Write new pixels into a bitmap, and the picture changes.
+You can make these changes at any time, without programming the
+scanlines again.
+
+In modes 1 to 3, the configuration structure starts with these members:
 
 .. list-table::
    :widths: 35 65
@@ -456,41 +400,46 @@ members:
    * - Member
      - Meaning
    * - ``xram_data_ptr``
-     - The XRAM address of the data: the cells of mode 1, the tile map
-       of mode 2, or the bitmap of mode 3.
+     - The XRAM address of the data: the cells for mode 1, the tile map
+       for mode 2, or the bitmap for mode 3.
    * - ``xram_palette_ptr``
      - The XRAM address of the palette, as `Colors and Palettes`_
        describes.
    * - ``width_chars``, ``height_chars``, ``width_tiles``,
        ``height_tiles``, ``width_px``, ``height_px``
-     - The size of the image: in characters in mode 1, in tiles in mode
-       2, and in pixels in mode 3.
+     - The size of the image: in characters for mode 1, in tiles for
+       mode 2, and in pixels for mode 3.
    * - ``x_pos_px``, ``y_pos_px``
-     - Where the top left pixel of the image goes on the canvas, in
-       canvas pixels. They can be negative, so an image can start above
-       or to the left of the canvas.
+     - Where the image's top left pixel goes on the canvas, in canvas
+       pixels. They can be negative, so an image can start above or to
+       the left of the canvas.
    * - ``x_wrap``, ``y_wrap``
-     - When ``x_wrap`` is true, the VGA system repeats the image across
-       the canvas, and when ``y_wrap`` is true, down the canvas.
+     - When ``x_wrap`` is true, the image repeats across the canvas.
+       When ``y_wrap`` is true, it repeats down the canvas.
 
-:ref:`Mode 1 <vga-mode-1>` adds ``xram_font_ptr``, and :ref:`mode 2
-<vga-mode-2>` adds ``xram_tile_ptr``.
+:ref:`Mode 1 <vga-mode-1>` adds ``xram_font_ptr`` for its font, and
+:ref:`mode 2 <vga-mode-2>` adds ``xram_tile_ptr`` for its tiles.
 
-An image does not have to be the size of the canvas. A smaller one
-covers part of the canvas, and the layer is transparent around it unless
-the image wraps. A larger one shows only the part on the canvas, so
-changing its position scrolls it.
+An image does not have to be the size of the canvas. A smaller image
+covers part of the canvas, and the layer around it is transparent,
+unless the image wraps. A larger image shows only the part that is on
+the canvas. A game that scrolls sideways, for example, uses a tile map
+wider than the canvas and changes ``x_pos_px`` on each frame.
 
-BEGIN and END set only the scanlines that a mode draws on. They do not
-move its image. For example, a bitmap at position 0, 0 on scanlines 100
-and down shows its rows from row 100 down, not its top rows. Each range
-can have its own configuration structure, so each part of the canvas can
-scroll on its own.
+BEGIN and END set which scanlines a mode draws on, but they do not move
+its image. For example, if a bitmap is at position 0, 0 and you program
+scanlines 100 and down with mode 3, you see the bitmap's rows from row
+100 down, not its top rows. To show its top rows there, set ``y_pos_px``
+to 100.
 
-In a sprite array, each sprite has its own ``x_pos_px`` and
-``y_pos_px``, where its top left pixel goes on the canvas. To move a
-sprite, write its new position. This moves sprite ``n`` of a :ref:`mode
-5 <vga-mode-5>` sprite array at ``XRAM_SPRITES`` to ``x``, ``y``:
+Each range can have its own configuration structure, so each part of
+the canvas can scroll on its own. Hills at the top of the canvas, for
+example, can scroll slowly while the road below them scrolls fast.
+
+Each sprite in a sprite array has its own ``x_pos_px`` and
+``y_pos_px``, which set where its top left pixel goes on the canvas.
+This code moves sprite ``n`` of a :ref:`mode 5 <vga-mode-5>` sprite
+array at ``XRAM_SPRITES`` to ``x``, ``y``:
 
 .. code-block:: C
 
@@ -498,20 +447,17 @@ sprite, write its new position. This moves sprite ``n`` of a :ref:`mode
   xram0_poke16(addr + offsetof(mode5_sprite_t, x_pos_px), x);
   xram0_poke16(addr + offsetof(mode5_sprite_t, y_pos_px), y);
 
-Sprites later in the array cover the sprites before them. To hide a
+A sprite later in the array covers the sprites before it, so put the
+sprites that you want in front at the end of the array. To hide a
 sprite, move it off the canvas.
 
-Configuration structures, sprite arrays, and palettes must be at even
-XRAM addresses. Neither cc65 nor llvm-mos pads a structure, so in
-``xram_layout_t``, a member of odd size moves every member after it by
-one byte, and an even address becomes odd. Put a pad byte after that
-member, or put it last. :ref:`Symbols in CMake <sdk-symbols-in-cmake>`
-in the :doc:`sdk` shows how your build can check the addresses for you.
-
-Once a mode is programmed, you change the picture by changing XRAM. You
-can change a configuration structure, a sprite array, or the data that
-they point to at any time, without programming the mode again. That is
-how you scroll a map, move sprites, and change images.
+Configuration structures, sprite arrays, and palettes must begin at even
+XRAM addresses. Neither cc65 nor llvm-mos pads a structure, so check
+your ``xram_layout_t`` for members with an odd size.
+Put a pad byte after odd-sized members, or move them
+to the end of the layout. :ref:`Symbols in CMake
+<sdk-symbols-in-cmake>` in the :doc:`sdk` shows how your build can
+check the addresses for you.
 
 
 .. _vga-vsync:
@@ -519,21 +465,23 @@ how you scroll a map, move sprites, and change images.
 VSYNC
 -----
 
-The VGA system draws the canvas one scanline at a time, from the top, 60
-times a second. A change to XRAM appears on the next scanline that the
-VGA system draws, even partway through a frame, so one frame can show
-the top of the old image and the bottom of the new one. To change the
-whole canvas at once, make your changes between frames. VSYNC, short
-for vertical sync, marks the start of that time.
+The VGA system draws the canvas one scanline at a time, from the top
+down, 60 times a second. A change to XRAM appears on the next scanline
+that the VGA system draws. If you change an image partway through a
+frame, that frame can show the top of the old image and the bottom of
+the new one. To change the whole picture at once, make your changes
+between frames. VSYNC, short for vertical sync, marks the start of that
+time.
 
-The bottom scanline of the lowest mode that you have programmed on the
-canvas triggers VSYNC, or the bottom of the canvas when there are no
-modes. Part of a scanline later, the RIA's :ref:`VSYNC register
-<ria-registers>` increments.
+After the VGA system draws the lowest scanline that you have programmed,
+it sends a VSYNC signal. VSYNC increments the RIA's :ref:`VSYNC register
+<ria-registers>` and, if you enable it, fires the :ref:`VSYNC interrupt
+<api-irq>`.
 
-:c:func:`ria_vsync` does not wait. It returns the value of the VSYNC
-register, so to wait for VSYNC, call it in a loop until the value
-changes:
+Most programs can simply wait for VSYNC in a loop. More advanced
+programs may prefer to handle it in an interrupt. :c:func:`ria_vsync`
+returns the value of the VSYNC register without waiting, so the loop
+calls it until the value changes:
 
 .. code-block:: C
 
@@ -541,16 +489,12 @@ changes:
   while (ria_vsync() == frame)
       ;
 
-Instead of the loop, you can enable the :ref:`VSYNC interrupt <api-irq>`
-and make your changes in the interrupt handler. The RIA interrupts the
-6502 at each increment of the VSYNC register.
-
-The time between frames is short. In the emulator, the program of
-`Getting Started`_ has about 1.4 ms, roughly 11,000 cycles of a 6502 at
-8 MHz, to change the top of the canvas. A change lower on the canvas has
-more time. When you need to count cycles, `Frame Timing`_ gives which
-scanline comes last, and the time between frames for every canvas and
-display.
+The time between frames is short. In the emulator, the text adventure
+from `Getting Started`_ has about 1.4 ms to change the top of the
+canvas. That is roughly 11,000 cycles of a 6502 at 8 MHz. A change
+lower on the canvas has more time, because the VGA system draws the
+scanlines above it first. When you need to count cycles, `Frame
+Timing`_ gives the time between frames for every canvas and display.
 
 
 Colors and Palettes
@@ -2321,8 +2265,8 @@ black, with a dashed outline because it's transparent.
 Control Channel $F
 ==================
 
-The RIA uses the registers of channel $F to control the VGA system. A
-program can't set them, and an ``xreg()`` call that sets one fails with
+The RIA uses channel $F to control the VGA system. Your program can't
+set these registers, and an ``xreg()`` call that sets one fails with
 EACCES. On an RP6502-PICO, the call fails only while the VGA module, the
 Pico 2 that runs the VGA firmware, is connected.
 

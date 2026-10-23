@@ -201,7 +201,7 @@ Gamepads
 ========
 
 The RIA reports every gamepad in the same layout, described in
-:ref:`Gamepads <ria-gamepads>` in the RIA datasheet. The report has a bit
+:ref:`Gamepads <ria-gamepads>` on the RIA page. The report has a bit
 for each of fifteen buttons, in a fixed order: A, B, C, X, Y, Z, L1, R1,
 L2, R2, Select, Start, Home, L3 and R3. Linux and Android use the same
 order for a generic gamepad, so each button of a gamepad sold as

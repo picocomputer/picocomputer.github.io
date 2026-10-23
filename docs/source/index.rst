@@ -125,10 +125,9 @@ These are the features of the standalone machine, the :doc:`pico`:
 Read the Manual
 ===============
 
-Start with the :doc:`sdk`, then the :doc:`api`. The datasheets after
-them are for the parts of a Picocomputer. Read the datasheet for a part
-when a program starts to use that part. Read :doc:`port` before the
-program is published.
+Start with the :doc:`sdk`. It teaches you how to write software for the
+Picocomputer. The other pages describe the systems that your program
+can use.
 
 - :doc:`sdk`: writing software, from a new project to a running program.
 - :doc:`api`: the system calls, the ABI, and the C library built on them.
