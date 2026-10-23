@@ -89,10 +89,12 @@ console under it, where you type. The split takes just two calls.
          scanlines 0 to 159, and mode 0 draws the console on scanlines 160 to
          239.
 
-You lay out XRAM in your program's ``xram.h``. The one below makes room
-for the bitmap and its configuration structure. The comment at the top
-lists the code blocks to copy in from this page. The layout after them
-is the only part that you write yourself:
+You lay out XRAM in your program's ``xram.h``, which :ref:`XRAM Memory
+Map <sdk-xram-memory-map>` in the :doc:`sdk` covers in full. The file
+below makes room for the bitmap and its configuration structure. The
+comment at the top lists the code blocks to copy in from this page.
+After them comes the layout, ``xram_layout_t``, with a member for each
+thing in XRAM. It is the only part that you write yourself:
 
 .. code-block:: C
    :caption: xram.h
@@ -239,12 +241,11 @@ is a placeholder for the text adventure that the program could become.
 How It Works
 ============
 
-Everything that you give the VGA system to draw is in XRAM: your images,
-palettes, and fonts, and the structures that hold where they go. Your
-program's ``xram.h`` starts with the code blocks that you copy from this
-page. After them, you write ``xram_layout_t``, with a member for each
-thing that you keep in XRAM. :ref:`XRAM Memory Map
-<sdk-xram-memory-map>` in the :doc:`sdk` shows how.
+Everything starts with the canvas, which is made of three planes stacked
+back to front. Modes render on the layers of the planes, where each
+scanline can have its own mode. Most modes read a structure in XRAM to
+know what to draw. VSYNC is about timing: when to change the picture so
+that it doesn't tear.
 
 
 .. _vga-canvas-layout:
@@ -253,20 +254,24 @@ Canvas
 ------
 
 The canvas is where you draw your picture, on a grid of pixels such as
-320x240. You choose from four canvas sizes: 320x240 and 640x480, which
-are 4:3, and 320x180 and 640x360, which are 16:9. Your program has one
-canvas at a time, and every mode draws on it. `Canvas Types`_ gives the
-CANVAS value of each size.
+320x240. There is only one canvas, in a choice of four sizes: 320x240
+and 640x480, which are 4:3, and 320x180 and 640x360, which are 16:9.
+`Canvas Types`_ gives the CANVAS value of each size.
 
 The size that you choose is the resolution that you draw at. Standard
 VGA is 640x480, so on a VGA display, the VGA system scales a 320x240
-canvas up to 640x480. A scanline is still one row of the canvas, so that
-canvas has 240 scanlines, not 480. The emulator scales the canvas to fit
-its window. Any canvas works on any display.
+canvas up to 640x480. The emulator scales the canvas to fit its window.
+Any canvas size works on any display.
+
+In this manual, a scanline is one row of the canvas, not a line of the
+display. The display almost always shows the canvas scaled up, so its
+lines rarely match the rows of the canvas. To the program, the display
+renders as many scanlines as the canvas has rows: a 320x240 canvas has
+240 scanlines, even on a 640x480 display.
 
 Your ROM starts on the console canvas, which shows only the console. You
 cannot program its scanlines, so select one of the four canvas sizes
-before you draw. A new canvas starts blank, without even the console.
+before you draw. The canvas then starts blank, without even the console.
 Anything that you print stays hidden until you put mode 0 on a plane.
 When your ROM stops, the VGA system goes back to the console canvas.
 
