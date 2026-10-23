@@ -1370,69 +1370,6 @@ The sprite array holds ``mode4_sprite_t``. For affine sprites, set bit
 address of the sprite's image. `Structures`_ describes how
 a program moves sprites and in what order the VGA system draws them.
 
-The image is an array of 16-bit colors. A sprite is a square, and each
-side is 2 to the power ``log_size`` pixels: a ``log_size`` of 0 is 1x1,
-and 7 is 128x128, the largest. A ``log_size`` above 7 describes a square
-too large for XRAM, and the sprite doesn't appear.
-``MODE4_IMAGE`` declares the structure of one image from its
-``log_size``, so ``typedef MODE4_IMAGE(4) image_t;`` is a 16x16 image.
-
-Opacity metadata lets the VGA system skip the transparent pixels at the
-ends of each row, so a sprite with transparent ends can take less time
-on each scanline. When ``has_opacity_metadata`` is true, one
-little-endian 32-bit value for each row follows the image. Each value
-gives the opaque span of its row, in pixels from the left of the image.
-Bits 30-16 are the start of the span, and bits 15-0 are its end, one
-past its last pixel. The VGA system doesn't draw the pixels outside the
-span. ``MODE4_SPAN`` builds one row of opacity metadata.
-
-Bit 31 marks a span as solid. The VGA system draws all of a solid span
-without checking the alpha bit of each color. Mark a span solid only
-when every color in it is opaque.
-
-An image and its metadata must fit in XRAM together, or the VGA system
-draws nothing for the sprite. Affine sprites don't use the metadata,
-but when ``has_opacity_metadata`` is true, the metadata still counts
-toward that size.
-
-Affine sprites can be rotated and scaled. They apply a 3x3 matrix
-transform, which makes them slower than plain sprites. Only the first
-two rows of the matrix matter, which is why there are just six
-transform values. They're in signed 8.8 fixed-point format, in the
-order {a00, a01, b0, a10, a11, b1}. ``MODE4_AFFINE_A00`` to
-``MODE4_AFFINE_B1`` are their indexes in ``transform``.
-
-The matrix maps a position within the sprite on the canvas to a position
-in the image. The pixel at x, y from the top left of the sprite shows
-the pixel of the image at u, v:
-
-.. code-block:: text
-
-  u = a00 * x + a01 * y + b0
-  v = a10 * x + a11 * y + b1
-
-The transform {``MODE4_AFFINE_ONE``, 0, 0, 0, ``MODE4_AFFINE_ONE``, 0}
-draws the image as it is. The matrix maps the canvas to the image, so
-it's the inverse of the change that you see on the canvas. With $0200
-(2.0) in a00 and a11, the image appears at half size, not double,
-because the VGA system steps through the image two pixels for each pixel
-of the canvas.
-
-To rotate the image by an angle t about the center of its square, use
-these values. Here size is the width of the square in pixels, and c is
-(size - 1) / 2:
-
-.. code-block:: text
-
-  a00 = cos t    a01 = sin t    b0 = c - c * cos t - c * sin t
-  a10 = -sin t   a11 = cos t    b1 = c + c * sin t - c * cos t
-
-Multiply each value by ``MODE4_AFFINE_ONE`` to put it in 8.8 format. A
-positive t turns the image clockwise. These values fit the 8.8 format
-for sprites up to 64x64. An affine sprite draws only inside its own
-square, so leave a transparent margin around an image that you rotate,
-or its corners are cut off.
-
 .. tab:: C
 
    .. code-block:: C
@@ -1579,6 +1516,69 @@ or its corners are cut off.
       MODE4_ASPRITE_HAS_OPACITY_METADATA = 19
       MODE4_ASPRITE_SIZE                 = 20
 
+The image is an array of 16-bit colors. A sprite is a square, and each
+side is 2 to the power ``log_size`` pixels: a ``log_size`` of 0 is 1x1,
+and 7 is 128x128, the largest. A ``log_size`` above 7 describes a square
+too large for XRAM, and the sprite doesn't appear.
+``MODE4_IMAGE`` declares the structure of one image from its
+``log_size``, so ``typedef MODE4_IMAGE(4) image_t;`` is a 16x16 image.
+
+Opacity metadata lets the VGA system skip the transparent pixels at the
+ends of each row, so a sprite with transparent ends can take less time
+on each scanline. When ``has_opacity_metadata`` is true, one
+little-endian 32-bit value for each row follows the image. Each value
+gives the opaque span of its row, in pixels from the left of the image.
+Bits 30-16 are the start of the span, and bits 15-0 are its end, one
+past its last pixel. The VGA system doesn't draw the pixels outside the
+span. ``MODE4_SPAN`` builds one row of opacity metadata.
+
+Bit 31 marks a span as solid. The VGA system draws all of a solid span
+without checking the alpha bit of each color. Mark a span solid only
+when every color in it is opaque.
+
+An image and its metadata must fit in XRAM together, or the VGA system
+draws nothing for the sprite. Affine sprites don't use the metadata,
+but when ``has_opacity_metadata`` is true, the metadata still counts
+toward that size.
+
+Affine sprites can be rotated and scaled. They apply a 3x3 matrix
+transform, which makes them slower than plain sprites. Only the first
+two rows of the matrix matter, which is why there are just six
+transform values. They're in signed 8.8 fixed-point format, in the
+order {a00, a01, b0, a10, a11, b1}. ``MODE4_AFFINE_A00`` to
+``MODE4_AFFINE_B1`` are their indexes in ``transform``.
+
+The matrix maps a position within the sprite on the canvas to a position
+in the image. The pixel at x, y from the top left of the sprite shows
+the pixel of the image at u, v:
+
+.. code-block:: text
+
+  u = a00 * x + a01 * y + b0
+  v = a10 * x + a11 * y + b1
+
+The transform {``MODE4_AFFINE_ONE``, 0, 0, 0, ``MODE4_AFFINE_ONE``, 0}
+draws the image as it is. The matrix maps the canvas to the image, so
+it's the inverse of the change that you see on the canvas. With $0200
+(2.0) in a00 and a11, the image appears at half size, not double,
+because the VGA system steps through the image two pixels for each pixel
+of the canvas.
+
+To rotate the image by an angle t about the center of its square, use
+these values. Here size is the width of the square in pixels, and c is
+(size - 1) / 2:
+
+.. code-block:: text
+
+  a00 = cos t    a01 = sin t    b0 = c - c * cos t - c * sin t
+  a10 = -sin t   a11 = cos t    b1 = c + c * sin t - c * cos t
+
+Multiply each value by ``MODE4_AFFINE_ONE`` to put it in 8.8 format. A
+positive t turns the image clockwise. These values fit the 8.8 format
+for sprites up to 64x64. An affine sprite draws only inside its own
+square, so leave a transparent margin around an image that you rotate,
+or its corners are cut off.
+
 
 .. _vga-mode-5:
 
@@ -1641,48 +1641,14 @@ custom sprites on plane 2, from a second sprite array at ``xaddr2``:
   xreg_vga_mode5(MODE5_4BPP | MODE5_16X16, xaddr, length, 1);
   xreg_vga_mode5(MODE5_CUSTOM, xaddr2, length2, 2);
 
-The sprite array holds ``mode5_sprite_t``. `Structures`_
-describes how a program moves sprites and in what order the VGA system
-draws them. ``xram_sprite_ptr`` is the XRAM address of the sprite's
-image, and ``palette_ptr`` is the XRAM address of its palette, so each
-sprite can have its own palette. On the :doc:`fpga`, the VGA system
-draws sprites fastest when all their palettes are within 1 KB of
-contiguous XRAM, as :ref:`Sprite Limits <port-sprite-limits>` explains.
-
-A pixel of a sprite shows only if its color has the alpha bit set. In a
-sprite palette, set the alpha bit in each color that shows, for example
-with ``COLOR_ALPHA_MASK``, and clear it in the transparent color. With a
-``palette_ptr`` of $FFFF, a sprite uses the built-in palette, in which
-color 0 is transparent.
-
-The image is in the format of one :ref:`mode 2 <vga-mode-2>` tile. A
-16x16 image in 4-bit color is 16 rows of 8 bytes, 128 bytes in all.
-``MODE5_IMAGE`` declares the structure of one image from its color depth
-and sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16
-image in 4-bit color.
-
-With OPTIONS set to custom, the sprite array holds ``mode5_csprite_t``,
-and each sprite sets its own size, color depth, and orientation. Only
-custom sprites can be flipped or doubled. Their flip and double flags go
-in each sprite's ``options`` member. They must not go in the OPTIONS
-register, where bits 3:5 select the sprite size: ``MODE5_4BPP |
-MODE5_16X16 | MODE5_HFLIP`` in OPTIONS selects 64x64 sprites, not
-flipped ones.
-
-- ``width_height`` holds the width and height, each 4 to 64 pixels in
-  steps of 4. ``MODE5_SIZE(width, height)`` builds it.
-- Bits 0:2 of ``options`` hold the color depth, with the same values as
-  bits 0:2 of OPTIONS. Bit 3 is reserved and must be 0.
-- ``MODE5_HFLIP`` and ``MODE5_VFLIP`` in ``options`` flip the image left
-  to right and top to bottom.
-- ``MODE5_HDOUBLE`` and ``MODE5_VDOUBLE`` in ``options`` draw each pixel
-  twice across or down, so a doubled 16x16 image covers 32x32 canvas
-  pixels.
-
-``MODE5_CUSTOM_IMAGE`` declares one image from its color depth, width,
-and height, so ``typedef MODE5_CUSTOM_IMAGE(4, 24, 16) image_t;`` is a
-24x16 image in 4-bit color. Each row of the image starts on a byte
-boundary.
+The sprite array holds ``mode5_sprite_t``, or ``mode5_csprite_t`` with
+OPTIONS set to custom. `Structures`_ describes how a program moves
+sprites and in what order the VGA system draws them. ``xram_sprite_ptr``
+is the XRAM address of the sprite's image, and ``palette_ptr`` is the
+XRAM address of its palette, so each sprite can have its own palette. On
+the :doc:`fpga`, the VGA system draws sprites fastest when all their
+palettes are within 1 KB of contiguous XRAM, as :ref:`Sprite Limits
+<port-sprite-limits>` explains.
 
 .. tab:: C
 
@@ -1875,6 +1841,40 @@ boundary.
       MODE5_CSPRITE_WIDTH_HEIGHT    = 8
       MODE5_CSPRITE_OPTIONS         = 9
       MODE5_CSPRITE_SIZE            = 10
+
+A pixel of a sprite shows only if its color has the alpha bit set. In a
+sprite palette, set the alpha bit in each color that shows, for example
+with ``COLOR_ALPHA_MASK``, and clear it in the transparent color. With a
+``palette_ptr`` of $FFFF, a sprite uses the built-in palette, in which
+color 0 is transparent.
+
+The image is in the format of one :ref:`mode 2 <vga-mode-2>` tile. A
+16x16 image in 4-bit color is 16 rows of 8 bytes, 128 bytes in all.
+``MODE5_IMAGE`` declares the structure of one image from its color depth
+and sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16
+image in 4-bit color.
+
+With OPTIONS set to custom, each sprite sets its own size, color depth,
+and orientation. Only custom sprites can be flipped or doubled. Their
+flip and double flags go in each sprite's ``options`` member. They must
+not go in the OPTIONS register, where bits 3:5 select the sprite size:
+``MODE5_4BPP | MODE5_16X16 | MODE5_HFLIP`` in OPTIONS selects 64x64
+sprites, not flipped ones.
+
+- ``width_height`` holds the width and height, each 4 to 64 pixels in
+  steps of 4. ``MODE5_SIZE(width, height)`` builds it.
+- Bits 0:2 of ``options`` hold the color depth, with the same values as
+  bits 0:2 of OPTIONS. Bit 3 is reserved and must be 0.
+- ``MODE5_HFLIP`` and ``MODE5_VFLIP`` in ``options`` flip the image left
+  to right and top to bottom.
+- ``MODE5_HDOUBLE`` and ``MODE5_VDOUBLE`` in ``options`` draw each pixel
+  twice across or down, so a doubled 16x16 image covers 32x32 canvas
+  pixels.
+
+``MODE5_CUSTOM_IMAGE`` declares one image from its color depth, width,
+and height, so ``typedef MODE5_CUSTOM_IMAGE(4, 24, 16) image_t;`` is a
+24x16 image in 4-bit color. Each row of the image starts on a byte
+boundary.
 
 
 .. _vga-frame-timing:
