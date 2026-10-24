@@ -4,11 +4,8 @@ Build Without Soldering
 
 RP6502-PICO
 
-The RP6502-PICO is the standalone machine, a 6502 computer you build
-yourself. The machine is one circuit board with a WDC 65C02, a WDC 65C22,
-a RAM chip, three logic chips and two Raspberry Pi Pico 2 boards. This
-page builds it from a board of sockets that a factory assembles. To
-solder the board yourself, see :doc:`pico-solder`.
+This page builds the :doc:`pico` from a board of sockets that a factory
+assembles. To solder the board yourself, see :doc:`pico-solder`.
 
 You don't need to understand the electronics, and you don't even need to
 solder, but you will need to plug the eight ICs into their sockets. Every
@@ -19,38 +16,11 @@ was already updated once, from the Pico 1 to the Pico 2. The project does
 not depend on any one of these parts staying in production, because the
 :doc:`fpga`, the machine in fabric, uses none of them.
 
-.. image:: _static/ria-w-sandwich.jpg
-   :width: 600
-   :align: center
-   :alt: RP6502-PICO Photo
-
-Schematic
-=========
-
-`RP6502-PICO <_static/2026-01-26-rp6502.pdf>`_ (pdf)
-
-
 Buying an RP6502-PICO
 =====================
 
 You'll place two orders: one for the printed circuit boards (PCB) with
 assembly, and one for the eight ICs.
-
-Step 0. Read This
-=================
-
-Rev. A and Rev. B boards are identical except for the debug connectors under
-the RIA. They do nothing even when connected, so they were removed — mostly so
-folks would stop asking about them.
-
-Most VGA-to-HDMI cables can draw power straight from the RP6502-PICO; a few
-need external power. None of them add lag, which matters on a machine built for
-games. All VGA output uses HDMI-compatible timings, so these cables are an
-ideal solution.
-
-The boot message no longer says COLOR, so don't expect your device to match
-older YouTube videos exactly.
-
 
 Step 1. Watch the Video
 =======================

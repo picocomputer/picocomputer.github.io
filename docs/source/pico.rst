@@ -17,41 +17,26 @@ RP6502 - Standalone Machine
 The RP6502-PICO is the standalone machine, a 6502 computer you build
 yourself. It is the original Picocomputer, and the project is named after
 the Raspberry Pi Pico it was first built on. The machine is one circuit
-board with a WDC 65C02, a WDC 65C22, a RAM chip, three logic chips and two
-Raspberry Pi Pico 2 boards, which are the entire modern side of the
+board with a WDC 65C02, a WDC 65C22, a RAM chip, three logic chips, and
+two Raspberry Pi Pico 2 boards, which are the entire modern side of the
 machine. One Pico runs the RP6502 Interface Adapter (:doc:`ria`) for USB,
-storage and sound, and a Pico 2 W in that socket adds Wi-Fi and Bluetooth.
-The other Pico runs the video system, the RP6502 Video Graphics Array
-(:doc:`vga`).
+storage, and sound, and a Pico 2 W in that socket adds Wi-Fi and
+Bluetooth. The other Pico runs the video system, the RP6502 Video
+Graphics Array (:doc:`vga`).
 
-Formally, a Pi Pico flashed with the RIA firmware is an RP6502-RIA, a Pi
-Pico 2 W flashed with the RIA-W firmware is an RP6502-RIA-W, and a Pi Pico
-flashed with the VGA firmware is an RP6502-VGA.
+This page is the reference for the RP6502-PICO: its schematic and how to
+build one, the console and the monitor, storage, settings, the devices it
+drives over USB and Bluetooth, its network features, firmware updates,
+and the PIX bus between its two Picos.
 
-Programs run on the 65C02 at up to 8 MHz. The finished machine plugs into
-a VGA monitor, or into an HDMI display with a VGA-to-HDMI cable.
-Keyboards, mice, gamepads, flash drives, floppy drives and MIDI
-instruments plug into the USB port of the RIA, directly or through a hub.
-In VS Code, the RP6502-PICO launch configuration of the :doc:`sdk` builds
-a program and runs it on the machine over USB or telnet.
-
-The radio of the Pico 2 W adds Wi-Fi and Bluetooth LE. Keyboards, mice,
-and gamepads connect without a cable. The real-time clock is set from
-internet time servers. Over telnet, you can use the monitor and a running
-program from any computer on the network, and build and run a project
-from VS Code. A 6502 program can call a BBS through an emulated Hayes
-modem, or answer incoming calls as a BBS. An RP6502-RIA has none of these.
-The other machines use the Bluetooth of their host. Networking is only on
-the RP6502-PICO today, and support for other machines is planned.
-
-Schematic
-=========
+Schematic and Building
+======================
 
 `RP6502-PICO <_static/2026-01-26-rp6502.pdf>`_ (pdf)
 
-
-Buying an RP6502-PICO
-=====================
+Rev. A and Rev. B boards are identical except for the debug connectors under
+the RIA. They do nothing even when connected, so they were removed — mostly so
+folks would stop asking about them.
 
 To solder, or not to solder — that is the question. You can homebrew a 6502
 today without ever touching a soldering iron. Choose your path.
@@ -69,8 +54,9 @@ The console of an RP6502-PICO is on the :ref:`console manifold
 <term-console-manifold>`, and a terminal can be attached in three ways:
 
 * **VGA and USB keyboard.** In the standard configuration with a
-  :doc:`vga` module, the console is accessed with a VGA monitor and a
-  USB keyboard plugged into the RIA.
+  :doc:`vga` module, the console is accessed with a VGA monitor, or an
+  HDMI display with a VGA-to-HDMI cable, and a USB keyboard plugged into
+  the RIA.
 * **USB CDC ACM.** Connect the USB port on the VGA module to a computer
   and access the console over the USB CDC ACM serial port that appears.
   No driver is needed.
@@ -282,28 +268,27 @@ they last through a reboot. A Pi Pico 2 W adds ``BLE`` and the settings of
      - Bluetooth LE. See `Bluetooth`_.
 
 
-Peripherals
-===========
+USB
+===
 
-The RIA is a USB host. It drives keyboards, mice, gamepads, hubs, UART serial
-adapters, MIDI instruments, NFC readers, and floppy and flash drives. The
-firmware includes gamepad drivers for Generic HID, XInput, and PlayStation
-controllers.
-
-A Pi Pico 2 W adds Bluetooth LE for keyboards, mice, and gamepads. Wi-Fi 4
-(802.11n) adds networking for modem emulation and NTP.
+The RIA is a USB host, with one USB port. Plug a hub into it to connect
+more than one device. The RIA drives keyboards, mice, gamepads, hubs, UART
+serial adapters, MIDI instruments, NFC readers, and floppy and flash
+drives. The firmware includes gamepad drivers for Generic HID, XInput,
+and PlayStation controllers.
 
 
 Bluetooth
 =========
 
-The RP6502-PICO supports Bluetooth LE (BLE) keyboards, mice, and
-gamepads. Bluetooth Classic (BR/EDR) is not supported. BLE has been
+With a Pi Pico 2 W as the RIA, the RP6502-PICO supports Bluetooth LE
+(BLE) keyboards, mice, and gamepads. The other machines use the Bluetooth
+of their host. Bluetooth Classic (BR/EDR) is not supported. BLE has been
 everywhere since Bluetooth 4.0 (June 2010), so compatible devices are
 easy to find, though the occasional oddball still turns up.
 
 To add a device, run the monitor command ``SET BLE 2`` to enter pairing
-mode; the LED on the RP6502-RIA-W blinks while it's pairing. Put your
+mode; the LED on the Pico 2 W blinks while it's pairing. Put your
 device into its own pairing mode too. Check its manual, but it's
 probably a button and some more blinking. When the blinking stops, the
 device is connected and bonded, so it reconnects automatically from then
@@ -312,6 +297,10 @@ on.
 
 Wi-Fi Setup
 ===========
+
+A Pi Pico 2 W as the RIA adds Wi-Fi 4 (802.11n), for the telnet console,
+modem emulation, and NTP. Networking is only on the RP6502-PICO today,
+and support for other machines is planned.
 
 The radio is configured from the monitor. Set the network name and the
 password, and the radio connects. The ``STATUS`` command reports the state
@@ -767,8 +756,8 @@ PIX Physical Layer
 None of this is needed to program the machine. What follows is the bus
 itself, for anyone building a device to put on it.
 
-On the RP6502-PICO, PIX is a physical bus between the RP6502-RIA and the
-RP6502-VGA. High-bandwidth devices like video systems need a bus of their
+On the RP6502-PICO, PIX is a physical bus between the RIA and the VGA
+module. High-bandwidth devices like video systems need a bus of their
 own. PIX is that bus: an addressable broadcast system that any number of
 devices can receive, narrow enough to fit the GPIO budget of a Raspberry
 Pi Pico, wide enough to move data as fast as the 6502 writes.
