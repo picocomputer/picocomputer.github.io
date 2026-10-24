@@ -10,15 +10,10 @@ Introduction
 
 Every player should get a great experience from your game, whatever
 machine they play it on. The same ROM runs on the :doc:`pico`, the
-:doc:`fpga`, the :doc:`emu`, and the :doc:`web`, and most of what a
-program does works the same on all of them. This page shows how to reach
-that widest audience: the number of sprites that fit on one row on every
-machine, gamepad input that works with nearly every gamepad, and data
-files and saves kept in the right place.
-
-A program that opens the user's own files meets a few more differences,
-which the end of `Filesystems`_ describes. `Compatibility`_ sums up the
-differences in one table.
+:doc:`fpga`, the :doc:`emu`, and the :doc:`web`. This page covers what to
+plan for so that your game works well on all four: how many sprites fit
+on one row of the canvas, how to read gamepads so that any modern one
+works, and how files and saves differ between the machines.
 
 
 .. _port-sprite-limits:
@@ -28,9 +23,7 @@ Sprite Limits
 
 In practice, the limits of a game are the 6502 at 8 MHz and the 64 KB of
 XRAM, not the sprites. On a 320x240 canvas, the VGA system can usually
-draw more sprites than a program can move each frame. Sixty bullets
-already crowd the screen of a bullet-hell game, and moving that many each
-frame takes much of the 6502's time.
+draw more sprites than a program can move each frame.
 
 The figures below count only the sprites drawn on a single row of the
 canvas. A hundred paletted 32x32 sprites on one row cover 3,200 pixels,
@@ -647,16 +640,15 @@ On the RP6502-EMU and the RP6502-WEB, a program can also open an
 installed file for reading, such as a BASIC program. Every other call on
 a ``:`` path fails with ENODEV.
 
-
 .. _port-compatibility:
 
 Compatibility
-=============
+-------------
 
-The table sums up the differences between the machines that this page
-describes. The RP6502-EMU column holds for RetroArch too, except that its
-working directory at start is the working directory of RetroArch, and
-RetroArch has no ``--install``.
+The table sums up how the filesystems of the machines differ. The
+RP6502-EMU column holds for RetroArch too, except that its working
+directory at start is the working directory of RetroArch, and RetroArch
+has no ``--install``.
 
 .. list-table::
    :header-rows: 1
