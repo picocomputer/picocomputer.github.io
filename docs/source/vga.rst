@@ -2034,10 +2034,8 @@ The three timings follow the CEA-861 and VESA DMT standards:
 Control Channel $F
 ==================
 
-The RIA uses channel $F to control the VGA system. Your program can't
-set these registers, and an ``xreg()`` call that sets one fails with
-EACCES. On an RP6502-PICO, the call fails only while the VGA module, the
-Pico 2 that runs the VGA firmware, is connected.
+The RIA uses channel $F to control the VGA system. It doesn't let your
+program set these registers.
 
 .. list-table::
    :widths: 5 5 90
@@ -2048,7 +2046,7 @@ Pico 2 that runs the VGA firmware, is connected.
      - Description
    * - $1:F:00
      - DISPLAY
-     - Sets the aspect ratio of the display, and resets CANVAS to the
+     - Sets the aspect ratio of the display and resets CANVAS to the
        console canvas.
 
        * 0 - VGA (4:3) 640x480
@@ -2076,7 +2074,7 @@ Pico 2 that runs the VGA firmware, is connected.
        * 2 - Request
    * - $1:F:06
      - REBOOT_OR_LOCKUP
-     - The RIA sets it after it writes the flash of the VGA module. 0
+     - The RIA sets it after writing the flash of the VGA module. 0
        reboots the VGA module. Any other value locks it up, so that the
        error message of a failed flash write stays on the screen.
    * - $1:F:07
