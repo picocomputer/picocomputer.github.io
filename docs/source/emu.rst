@@ -4,6 +4,11 @@ RP6502-EMU
 
 RP6502 - Emulator
 
+.. note::
+
+   This page still needs a major review to bring it up to the standard of
+   the manual.
+
 
 Introduction
 ============
@@ -215,16 +220,15 @@ work.
      - number
      - OEM code page. 437, 720, 737, 771, 775, 850, 852, 855, 857,
        860-866, or 869. Default 437.
-   * - ``--seed``
+   * - ``--memseed``
      - number
-     - Fixed seed for the run, covering both the memory fill and the
-       random numbers a program draws, so a run repeats exactly.
-   * - ``--fill``
-     - ``random``,
-       or a byte
-     - What RAM and XRAM hold before anything writes them. The default
-       is ``random``. Supply a byte, as ``$00`` or ``0``, to start with
-       known memory.
+     - The seed of the random fill of RAM and XRAM, 0 to 4294967295.
+       Without it, the seed is new on every run.
+   * - ``--memfill``
+     - byte
+     - Fill RAM and XRAM with one byte, such as ``$00`` or ``0``, in place
+       of the random fill. The emulator takes ``--memseed`` or
+       ``--memfill``, not both.
    * - ``--mute``
      - \-
      - No synthesis and no audio device opened at all.
@@ -287,6 +291,8 @@ wiki describes the work, and the code is on the numbered
 <https://github.com/johnwbyrd/llvm-mos/branches/all?query=feature%2Fdebug>`__.
 Nothing is released, so trying it means building LLVM from source.
 
+.. _emu-overlay:
+
 The on-screen debugger
 ----------------------
 
@@ -324,9 +330,10 @@ Scripting
    Scripting is beta and may change.
 
 ``--script`` drives the machine with no one at the keyboard. It types,
-works the gamepads and the pointer, waits for expected console output,
-and checks what the program produced, which is enough to turn a ROM into
-a test that passes or fails.
+works the gamepads and the pointer, waits for what the program writes to
+stdout and stderr and for what reaches the screen, and checks what the
+program produced, which is enough to turn a ROM into a test that passes or
+fails.
 
 .. code-block:: text
 
@@ -337,25 +344,44 @@ driver written in any language can work the machine. The machine waits
 for each line, so the driver sets the pace. See `Driving it from a
 program`_.
 
-A script always runs headless, and nothing paces
-it against the host's clock. Frames elapse only when the script asks for
-them, so ``run 600`` is six hundred frames and six hundred VSYNCs every
-time.
+A script always runs headless, and nothing paces it against the host's
+clock. Frames elapse only when the script asks for them, so ``run 600`` is
+six hundred frames and six hundred VSYNCs every time.
 
-One command per line. ``#`` starts a comment anywhere outside quotes.
-Text is always in double quotes and takes the C escapes, so ``\n`` is a
-newline, ``\\`` and ``\"`` are themselves, and ``\x03`` or ``\3`` is a
-control byte. Hex takes up to two digits and octal up to three, and a
-string cannot hold ``\0``. Numbers may be decimal, C-style ``0xFF``, or
-MOS-style ``$FF``.
+A command that waits, such as ``wait``, runs frames until what it waits for
+happens. Its budget is the largest number of frames that it runs. When the
+budget runs out, the line fails, so a script that waits for something that
+never happens ends instead of hanging. The default budget is 600 frames, ten
+seconds of the machine's time. ``run`` and ``wav`` run the number of frames in
+their argument. Every other command runs no frames, so ``expect``, ``peek``,
+and the other checks read the machine as it is at that line.
+
+One command per line. ``#`` at the start of a word, outside quotes, starts a
+comment. Text is always in double quotes and takes the C escapes, so ``\n`` is
+a newline, ``\\`` and ``\"`` are themselves, and ``\x03`` or ``\3`` is a
+control byte. Hex takes up to two digits and octal up to three. A program can
+write a zero byte, so ``wait`` and ``expect`` take ``\0``, and no other string
+can hold one. A number is an expression, such as ``255``, ``$FF``, or
+``XRAM_PSG+5``. Spaces separate a command's arguments, so an expression with
+spaces must be in parentheses, as in ``xram:(XRAM_PSG + 5)``. See `Symbols and
+expressions`_.
+
+Text is UTF-8, and so is what ``wait`` and ``expect`` search, converted
+from the machine's code page as it is written. ``stdout`` and ``stderr``
+are the bytes the program wrote, before the console puts a carriage return
+in front of each newline, so a line the program prints ends in ``\n``.
+``console`` is what reaches the screen: those bytes with the carriage
+returns, the line editor's echo of what is typed, and the system's own
+messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
+``"caf\xC3\xA9"`` is ``"café"``.
 
 .. code-block:: text
 
   wait "Colossal Cave Adventure"
   wait "Would you like instructions?"
-  type "no\n"
+  type "no\r"
   wait "standing at the end of a road"
-  type "take lamp\n"
+  type "take lamp\r"
   wait "I see no lamp here"
 
 .. list-table::
@@ -366,16 +392,23 @@ MOS-style ``$FF``.
      - Description
    * - ``run [frames]``
      - Let exactly that many frames elapse, one VSYNC each. Default 1.
-   * - ``wait "text" [frames]``
-     - Run until the console prints it. Default budget 600 frames.
+   * - ``wait [stdout|stderr|console] "text" [frames]``
+     - Run until it appears on that stream, stdout if none is named.
    * - ``wait [xram:|ram:]<addr> <byte> [frames]``
      - Run until that byte reads that value. The byte is read once a
        frame, at the boundary.
+   * - ``wait exit [frames]``
+     - Run until the program exits.
    * - ``type "text" [frames]``
      - Type it. ``\r`` is Enter, ``\t`` is Tab. The text is UTF-8,
        converted to the machine's code page, so a byte that is not UTF-8
-       becomes ``?``. Waits for the keyboard ring to take it all;
-       default budget 600 frames.
+       becomes ``?``. The command waits until the keyboard ring takes it
+       all.
+   * - ``eof [frames]``
+     - End the program's stdin, the way a piped ``--stdin`` ends. It
+       waits until the program is reading stdin and has taken everything
+       typed. That read gets what is left of the line, and every read after
+       it returns 0 bytes until the next program starts.
    * - ``key <key>[+ctrl][+shift][+alt]``
      - Send the bytes a terminal sends for that key. See `Key Names`_.
    * - ``press <key>...``,
@@ -409,20 +442,32 @@ MOS-style ``$FF``.
        placed with ``at`` always reports hover, and a ``touch`` never
        does. A program that reads the block while an ``at`` is applied
        can get the old X with the new Y, unless it reads the block as
-       :ref:`Tablet <ria-tablet>` in the RIA datasheet shows.
-   * - ``expect "text"``,
-       ``expect-not "text"``
-     - Check the console since the last check. A match consumes up to and
-       including it.
-   * - ``expect-exit <code> [frames]``
-     - Run until the program exits, then check its code.
+       :ref:`Tablet <ria-tablet>` on the RIA page shows.
+   * - ``expect [stdout|stderr|console] "text"``,
+       ``expect-not [stdout|stderr|console] "text"``
+     - Check the stream since its last match, stdout if none is named. A
+       match consumes up to and including it. Each stream is checked
+       separately. The line editor's echo of typed text is only on the
+       console, but a program that echoes its own input writes that echo
+       to stdout.
+   * - ``expect exit <code>``,
+       ``expect-not exit <code>``
+     - Check the exit code of the program. The check fails while the
+       program runs, so put ``wait exit`` first.
+   * - ``discard [stdout|stderr|console]``
+     - Drop what the program printed on that stream after the last match,
+       or on all three streams without a stream name. ``load`` keeps the captured output, so
+       discard it before you start a program again.
    * - ``peek [xram:|ram:]<addr> <byte>...``
      - Compare memory.
-   * - ``poke [xram:|ram:]<addr> <byte>...``
+   * - ``poke [xram:|ram:|bus:|xbus:]<addr> <byte>...``
      - Write memory. The program reads what you wrote, so a test can
-       skip ahead to the state it needs to exercise.
+       skip ahead to the state it needs to exercise. Each byte goes to
+       the next address.
    * - ``dump [xram:|ram:]<addr> [count]``
      - Print memory as hex.
+   * - ``status``
+     - Print the status of the machine on one line.
    * - ``crc``
      - Print the screen as a CRC-32.
    * - ``mark``,
@@ -431,33 +476,101 @@ MOS-style ``$FF``.
      - Remember the screen, then check it against what you remembered.
    * - ``shot "file.png"``
      - Write the screen.
+   * - ``wav "file.wav" [frames]``
+     - Run that many frames, default 1, and record their sound as 16-bit
+       stereo at 48 kHz. With ``--mute`` the recording is silent.
    * - ``state save "file"``,
        ``state load "file"``
      - Save the whole machine to a file, and load it back.
-   * - ``seed``
-     - Print the seed this run filled memory with.
    * - ``install "path" [NAME]``,
        ``remove <NAME>``
      - Install a file on the null drive as ``:NAME``, and remove it
        again. The default name is the basename of the file.
    * - ``load "path"``
      - Boot a program. The machine must be stopped, since loading writes
-       the memory a running program is using.
+       the memory a running program is using. The new program's ``.sym``
+       replaces the symbols.
+   * - ``seed <n>``
+     - Set the seed of the random numbers that the program draws, 0 to
+       4294967295. The program gets the new stream at its next draw, and a
+       program can draw in its first frame. To give a program the stream from
+       its start, set the seed before the first command that runs frames: on
+       the first line, or just before or after ``load``. ``state load``
+       replaces the stream.
    * - ``sys run|stop|break``
      - Start the machine, stop it, or interrupt it the way a break at
        the console would.
    * - ``reply [on|off]``
      - Answer every command on stdout. See `Driving it from a program`_.
+   * - ``let name = expr``
+     - Set a variable that later lines can use in numbers. See `Symbols
+       and expressions`_.
 
-A failed check names the script and the line it was on, then exits 1.
+An address is in the 6502's address space, RAM at $0000-$FEFF, the VIA
+at $FFD0-$FFDF and the RIA at $FFE0-$FFFF, unless ``xram:`` puts it in
+XRAM. ``ram:`` is the same as no prefix. The part after the prefix can be
+an expression, as in ``xram:XRAM_PSG+5``. Nothing answers at
+$FF00-$FFCF, so an address there is an error. ``peek``, ``dump`` and
+``wait`` find a register as a read would, without what the read does,
+so RX keeps its byte, XSTACK keeps its top and IRQ keeps its flags.
+``poke`` sets what a read finds and does nothing else. With ``bus:``,
+``poke`` stores the byte the way the program does, so a register does
+what a store to it does: ``poke bus:$FFE1 $41`` sends an ``A`` to stdout.
+``xbus:`` writes XRAM the way RW0 and RW1 write it, so the PSG or OPL
+hears a byte written to its block, which ``poke xram:`` changes without
+telling it.
 
-A program must treat RAM and XRAM as uninitialized, because they hold
-unknown values until the program writes them. To help find a program that
-reads memory before writing it, the emulator fills RAM and XRAM from a new
-random seed on every run, so a program that gets lucky with an
-uninitialized value on one run is not lucky on the next. For a test,
-``--seed`` repeats a run exactly, and ``--fill`` starts with a known byte,
-such as ``--fill 00``.
+``status`` prints these fields in this order, each as ``NAME=value``, with
+a space between fields. ``status`` leaves out a field that does not apply,
+so check for a field before you read it.
+
+.. list-table::
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Field
+     - Value
+   * - ``PC A X Y SP P``
+     - The 6502's registers. A frame can end partway through an
+       instruction, so PC may be past its first byte.
+   * - ``OP``, ``BUSY``
+     - The RIA's OP and BUSY registers.
+   * - ``RESB``
+     - 1 while the 6502 runs, and 0 while the RIA holds it in reset.
+   * - ``EXIT``
+     - The exit code of the program. It appears after the program exits,
+       but not after ``sys stop`` or ``sys break``.
+   * - ``SEED``
+     - The seed of the random numbers that the program draws, from the
+       last ``seed``, or the seed that the emulator chose at startup.
+   * - ``MEMSEED``, ``MEMFILL``
+     - ``MEMSEED`` is the seed of the random fill of RAM and XRAM.
+       ``MEMFILL`` is the byte of ``--memfill``, and appears in place of
+       ``MEMSEED``.
+   * - ``ROM``
+     - The path of the ROM that runs, or that ran last. It is always the
+       last field, and its value runs to the end of the line, so a path
+       with spaces needs no quotes.
+
+When a check fails, the emulator prints two lines on stderr: the script, the
+line, and the reason, then the fields of ``status``. To repeat the failed run,
+put ``seed <n>`` with the ``SEED`` value first in a script that sets no seed.
+Then run the script with ``--memseed`` and the ``MEMSEED`` value, or with
+``--memfill`` and the ``MEMFILL`` value. A script that runs frames before its
+first ``seed`` cannot repeat the draws before that seed. Then the emulator
+prints to stdout what the program printed after the last match, in UTF-8, and
+exits 1. Once that output reaches 64 KB, the emulator keeps only the newest
+part, so it can start partway through a line. The program's stderr goes to
+stderr as the program writes it, all through the run.
+
+A program must treat RAM and XRAM as uninitialized, because they hold unknown
+values until the program writes them. To help find a program that reads memory
+before writing it, the emulator fills RAM and XRAM from a new random seed on
+every run, so a program that gets lucky with an uninitialized value on one run
+is not lucky on the next. For a test, ``--memseed`` repeats the fill, and
+``--memfill`` fills memory with a known byte, such as ``--memfill 00``. No seed
+controls the clock, the files on ``SAVE:``, or a program that seeds its own
+random numbers.
 
 
 Key Names
@@ -506,7 +619,8 @@ is the a key.
 character and the keys that have an escape sequence. ``+shift`` types the
 shifted character, ``+alt`` prefixes ESC, and ``+ctrl`` sends the control
 byte, which makes ``key c+ctrl`` Ctrl-C and ``key leftbracket+ctrl`` an
-ESC. Those characters are a US keyboard's, whatever layout the machine is
+ESC. Ctrl with a digit from 2 to 8, with Space or with / sends what xterm
+sends, so ``key 2+ctrl`` is a zero byte. Those characters are a US keyboard's, whatever layout the machine is
 set to, so that a script sends the same bytes under every layout.
 
 A key that types nothing is an error, which
@@ -515,13 +629,149 @@ covers ``capslock``, ``numlock``, ``scrolllock``, ``printscreen``,
 no control byte, such as ``key 1+ctrl``.
 
 
+.. _emu-symbols:
+
+Symbols and expressions
+-----------------------
+
+A ``.sym`` file beside the ROM, with the same name, lists the program's
+addresses and constants by name. Every build of a project made with the
+:doc:`sdk` writes one. Each line is a name, one space and a whole number:
+
+.. code-block:: text
+
+  XRAM_DATA_TAB 0x1100
+  XRAM_PSG 0x1200
+
+A script can use these symbols wherever a command takes a number. The
+emulator reads them from the ``.sym`` of the ROM that boots, and ``load``
+replaces them with the new program's. Without a ``.sym`` there are none.
+A name on two lines is ambiguous, and a script fails only when it uses
+that name.
+
+Spaces separate a command's arguments, so an expression with spaces must
+be in parentheses, as in ``poke xram:(XRAM_PSG + 5) ($80 | 3)``. Without
+spaces, as in ``poke xram:XRAM_PSG+5 $83``, no parentheses are needed.
+Where an argument could be a keyword, the emulator reads it as the
+keyword, so a name in that place needs parentheses. C programs have a
+global named ``stdout``, so ``wait stdout "done"`` waits for text and
+``wait (stdout) 1`` waits until the byte at ``stdout`` is 1. In
+``press`` and ``release`` the emulator reads key names and single digits
+as keys, so ``press 4`` is the 4 key and ``press (4)`` is keycode 4.
+
+``let name = expr`` sets a variable, and later lines can use the variable
+in numbers. The rest of the line after ``=`` is the expression, so it
+needs no parentheses even with spaces. A symbol can't be set. ``load``
+keeps the variables, and a variable whose name is also in the new
+``.sym`` becomes ambiguous.
+
+Expressions use whole numbers only. Expressions follow Python 3's rules
+for whole numbers, so an expression has the same value as in Python, or
+it is an error. The list below shows where these rules differ from C.
+
+- Numbers are written as in Python, or with ``$`` for hex: ``255``,
+  ``0xFF``, ``$FF``, ``0b1111_1111`` and ``0o377``. Digits can be
+  separated with ``_``. A number can't start with 0 unless it is 0, so
+  ``010`` is an error, not octal as in C. Write ``0o10`` for octal. A
+  float such as ``1.5`` or ``2e3`` is an error.
+- The operators, from lowest to highest precedence, are ``or``, ``and``,
+  ``not``, the comparisons ``< <= > >= == !=``, ``|``, ``^``, ``&``,
+  ``<< >>``, ``+ -``, ``* // %``, the unary ``- + ~``, and ``**``.
+  ``**`` raises to a power, so ``2 ** 8`` is 256, and ``-2 ** 2`` is -4.
+  Unlike C, ``| ^ &`` have higher precedence than the comparisons, so
+  ``x & 1 == 0`` means ``(x & 1) == 0``.
+- ``/`` is not allowed, because in Python it makes a float, even for
+  ``6 / 2``. Divide with ``//``, which is integer division. With a
+  negative number it differs from C: ``-7 // 2`` is -4 where C gives -3,
+  and ``-7 % 2`` is 1 where C gives -1. A negative power such as
+  ``2 ** -1`` makes a float, so it is not allowed either.
+- A comparison is 1 or 0. ``1 < x < 5`` means ``1 < x and x < 5``, not
+  ``(1 < x) < 5`` as in C.
+- ``not`` is C's ``!`` with a lower precedence, so ``not x + 1`` means
+  ``!(x + 1)``. ``a or b`` is C's ``a ? a : b``, so ``0 or 3`` is 3.
+  ``a and b`` is C's ``a ? b : a``, so ``2 and 3`` is 3. In C,
+  ``0 || 3`` and ``2 && 3`` are both 1.
+- Whole numbers are 64-bit and signed. A result that doesn't fit in 64
+  bits is an error. In C, signed overflow is undefined.
+- A name is a letter or ``_``, then letters, digits, ``_`` and ``.``, so
+  an llvm-mos static such as ``draw.image`` is one name. Names are
+  case-sensitive.
+- There are no strings, function calls, casts, ``?:``, ``&&``, ``||`` or
+  ``!``. Write ``and`` for ``&&``, ``or`` for ``||``, ``not`` for ``!``,
+  and 1 and 0 for true and false.
+
+A failure message shows the expression as it is written in the script,
+without the ``xram:``, ``xbus:``, ``bus:`` or ``ram:`` in front and
+without parentheses around all of it. For ``let`` it is the expression
+after ``=``.
+
+.. list-table::
+   :widths: 45 55
+   :header-rows: 1
+
+   * - Failure
+     - Why
+   * - ``unknown name 'XRAM_PSGG'``
+     - No symbol or variable has that name.
+   * - ``ambiguous name 'L0010'``
+     - The ``.sym`` has it on two lines, or a symbol and a variable share
+       it after a ``load``.
+   * - ``cannot assign symbol 'XRAM_PSG'``
+     - A symbol can't be set.
+   * - ``base + 6 / 2: floats are not allowed, use //``
+     - The expression has a ``/``.
+   * - ``1.5 * 2: floats are not allowed``
+     - The expression has a number with a point or an exponent, or a
+       negative power such as ``2 ** -1``.
+   * - ``base // 0 divides by zero``
+     - A ``//`` or ``%`` has 0 on its right, or 0 is raised to a negative
+       power.
+   * - ``1 << 63 overflows 64 bits``
+     - A number or a result doesn't fit in 64 bits.
+   * - ``1 << -1 shifts by a negative count``
+     - A ``<<`` or ``>>`` has a negative number on its right.
+   * - ``bad expression 'base+'``
+     - The expression has a syntax error, or something that expressions
+       don't have, such as ``010``, ``x && y`` or a function call.
+   * - ``missing ) in '(base + 4 $00'``
+     - A ``(`` has no matching ``)``, so the argument continues to the end
+       of the line.
+
+With ``reply`` on, as in `Driving it from a program`_, a driver that
+starts ``rp6502-emu --memfill 0 --script -`` on a program whose ``.sym`` has
+``XRAM_DATA_TAB`` writes:
+
+.. code-block:: text
+
+  reply
+  let base = XRAM_DATA_TAB
+  peek xram:base+4 $00
+  poke xram:(base + 6 // 2) $01
+  peek xram:(base + 6 / 2) $01
+
+and reads:
+
+.. code-block:: text
+
+  ok
+  ok
+  ok
+  ok
+  fail base + 6 / 2: floats are not allowed, use //
+  PC=$0000 A=$00 X=$00 Y=$00 SP=$00 P=$02 OP=$00 BUSY=$00 RESB=1 SEED=1556577197 MEMFILL=$00 ROM=FS:/home/user/game/build/game.rp6502
+
+
 Driving it from a program
 -------------------------
 
 ``reply`` turns on one line of answer per command — ``ok``, ``ok <values>``
-for ``dump`` and ``crc``, or ``fail <why>``. It is off until asked, so a
-driver writes its whole preamble without waiting for anything and reads the
-``ok`` for ``reply`` itself as the moment the machine starts answering.
+for ``dump``, ``crc``, and ``status``, or ``fail <why>``. It is off
+until asked, so a driver writes its whole preamble without waiting for
+anything and reads the ``ok`` for ``reply`` itself as the moment the
+machine starts answering.
+
+In a project made with the :doc:`sdk`, ``rp6502.Emu`` in
+``tools/rp6502.py`` is such a driver. See :ref:`Testing <sdk-testing>`.
 
 An answer comes when the command **finishes**, not when it parses. The
 ``ok`` for ``run 600`` arrives six hundred frames later, and the one for
@@ -536,6 +786,42 @@ An answer comes when the command **finishes**, not when it parses. The
   run 10                   -> ok
   dump xram:$FF00 4        -> ok 80 00 00 08
   peek xram:$FF00 $99      -> fail $FF00+0 is $80, expected $99
+                              PC=$0307 A=$30 X=$01 Y=$00 SP=$F7 P=$86 OP=$01 BUSY=$00 RESB=1 SEED=513216670 MEMSEED=3088541612 ROM=FS:/home/user/game/build/game.rp6502
 
-The arithmetic and the assertions belong in your driver program, which is
-why you don't see any in this scripting language.
+A ``fail`` ends the run, so there is no asking ``status`` after one.
+Instead, the line after the ``fail`` line is the status line. Everything
+after it, up to the end of stdout, is what the program printed after the
+last match, in UTF-8. The program's stderr is on stderr.
+
+This driver never answers the question. It writes:
+
+.. code-block:: text
+
+  reply
+  wait "Would you like instructions?"
+  run 60
+  status
+  wait "end of a road" 60
+
+and reads:
+
+.. code-block:: text
+
+  ok
+  ok
+  ok
+  ok PC=$FFF1 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1 SEED=1215796064 MEMSEED=2788390211 ROM=FS:/home/user/adventure.rp6502
+  fail timed out waiting for "end of a road"
+  PC=$FFF3 A=$16 X=$00 Y=$00 SP=$F1 P=$25 OP=$16 BUSY=$FE RESB=1 SEED=1215796064 MEMSEED=2788390211 ROM=FS:/home/user/adventure.rp6502
+
+
+  >
+
+PC is in the RIA's spin loop, BUSY says an API call is running, and OP
+$16 is READ_XSTACK, the call under ``read()``. The last three lines are
+the program's stdout after the question: two empty lines and the ``>``
+prompt where it waits for the answer.
+
+Arithmetic in a script gives the same answer as Python, so a driver can
+do the math either way. Loops, decisions and anything beyond arithmetic
+belong in your driver program.

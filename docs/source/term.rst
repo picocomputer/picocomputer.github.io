@@ -8,20 +8,22 @@ Terminal
 Introduction
 ============
 
-Text input and output on a Picocomputer uses the standard C library.
-``printf()`` prints to the console, and ``fgets()`` returns a line that
-the user typed and edited with the arrow keys, Home, End, Insert, Delete
-and Emacs-style keys such as Ctrl-A and Ctrl-K, with no editing code in
-the program. A game can keep running while the player types, and a
-program adds history, tab completion or a form with several fields to the
-same editor with three calls.
+A Picocomputer program reads and writes text through ``stdin``,
+``stdout``, and ``stderr``, the standard streams of C. ``printf()``
+prints to the console and ``fgets()`` reads a line from it, as in any C
+program. The streams are not tied to one screen and one keyboard. On an
+:doc:`pico`, a user can work with the same program from a VGA monitor
+and a keyboard, from a USB serial terminal, and over telnet, all at
+once. The :doc:`emu` can also connect the streams to the ``stdin``,
+``stdout``, and ``stderr`` of the computer that runs it.
 
-On a display, the console is a color terminal in the :doc:`vga` video
-system, 80 or 40 columns wide, and its text can be placed over a picture
-on another plane. The terminal implements the escape sequences of the
-Linux console with the 256-color and 24-bit color codes of xterm, so a
-program can color its text, draw boxes with the DEC line-drawing
-characters, and switch to an alternate screen and back.
+This page covers three closely related parts. The `console manifold
+<Console Manifold_>`_ connects the streams to the terminals. The `line
+editor <Read Line_>`_ lets the user edit a line before pressing Enter,
+with no editing code in the program, and a program can keep running
+while the user types. The `terminal <Terminal_>`_ of the :doc:`vga`
+system draws the console, and its escape sequences let a program move
+the cursor, color its text, and draw boxes.
 
 
 .. _term-console-manifold:
@@ -29,52 +31,31 @@ characters, and switch to an alternate screen and back.
 Console Manifold
 ================
 
-In the RP6502 vocabulary, a **terminal** is any device a user types into
-and reads from. The **console** is the main terminal — the one connected
-to ``stdin``, ``stdout``, ``stderr``, ``CON:``, and ``TTY:``. The
-**monitor** is the system program an :doc:`pico` runs on the console to
-assist with configuration and ROM loading.
+A **terminal** is a device that a user types into and reads from. The
+**console** is the main terminal, connected to ``stdin``, ``stdout``,
+``stderr``, ``CON:``, and ``TTY:``. On an :doc:`pico`, the **monitor**
+also runs on the console, for configuration and for loading ROMs.
 
-The console is not tied to a single physical device. Several terminals
-can be attached at once, and their input and output are combined into
-one console; this is the **console manifold**. On an :doc:`pico`, a
-terminal can be attached in three ways:
+Several terminals can be attached to the console at once, and the
+machine combines them into one console. This is the **console
+manifold**. Input from every terminal goes to the console, and the
+output of the console goes to every terminal.
 
-* **VGA and USB keyboard.** In the standard configuration with a
-  :doc:`vga` module, the console is accessed with a VGA monitor and a
-  USB keyboard plugged into the RIA.
-* **USB CDC ACM.** Connect the USB port on the VGA module to a computer
-  and access the console over the USB CDC ACM serial port that appears.
-  No driver is needed.
-* **Telnet.** On an :doc:`ria_w`, the console is also on the network. See
-  :ref:`Telnet Console <ria-w-telnet-console>` for setup.
+Every machine has the VGA terminal with a keyboard. The other terminals
+depend on the machine:
 
-Any terminal on the console manifold can be used for development and
-scripting. The limits show up when software needs the terminal to report
-information back.
-
-Size and Feature Detection
---------------------------
-
-The monitor and some ROMs, like MS-BASIC, send ANSI commands that
-terminals reply to, which is how they detect screen size and features.
-At the start of every cooked stdin read, the active terminal is queried
-with a Cursor Position Report (CPR) sequence.
-
-The :doc:`pico` VGA terminal stops responding to these queries if a telnet
-or USB terminal is connected. **If both
-USB and telnet terminals are connected at the same time and both reply,
-the system may get confused.** If pagination or word-wrap seem wrong,
-check what terminals are attached to the console manifold.
-
-Locking the Size
-----------------
-
-A ROM can pin a fixed terminal size by writing non-zero values to
-:ref:`RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT <api-ria-attributes>`.
-With both axes pinned, the auto-detect handshake is skipped entirely.
-Writing 0 returns the channel to auto-detect, and both attributes revert
-to 0 when the ROM stops.
+- **RP6502-PICO.** A terminal program on another computer connects to
+  the USB port of the VGA module as a USB serial terminal. When the RIA
+  is a Pi Pico 2 W, a telnet client connects over the network as a
+  telnet terminal. :ref:`Console <pico-console>` on the :doc:`pico` page
+  describes both.
+- **RP6502-EMU.** The emulator connects the console to the ``stdin``,
+  ``stdout``, and ``stderr`` of the computer that runs it. Its options
+  choose how, and :ref:`In a Toolchain <emu-toolchain>` on the
+  :doc:`emu` page describes them. When VS Code runs the emulator,
+  ``stdout`` and ``stderr`` appear in the Debug Console of VS Code.
+- **RP6502-FPGA** and **RP6502-WEB.** The VGA terminal with a keyboard
+  is the only terminal.
 
 
 Read Line
@@ -84,8 +65,7 @@ A **cooked** read returns a complete line. The user has edited freely
 with backspace, arrow keys, and optionally command completion and
 history; the editor flushes the line when Enter is pressed. A **raw**
 read returns bytes as they arrive, keystroke by keystroke, with no echo
-and no editing. The OS implements cooked input with a line editor in
-``rln.c``.
+and no editing. The line editor of the RIA implements cooked input.
 
 A modern operating system layers canonical input and translated output
 over something configurable like termios. A full termios is too heavy
@@ -112,6 +92,34 @@ channels:
 4, and neither can be closed. A second open returns the same file
 descriptor as the first, and a close succeeds as a no-op.
 
+.. _term-terminal-size:
+
+Terminal Size
+-------------
+
+A program that fits its output to the console, such as MS-BASIC, needs
+the width and the height of the console. At the start of each line that
+the line editor reads, it asks the terminals for the size with a Cursor
+Position Report (CPR) sequence. After the line editor reads a line, the
+program gets the size from :ref:`RIA_ATTR_RLN_WIDTH and
+RIA_ATTR_RLN_HEIGHT <api-ria-attributes>`. The monitor of an
+:doc:`pico` fits its output to the same size.
+
+The question goes to every terminal on the console manifold, so the size
+is right only when one terminal answers. On an :doc:`pico`, the VGA
+terminal stops answering while a USB serial or telnet terminal is
+connected. When a USB serial terminal and a telnet terminal are both
+connected and both answer, the line editor might get the wrong size. If
+the word wrap or the paging of a program looks wrong, check which
+terminals are connected.
+
+A program that is built for a fixed size can set the size instead. Write
+non-zero values to RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT. With both
+set, the line editor does not ask the terminals. Write 0 to go back to
+detection. Both attributes return to 0 when the ROM stops.
+
+.. _term-nonblocking-read-line:
+
 Non-blocking Read Line
 ----------------------
 
@@ -123,33 +131,35 @@ possible. The hooks are :ref:`RLN_LASTKEY <api-rln-lastkey>`,
 
 The basic pattern:
 
-#. **Open the channel.** ``open("CON:", 0)`` returns a file descriptor.
+#. **Open the channel.** ``open("CON:", O_RDWR)`` returns a file descriptor.
 #. **Set the input cap** (optional). Write ``RIA_ATTR_RLN_LENGTH``.
    Different prompts, or different fields in a form, can use
    different caps. The default is 254.
 #. **Pin the terminal size** (optional). Write ``RIA_ATTR_RLN_WIDTH``
    and ``RIA_ATTR_RLN_HEIGHT`` when the layout is built for a fixed
-   canvas. See `Locking the Size`_.
+   canvas. See `Terminal Size`_.
 #. **Loop on ``read()``** until the line flushes.
 
    * The first call always returns 0 and activates the editor at the
      current cursor position and SGR state. Position the cursor *before*
      this read.
    * A non-zero return means the line is complete. Pull it whole with a
-     buffer at least ``RIA_ATTR_RLN_LENGTH`` bytes long, or drain it in
-     fragments until you see the newline.
+     buffer at least ``RIA_ATTR_RLN_LENGTH`` + 1 bytes long, or drain it
+     in fragments until you see the newline.
    * On the first pass after activation, call ``ria_rln_poke()`` to
      pre-load any text you want to appear in the line. The poked bytes
      are echoed by the editor as if the user had typed them.
    * Optionally check for Ctrl-C via ``RIA_ATTR_SIGINT`` or the RIA SIGINT IRQ.
      To leave cooked input cleanly, poke ``\x03`` to print a visible
-     ``^C``, or poke ``\r`` or ``\n`` to flush silently. Then wait for
+     ``^C``, or poke ``\r`` to flush silently. Then wait for
      ``read()`` to return the line.
    * ``ria_rln_lastkey()`` reports the last keystroke and whether the
      editor consumed it as an editing action. When ``action == 0`` the
      editor passed the key through. That is the application's chance
      to handle Tab, function keys, arrow keys for history or form
-     navigation, and any other keys it claims. Call ``ria_rln_peek()``
+     navigation, and any other keys it claims. The line editor keeps no
+     history while a program reads a line, so Up and Down always have
+     ``action == 0``. Call ``ria_rln_peek()``
      to get the current input text and cursor position. Respond by
      poking literal characters or ANSI sequences (``CUF``, ``CUB``,
      ``ICH``, ``DCH``) back into the editor.
@@ -157,9 +167,10 @@ The basic pattern:
 #. **Read ``RIA_ATTR_RLN_WIDTH`` and ``RIA_ATTR_RLN_HEIGHT``** to obtain
    the dynamic size after the read line completes.
 
-Anything you can do by typing, you can do by poking. Poke ``\r`` or
-``\n`` to pull the buffer out without the user pressing Enter, for
-example when Tab should jump to the next field of a form. The editor
+A poke edits as typing does, except that a control byte ends the input,
+as :ref:`RLN_POKE <api-rln-poke>` describes. Poke ``\r`` to pull the
+buffer out without the user pressing Enter, for example when Tab should
+jump to the next field of a form. The editor
 flushes through ``read()`` like any other line, and the application can
 move on, entering the next field with a fresh ``read()`` and
 ``ria_rln_poke()`` to restore its prior contents.
@@ -168,42 +179,65 @@ move on, entering the next field with a fresh ``read()`` and
 Terminal
 ========
 
-The :doc:`vga` video system includes a color terminal that attaches to
-the console manifold. It implements the Linux console subset of
-ECMA-48 / VT102 with xterm-color extensions. The terminal does not
-require flow control.
+The :doc:`vga` system includes a color terminal that draws the console.
+:ref:`Mode 0 <vga-mode-0>` on the :doc:`vga` page describes where the
+terminal goes on the canvas, its 80 or 40 columns, and how a picture on
+a plane behind it shows through.
 
-Compatibility and Limits
-------------------------
+Like the Linux console, the terminal identifies itself as a VT102 and
+implements most of the escape sequences of the Linux console, with
+additions from ECMA-48, xterm, later DEC terminals, kitty, and SyncTERM.
+`To Do`_ lists where it falls short, and the tables below list the
+sequences.
 
-* Self-identifies as VT102 in response to Primary DA
-  (``CSI c`` → ``ESC[?6c``).
-* Implements the subset documented in ``man 4 console_codes``
-  (Linux console).
-* xterm extensions supported: 256-color and truecolor SGR
-  (38 / 48 / 58 sub-args); dynamic colors via OSC 10 / 11 / 12;
-  alternate screen buffer (``?47`` / ``?1047`` / ``?1049``).
-* 8-bit code page encoding only — no UTF-8 decode.
+Text is in the 8-bit code page of :ref:`RIA_ATTR_CODE_PAGE
+<api-ria-attributes>`, one byte for each character. The terminal does
+not decode UTF-8.
 
-Behavior Notes
---------------
+Some older terminals could not keep up at full speed, so a program sent
+padding or waited after a slow operation such as a screen clear, or
+paused when the terminal sent XOFF. This terminal keeps up with the
+console at full speed, even through a screen clear, so a program needs
+no flow control, padding, or delays.
 
-**Blink and iCE colors.** SGR 5 / 6 (blink) sets the blink
-attribute and the renderer pulses the cell foreground at a fixed
-rate. The legacy ANSI.SYS / IBM-VGA behavior, where SGR 5 / 6
-brightens the background instead of blinking, is preserved as
-opt-in via ``CSI ?33h`` (iCE colors). This is the standard
-ANSI-art compatibility mode; off by default. Toggle off with
-``CSI ?33l``.
+To Do
+-----
 
-**Alternate screen buffer.** ``?47`` swaps only. ``?1047`` swaps
-and clears the alt buffer on exit. ``?1049`` is the modern app
-default. It saves the cursor on entry, swaps, clears on entry, and
-restores the cursor on exit.
+These sequences of the VT102 and the Linux console are missing or work
+differently. Each one is on the to-do list.
 
-**DEC Special Graphics.** A built-in line-drawing font (boxes,
-dashes, arrows) for borders and ASCII-art frames without UTF-8.
-See `Charset Designation`_.
+VT102:
+
+* FF (``0x0C``) clears the screen and homes the cursor. A VT102 moves
+  the cursor down a line, as LF does, and so do the Linux console and
+  xterm.
+* Insert mode (``CSI 4 h``) and newline mode (``CSI 20 h``), the
+  ECMA-48 modes that ``CSI h`` and ``CSI l`` set without a ``?``, are
+  missing. A program that expects a VT102 and inserts text with insert
+  mode overwrites text instead. ICH (``CSI n @``) inserts characters.
+* VT (``0x0B``), which moves the cursor down a line, as LF does.
+* DECID (``ESC Z``), which asks for the same reply as Primary DA.
+* Double-height and double-width lines (``ESC # 3`` to ``ESC # 6``), and
+  DECALN (``ESC # 8``), which fills the screen with E.
+* Cursor-key mode (``?1``) and the keypad modes (``ESC =`` and
+  ``ESC >``), which change what the arrow keys and the keypad send.
+* Reverse video for the whole screen (``?5``).
+* Keyboard autorepeat (``?8``) and the keyboard LEDs (``CSI q``).
+
+Linux console:
+
+* The null and user mappings (``ESC ( U`` and ``ESC ( K``).
+* The palette sequences (``OSC P`` and ``OSC R``).
+* Mouse reporting (``?9`` and ``?1000``).
+* HPR (``CSI a``) and VPR (``CSI e``), which move the cursor right and
+  down relative to its position.
+* ED 3 (``CSI 3 J``), which erases the scrollback.
+* SGR 10-12, which select the font mapping.
+* The private sequences of Linux (``CSI ]``).
+
+kitty:
+
+* SGR 59, which resets the underline color that SGR 58 sets.
 
 
 C0 Control Codes
@@ -349,7 +383,7 @@ Charset Designation
 The terminal keeps two character-set slots, named **G0** and
 **G1**. You load a font into each slot independently, then switch
 which slot is active at any time. This lets you mix regular text
-with the DEC line-drawing characters (boxes, dashes, arrows)
+with the DEC line-drawing characters (corners, tees, and lines)
 without an escape sequence per character. Load the line-drawing
 font into G1 once, then toggle between G0 and G1 as you go.
 
@@ -630,6 +664,13 @@ DEC Private Modes
 Set with ``CSI ?n h``, reset with ``CSI ?n l``. Multiple modes
 may be combined in one sequence (semicolon-separated parameters).
 
+Mode 33 is for ANSI art. In the text mode of an IBM PC, one bit of the
+attribute byte of each character makes it blink. Some ANSI art was drawn
+with blinking turned off in the display adapter, so that bit brightened
+the background instead and gave 16 background colors. This is called
+iCE color. Mode 33, from SyncTERM, makes SGR 5 and 6 brighten the
+background in the same way.
+
 .. list-table::
    :widths: 6 10 22 62
    :header-rows: 1
@@ -658,7 +699,7 @@ may be combined in one sequence (semicolon-separated parameters).
    * - 33
      - —
      - iCE colors
-     - Set: SGR 5 / 6 brightens background (IBM-VGA quirk).
+     - Set: SGR 5 / 6 brightens background (iCE colors).
        Reset: SGR 5 / 6 means blink (default).
    * - 47
      - —
@@ -705,9 +746,8 @@ parameters resets all attributes.
      - —
    * - 5
      - Blink (slow)
-     - Blinks foreground. With iCE colors mode (``?33h``) set
-       instead, brightens the background — the IBM-VGA / ANSI.SYS
-       quirk.
+     - Blinks foreground. With iCE colors mode (``?33h``) set,
+       brightens the background instead.
    * - 6
      - Blink (rapid)
      - Same as 5 at double the blink rate.

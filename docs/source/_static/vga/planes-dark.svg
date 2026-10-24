@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="762" height="516" viewBox="0 0 762 516" role="img" aria-labelledby="title desc" font-size="13" fill="currentColor">
+<title id="title">The planes of the canvas</title>
+<desc id="desc">The VGA system draws the canvas from three planes, each with a fill layer and a sprite layer. Plane 0 is at the back and plane 2 is at the front. The six layers make the canvas, and the status bar of plane 2 covers part of the sun, a sprite of plane 0.</desc>
+<style>
+  svg { color: #cfd0d0; }
+  text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+</style>
+<defs>
+<g id="vga-l0f"><rect width="160" height="120" fill="#6fb3e8"/>
+<path d="M0 96 Q40 72 80 92 T160 84 L160 120 L0 120 Z" fill="#4a9e4f"/></g>
+<g id="vga-l0s"><circle cx="130" cy="18" r="11" fill="#f4c542"/>
+<g fill="#dfe8ef" stroke="#5d7a91" stroke-width="1.5"><ellipse cx="38" cy="38" rx="18" ry="8"/><ellipse cx="49" cy="32" rx="11" ry="8"/></g></g>
+<g id="vga-l1f"><g fill="#b0703a" stroke="#6e431d" stroke-width="1"><rect x="0" y="104" width="16" height="16"/><rect x="16" y="104" width="16" height="16"/><rect x="32" y="104" width="16" height="16"/><rect x="48" y="104" width="16" height="16"/><rect x="64" y="104" width="16" height="16"/><rect x="80" y="104" width="16" height="16"/><rect x="96" y="104" width="16" height="16"/><rect x="112" y="104" width="16" height="16"/><rect x="128" y="104" width="16" height="16"/><rect x="144" y="104" width="16" height="16"/><rect x="96" y="72" width="16" height="16"/><rect x="112" y="72" width="16" height="16"/><rect x="128" y="72" width="16" height="16"/></g></g>
+<g id="vga-l1s"><rect x="38" y="78" width="16" height="26" rx="2" fill="#e0483e"/>
+<rect x="46" y="84" width="5" height="5" fill="#ffffff"/>
+<circle cx="120" cy="60" r="6" fill="#f4c542" stroke="#b58a12" stroke-width="1"/></g>
+<g id="vga-l2f"><rect width="160" height="16" fill="#1d2742" stroke="#8796b8" stroke-width="1"/><g fill="#e8e8e8"><rect x="6" y="5" width="4" height="6"/><rect x="12" y="5" width="4" height="6"/><rect x="18" y="5" width="4" height="6"/><rect x="24" y="5" width="4" height="6"/><rect x="30" y="5" width="4" height="6"/><rect x="46" y="5" width="4" height="6"/><rect x="52" y="5" width="4" height="6"/><rect x="58" y="5" width="4" height="6"/><rect x="64" y="5" width="4" height="6"/></g></g>
+<g id="vga-l2s"><polygon points="92,40 92,64 97.5,58.5 103,69 107,67 102,57 109,57" fill="#ffffff" stroke="#222222" stroke-width="1.2" stroke-linejoin="round"/></g>
+<clipPath id="vga-clip"><rect width="160" height="120"/></clipPath>
+<marker id="vga-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="currentColor"/></marker>
+</defs>
+<g transform="matrix(1 0 0.45 0.5 150 420)">
+<rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
+<use href="#vga-l0f" clip-path="url(#vga-clip)"/>
+<rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
+</g>
+<text x="144" y="448.0" text-anchor="end">fill layer</text>
+<text x="144" y="463.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 3: bitmap</text>
+<g transform="matrix(1 0 0.45 0.5 150 354)">
+<rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
+<use href="#vga-l0s" clip-path="url(#vga-clip)"/>
+<rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
+</g>
+<text x="144" y="382.0" text-anchor="end">sprite layer</text>
+<text x="144" y="397.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 5: sprites</text>
+<g transform="matrix(1 0 0.45 0.5 150 266)">
+<rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
+<use href="#vga-l1f" clip-path="url(#vga-clip)"/>
+<rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
+</g>
+<text x="144" y="294.0" text-anchor="end">fill layer</text>
+<text x="144" y="309.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 2: tiles</text>
+<g transform="matrix(1 0 0.45 0.5 150 200)">
+<rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
+<use href="#vga-l1s" clip-path="url(#vga-clip)"/>
+<rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
+</g>
+<text x="144" y="228.0" text-anchor="end">sprite layer</text>
+<text x="144" y="243.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 5: sprites</text>
+<g transform="matrix(1 0 0.45 0.5 150 112)">
+<rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
+<use href="#vga-l2f" clip-path="url(#vga-clip)"/>
+<rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
+</g>
+<text x="144" y="140.0" text-anchor="end">fill layer</text>
+<text x="144" y="155.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 1: text</text>
+<g transform="matrix(1 0 0.45 0.5 150 46)">
+<rect width="160" height="120" fill="currentColor" fill-opacity="0.05"/>
+<use href="#vga-l2s" clip-path="url(#vga-clip)"/>
+<rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1" vector-effect="non-scaling-stroke"/>
+</g>
+<text x="144" y="74.0" text-anchor="end">sprite layer</text>
+<text x="144" y="89.0" text-anchor="end" fill-opacity="0.65" font-size="11.5">mode 5: sprites</text>
+<path d="M378.0 76.0 h6 V142.0 h-6" fill="none" stroke="currentColor" stroke-opacity="0.6"/>
+<text x="390.0" y="113.5" font-weight="600">plane 2</text>
+<path d="M378.0 230.0 h6 V296.0 h-6" fill="none" stroke="currentColor" stroke-opacity="0.6"/>
+<text x="390.0" y="267.5" font-weight="600">plane 1</text>
+<path d="M378.0 384.0 h6 V450.0 h-6" fill="none" stroke="currentColor" stroke-opacity="0.6"/>
+<text x="390.0" y="421.5" font-weight="600">plane 0</text>
+<line x1="22" y1="476.0" x2="22" y2="54" stroke="currentColor" stroke-opacity="0.6" marker-end="url(#vga-arrow)"/>
+<text x="22" y="42" text-anchor="middle" fill-opacity="0.65" font-size="11.5">front</text>
+<text x="22" y="494.0" text-anchor="middle" fill-opacity="0.65" font-size="11.5">back</text>
+<path d="M456.0 76.0 h6 V450.0 h-6" fill="none" stroke="currentColor" stroke-opacity="0.6"/>
+<line x1="462.0" y1="263.0" x2="550" y2="263.0" stroke="currentColor" stroke-opacity="0.6" marker-end="url(#vga-arrow)"/>
+<g transform="translate(560 191.0) scale(1.2)">
+<use href="#vga-l0f"/>
+<use href="#vga-l0s"/>
+<use href="#vga-l1f"/>
+<use href="#vga-l1s"/>
+<use href="#vga-l2f"/>
+<use href="#vga-l2s"/>
+<rect width="160" height="120" fill="none" stroke="currentColor" stroke-opacity="0.6" vector-effect="non-scaling-stroke"/>
+</g>
+<text x="656.0" y="355.0" text-anchor="middle" font-weight="600">canvas</text>
+</svg>
