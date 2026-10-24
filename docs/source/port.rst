@@ -28,21 +28,20 @@ draw more sprites than a program can move each frame.
 The VGA system draws the canvas one scanline at a time, and it has a fixed
 number of clocks to draw the sprites of each scanline. The figures in this
 section are for the :doc:`fpga`, where the VGA system is a hardware
-renderer built in programmable logic, a real video chip. Its video logic
-runs at 50.4 MHz, and the costs in this section are counted in its clocks.
+renderer built in programmable logic. Its video logic runs at 50.4 MHz,
+and the costs in this section are counted in its clocks.
 
 Clocks per Scanline
 -------------------
 
-A line of the VGA signal is 800 pixel clocks, of which 640 are visible.
-The video logic runs at twice the 25.2 MHz pixel clock, so a line is 1,600
-clocks. On a 640-wide canvas, each scanline is one line and has 1,600
-clocks. A 320-wide canvas shows every scanline twice, so each scanline has
-3,200 clocks for half as many pixels. Those extra clocks are the main
-reason to use a 320-wide canvas for a game.
-
-The fill layers are drawn by a separate engine, with its own reads of
-XRAM, so they cost the sprites no clocks.
+As on the VGA page, a scanline here is one row of pixels of the canvas. A
+signal line, one line of the VGA signal, is 800 pixel clocks, of which 640
+are visible. The video logic runs at twice the 25.2 MHz pixel clock, so it
+has 1,600 clocks in each signal line. A scanline of a 640-wide canvas is
+sent as one signal line, so it has 1,600 clocks. A 320-wide canvas is
+doubled across and down, so each of its scanlines is sent as two signal
+lines and has 3,200 clocks for half as many pixels. Those extra clocks are
+the main reason to use a 320-wide canvas for a game.
 
 Sprite Costs
 ------------
@@ -66,17 +65,17 @@ total with 1,600 clocks at 640 wide or 3,200 at 320 wide:
      - 9
      - 9
      - 9
-   * - Each sprite in the sprite array, on every scanline of its mode
+   * - Each sprite that could show on the scanline
      - 2
      - 2½
      - 2
      - 5
-   * - Each sprite with pixels on the scanline, before its first pixel
+   * - Each sprite that shows on the scanline
      - 3
      - 3
      - 3
      - 4
-   * - Each pixel drawn
+   * - Each pixel of a sprite that lands on the scanline
      - ½
      - ½
      - ½
@@ -87,23 +86,24 @@ total with 1,600 clocks at 640 wide or 3,200 at 320 wide:
      -
      -
 
-The 9 clocks once per scanline are for the first plane with sprites on the
-scanline. Each further plane with sprites adds 8 clocks, and a plane
-without sprites that comes before one with sprites adds 2.
+For example, one plane is programmed with a sprite array of 10 paletted
+8x8 sprites at 1 bit per pixel, and all of them use the same 2-color
+palette. 5 of the sprites show on the scanline. The scanline costs:
 
-Every sprite in the array costs its entry on every scanline of its mode,
-even a sprite that is off the canvas. The engine reads the array four
-bytes a clock, and a custom entry is ten bytes, so custom entries
-alternate between three reads and two. A long sprite array in which few
-sprites are on the canvas still costs clocks for every entry, so a shorter
-array costs less.
+- 9 clocks once per scanline.
+- 20 clocks for the 10 sprites that could show on the scanline, 2 each.
+- 15 clocks for the 5 sprites that show on the scanline, 3 each.
+- 20 clocks for the 8 pixels of each of those 5 sprites, at half a clock
+  a pixel.
+- 3 clocks for one palette cache miss. The sprites use only 2 colors, and
+  one miss loads both. `Keeping Palettes in the Cache`_ covers palettes
+  with more colors.
 
-Paletted, custom, and 16-bit sprites are drawn two pixels per clock.
-Affine sprites are drawn one texel per clock, where a texel is a pixel of
-the source image. The texels along a rotated scanline are scattered
-across the image, and a texel that straddles two words takes two clocks.
-Doubling with ``MODE5_HDOUBLE`` or ``MODE5_VDOUBLE`` adds no cost of its
-own, because a doubled sprite is still drawn two canvas pixels per clock.
+That is 67 clocks of the 3,200 of a scanline on a 320-wide canvas.
+
+With sprites on more than one plane, each further plane with sprites adds
+8 clocks. Skipping a plane without sprites to reach a plane with sprites
+adds 2 clocks.
 
 When Sprites Do Not Fit
 -----------------------
@@ -121,21 +121,16 @@ scanline is due:
 Maximum Sprites
 ---------------
 
-Adding up the costs for a scanline full of one kind of sprite gives the
-most that fit. A paletted 16x16 sprite costs 13 clocks on each scanline it
-is drawn on: 2 for its entry, 3 before its first pixel, and 8 for 16
-pixels at half a clock each. The scanline also costs 9 clocks once, and
-768 clocks for 256 palette cache misses, which load all 512 colors of
-1 KB of palettes. That leaves 823 clocks at 640 wide, enough for 63 of
-these sprites on one scanline, and 2,423 at 320 wide, enough for 186.
-16-bit sprites have no palette, so a scanline of them has no cache misses.
+Working out the clocks of a scanline with sprites of several kinds and
+sizes takes some arithmetic. To show when that arithmetic starts to
+matter, this table gives the most sprites of one kind and size that fit on
+one scanline, with every pixel of every sprite on it. Sprites spread
+across different scanlines can number far more. The paletted figures
+include 768 clocks of palette cache misses, which load all 512 colors of
+the cache. Custom sprites are not in the table. Each one costs half a
+clock more than a paletted sprite of the same size.
 
-The next table applies the same calculation to every sprite type, with
-all of the sprites on the same scanline. Sprites spread across different
-scanlines can number far more. A custom sprite costs the same as a
-paletted sprite of the same size, plus half a clock for its entry.
-
-.. list-table:: Maximum sprites with all of them on one scanline
+.. list-table:: Maximum sprites on one scanline
    :widths: 40 30 30
    :header-rows: 1
 
