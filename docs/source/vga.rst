@@ -1951,17 +1951,14 @@ Video Timing
 
 To change the picture without tearing, make your changes between
 frames: after VSYNC, and before the VGA system starts the next frame.
-This section tells you how long that is for each canvas and video
-timing.
+Every machine uses VGA timing. The :doc:`pico` can also use SXGA timing,
+and 720p timing for a 16:9 canvas on an HD display, depending on its
+:ref:`display type <pico-settings>`.
 
-Every machine uses VGA timing, 640x480 at 60 Hz. The :doc:`pico` can
-also use 720p or SXGA timing, depending on its :ref:`display type
-<pico-settings>`. The times in this section stop at least one scanline
-early, because the machines match each other only to within one
-scanline.
-
-When the canvas fills the display, the time between frames is the
-vertical blanking interval:
+The machines match each other to within one scanline, so these times
+leave out one 320-wide scanline as margin. A canvas that doesn't fill
+the display is letterboxed, and the empty lines above and below it add
+to its time:
 
 .. list-table::
    :widths: 35 20 20 25
@@ -1976,22 +1973,6 @@ vertical blanking interval:
      - 1.37 ms
      - 10,900
    * - 320x180, 640x360
-     - 720p
-     - 0.58 ms
-     - 4,600
-
-When the canvas doesn't fill the display, it is letterboxed, and the
-empty lines above and below it add to the time:
-
-.. list-table::
-   :widths: 35 20 20 25
-   :header-rows: 1
-
-   * - Canvas
-     - Timing
-     - Time
-     - Cycles at 8 MHz
-   * - 320x180, 640x360
      - VGA
      - 5.17 ms
      - 41,400
@@ -2003,28 +1984,23 @@ empty lines above and below it add to the time:
      - SXGA
      - 5.35 ms
      - 42,800
+   * - 320x180, 640x360
+     - 720p
+     - 0.58 ms
+     - 4,600
 
-The VGA system sends VSYNC right after it draws the lowest scanline that
-you have programmed. The tables assume that this is the last scanline of
-the canvas. If you leave scanlines at the bottom unprogrammed, VSYNC
-comes that much sooner.
+SXGA gives a little more time than VGA, so a program that fits VGA
+timing fits SXGA timing too.
 
-The tightest timing is a 16:9 canvas on an RP6502-PICO with an HD
-display. The canvas fills the 720p display, which leaves only 0.58 ms,
-about 4,600 cycles. Everywhere else, a 16:9 canvas is letterboxed and
-has more than 5 ms, even in the emulator, where the window doesn't show
-the letterbox. If your program needs to run on an HD display, fit its
-changes into 0.58 ms.
+720p is the tight one. A 16:9 canvas fills a 720p display, which leaves
+only 0.58 ms. Everywhere else, a 16:9 canvas is letterboxed, the
+emulator included, so a program that is too slow for 720p looks fine
+there.
 
-SXGA gives more time between frames than VGA, so a program that fits in
-VGA timing almost always fits in SXGA timing.
-
-VGA and 720p are the 60 Hz timings of the CEA-861 standard, and SXGA is
-the 60 Hz timing of the VESA standard. The total size includes the
-blanking around the active area:
+The three timings follow the CEA-861 and VESA DMT standards:
 
 .. list-table::
-   :widths: 20 20 20 20 20
+   :widths: 15 18 18 17 15 17
    :header-rows: 1
 
    * - Timing
@@ -2032,30 +2008,25 @@ blanking around the active area:
      - Total
      - Pixel clock
      - Refresh
+     - Standard
    * - VGA
      - 640x480
      - 800x525
      - 25.2 MHz
      - 60 Hz
-   * - 720p
-     - 1280x720
-     - 1650x750
-     - 74.25 MHz
-     - 60 Hz
+     - CEA-861
    * - SXGA
      - 1280x1024
      - 1688x1066
      - 108 MHz
      - 60 Hz
-
-A change lower on the canvas has more time, because the VGA system draws
-the scanlines above it first. Each scanline of a 320-wide canvas is
-drawn on 2 lines of VGA, or 4 lines of 720p or SXGA. Each scanline of a
-640-wide canvas is drawn on 1 line of VGA, or 2 lines of 720p or SXGA.
-To get the length of a line, divide its total width by the pixel clock:
-a VGA line is 800 pixels at 25.2 MHz, or 31.75 µs. Scanline 100 of a
-320x240 canvas in VGA timing is 200 lines down, so a change there has
-6.35 ms more than a change at the top.
+     - VESA DMT
+   * - 720p
+     - 1280x720
+     - 1650x750
+     - 74.25 MHz
+     - 60 Hz
+     - CEA-861
 
 
 .. _vga-control-channel:
