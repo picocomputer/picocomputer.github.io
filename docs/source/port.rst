@@ -25,43 +25,32 @@ In practice, the limits of a game are the 6502 at 8 MHz and the 64 KB of
 XRAM, not the sprites. On a 320x240 canvas, the VGA system can usually
 draw more sprites than a program can move each frame.
 
-The figures below count only the sprites drawn on a single row of the
-canvas. A hundred paletted 32x32 sprites on one row cover 3,200 pixels,
-ten times the width of a 320-wide canvas, and they still fit.
+The VGA system draws the canvas one scanline at a time, and it has a fixed
+number of clocks to draw the sprites of each scanline. The figures in this
+section are for the :doc:`fpga`, where the VGA system is a hardware
+renderer built in programmable logic, a real video chip. Its video logic
+runs at 50.4 MHz, and the costs in this section are counted in its clocks.
 
-The figures are for the :doc:`fpga`, which has the least time per row of
-any machine, so sprites that fit there fit everywhere. They are also the
-easiest to compute. On the RP6502-FPGA, the video system is a hardware
-renderer built in programmable logic, a real video chip. The :doc:`pico`,
-:doc:`emu`, and :doc:`web` render in software, which modern CPUs can do
-significantly faster than an affordable FPGA.
+Clocks per Scanline
+-------------------
 
-When the sprites of a row do not fit in its time, the result depends on
-the machine:
+A line of the VGA signal is 800 pixel clocks, of which 640 are visible.
+The video logic runs at twice the 25.2 MHz pixel clock, so a line is 1,600
+clocks. On a 640-wide canvas, each scanline is one line and has 1,600
+clocks. A 320-wide canvas shows every scanline twice, so each scanline has
+3,200 clocks for half as many pixels. Those extra clocks are the main
+reason to use a 320-wide canvas for a game.
 
-- On the :doc:`pico`, the row shows part blue and part black instead of
-  the picture.
-- On the :doc:`fpga`, the sprites that do not fit do not show.
-- On the :doc:`emu` and the :doc:`web`, every sprite shows, but the host
-  computer slows down. The emulator no longer runs at 60 frames a
-  second, and the time of the 6502 falls behind the time of the clock on
-  the wall.
+The fill layers are drawn by a separate engine, with its own reads of
+XRAM, so they cost the sprites no clocks.
 
-The video logic of the RP6502-FPGA runs at 50.4 MHz, twice the 25.2 MHz
-pixel clock, and each row of the video signal is 800 pixel clocks long,
-of which 640 are visible. That gives 1,600 clocks per row. A 320-wide
-canvas is shown with every row doubled, so each canvas row gets 3,200
-clocks for half as many pixels. That extra time is the main reason to use
-a 320-wide canvas for a game.
+Sprite Costs
+------------
 
-Fill layers and sprites are drawn by separate engines, each with its own
-XRAM read every clock, so fill never takes time from sprites.
-
-To check a row, add up the costs below for every sprite and compare the
-total with 1,600 clocks at 640 wide or 3,200 at 320 wide. Paletted and
-custom sprites are the sprites of :ref:`mode 5 <vga-mode-5>`, and 16-bit
-and affine sprites are the sprites of :ref:`mode 4 <vga-mode-4>`. The
-figures are measured on the RP6502-FPGA.
+Paletted and custom sprites are the sprites of :ref:`mode 5 <vga-mode-5>`,
+and 16-bit and affine sprites are the sprites of :ref:`mode 4
+<vga-mode-4>`. To check a scanline, add up these costs and compare the
+total with 1,600 clocks at 640 wide or 3,200 at 320 wide:
 
 .. list-table::
    :widths: 40 15 15 15 15
@@ -72,17 +61,17 @@ figures are measured on the RP6502-FPGA.
      - Custom
      - 16-bit
      - Affine
-   * - Once per row
+   * - Once per scanline
      - 9
      - 9
      - 9
      - 9
-   * - Each sprite in the list, on the row or not
+   * - Each sprite in the sprite array, on every scanline of its mode
      - 2
      - 2½
      - 2
      - 5
-   * - Each sprite on the row, before its first pixel
+   * - Each sprite with pixels on the scanline, before its first pixel
      - 3
      - 3
      - 3
@@ -98,33 +87,55 @@ figures are measured on the RP6502-FPGA.
      -
      -
 
-The once-per-row cost is for sprites in one plane. Each further plane
-with sprites on the row adds 8 clocks, and each plane without sprites that
-comes before one with sprites adds 2.
+The 9 clocks once per scanline are for the first plane with sprites on the
+scanline. Each further plane with sprites adds 8 clocks, and a plane
+without sprites that comes before one with sprites adds 2.
 
-Every sprite in the list costs its list entry on every row, even a
-sprite off the canvas. If you run out of sprite time with a long sprite
-array in which few sprites are visible, use a shorter array with fewer
-unused entries.
+Every sprite in the array costs its entry on every scanline of its mode,
+even a sprite that is off the canvas. The engine reads the array four
+bytes a clock, and a custom entry is ten bytes, so custom entries
+alternate between three reads and two. A long sprite array in which few
+sprites are on the canvas still costs clocks for every entry, so a shorter
+array costs less.
 
 Paletted, custom, and 16-bit sprites are drawn two pixels per clock.
 Affine sprites are drawn one texel per clock, where a texel is a pixel of
-the source image. The texels along a rotated row are scattered across the
-image, and a texel that straddles two words takes two clocks.
+the source image. The texels along a rotated scanline are scattered
+across the image, and a texel that straddles two words takes two clocks.
+Doubling with ``MODE5_HDOUBLE`` or ``MODE5_VDOUBLE`` adds no cost of its
+own, because a doubled sprite is still drawn two canvas pixels per clock.
 
-For example, a paletted 16x16 sprite costs 13 clocks on each row it
-covers: 2 for its list entry, 3 before its first pixel, and 8 for 16
-pixels at half a clock each. The row also costs 9 clocks once, and 768
-clocks for 256 palette cache misses, which load all 512 colors of 1 KB of
-palettes. That leaves 823 clocks at 640 wide, room for 63 of these
-sprites on one row, and 2,423 at 320 wide, room for 186. 16-bit sprites
-have no palette, so a row of them has no cache misses.
+When Sprites Do Not Fit
+-----------------------
+
+When the VGA system cannot finish the sprites of a scanline before the
+scanline is due:
+
+- On the :doc:`pico`, the scanline shows part blue and part black
+  instead of the picture.
+- On the :doc:`fpga`, the sprites that do not fit do not show.
+- On the :doc:`emu` and the :doc:`web`, every sprite shows, but the
+  emulator slows down. It no longer runs at 60 frames a second, and the
+  6502 runs slower than real time.
+
+Maximum Sprites
+---------------
+
+Adding up the costs for a scanline full of one kind of sprite gives the
+most that fit. A paletted 16x16 sprite costs 13 clocks on each scanline it
+is drawn on: 2 for its entry, 3 before its first pixel, and 8 for 16
+pixels at half a clock each. The scanline also costs 9 clocks once, and
+768 clocks for 256 palette cache misses, which load all 512 colors of
+1 KB of palettes. That leaves 823 clocks at 640 wide, enough for 63 of
+these sprites on one scanline, and 2,423 at 320 wide, enough for 186.
+16-bit sprites have no palette, so a scanline of them has no cache misses.
 
 The next table applies the same calculation to every sprite type, with
-all sprites on the same row. Sprites spread across different rows can
-number far more.
+all of the sprites on the same scanline. Sprites spread across different
+scanlines can number far more. A custom sprite costs the same as a
+paletted sprite of the same size, plus half a clock for its entry.
 
-.. list-table:: Maximum sprites with all of them on one row
+.. list-table:: Maximum sprites with all of them on one scanline
    :widths: 40 30 30
    :header-rows: 1
 
@@ -159,20 +170,16 @@ number far more.
      - 45
      - 22
 
-A custom sprite costs the same as a paletted sprite of the same size,
-plus half a clock for each entry in the list. The list is read four bytes
-at a time and a custom entry is ten bytes, so entries alternate between
-three reads and two. Doubling with ``MODE5_HDOUBLE`` or ``MODE5_VDOUBLE``
-adds no cost of its own, because a doubled sprite is still drawn two
-canvas pixels per clock.
+Keeping Palettes in the Cache
+-----------------------------
 
 The paletted figures assume that all sprite palettes are within 1 KB of
-contiguous XRAM, the size of the palette cache on the RP6502-FPGA. To
-keep them there, put the sprite palettes in a structure of their own,
-place it in the layout of ``xram.h`` described in
-:ref:`sdk-xram-memory-map`, and check how many colors it holds. A check of
-colors, not bytes, also holds in VS Code, where IntelliSense sizes
-``uint16_t`` at 4 bytes. Only the changed part of ``xram.h`` is shown.
+contiguous XRAM, the size of the palette cache. To keep them there, put
+the sprite palettes in a structure of their own, place it in the layout of
+``xram.h`` described in :ref:`sdk-xram-memory-map`, and check how many
+colors it holds. The check counts colors rather than bytes, so it also
+holds in VS Code, where IntelliSense sizes ``uint16_t`` at 4 bytes. Only
+the changed part of ``xram.h`` is shown.
 
 .. code-block:: C
 
