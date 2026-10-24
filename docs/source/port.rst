@@ -168,34 +168,12 @@ clock more than a paletted sprite of the same size.
 Keeping Palettes in the Cache
 -----------------------------
 
-The paletted figures assume that all sprite palettes are within 1 KB of
-contiguous XRAM, the size of the palette cache. To keep them there, put
-the sprite palettes in a structure of their own, place it in the layout of
-``xram.h`` described in :ref:`sdk-xram-memory-map`, and check how many
-colors it holds. The check counts colors rather than bytes, so it also
-holds in VS Code, where IntelliSense sizes ``uint16_t`` at 4 bytes. Only
-the changed part of ``xram.h`` is shown.
-
-.. code-block:: C
-
-  typedef struct
-  {
-      uint16_t player[16];
-      uint16_t enemies[4][16];
-  } palettes_t;
-
-  typedef struct
-  {
-      keyboard_t keyboard;
-      palettes_t palettes;
-  } xram_layout_t;
-
-  #define XRAM_KEYBOARD offsetof(xram_layout_t, keyboard)
-  #define XRAM_PLAYER_PALETTE offsetof(xram_layout_t, palettes.player)
-  #define XRAM_ENEMY_PALETTES offsetof(xram_layout_t, palettes.enemies)
-
-  _Static_assert(sizeof(palettes_t) / sizeof(uint16_t) <= 512,
-                 "palettes_t holds more than 512 colors.");
+The RP6502-FPGA reads the colors of paletted sprites through a palette
+cache of 1 KB, and one cache serves the whole scanline. Paletted sprites
+draw fastest when the palettes of every sprite on a scanline fit in the
+cache together. Keep the palettes in one structure and check it with
+``MODE5_PALETTE_CHECK()``, as :ref:`Mode 5 <vga-mode-5>` on the VGA page
+shows.
 
 
 .. _port-gamepads:

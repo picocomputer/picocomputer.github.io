@@ -1737,6 +1737,28 @@ the array covers the sprites before it.
        each pixel twice across or down, so a doubled 16x16 image covers
        32x32 canvas pixels.
 
+The :doc:`fpga` draws mode 5 sprites fastest when all of their palettes
+fit in 1 KB of XRAM. A game with more palettes still draws correctly, with
+fewer sprites on each scanline. To fit the palettes in 1 KB, put them all
+in one structure in the layout of ``xram.h``, and check the structure with
+``MODE5_PALETTE_CHECK()``. The check stops the build if the structure
+holds more than 512 colors:
+
+.. code-block:: C
+
+  typedef struct
+  {
+      uint16_t player[16];
+      uint16_t enemies[4][16];
+  } palettes_t;
+
+  typedef struct
+  {
+      palettes_t palettes;
+  } xram_layout_t;
+
+  MODE5_PALETTE_CHECK(palettes_t);
+
 .. tab:: C
 
    .. code-block:: C
@@ -1783,6 +1805,9 @@ the array covers the sprites before it.
                   uint8_t cols[((width) * (bpp) + 7) / 8]; \
               } rows[height];                              \
           }
+
+      #define MODE5_PALETTE_CHECK(type) \
+          _Static_assert(sizeof(type) / sizeof(uint16_t) <= 512, #type " holds more than 512 colors.")
 
       typedef struct
       {
