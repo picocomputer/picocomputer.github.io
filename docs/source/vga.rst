@@ -111,8 +111,8 @@ thing in XRAM. It is the only part that you write yourself:
    #define XRAM_BITMAP offsetof(xram_layout_t, bitmap)
    #define XRAM_BITMAP_CONFIG offsetof(xram_layout_t, bitmap_config)
 
-The program is the same for both compilers, except for how it fills in
-the configuration structure:
+The two compilers differ only in how the program fills in the
+configuration structure:
 
 .. tab:: llvm-mos
 
@@ -370,9 +370,9 @@ canvas, and whether it repeats. The section of each mode lists the
 members of its structure.
 
 An image does not have to be the size of the canvas. A smaller image
-covers part of the canvas, and the layer around it is transparent,
-unless the image wraps. A larger image shows only the part that is on
-the canvas. A game that scrolls sideways, for example, uses a tile map
+covers part of the canvas. Unless the image wraps, the layer around it
+is transparent. A larger image shows only the part that is on the
+canvas. A game that scrolls sideways, for example, uses a tile map
 wider than the canvas and changes ``x_pos_px`` on each frame.
 
 BEGIN and END set which scanlines a mode draws on, but they do not move
@@ -758,8 +758,8 @@ color.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-For example, this call puts mode 1 on plane 0, in 8-bit color with the
-8x16 font, using the configuration structure at ``xaddr``:
+For example, this call puts mode 1 in 8-bit color with the 8x16 font,
+using the configuration structure at ``xaddr``, on plane 0:
 
 .. code-block:: C
 
@@ -794,8 +794,8 @@ Each color depth has its own structure for a cell, named to match its
 constant: ``MODE1_1BPP`` cells are ``mode1_1bpp_data_t``, ``MODE1_4BPP``
 cells are ``mode1_4bpp_data_t``, and so on. The cells are stored row by
 row from the top left. Each is 8 pixels wide, so a row of 40 cells spans
-a canvas 320 pixels wide. In 16-bit color, the VGA system ignores a
-cell's ``attributes``, so your program can keep its own data there.
+a canvas 320 pixels wide. In 16-bit color, the VGA system ignores the
+``user_data`` of each cell, so your program can keep its own data there.
 
 .. tab:: C
 
@@ -856,7 +856,7 @@ cell's ``attributes``, so your program can keep its own data there.
       typedef struct
       {
           uint8_t glyph_code;
-          uint8_t attributes;
+          uint8_t user_data;
           uint16_t fg_color;
           uint16_t bg_color;
       } mode1_16bpp_data_t; /* layout */
@@ -913,7 +913,7 @@ cell's ``attributes``, so your program can keep its own data there.
 
       .struct mode1_16bpp_data_t
           glyph_code .byte
-          attributes .byte
+          user_data  .byte
           fg_color   .word
           bg_color   .word
       .endstruct
@@ -965,13 +965,13 @@ cell's ``attributes``, so your program can keep its own data there.
       MODE1_8BPP_DATA_SIZE       = 3
 
       MODE1_16BPP_DATA_GLYPH_CODE = 0
-      MODE1_16BPP_DATA_ATTRIBUTES = 1
+      MODE1_16BPP_DATA_USER_DATA  = 1
       MODE1_16BPP_DATA_FG_COLOR   = 2
       MODE1_16BPP_DATA_BG_COLOR   = 4
       MODE1_16BPP_DATA_SIZE       = 6
 
-Glyphs are 8x8 or 8x16. Set ``xram_font_ptr`` to $FFFF for the built-in
-font. Its first 128 glyphs are the lower half of code page 437, the IBM
+Glyphs are 8x8 or 8x16. For the built-in font, set ``xram_font_ptr`` to
+$FFFF. Its first 128 glyphs are the lower half of code page 437, the IBM
 PC character set: ASCII, with symbols in place of the control codes. The
 other 128 come from the code page that :ref:`RIA_ATTR_CODE_PAGE
 <api-ria-attributes>` selects.
@@ -1031,8 +1031,8 @@ small set of tiles is repeated across a large map.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-For example, this call puts mode 2 on plane 0, with 8x8 tiles in 4-bit
-color, using the configuration structure at ``xaddr``:
+For example, this call puts mode 2 in 4-bit color with 8x8 tiles, using
+the configuration structure at ``xaddr``, on plane 0:
 
 .. code-block:: C
 
@@ -1226,8 +1226,8 @@ image that fills the canvas: monochrome at 640x480, 16 colors at
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-For example, this call puts mode 3 on plane 0, in 4-bit color, using the
-configuration structure at ``xaddr``:
+For example, this call puts mode 3 in 4-bit color, using the
+configuration structure at ``xaddr``, on plane 0:
 
 .. code-block:: C
 
@@ -1397,16 +1397,16 @@ shows the math.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-For example, this call programs ``length`` sprites on plane 1, from the
-sprite array at ``xaddr``:
+For example, this call programs the sprite array at ``xaddr``, with
+``length`` sprites, on plane 1:
 
 .. code-block:: C
 
   xreg_vga_mode4(0, xaddr, length, 1);
 
-Each sprite in the sprite array is a ``mode4_sprite_t``, or a
-``mode4_asprite_t`` with ``MODE4_AFFINE`` set in OPTIONS. A sprite later
-in the array covers the sprites before it.
+Each sprite in the sprite array is a ``mode4_sprite_t``. With
+``MODE4_AFFINE`` set in OPTIONS, each is a ``mode4_asprite_t`` instead.
+A sprite later in the array covers the sprites before it.
 
 .. list-table::
    :widths: 35 65
@@ -1612,9 +1612,9 @@ declare the image with ``MODE4_IMAGE_WITH_METADATA`` in place of
 ``MODE4_IMAGE``, and set ``has_opacity_metadata``. Affine sprites ignore
 opacity metadata.
 
-Each row of the image has a value in ``opacity_metadata``, which
-``MODE4_OPACITY_METADATA(start, end, solid)`` builds. ``start`` is the
-first opaque pixel of the row, and ``end`` is one past the last. The VGA
+Each row of the image has a value in ``opacity_metadata``.
+``MODE4_OPACITY_METADATA(start, end, solid)`` builds the value. ``start``
+is the first opaque pixel of the row, and ``end`` is one past the last. The VGA
 system draws only the pixels from ``start`` up to ``end``. When all of
 them are opaque, set ``solid``. The VGA system then draws them without
 checking each alpha bit.
@@ -1652,14 +1652,12 @@ around an image that you scale up or rotate.
 Mode 5: Sprite 1,2,4,8-bit
 --------------------------
 
-Mode 5 draws sprites in 1-, 2-, 4-, or 8-bit color. This is a
-memory-efficient sprite system that uses palettes to cut the color
-depth. The VGA system can draw these sprites over any fill layer,
-including an empty one. For example, you might put affine sprites of
-mode 4 for explosions and the player on one plane, 16x16 enemy sprites
-in 4-bit color on a second, and 8x8 bullets in 1-bit color on the third.
-Custom sprites, described below, let one plane mix sprites of different
-sizes, color depths, and orientations.
+Mode 5 draws memory-efficient sprites. Each pixel is an index of 1, 2,
+4, or 8 bits into the palette of its sprite, so a sprite takes a
+fraction of the memory of a mode 4 sprite. The sprites in a sprite array
+share one square size, from 8x8 to 512x512, and one color depth. With
+custom sprites, each sprite has its own size and color depth, and the
+size can be rectangular.
 
 There is no fixed number of sprites. The limit comes from the fill rate
 and the cost of each sprite. :ref:`Sprite Limits <port-sprite-limits>`
@@ -1699,18 +1697,19 @@ shows the math.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-For example, the first call programs 16x16 sprites in 4-bit color on
-plane 1, from the sprite array at ``xaddr``. The second call programs
-custom sprites on plane 2, from a second sprite array at ``xaddr2``:
+For example, the first call programs 4-bit color sprites of size 16x16
+from the sprite array at ``xaddr``, with ``length`` sprites, on plane 1.
+The second call programs custom sprites from a second sprite array at
+``xaddr2``, with ``length2`` sprites, on plane 2:
 
 .. code-block:: C
 
   xreg_vga_mode5(MODE5_4BPP | MODE5_16X16, xaddr, length, 1);
   xreg_vga_mode5(MODE5_CUSTOM, xaddr2, length2, 2);
 
-Each sprite in the sprite array is a ``mode5_sprite_t``, or a
-``mode5_csprite_t`` with OPTIONS set to custom. A sprite later in the
-array covers the sprites before it.
+Each sprite in the sprite array is a ``mode5_sprite_t``. With OPTIONS
+set to custom, each is a ``mode5_csprite_t`` instead. A sprite later in
+the array covers the sprites before it.
 
 .. list-table::
    :widths: 35 65
@@ -1730,7 +1729,7 @@ array covers the sprites before it.
    * - ``width_height``
      - In ``mode5_csprite_t`` only. The width and height, each 4 to 64
        pixels in steps of 4. ``MODE5_SIZE(width, height)`` builds it.
-   * - ``options``
+   * - ``attributes``
      - In ``mode5_csprite_t`` only. Bits 0:2 are the color depth, with
        the same values as bits 0:2 of OPTIONS. Bit 3 must be 0.
        ``MODE5_HFLIP`` and ``MODE5_VFLIP`` flip the image left to right
@@ -1804,7 +1803,7 @@ palettes are within 1 KB of contiguous XRAM, as :ref:`Sprite Limits
           uint16_t xram_sprite_ptr;
           uint16_t palette_ptr;
           uint8_t width_height;
-          uint8_t options;
+          uint8_t attributes;
       } mode5_csprite_t; /* layout */
 
 .. tab:: ca65
@@ -1870,7 +1869,7 @@ palettes are within 1 KB of contiguous XRAM, as :ref:`Sprite Limits
           xram_sprite_ptr .word
           palette_ptr     .word
           width_height    .byte
-          options         .byte
+          attributes      .byte
       .endstruct
 
 .. tab:: llvm-mc
@@ -1931,32 +1930,24 @@ palettes are within 1 KB of contiguous XRAM, as :ref:`Sprite Limits
       MODE5_CSPRITE_XRAM_SPRITE_PTR = 4
       MODE5_CSPRITE_PALETTE_PTR     = 6
       MODE5_CSPRITE_WIDTH_HEIGHT    = 8
-      MODE5_CSPRITE_OPTIONS         = 9
+      MODE5_CSPRITE_ATTRIBUTES      = 9
       MODE5_CSPRITE_SIZE            = 10
 
-A pixel of a sprite shows only if its color has the alpha bit set. In a
-sprite palette, set the alpha bit in each color that shows, for example
-with ``COLOR_ALPHA_MASK``, and clear it in the transparent color. With a
-``palette_ptr`` of $FFFF, a sprite uses the built-in palette, in which
-color 0 is transparent.
+In a sprite palette, set the alpha bit of each color that shows, and
+clear it in the transparent color. In the built-in palette, color 0 is
+transparent.
 
-The image is in the format of one :ref:`mode 2 <vga-mode-2>` tile. A
-16x16 image in 4-bit color is 16 rows of 8 bytes, 128 bytes in all.
-``MODE5_IMAGE`` declares the structure of one image from its color depth
-and sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16
-image in 4-bit color.
+``typedef MODE5_IMAGE(4, 16) image_t;`` declares a 4-bit color image of
+size 16x16. The pixels pack into bytes as in `Mode 3: Bitmap`_.
 
 With OPTIONS set to custom, each sprite sets its own size, color depth,
-and orientation in ``width_height`` and ``options``. Only custom sprites
-can be flipped or doubled. The flip and double flags go in ``options``,
-never in the OPTIONS register, where bits 3:5 select the sprite size:
-``MODE5_4BPP | MODE5_16X16 | MODE5_HFLIP`` in OPTIONS selects 64x64
-sprites, not flipped ones.
+and orientation in ``width_height`` and ``attributes``. Only custom
+sprites can be flipped or doubled.
 
-``MODE5_CUSTOM_IMAGE`` declares one image from its color depth, width,
-and height, so ``typedef MODE5_CUSTOM_IMAGE(4, 24, 16) image_t;`` is a
-24x16 image in 4-bit color. Each row of the image starts on a byte
-boundary.
+For a custom sprite, declare the image with ``MODE5_CUSTOM_IMAGE``. For
+example, ``typedef MODE5_CUSTOM_IMAGE(4, 24, 16) image_t;`` declares a
+4-bit color image of size 24x16. Each row of the image starts on a new
+byte.
 
 
 .. _vga-frame-timing:
@@ -2030,9 +2021,9 @@ it starts at line 60 for a 16:9 canvas with 640x480 timing, at line 32
 for a 4:3 canvas with 1280x1024 timing, and at line 152 for a 16:9
 canvas with 1280x1024 timing. On the other machines, the canvas starts
 at line 0, and the blank lines all come after it. The total is the same
-either way. This table gives the time between the end of the canvas and
-the start of the next one, when the modes reach the bottom of the
-canvas:
+either way. When the modes reach the bottom of the canvas, this table
+gives the time between the end of the canvas and the start of the next
+one:
 
 .. list-table::
    :widths: 20 20 20 20 20
@@ -2069,11 +2060,11 @@ canvas:
      - 5.41 ms
      - 43,300
 
-A 16:9 canvas has more than three times the time of a 4:3 one, except
-with 1280x720 timing. There, the canvas fills the display, and the time
-is the shortest of all. A program whose modes end higher on the canvas
-gets VSYNC sooner, and has the time of the scanlines below its modes
-too.
+With 640x480 and 1280x1024 timing, a 16:9 canvas has more than three
+times the time of a 4:3 one. With 1280x720 timing, the 16:9 canvas fills
+the display, and the time is the shortest of all. A program whose modes
+end higher on the canvas gets VSYNC sooner, and has the time of the
+scanlines below its modes too.
 
 The machines agree to within one scanline, so leave one scanline of
 margin. The RP6502-PICO is the reason for the margin. Its VGA system
@@ -2146,6 +2137,7 @@ Pico 2 that runs the VGA firmware, is connected.
        error message of a failed flash write stays on the screen.
    * - $1:F:07
      - FLASH_PROGRAM
-     - Writes XRAM $0000-$00FF to flash page N of the VGA module, where N
-       is the value and each page is 256 bytes. The VGA module erases the
-       sector of the page first, unless the page already reads as erased.
+     - Writes XRAM $0000-$00FF to a 256-byte page of the flash of the VGA
+       module. The value is the number of the page. The VGA module erases
+       the sector of the page first, unless the page already reads as
+       erased.
