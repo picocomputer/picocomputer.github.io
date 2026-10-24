@@ -433,7 +433,7 @@ calls it until the value changes:
 With 640x480 timing and a 4:3 canvas, the 45 lines of vertical blanking
 last about 1.4 ms. That's roughly 11,000 cycles of a 6502 at 8 MHz to
 get a change in before the first scanline. Changes lower on the canvas
-have longer. `Frame Timing`_ gives the time for every canvas and
+have longer. `Video Timing`_ gives the time for every canvas and
 display.
 
 
@@ -1944,139 +1944,122 @@ example, ``typedef MODE5_CUSTOM_IMAGE(4, 24, 16) image_t;`` declares a
 byte.
 
 
-.. _vga-frame-timing:
+.. _vga-video-timing:
 
-Frame Timing
+Video Timing
 ============
 
-This section gives how much time a program has to change XRAM between
-frames. When the canvas has no modes, VSYNC comes after the last
-scanline of the canvas. Otherwise, it comes after the last scanline of
-the lowest mode that the program has put on a plane since it last
-selected the canvas. A mode programmed lower on the canvas moves VSYNC
-down, but nothing moves it back up until the program selects the canvas
-again.
+This section is a reference for timing changes to XRAM between frames.
+Every machine sends VGA timing. The :doc:`pico` can also send HD or SXGA
+timing, depending on its display type, as :ref:`Settings
+<pico-settings>` describes. All the machines agree to within one
+scanline, so always leave one scanline of margin.
 
-How much time a program has depends on what it changes and where that
-change shows. A change must be in XRAM before the VGA system draws the
-first scanline that shows it. For a configuration structure, that is the
-first scanline of its mode. For a sprite, it is the top scanline of the
-sprite, at its old position or its new one, whichever is higher. After
-VSYNC, the VGA system draws nothing until the next frame, so a change at
-the top of the canvas has the time from the end of the canvas to its
-start in the next frame. A change lower on the canvas also has the time
-that the VGA system takes to draw the scanlines above it.
-
-The time depends on the video timing, the format of the signal that goes
-to the display. The video timing is separate from the canvas: a 320x240
-canvas, for example, can go to the display with 640x480 timing or with
-1280x1024 timing. The table gives each video timing:
+A video timing has more columns and lines than the display shows. The
+rest is blanking, at the end of each line and at the bottom of each
+frame. All three timings run at 60 frames a second:
 
 .. list-table::
-   :widths: 20 20 20 20 20
+   :widths: 25 25 25 25
    :header-rows: 1
 
    * - Timing
-     - Lines per frame
-     - Visible lines
-     - Line time
-     - Cycles per line at 8 MHz
-   * - 640x480
-     - 525
-     - 480
-     - 31.75 µs
-     - 254
-   * - 1280x720
-     - 750
-     - 720
-     - 22.22 µs
-     - 178
-   * - 1280x1024
-     - 1066
-     - 1024
-     - 15.63 µs
-     - 125
+     - Visible
+     - Total
+     - Pixel clock
+   * - VGA
+     - 640x480
+     - 800x525
+     - 25.2 MHz
+   * - HD (720p)
+     - 1280x720
+     - 1650x750
+     - 74.25 MHz
+   * - SXGA
+     - 1280x1024
+     - 1688x1066
+     - 108 MHz
 
-The :doc:`fpga`, the :doc:`emu`, and the :doc:`web` always use 640x480
-timing. On the :doc:`pico`, the display type selects the timing, and
-``SET VGA`` in the monitor selects the display type. Display type 0 uses
-640x480. Display type 1 uses 1280x720 for the 16:9 canvases and 640x480
-for the others. Display type 2 uses 1280x1024.
+The VGA system draws each scanline of the canvas on whole video lines. A
+scanline of a 320-wide canvas takes 2 lines of VGA timing, or 4 lines of
+HD or SXGA timing. A scanline of a 640-wide canvas takes half as many,
+so a 640x480 canvas has the same timing as a 320x240 canvas, and a
+640x360 canvas has the same timing as a 320x180 canvas.
 
-Each scanline of the canvas takes the same number of video lines. A
-320-wide canvas takes 2 lines with 640x480 timing and 4 with the others.
-A 640-wide canvas takes 1 line with 640x480 timing and 2 with the
-others.
-
-A canvas that does not fill the visible lines leaves blank lines, and
-they add to the time between frames. On the RP6502-PICO, the VGA system
-centers the canvas, so the blank lines are half above it and half below:
-it starts at line 60 for a 16:9 canvas with 640x480 timing, at line 32
-for a 4:3 canvas with 1280x1024 timing, and at line 152 for a 16:9
-canvas with 1280x1024 timing. On the other machines, the canvas starts
-at line 0, and the blank lines all come after it. The total is the same
-either way. When the modes reach the bottom of the canvas, this table
-gives the time between the end of the canvas and the start of the next
-one:
+The time between frames runs from the last scanline of the canvas to the
+first scanline of the next frame. For a canvas that fills the display,
+it is the vertical blanking:
 
 .. list-table::
-   :widths: 20 20 20 20 20
+   :widths: 30 15 15 20 20
    :header-rows: 1
 
-   * - Timing
-     - Canvas
+   * - Canvas
+     - Timing
      - Lines
      - Time
      - Cycles at 8 MHz
-   * - 640x480
-     - 4:3
+   * - 320x240, 640x480
+     - VGA
      - 45
      - 1.43 ms
      - 11,400
-   * - 640x480
-     - 16:9
-     - 165
-     - 5.24 ms
-     - 41,900
-   * - 1280x720
-     - 16:9
+   * - 320x180, 640x360
+     - HD
      - 30
      - 0.67 ms
      - 5,300
-   * - 1280x1024
-     - 4:3
+
+A canvas that does not fill the display is letterboxed, and the empty
+lines above and below it add to the time:
+
+.. list-table::
+   :widths: 30 15 15 20 20
+   :header-rows: 1
+
+   * - Canvas
+     - Timing
+     - Lines
+     - Time
+     - Cycles at 8 MHz
+   * - 320x180, 640x360
+     - VGA
+     - 165
+     - 5.24 ms
+     - 41,900
+   * - 320x240, 640x480
+     - SXGA
      - 106
      - 1.66 ms
      - 13,300
-   * - 1280x1024
-     - 16:9
+   * - 320x180, 640x360
+     - SXGA
      - 346
      - 5.41 ms
      - 43,300
 
-With 640x480 and 1280x1024 timing, a 16:9 canvas has more than three
-times the time of a 4:3 one. With 1280x720 timing, the 16:9 canvas fills
-the display, and the time is the shortest of all. A program whose modes
-end higher on the canvas gets VSYNC sooner, and has the time of the
-scanlines below its modes too.
+These times are for modes that cover the whole canvas. When the modes
+end higher, VSYNC comes after their last scanline, and the scanlines
+below it add to the time.
 
-The machines agree to within one scanline, so leave one scanline of
-margin. The RP6502-PICO is the reason for the margin. Its VGA system
-draws up to 10 scanlines ahead of the display, into a buffer, and it
-sends VSYNC when it draws the last scanline, so VSYNC comes early by the
-same amount. It draws on two processor cores at once, so when VSYNC
-comes, the other core can still be drawing the scanline above. At the
-start of a frame, it draws the top 10 scanlines together, from 10 video
-lines before the canvas starts, so count a change to any of them as a
-change at the top.
+HD timing is a true 720p signal, which a converter can turn into 720p
+HDMI. A 16:9 canvas fills it, so it has the least time of all, 0.67 ms.
+The other machines letterbox a 16:9 canvas in VGA timing, with 5.24 ms,
+even the emulator, which does not show the letterbox. A program with a
+16:9 canvas must fit its changes between frames in 0.67 ms to run on an
+RP6502-PICO with an HD display.
 
-For example, take the program of `Getting Started`_ with 640x480 timing.
-Its console reaches the bottom of the 320x240 canvas, so VSYNC comes
-after video line 479, and the next frame starts 45 video lines later.
-Take away one scanline of margin, which is 2 video lines, and a change
-at the top of the canvas has 43 video lines: 1.37 ms, or about 10,900
-cycles at 8 MHz. Scanline 100 of the canvas starts at video line 200, so
-a change that shows there has 200 video lines more, about 7.7 ms in all.
+SXGA timing has more time between frames than VGA timing, so a program
+that fits in VGA timing fits in SXGA timing in almost every case.
+
+To work out a time of your own, start from the line time: the total
+width of the timing divided by the pixel clock. For VGA timing, 800
+pixels at 25.2 MHz is 31.75 µs. A change at the top of the canvas has
+the time between frames, less one scanline of margin. A change lower on
+the canvas also has the time of the video lines above it. For example,
+scanline 100 of a 320x240 canvas in VGA timing starts 200 video lines
+into the canvas, so a change there has 6.35 ms more than a change at the
+top.
 
 
 .. _vga-control-channel:

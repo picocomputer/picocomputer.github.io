@@ -265,9 +265,11 @@ they last through a reboot. A Pi Pico 2 W adds ``BLE`` and the settings of
        fixed: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862,
        863, 864, 865, 866, or 869.
    * - ``SET VGA (0|1|2)``
-     - The display type: 0 for 640x480 on 4:3 displays, 1 for 640x480 and
-       1280x720 on 16:9 displays, or 2 for 1280x1024 on 5:4 SXGA displays.
-       Every canvas works on every display type.
+     - The display type: 0 for 640x480 on 4:3 displays, 1 for 16:9
+       displays, with 1280x720 for the 16:9 canvases and 640x480 for the
+       others, or 2 for 1280x1024 on 5:4 SXGA displays. Every canvas works
+       on every display type. :ref:`Video Timing <vga-video-timing>` gives
+       the timing of each.
    * - ``SET NFC (0|1|2|86)``
      - The NFC reader. See `Near Field Communications (NFC)`_.
    * - ``SET BLE (0|1|2|86)``
