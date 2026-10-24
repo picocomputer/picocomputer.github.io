@@ -9,41 +9,43 @@ Introduction
 ============
 
 The RP6502 Interface Adapter (RIA) is the boundary between a WDC W65C02S
-microprocessor and the host. A RIA is 32 registers at $FFE0-$FFFF, and it
-controls RESB and PHI2, the reset and the clock of the 6502. Those are the
-only hard requirements. What is behind the registers depends on the
-implementation.
+microprocessor and the host. The host is the modern computer on the other
+side, such as the Pico 2 of an :doc:`pico` or the computer that runs the
+:doc:`emu`. Through the RIA, a 6502 program uses the services of the
+operating system of the host, such as Windows or Linux. The RP6502-PICO
+runs an operating system written for the Pico 2, so that the machine
+needs only minimal hardware.
 
-Every call of the :doc:`api` is made through these registers. This page
-describes the registers themselves, the second 64 KB of memory that they
-reach, the extended RAM (XRAM), and the devices that use XRAM: keyboard,
-mouse, tablet and gamepad input, and the PSG and OPL2 sound generators.
+The RIA provides the operating system calls of the :doc:`api`, such as
+files, the console, and the real-time clock. It also provides keyboard,
+mouse, tablet, and gamepad input, and two sound generators: a
+programmable sound generator (:ref:`PSG <ria-psg>`) and a Yamaha FM sound
+generator (:ref:`OPL2 <ria-opl2>`). This page describes these devices,
+and the registers that a program uses to reach them.
 
 
-Implementations
-===============
+Reset
+=====
 
-- :doc:`pico` — The RIA software fits entirely on a Raspberry Pi Pico 2.
-  Registers are implemented in PIO for connecting to a 65C02.
-- :doc:`fpga` — The same software on a Hazard3 RISC-V soft CPU. The 65C02,
-  65C22, and registers are in fabric.
-- :doc:`emu` — The RIA software runs natively on the host CPU along with
-  a 65C02 and 65C22 software emulator.
-- :doc:`web` — The RIA software and the software 65C02 and 65C22, built
-  as WebAssembly and run in a browser.
+The RIA controls RESB, the reset line of the 6502 and the 65C22 VIA. Think
+of reset as two states rather than a pulse on RESB. While RESB is low, the
+6502 and the VIA are stopped. To start a program, the RIA brings RESB
+high, and the 6502 begins at its reset vector at $FFFC. When the program
+exits or the user stops it, the RIA brings RESB low again.
 
-A Picocomputer always has a companion CPU and operating system. For example,
-one :doc:`emu` runs on Linux with an ARM processor. The :doc:`pico` is
-special because it hosts itself. The RIA runs an operating system, and a
-6502 program calls it through the :doc:`api`. That operating system is an
-abstraction on all other hosts, but it is the native operating system on
-the :doc:`pico`.
 
-One other special feature of the :doc:`pico` is its monitor. Every
-``load``, ``reset``, ``set``, and ``status`` command on this page applies
-only to an :doc:`pico`. The :doc:`fpga` uses the Pocket's own menus
-instead, the :doc:`emu` takes command-line arguments, and the :doc:`web`
-takes settings in its page.
+PHI2
+====
+
+PHI2 is the clock signal of the 6502, and the RIA generates it. A program
+starts with PHI2 at 8 MHz, unless the user has set the machine to a lower
+frequency. The program can change the frequency with
+:ref:`RIA_ATTR_PHI2_KHZ <api-ria-attributes>`, to anything from 100 kHz
+to 8 MHz, and the change lasts until the program stops. The frequency is
+set in steps of 1 kHz, and every machine except the RP6502-PICO generates
+it exactly. The RP6502-PICO rounds up to the next frequency that it can
+generate, so a program that needs to know the frequency reads the
+attribute back.
 
 
 .. _ria-registers:
@@ -51,8 +53,9 @@ takes settings in its page.
 Registers
 =========
 
-The RIA registers are mapped into 32 bytes of the 6502's address space at
-$FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
+The RIA is 32 registers at $FFE0-$FFFF in the address space of the 6502.
+Every :ref:`API call <api-call>` goes through them. The last six bytes
+hold the vectors of the 6502 and work as RAM.
 
 .. list-table::
    :widths: 5 5 90
@@ -63,137 +66,161 @@ $FFE0-$FFFF. The last six are the 6502's own vectors; which present as RAM.
      - Description
    * - $FFE0
      - READY
-     - Flow control for UART FIFO.
+     - The status of the console `UART`_.
 
-       * bit 7 - TX FIFO not full. OK to send.
-       * bit 6 - RX FIFO has data ready.
+       * bit 7 - TX is ready to transmit a byte.
+       * bit 6 - RX holds a received byte.
 
    * - $FFE1
      - TX
-     - Write bytes to the UART.
+     - Writing a byte transmits it to the console.
    * - $FFE2
      - RX
-     - Read bytes from the UART.
+     - Reading returns a byte received from the console.
    * - $FFE3
      - VSYNC
-     - Increments every 1/60 second when :doc:`PIX VGA <vga>` device 1 is
-       connected.
+     - Increments every 1/60 second while the :doc:`vga` is connected.
    * - $FFE4
      - RW0
-     - Read or write the `Extended RAM (XRAM)`_ referenced by ADDR0.
+     - Reading or writing accesses the XRAM byte at ADDR0, as
+       `XRAM Portals`_ describes.
    * - $FFE5
      - STEP0
      - Signed byte added to ADDR0 after every access to RW0.
    * - | $FFE6 -
        | $FFE7
      - ADDR0
-     - Address of `Extended RAM (XRAM)`_ for RW0.
+     - The XRAM address that RW0 accesses.
    * - $FFE8
      - RW1
-     - Read or write the `Extended RAM (XRAM)`_ referenced by ADDR1.
+     - Reading or writing accesses the XRAM byte at ADDR1, as
+       `XRAM Portals`_ describes.
    * - $FFE9
      - STEP1
      - Signed byte added to ADDR1 after every access to RW1.
    * - | $FFEA -
        | $FFEB
      - ADDR1
-     - Address of `Extended RAM (XRAM)`_ for RW1.
+     - The XRAM address that RW1 accesses.
    * - $FFEC
      - XSTACK
-     - 512 bytes for `Extended Stack (XSTACK)`_.
-   * - $FFED
-     - ERRNO_LO
-     - Low byte of errno. All errors fit in this byte.
-   * - $FFEE
-     - ERRNO_HI
-     - Ensures errno is optionally a 16-bit int.
+     - Writing pushes a byte on the `Extended Stack (XSTACK)`_, and
+       reading pulls one.
+   * - | $FFED -
+       | $FFEE
+     - ERRNO
+     - The errno of the last failed API call, as :ref:`Errno Translations
+       <api-errno>` describes.
    * - $FFEF
      - OP
-     - Write an :doc:`api` op here to begin an API call.
+     - Writing an operation ID starts an :ref:`API call <api-call>`.
    * - $FFF0
      - IRQ
-     - Interrupt enable mask. Reading returns the triggered signals
-       as bits and clears them. Writing sets the enable mask and
-       also clears any triggered signals.
+     - Interrupt enable and status, as :ref:`IRQ <api-irq>` describes.
 
        * bit 7 - VSYNC
        * bit 6 - SIGINT
 
    * - $FFF1
      - SPIN
-     - Always $80 (the BRA opcode). JSR here to spin-wait
-       for an API call. The CPU loops on this BRA until BUSY clears, then
-       falls through to LDA and LDX below.
+     - $80, the BRA opcode. JSR SPIN returns when the :ref:`API call
+       <api-call>` finishes, with the return value in A and X.
    * - $FFF2
      - BUSY
-     - Bit 7 high while an API call is running.
+     - Bit 7 is 1 while an :ref:`API call <api-call>` runs.
    * - $FFF3
      - LDA
-     - Always $A9 (the LDA immediate opcode). Part of the
-       spin-loop return sequence.
+     - $A9, the LDA immediate opcode, part of SPIN.
    * - $FFF4
      - A
-     - API call register A.
+     - The A register of an :ref:`API call <api-call>`.
    * - $FFF5
      - LDX
-     - Always $A2 (the LDX immediate opcode). Part of the
-       spin-loop return sequence.
+     - $A2, the LDX immediate opcode, part of SPIN.
    * - $FFF6
      - X
-     - API call register X.
+     - The X register of an :ref:`API call <api-call>`.
    * - $FFF7
      - RTS
-     - Always $60 (the RTS opcode). Ends the spin-loop return
-       sequence, returning to the caller with A and X loaded.
+     - $60, the RTS opcode, part of SPIN.
    * - | $FFF8 -
        | $FFF9
      - SREG
-     - 32-bit extension to AX - AXSREG.
+     - The SREG register of an :ref:`API call <api-call>`.
    * - | $FFFA -
        | $FFFB
      - NMIB
-     - 6502 vector.
+     - The NMI vector of the 6502.
    * - | $FFFC -
        | $FFFD
      - RESB
-     - 6502 vector.
+     - The reset vector of the 6502.
    * - | $FFFE -
        | $FFFF
      - BRK/IRQB
-     - 6502 vector.
+     - The IRQ and BRK vector of the 6502.
+
+.. _ria-volatile:
+
+cc65 Does Not Support ``volatile``
+----------------------------------
+
+``volatile`` has no effect on the cc65 optimizer, so wrap C code that
+accesses RIA or VIA registers directly in an optimize pragma:
+
+.. code-block:: C
+
+  #pragma optimize (push, off)
+  static void timer_start(void)
+  {
+      VIA.acr = 0x40;
+  }
+  #pragma optimize (pop)
 
 .. _ria-uart:
 
 UART
 ----
 
-A program uses the UART directly through the registers at $FFE0-$FFE2,
-and the ready flags on bits 6-7 can be tested with the BIT operator. Use
-these or the stdio functions of the :doc:`api`, but not both at once.
-Driving the UART directly while a stdio API call is in progress is
-undefined behavior.
+READY, TX, and RX connect a program to the console the way a serial port
+does. They exist for one narrow use: porting machine code that drives a
+serial port, by patching the code in place. A test of READY is one BIT
+instruction and uses no registers, so it fits in place of the serial code
+of almost any existing program. A new program has no existing machine
+code to fit, so it should use the stdio functions of the :doc:`api`,
+which do not go through these registers.
+
+BIT copies bit 7 of READY to N and bit 6 to V, so BPL waits for TX and
+BVC waits for RX:
+
+.. code-block:: ca65
+
+  tx: BIT RIA_READY
+      BPL tx
+      STA RIA_TX
+
+  rx: BIT RIA_READY
+      BVC rx
+      LDA RIA_RX
+
+A program must not use these registers while a stdio function of the
+:doc:`api` runs.
 
 .. _ria-xram-portals:
 
 XRAM Portals
 ------------
 
-The two XRAM portals are independent pointers into the same 64 KB of XRAM.
-Portal 0 consists of the registers RW0, STEP0 and ADDR0, and portal 1 of
-RW1, STEP1 and ADDR1. A read or write of RW0 accesses the XRAM byte at
-ADDR0, and then STEP0 is added to ADDR0. Portal 1 works the same way. A
-single portal would make moving XRAM slow, since data would have to be
-buffered in 6502 RAM. Ideally you won't move XRAM at all and can use the
-pair for smarter optimizations.
+Extended RAM (XRAM) is outside the address space of the 6502, so a
+program reaches it through the two portals of the RIA. A portal is three
+registers. ADDR holds an XRAM address, and RW is the byte at that
+address: a load from RW reads it, and a store to RW writes it. After each
+load or store, the RIA adds STEP to ADDR. STEP is signed, so a portal
+steps forward or backward through XRAM. Portal 0 is ADDR0, RW0, and
+STEP0, and portal 1 is ADDR1, RW1, and STEP1.
 
-STEP0 and STEP1 default to 1 after reset. Both are signed, so negative
-values step through XRAM in reverse. These auto-increment adders make
-sequential access very fast — more than enough to offset the slightly
-slower random access compared to 6502 system RAM.
-
-Assembly programs use these registers directly, with the names from
-``rp6502.inc``. In this example, $12 is written to $1000 and $34 to $1001
-through portal 0:
+This example points portal 0 at $1000 and writes two bytes, $12 to $1000
+and $34 to $1001, with the register names from ``rp6502.inc``:
 
 .. tab:: ca65
 
@@ -226,79 +253,58 @@ through portal 0:
       lda #$34
       sta RIA_RW0 ; $1001
 
-C programs use the ``xram0_`` and ``xram1_`` functions of the :doc:`api`,
-such as :c:func:`xram0_read` and :c:func:`xram0_poke16`. The 0 or 1 in a
-function name selects the portal. This is the same write in C, with the
-value stored low byte first:
+In C, the ``xram0_`` and ``xram1_`` functions of :ref:`Extended Memory
+<api-extended-memory>` read and write XRAM through portal 0 and portal 1.
+This is the same write in C, with :c:func:`xram0_poke16` storing the
+value low byte first:
 
 .. code-block:: C
 
   xram0_poke16(0x1000, 0x3412);
 
-When an interrupt handler and the main program use the same portal, the
-ADDR and STEP registers of that portal must be saved when the handler
-starts and restored before it returns. When the two use different
-portals, no registers have to be saved.
+The portals are safe to use in interrupt handlers. When a handler uses a
+portal that the main program also uses, it only has to save the ADDR and
+STEP of that portal, and restore them when it is done.
 
 Extended Stack (XSTACK)
 -----------------------
 
-This is a 512-byte, top-down, last-in-first-out stack used by the
-fastcall mechanism of the :doc:`api`. Reading past the end is guaranteed
-to return zeros. Write to push, read to pull.
+The XSTACK is a 512-byte stack in the RIA that carries the arguments and
+the returned data of API calls. The C library handles it for a C program.
+An assembly program pushes and pulls bytes on it, as :ref:`Making an API
+Call <api-call>` shows. Reading the XSTACK when it is empty returns zeros.
 
+
+.. _ria-pix:
 
 Peripheral Information Exchange (PIX)
 =====================================
 
-Keyboards, mice and gamepads are connected over USB and Bluetooth, and
-the video and sound are made by modern hardware. A 6502 cannot use any of
-these directly, so each one is given a simple interface of bytes in
-extended RAM (XRAM). The RIA writes keyboard, mouse and gamepad input into
-XRAM for a program to read, and the sound generators and the video system
-read settings and data that a program writes into XRAM. This arrangement
-is called Peripheral Information Exchange (PIX). A program installs each
-device at an XRAM address by setting an extended register (XREG). Until
-then, the device is off and has no XRAM address.
+The Peripheral Information Exchange (PIX) is how a 6502 program uses
+keyboards, mice, gamepads, sound, and video. A 6502 has no way to talk to
+a USB or Bluetooth device, or to make sound or video by itself, so the
+RIA and the VGA do that work and present each device to the program as
+bytes in extended RAM (XRAM). The program reads the keyboard, mouse,
+tablet, and gamepads from XRAM, and it controls the sound generators and
+the video system by writing to XRAM.
 
-Extended RAM (XRAM)
--------------------
+To use a device, a program maps it to an address in XRAM with its
+macro, which calls :ref:`xreg() <api-xreg>` for you. This call maps the
+keyboard to $1000, and from then on the program finds the state of the
+keyboard in the 32 bytes at $1000-$101F:
 
-XRAM is 64 KB of memory outside the 6502's address space. A program reads
-and writes it through the `XRAM Portals`_, and every device uses the same
-64 KB.
+.. code-block:: C
 
-.. _ria-xreg:
+  xreg_ria_keyboard(0x1000);
 
-Extended Registers (XREG)
--------------------------
+All the devices share the same 64 KB of XRAM. :ref:`XRAM Memory Map
+<sdk-xram-memory-map>` in the :doc:`sdk` shows how to lay out their areas.
 
-Extended registers are how devices are installed into XRAM. A program
-picks an XRAM address for a device and writes it to the extended register
-for that device, and the device registers are then at that address.
-Setting the keyboard extended register to $1000 puts the 32 keyboard bytes
-at $1000-$101F. Setting the :ref:`MODE <vga-key-registers>` register of
-the :doc:`vga` installs a video mode whose registers are the
-configuration structure at the given address.
-
-Extended registers are outside the 6502's address space, so a load or a
-store cannot access one, and no extended register can be read back. A C
-program sets them with the :ref:`xreg() <api-xreg>` API call, which is made
-through the RIA registers like every other API call, and an assembly
-program with the ``xreg`` macro in ``rp6502.inc``. Both take the device,
-the channel, the address, and then one or more 16-bit values, which are
-set starting at that address.
-
-Each extended register holds a 16-bit value at an address written
-$device:$channel:register. Device 0 is the RIA, device 1 is the
-:doc:`vga`, and devices 2-6 are open for expansion. Each device has 16
-channels of 256 registers.
-
-The extended registers of device 0 are in the table below, so every
-address begins with $0. Each one maps a device into XRAM at the address
-written to it. Writing ``$FFFF`` turns the device off and always
-succeeds. Any other address that is invalid for the device also turns it
-off, and the call fails with ``EINVAL``.
+The table lists the devices of the RIA, each with the first three
+arguments of ``xreg()`` that map it, written $device:channel:index. A
+program unmaps a device by passing ``$FFFF`` as the address, which always
+succeeds. An address that is not valid for the device also unmaps it, and
+the call fails with ``EINVAL``.
 
 .. list-table::
    :widths: 5 5 90
@@ -309,22 +315,22 @@ off, and the call fails with ``EINVAL``.
      - Description
    * - $0:0:00
      - KEYBOARD
-     - See `Keyboard`_ section
+     - Maps the key bits of the `Keyboard`_.
    * - $0:0:01
      - MOUSE
-     - See `Mouse`_ section
+     - Maps the state of the `Mouse`_.
    * - $0:0:02
      - GAMEPADS
-     - See `Gamepads`_ section
+     - Maps the state of the `Gamepads`_.
    * - $0:0:03
      - TABLET
-     - See `Tablet`_ section
+     - Maps the state of the `Tablet`_.
    * - $0:1:00
      - PSG
-     - See `Programmable Sound Generator`_ section
+     - Maps the `Programmable Sound Generator`_.
    * - $0:1:01
      - OPL
-     - See `Yamaha OPL2 FM Sound Generator`_ section
+     - Maps the `Yamaha OPL2 FM Sound Generator`_.
 
 
 .. _ria-keyboard:
@@ -332,33 +338,41 @@ off, and the call fails with ``EINVAL``.
 Keyboard
 ========
 
-The RIA can provide applications direct access to keyboard data, which is
-what you want when you need key-up and key-down events or the modifier
-keys. If you don't need that, the UART or stdin works just as well.
+The keyboard interface is direct access to the keys, as opposed to the
+console. stdin only delivers the characters that keys make. It can't tell
+a program that a key is being held, that a key was let go, or that two
+keys are down at once. It never reports Shift or Control by themselves,
+because they make no character. Direct access gives the program the up or
+down state of every key, and that's what a game or anything real-time
+needs.
 
-Enable and disable direct keyboard access by mapping it to an address
-in XRAM.
+This checks the space bar:
 
 .. code-block:: C
 
-  xreg(0, 0, 0x00, xaddr);  // enable
-  xreg(0, 0, 0x00, 0xFFFF); // disable
-  xreg_ria_keyboard(xaddr); // macro shortcut
+  keyboard_t kb;
 
-The RIA continuously updates XRAM with a bit array of USB HID keyboard
-keycodes, which are not PS/2 scancodes. Each keycode is one bit in the
-array: bit N is 1 while the key with HID keycode N is pressed. The first
-four keycodes are special:
+  xreg_ria_keyboard(XRAM_KEYBOARD);
 
-- 0 - No key pressed
-- 1 - Num Lock on
-- 2 - Caps Lock on
-- 3 - Scroll Lock on
+  xram0_read(&kb, XRAM_KEYBOARD, sizeof(kb));
+  if (KEYBOARD_PRESSED(kb.keys, HID_KEY_SPACE))
+      fire();
+
+Each key has a USB HID keycode, like ``HID_KEY_SPACE`` in the example.
+Keycodes are positions on the keyboard, not letters, so W, A, S, and D are
+the same four keys on every layout. To catch a key going down or coming
+back up, a program keeps the last reading and compares.
+
+A few bits aren't keys. ``KEYBOARD_NO_KEY`` is set while nothing is down,
+so a program sees any key the moment the bit clears, even Shift, Control,
+or Alt. At last, "press any key" means any key. ``KEYBOARD_NUM_LOCK``,
+``KEYBOARD_CAPS_LOCK``, and ``KEYBOARD_SCROLL_LOCK`` follow the lock
+lights.
 
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define KEYBOARD_NO_KEY 0
       #define KEYBOARD_NUM_LOCK 1
@@ -367,7 +381,7 @@ four keycodes are special:
 
       #define KEYBOARD_PRESSED(keys, code) ((keys)[(code) >> 3] & (1 << ((code) & 7)))
 
-      #define xreg_ria_keyboard(...) xreg(0, 0, 0, __VA_ARGS__)
+      #define xreg_ria_keyboard(...) xreg(0x0, 0x0, 0x00, __VA_ARGS__)
 
       typedef struct
       {
@@ -377,15 +391,20 @@ four keycodes are special:
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       KEYBOARD_NO_KEY      = 0
       KEYBOARD_NUM_LOCK    = 1
       KEYBOARD_CAPS_LOCK   = 2
       KEYBOARD_SCROLL_LOCK = 3
 
+      .macro KEYBOARD_PRESSED keys, code
+          lda keys + (code >> 3)
+          and #1 << (code & 7)
+      .endmacro
+
       .macro xreg_ria_keyboard addr
-          xreg 0, 0, 0, addr
+          xreg $0, $0, $00, addr
       .endmacro
 
       .struct keyboard_t
@@ -395,7 +414,7 @@ four keycodes are special:
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       KEYBOARD_NO_KEY      = 0
@@ -403,16 +422,21 @@ four keycodes are special:
       KEYBOARD_CAPS_LOCK   = 2
       KEYBOARD_SCROLL_LOCK = 3
 
+      .macro KEYBOARD_PRESSED keys, code
+          lda \keys + (\code >> 3)
+          and #1 << (\code & 7)
+      .endm
+
       .macro xreg_ria_keyboard addr
-          xreg 0, 0, 0, \addr
+          xreg $0, $0, $00, \addr
       .endm
 
       KEYBOARD_KEYS = 0
       KEYBOARD_SIZE = 32
 
-The keycodes are listed by name below, from the Keyboard/Keypad page of
-the USB HID Usage Tables. Copy the ones you need or the whole block into
-a file of its own, ``hidkeys.h`` or ``hidkeys.inc``.
+These are the standard USB keycodes, the same numbers that the USB
+Implementers Forum gives them in its HID Usage Tables. Copy the names a
+program needs, or the whole block:
 
 .. tab:: C
 
@@ -1139,49 +1163,55 @@ a file of its own, ``hidkeys.h`` or ``hidkeys.inc``.
 Mouse
 =====
 
-.. note::
+The mouse interface reports how far the mouse moves and which buttons are
+down. Use it when the movement itself is the input, like turning the view
+in a first-person game. It also reads a spinner, the knob from arcade
+games like Tempest. For everything
+else, the `Tablet`_ is the better choice. It reports where the pointer is
+on the canvas.
 
-   The `Tablet`_ interface is almost always the better choice. It gives a
-   canvas pixel position for a mouse, pen, or touchscreen. Raw mouse input
-   is still useful for devices that act like a mouse but are not a pointer,
-   such as spinners.
+On the :doc:`emu` and the :doc:`web`, the mouse interface captures the
+mouse. After a program maps the mouse, a click in the window hides the
+pointer and locks the mouse there. The player presses Esc to get the
+mouse back. The tablet never captures the mouse.
 
-The RIA can give applications direct access to mouse data. Enable and
-disable it by mapping it to an address in XRAM.
-
-.. code-block:: C
-
-  xreg(0, 0, 0x01, xaddr);  // enable
-  xreg(0, 0, 0x01, 0xFFFF); // disable
-  xreg_ria_mouse(xaddr);    // macro shortcut
-
-This sets the XRAM address of a structure holding the live mouse input.
-
-Compute movement by subtracting the previous value from the current one.
-VSYNC timing (60 Hz) is period-correct but slow by modern standards. For
-precise mouse input, poll from an ISR at 8 ms or faster (125 Hz).
-
-Account for canvas resolution when interpreting movement. At 640x480 and
-640x360, one unit equals one pixel; at 320x240 and 320x180, two units
-equal one pixel.
+This finds how far the mouse moved since the last reading, and checks the
+left button:
 
 .. code-block:: C
 
-  int8_t delta_x = current_x - prev_x;
-  int8_t delta_y = current_y - prev_y;
+  static uint8_t last_x, last_y;
+  mouse_t mouse;
+  int8_t dx, dy;
 
-Mouse buttons are a bitfield:
+  xreg_ria_mouse(XRAM_MOUSE);
 
-- 0 - LEFT
-- 1 - RIGHT
-- 2 - MIDDLE
-- 3 - BACKWARD
-- 4 - FORWARD
+  xram0_read(&mouse, XRAM_MOUSE, sizeof(mouse));
+  dx = mouse.x - last_x;
+  dy = mouse.y - last_y;
+  last_x = mouse.x;
+  last_y = mouse.y;
+  if (mouse.buttons & MOUSE_BUTTON_LEFT)
+      fire();
+
+The ``x`` and ``y`` values are just counters. ``x`` counts up as the mouse
+moves right, and ``y`` counts up as it moves down. Both roll over at 255.
+That's why the example subtracts the last reading: the difference is how
+far the mouse moved, and keeping it in an ``int8_t`` makes the rollover
+come out right. ``wheel`` counts the scroll wheel and ``pan`` counts
+sideways scrolling, and they work the same way. The buttons are bits,
+such as ``MOUSE_BUTTON_LEFT``.
+
+A count is one pixel on a 640-wide canvas and half a pixel on a 320-wide
+one. Reading the mouse once a frame, at 60 Hz, is period-correct but slow
+by modern standards. A fast flick can move more than 127 counts in one
+frame, and then the difference comes out backward. For precise mouse
+input, read the mouse from an interrupt handler every 8 ms or faster.
 
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define MOUSE_BUTTON_LEFT 0x01
       #define MOUSE_BUTTON_RIGHT 0x02
@@ -1189,7 +1219,7 @@ Mouse buttons are a bitfield:
       #define MOUSE_BUTTON_BACKWARD 0x08
       #define MOUSE_BUTTON_FORWARD 0x10
 
-      #define xreg_ria_mouse(...) xreg(0, 0, 1, __VA_ARGS__)
+      #define xreg_ria_mouse(...) xreg(0x0, 0x0, 0x01, __VA_ARGS__)
 
       typedef struct
       {
@@ -1204,7 +1234,7 @@ Mouse buttons are a bitfield:
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       MOUSE_BUTTON_LEFT     = $01
       MOUSE_BUTTON_RIGHT    = $02
@@ -1213,7 +1243,7 @@ Mouse buttons are a bitfield:
       MOUSE_BUTTON_FORWARD  = $10
 
       .macro xreg_ria_mouse addr
-          xreg 0, 0, 1, addr
+          xreg $0, $0, $01, addr
       .endmacro
 
       .struct mouse_t
@@ -1228,7 +1258,7 @@ Mouse buttons are a bitfield:
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       MOUSE_BUTTON_LEFT     = $01
@@ -1238,7 +1268,7 @@ Mouse buttons are a bitfield:
       MOUSE_BUTTON_FORWARD  = $10
 
       .macro xreg_ria_mouse addr
-          xreg 0, 0, 1, \addr
+          xreg $0, $0, $01, \addr
       .endm
 
       MOUSE_BUTTONS = 0
@@ -1255,230 +1285,35 @@ Mouse buttons are a bitfield:
 Tablet
 ======
 
-The RIA can give applications an *absolute* pointer — a "tablet" — instead of
-the relative mouse. It reports a canvas pixel position directly: a plain mouse
-is integrated and clamped to the canvas, and an absolute digitizer or
-touchscreen is scaled to it. Enable and disable it by mapping it to an address
-in XRAM.
+The tablet interface reports where the pointer is on the canvas, in
+pixels, and which buttons are down. A mouse moves the pointer, which stops
+at the edges of the canvas. A pen or a touchscreen points straight at a
+spot, because its whole surface is scaled to the canvas. This is the
+interface for menus, buttons, painting, and anything else where the player
+points at things on the canvas.
+
+This finds where the pointer is, and checks the left button:
 
 .. code-block:: C
 
-  xreg(0, 0, 0x03, xaddr);  // enable
-  xreg(0, 0, 0x03, 0xFFFF); // disable
-  xreg_ria_tablet(xaddr);   // macro shortcut
+  tablet_pointer_t tab;
+  unsigned x, y;
 
-The block is a four-byte header followed by eight contact records for
-multi-touch; a mouse or pen uses only the first. The layout always reserves
-the whole block, ``tablet_t``, because the RIA writes all eight contacts. A
-program for a mouse or pen reads only the header and the first contact,
-``tablet_pointer_t``.
+  xreg_ria_tablet(XRAM_TABLET);
 
-``wheel`` and ``pan`` are scroll counters in the same format as the
-mouse's: subtract the previous reading to get the change. Reading them
-once per VSYNC is enough for normal use.
+  tablet_read(&tab);
+  x = (tab.contact.yx_hi & 0x0F) << 8 | tab.contact.x_lo;
+  y = (tab.contact.yx_hi >> 4) << 8 | tab.contact.y_lo;
+  if (tab.contact.flags & TABLET_FLAG_LEFT)
+      click(x, y);
 
-Each coordinate is 12 bits. ``y_lo`` and ``x_lo`` hold the low bytes, and
-``yx_hi`` holds the high four bits of Y in its upper half and the high four
-bits of X in its lower half. On the 320x240 and 320x180 canvases the high bits
-of Y are always 0, so ``x_lo`` and ``yx_hi`` are X as a little-endian 16-bit
-value. A released contact has flags of 0 and keeps its last position.
-
-.. code-block:: C
-
-  x = (c.yx_hi & 0x0F) << 8 | c.x_lo;
-  y = (c.yx_hi >> 4) << 8 | c.y_lo;
-
-Contact flags are a bitfield:
-
-- 0 - LEFT / tip
-- 1 - RIGHT
-- 2 - MIDDLE
-- 3 - BACKWARD
-- 4 - FORWARD
-- 7 - HOVER
-
-HOVER is set when the contact tracks a position without a press. It is
-always set for a mouse, set for a pen while the pen is in range, and clear
-for a touchscreen.
-
-The application and the RIA exchange pointer preferences through the header.
-``status`` bit 0 (host cursor) is set only for a mouse on the :doc:`emu`
-or on the :doc:`web`, where the host can draw a cursor for the
-application. The bit is always clear on the :doc:`pico` and the
-:doc:`fpga`, in :ref:`RetroArch <emu-retroarch>`, and for touch input.
-``control`` selects the host cursor shape, or hides the cursor so the
-application can draw its own. Mapping the tablet sets it to ARROW.
-
-- 0 - OFF (host cursor hidden; the application draws its own pointer)
-- 1 - ARROW
-- 2 - CROSSHAIR
-- 3 - IBEAM
-- 4 - HAND
-- 5 - RESIZE_EW
-- 6 - RESIZE_NS
-
-When the host cursor bit is clear the application must draw its own
-pointer, and ``control`` has no effect.
-
-.. tab:: C
-
-   .. code-block:: C
-      :caption: xram.h
-
-      #define TABLET_CONTACTS 8
-
-      #define TABLET_STATUS_HOST_CURSOR 0x01
-
-      #define TABLET_FLAG_LEFT 0x01
-      #define TABLET_FLAG_RIGHT 0x02
-      #define TABLET_FLAG_MIDDLE 0x04
-      #define TABLET_FLAG_BACKWARD 0x08
-      #define TABLET_FLAG_FORWARD 0x10
-      #define TABLET_FLAG_HOVER 0x80
-
-      #define TABLET_CURSOR_OFF 0
-      #define TABLET_CURSOR_ARROW 1
-      #define TABLET_CURSOR_CROSSHAIR 2
-      #define TABLET_CURSOR_IBEAM 3
-      #define TABLET_CURSOR_HAND 4
-      #define TABLET_CURSOR_RESIZE_EW 5
-      #define TABLET_CURSOR_RESIZE_NS 6
-
-      #define xreg_ria_tablet(...) xreg(0, 0, 3, __VA_ARGS__)
-
-      typedef struct
-      {
-          uint8_t flags;
-          uint8_t y_lo;
-          uint8_t x_lo;
-          uint8_t yx_hi;
-      } tablet_contact_t;
-
-      typedef struct
-      {
-          uint8_t control;
-          uint8_t status;
-          uint8_t wheel;
-          uint8_t pan;
-          tablet_contact_t contact;
-      } tablet_pointer_t;
-
-      typedef struct
-      {
-          uint8_t control;
-          uint8_t status;
-          uint8_t wheel;
-          uint8_t pan;
-          tablet_contact_t contact[TABLET_CONTACTS];
-      } tablet_t; /* layout */
-
-.. tab:: ca65
-
-   .. code-block:: ca65
-      :caption: xram.inc
-
-      TABLET_CONTACTS = 8
-
-      TABLET_STATUS_HOST_CURSOR = $01
-
-      TABLET_FLAG_LEFT     = $01
-      TABLET_FLAG_RIGHT    = $02
-      TABLET_FLAG_MIDDLE   = $04
-      TABLET_FLAG_BACKWARD = $08
-      TABLET_FLAG_FORWARD  = $10
-      TABLET_FLAG_HOVER    = $80
-
-      TABLET_CURSOR_OFF       = 0
-      TABLET_CURSOR_ARROW     = 1
-      TABLET_CURSOR_CROSSHAIR = 2
-      TABLET_CURSOR_IBEAM     = 3
-      TABLET_CURSOR_HAND      = 4
-      TABLET_CURSOR_RESIZE_EW = 5
-      TABLET_CURSOR_RESIZE_NS = 6
-
-      .macro xreg_ria_tablet addr
-          xreg 0, 0, 3, addr
-      .endmacro
-
-      .struct tablet_pointer_t
-          control .byte
-          status  .byte
-          wheel   .byte
-          pan     .byte
-          contact .struct
-              flags .byte
-              y_lo  .byte
-              x_lo  .byte
-              yx_hi .byte
-          .endstruct
-      .endstruct
-
-      .struct tablet_t
-          control .byte
-          status  .byte
-          wheel   .byte
-          pan     .byte
-          contact .struct
-              flags .byte
-              y_lo  .byte
-              x_lo  .byte
-              yx_hi .byte
-          .endstruct
-          .res (::TABLET_CONTACTS - 1) * .sizeof(contact)
-      .endstruct
-
-.. tab:: llvm-mc
-
-   .. code-block:: ca65
-      :caption: xram.inc
-      :force:
-
-      TABLET_CONTACTS = 8
-
-      TABLET_STATUS_HOST_CURSOR = $01
-
-      TABLET_FLAG_LEFT     = $01
-      TABLET_FLAG_RIGHT    = $02
-      TABLET_FLAG_MIDDLE   = $04
-      TABLET_FLAG_BACKWARD = $08
-      TABLET_FLAG_FORWARD  = $10
-      TABLET_FLAG_HOVER    = $80
-
-      TABLET_CURSOR_OFF       = 0
-      TABLET_CURSOR_ARROW     = 1
-      TABLET_CURSOR_CROSSHAIR = 2
-      TABLET_CURSOR_IBEAM     = 3
-      TABLET_CURSOR_HAND      = 4
-      TABLET_CURSOR_RESIZE_EW = 5
-      TABLET_CURSOR_RESIZE_NS = 6
-
-      .macro xreg_ria_tablet addr
-          xreg 0, 0, 3, \addr
-      .endm
-
-      TABLET_CONTROL = 0
-      TABLET_STATUS  = 1
-      TABLET_WHEEL   = 2
-      TABLET_PAN     = 3
-      TABLET_CONTACT = 4
-
-      TABLET_CONTACT_FLAGS = 0
-      TABLET_CONTACT_Y_LO  = 1
-      TABLET_CONTACT_X_LO  = 2
-      TABLET_CONTACT_YX_HI = 3
-      TABLET_CONTACT_SIZE  = 4
-
-      TABLET_SIZE = TABLET_CONTACT + TABLET_CONTACTS * TABLET_CONTACT_SIZE
-      TABLET_POINTER_SIZE = TABLET_CONTACT + TABLET_CONTACT_SIZE
-
-XRAM is atomic for single bytes only, so the RIA can write the block while a
-program reads it, and that read mixes two positions. ``tablet_read`` copies the
-block, then reads it again to check that the RIA did not write it during the
-first read. Writes are at least 1 ms apart, so when the two reads differ, a
-third read will not overlap one. All three versions have the same C
-prototype, ``void tablet_read(tablet_pointer_t *tablet)``, so a C program can
-call an assembly version in place of the C one. A multi-touch program reads a
-``tablet_t`` in place of ``tablet_pointer_t``.
+The example reads the tablet with ``tablet_read()`` instead of
+``xram0_read()``. A position takes three bytes, and the RIA can write a new
+position while a program is partway through reading the old one. That read
+comes back with part of each, a spot where the pointer never was.
+``tablet_read()`` reads the tablet twice and compares. If the two reads
+differ, the RIA wrote in between, and it reads a third time. The RIA
+writes at most once every millisecond, so that third read is clean.
 
 .. tab:: C
 
@@ -1573,33 +1408,228 @@ call an assembly version in place of the C one. A multi-touch program reads a
       4:
           rts
 
+Each coordinate is 12 bits. ``x_lo`` and ``y_lo`` hold the low eight bits,
+and ``yx_hi`` holds the top four bits of y in its upper half and the top
+four bits of x in its lower half. The example puts them back together. On
+the 320x240 and 320x180 canvases, the top bits of y are always 0, so
+``x_lo`` and ``yx_hi`` read together as x, a little-endian 16-bit value.
+
+A touchscreen can track several fingers, so the tablet has room for eight
+contacts after its four-byte header. A mouse or a pen uses only the first
+contact. A program that doesn't do multi-touch reads only the header and
+the first contact, ``tablet_pointer_t``, as the example does. The RIA
+writes all eight contacts, so the program's layout still has to hold a
+whole ``tablet_t``. A multi-touch program reads a ``tablet_t`` instead.
+
+Each contact has flags for the buttons. The tip of a pen and a finger on a
+touchscreen count as the left button. ``TABLET_FLAG_HOVER`` is set while a
+contact has a position without touching: always for a mouse, for a pen
+while it is in range, and never for a touchscreen. When a finger lifts or
+a pen moves out of range, the flags of its contact go to 0, and the
+contact keeps its last position.
+
+``wheel`` and ``pan`` count the scroll wheel and sideways scrolling, the
+same way as the counters of the `Mouse`_. Reading them once a frame is
+enough for normal use.
+
+Sometimes the pointer is already on the screen, and sometimes you have to
+draw it. ``TABLET_STATUS_HOST_CURSOR`` in ``status`` is set when it's
+already there, which happens only with a mouse on the :doc:`emu` or the
+:doc:`web`. Writing one of the ``TABLET_CURSOR_`` values to ``control``
+changes its shape, and ``TABLET_CURSOR_OFF`` hides it. If
+``TABLET_STATUS_HOST_CURSOR`` is clear, there's no pointer for ``control``
+to change, so you need to draw your own.
+
+.. tab:: C
+
+   .. code-block:: C
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
+
+      #define TABLET_CONTACTS 8
+
+      #define TABLET_STATUS_HOST_CURSOR 0x01
+
+      #define TABLET_FLAG_LEFT 0x01
+      #define TABLET_FLAG_RIGHT 0x02
+      #define TABLET_FLAG_MIDDLE 0x04
+      #define TABLET_FLAG_BACKWARD 0x08
+      #define TABLET_FLAG_FORWARD 0x10
+      #define TABLET_FLAG_HOVER 0x80
+
+      #define TABLET_CURSOR_OFF 0
+      #define TABLET_CURSOR_ARROW 1
+      #define TABLET_CURSOR_CROSSHAIR 2
+      #define TABLET_CURSOR_IBEAM 3
+      #define TABLET_CURSOR_HAND 4
+      #define TABLET_CURSOR_RESIZE_EW 5
+      #define TABLET_CURSOR_RESIZE_NS 6
+
+      #define xreg_ria_tablet(...) xreg(0x0, 0x0, 0x03, __VA_ARGS__)
+
+      typedef struct
+      {
+          uint8_t flags;
+          uint8_t y_lo;
+          uint8_t x_lo;
+          uint8_t yx_hi;
+      } tablet_contact_t;
+
+      typedef struct
+      {
+          uint8_t control;
+          uint8_t status;
+          uint8_t wheel;
+          uint8_t pan;
+          tablet_contact_t contact;
+      } tablet_pointer_t;
+
+      typedef struct
+      {
+          uint8_t control;
+          uint8_t status;
+          uint8_t wheel;
+          uint8_t pan;
+          tablet_contact_t contact[TABLET_CONTACTS];
+      } tablet_t; /* layout */
+
+.. tab:: ca65
+
+   .. code-block:: ca65
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
+
+      TABLET_CONTACTS = 8
+
+      TABLET_STATUS_HOST_CURSOR = $01
+
+      TABLET_FLAG_LEFT     = $01
+      TABLET_FLAG_RIGHT    = $02
+      TABLET_FLAG_MIDDLE   = $04
+      TABLET_FLAG_BACKWARD = $08
+      TABLET_FLAG_FORWARD  = $10
+      TABLET_FLAG_HOVER    = $80
+
+      TABLET_CURSOR_OFF       = 0
+      TABLET_CURSOR_ARROW     = 1
+      TABLET_CURSOR_CROSSHAIR = 2
+      TABLET_CURSOR_IBEAM     = 3
+      TABLET_CURSOR_HAND      = 4
+      TABLET_CURSOR_RESIZE_EW = 5
+      TABLET_CURSOR_RESIZE_NS = 6
+
+      .macro xreg_ria_tablet addr
+          xreg $0, $0, $03, addr
+      .endmacro
+
+      .struct tablet_pointer_t
+          control .byte
+          status  .byte
+          wheel   .byte
+          pan     .byte
+          contact .struct
+              flags .byte
+              y_lo  .byte
+              x_lo  .byte
+              yx_hi .byte
+          .endstruct
+      .endstruct
+
+      .struct tablet_t
+          control .byte
+          status  .byte
+          wheel   .byte
+          pan     .byte
+          contact .struct
+              flags .byte
+              y_lo  .byte
+              x_lo  .byte
+              yx_hi .byte
+          .endstruct
+          .res (::TABLET_CONTACTS - 1) * .sizeof(contact)
+      .endstruct
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
+      :force:
+
+      TABLET_CONTACTS = 8
+
+      TABLET_STATUS_HOST_CURSOR = $01
+
+      TABLET_FLAG_LEFT     = $01
+      TABLET_FLAG_RIGHT    = $02
+      TABLET_FLAG_MIDDLE   = $04
+      TABLET_FLAG_BACKWARD = $08
+      TABLET_FLAG_FORWARD  = $10
+      TABLET_FLAG_HOVER    = $80
+
+      TABLET_CURSOR_OFF       = 0
+      TABLET_CURSOR_ARROW     = 1
+      TABLET_CURSOR_CROSSHAIR = 2
+      TABLET_CURSOR_IBEAM     = 3
+      TABLET_CURSOR_HAND      = 4
+      TABLET_CURSOR_RESIZE_EW = 5
+      TABLET_CURSOR_RESIZE_NS = 6
+
+      .macro xreg_ria_tablet addr
+          xreg $0, $0, $03, \addr
+      .endm
+
+      TABLET_CONTROL = 0
+      TABLET_STATUS  = 1
+      TABLET_WHEEL   = 2
+      TABLET_PAN     = 3
+      TABLET_CONTACT = 4
+
+      TABLET_CONTACT_FLAGS = 0
+      TABLET_CONTACT_Y_LO  = 1
+      TABLET_CONTACT_X_LO  = 2
+      TABLET_CONTACT_YX_HI = 3
+      TABLET_CONTACT_SIZE  = 4
+
+      TABLET_SIZE = TABLET_CONTACT + TABLET_CONTACTS * TABLET_CONTACT_SIZE
+      TABLET_POINTER_SIZE = TABLET_CONTACT + TABLET_CONTACT_SIZE
+
 
 .. _ria-gamepads:
 
 Gamepads
 ========
 
-The RIA supports up to four gamepads. :doc:`pico` firmware includes drivers
-for Generic HID, XInput, and PlayStation controllers. Where the layout
-comes from, and how a game works with nearly every gamepad, is covered in
-the :ref:`Gamepads <port-gamepads>` section of :doc:`port`.
+The RIA supports up to four gamepads at once. These are modern gamepads,
+with two analog sticks and two analog triggers, the kind you'd play any
+current game with. The RP6502 isn't recreating an old console, so there's
+no old controller to copy. To learn about supporting different kinds of
+gamepads, see :ref:`Gamepads <port-gamepads>` in :doc:`port`.
 
-Enable and disable the RIA gamepad data by setting its extended
-register. The register value is the XRAM start address of the gamepad
-data.
+This checks the first gamepad for left on the d-pad, and the A button:
 
 .. code-block:: C
 
-  xreg(0, 0, 2, xaddr);    // enable
-  xreg(0, 0, 2, 0xFFFF);   // disable
-  xreg_ria_gamepad(xaddr); // macro shortcut
+  gamepad_player_t p1;
 
-The RIA continuously updates extended memory with gamepad state. The
-10-byte structure below repeats four times — 40 bytes total, one block
-per gamepad.
+  xreg_ria_gamepad(XRAM_GAMEPAD);
 
-The upper bits of the DPAD register report readiness and type. The
-connected bit is high when a gamepad occupies that player slot.
+  xram0_read(&p1, XRAM_GAMEPAD, sizeof(p1));
+  if (p1.dpad & GAMEPAD_DPAD_LEFT)
+      move_left();
+  if (p1.btn0 & GAMEPAD_BTN0_A)
+      jump();
+
+The example reads only the first gamepad. A ``gamepad_t`` holds all four,
+and ``GAMEPAD_FEAT_CONNECTED`` in ``dpad`` is set for each one that's
+connected.
+
+If your game doesn't need analog input, you can ignore the analog values.
+Every stick and trigger also has digital bits, set once it moves far
+enough, and you read them just like the d-pad and the buttons.
+
+``GAMEPAD_FEAT_STICKS`` in ``dpad`` is set when the gamepad has both analog
+sticks. Some retro-style gamepads report sticks they don't have.
+
+For gamepads with a known layout, the type bits in ``dpad`` give the labels
+of the face buttons:
 
 .. list-table::
    :widths: 1 1 1 1 1
@@ -1626,16 +1656,7 @@ connected bit is high when a gamepad occupies that player slot.
      - Square, west
      - Triangle, north
 
-The sticks bit is high when the gamepad has both analog sticks. Some
-retro-style gamepads indicate they have sticks when they do not. They may
-also map buttons in unusual ways. The RIA does the best it can with the
-provided metadata.
-
-Both digital and analog values are available for the sticks and the
-L2/R2 triggers.
-
-Some gamepads report only digital data; in that case, code that uses L2
-and R2 should expect analog values of just 0 or 255.
+Here's what each field holds:
 
 .. list-table::
    :widths: 1 1 20
@@ -1706,7 +1727,7 @@ and R2 should expect analog values of just 0 or 255.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define GAMEPAD_PLAYERS 4
 
@@ -1749,7 +1770,7 @@ and R2 should expect analog values of just 0 or 255.
       #define GAMEPAD_BTN1_L3 0x20
       #define GAMEPAD_BTN1_R3 0x40
 
-      #define xreg_ria_gamepad(...) xreg(0, 0, 2, __VA_ARGS__)
+      #define xreg_ria_gamepad(...) xreg(0x0, 0x0, 0x02, __VA_ARGS__)
 
       typedef struct
       {
@@ -1773,7 +1794,7 @@ and R2 should expect analog values of just 0 or 255.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       GAMEPAD_PLAYERS = 4
 
@@ -1817,7 +1838,7 @@ and R2 should expect analog values of just 0 or 255.
       GAMEPAD_BTN1_R3     = $40
 
       .macro xreg_ria_gamepad addr
-          xreg 0, 0, 2, addr
+          xreg $0, $0, $02, addr
       .endmacro
 
       .struct gamepad_t
@@ -1839,7 +1860,7 @@ and R2 should expect analog values of just 0 or 255.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       GAMEPAD_PLAYERS = 4
@@ -1884,7 +1905,7 @@ and R2 should expect analog values of just 0 or 255.
       GAMEPAD_BTN1_R3     = $40
 
       .macro xreg_ria_gamepad addr
-          xreg 0, 0, 2, \addr
+          xreg $0, $0, $02, \addr
       .endm
 
       GAMEPAD_PLAYER = 0
@@ -1904,35 +1925,52 @@ and R2 should expect analog values of just 0 or 255.
       GAMEPAD_SIZE = GAMEPAD_PLAYER + GAMEPAD_PLAYERS * GAMEPAD_PLAYER_SIZE
 
 
+.. _ria-psg:
+
 Programmable Sound Generator
 ============================
 
-The RIA includes a Programmable Sound Generator (PSG), configured
-through extended register device 0, channel 1, address 0x00.
+The Programmable Sound Generator (PSG) is a simple synthesizer for music
+and sound effects. It has eight channels, and each one plays a sine,
+square, sawtooth, triangle, or noise wave, with an ADSR volume envelope
+and stereo panning.
 
-* Eight 16-bit oscillator channels.
-* Five waveforms: Sine, Square, Sawtooth, Triangle, Noise.
-* ADSR envelope: Attack, Decay, Sustain, Release.
-* Stereo panning.
-* PWM for all waveforms.
+The PSG takes 64 bytes of XRAM, eight for each channel. They must start
+at an even address and fit inside one 256-byte page.
+``PSG_PAGE_CHECK()`` checks the page when the program compiles. You can
+use the PSG or the OPL2, but not both. Mapping one turns the other off.
 
-Each of the eight oscillators uses eight bytes of XRAM for
-configuration. The structure size is a power of two, so indexing into
-the oscillator array is a bit shift.
-
-Enable and disable the PSG by setting its extended register. The value
-is the XRAM start address for the 64 bytes of config; it must be
-int-aligned and must not cross a page boundary. Only one sound generator
-plays at a time, so enabling the PSG disables the OPL2.
+This plays an A on channel 0, as a square wave:
 
 .. code-block:: C
 
-  xreg(0, 1, 0x00, xaddr);  // enable
-  xreg(0, 1, 0x00, 0xFFFF); // disable
-  xreg_ria_psg(xaddr);      // macro shortcut
+  psg_channel_t ch;
 
-Configuration changes take effect immediately, which opens the door to
-panning, slide instruments, and other CPU-driven shenanigans.
+  xreg_ria_psg(XRAM_PSG);
+
+  ch.freq = PSG_FREQ_HZ(440);              // the A above middle C
+  ch.duty = 128;                           // an even square wave
+  ch.attack = 0x02;                        // rise quickly to full volume
+  ch.decay = 0x48;                         // then settle a little softer
+  ch.release_wave = PSG_WAVE_SQUARE | 0x6; // fade out in about 200 ms
+  ch.pan_gate = PSG_PAN(0) | PSG_GATE;     // centered, and start the note
+  xram0_write(XRAM_PSG, &ch, sizeof(ch));
+
+Clearing ``PSG_GATE`` later lets the note fade out:
+
+.. code-block:: C
+
+  xram0_poke8(XRAM_PSG + offsetof(psg_channel_t, pan_gate), PSG_PAN(0));
+
+The ADSR envelope shapes the volume of each note. While the gate is set,
+the volume rises to the attack level, falls to the decay level, and stays
+there. When the gate is cleared, the volume falls to silence. Each of the
+three steps has its own rate. To start a new note on a channel that's
+still playing, clear the gate and then set it again.
+
+Changes take effect immediately, even in the middle of a note, which
+opens the door to panning, slide instruments, and other CPU-driven
+shenanigans.
 
 .. list-table::
    :widths: 5 90
@@ -1941,38 +1979,39 @@ panning, slide instruments, and other CPU-driven shenanigans.
    * - Name
      - Description
    * - freq
-     - 0-65535 Oscillator frequency as Hertz * 3. This results in a
-       resolution of 1/3 Hz.
+     - Frequency in hertz times 3, from 0 to 65535, for a resolution of
+       1/3 Hz. ``PSG_FREQ_HZ()`` converts from hertz.
    * - duty
-     - 0-255 (0-100%) Duty cycle of oscillator. This affects all
-       waveforms.
+     - The pulse width: how much of each cycle plays, from 0 to 255 for
+       0% to 100%. It affects every waveform.
    * - attack
-     - Attack phase volume and rate.
+     - The attack level and rate.
 
-       * bits 7-4 - 0-15 volume attenuation.
+       * bits 7-4 - 0-15 level the volume rises to.
        * bits 3-0 - 0-15 attack rate.
 
    * - decay
-     - Decay phase volume and rate.
+     - The decay level and rate.
 
-       * bits 7-4 - 0-15 volume attenuation.
+       * bits 7-4 - 0-15 level the volume falls to and stays at.
        * bits 3-0 - 0-15 decay rate.
 
    * - release_wave
-     - Waveform and release rate.
+     - The waveform and the release rate.
 
        * bits 7-4 - 0=sine, 1=square, 2=sawtooth, 3=triangle,
          4=noise.
        * bits 3-0 - 0-15 release rate.
 
    * - pan_gate
-     - Stereo pan and gate.
+     - The stereo position and the gate.
 
-       * bits 7-1 - Pan -63(left) to 63(right).
-       * bit 0 - 1=attack/decay/sustain, 0=release.
+       * bits 7-1 - Pan from -63 (left) to 63 (right). ``PSG_PAN()``
+         puts it in place.
+       * bit 0 - Gate. 1 starts the note and holds it, 0 releases it.
 
-Value table. ADR rates are the time it takes for a full volume change.
-Volume attenuation is logarithmic.
+A level is an attenuation: 0 is full volume and 15 is silent, on a
+logarithmic scale. A rate is how long a full change of volume takes:
 
 .. list-table::
    :widths: 1 1 1 20
@@ -2050,7 +2089,7 @@ Volume attenuation is logarithmic.
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       #define PSG_CHANNELS 8
 
@@ -2065,7 +2104,7 @@ Volume attenuation is logarithmic.
       #define PSG_FREQ_HZ(hz) ((hz) * 3u)
       #define PSG_PAN(pan) ((uint8_t)((pan) * 2))
 
-      #define xreg_ria_psg(...) xreg(0, 1, 0, __VA_ARGS__)
+      #define xreg_ria_psg(...) xreg(0x0, 0x1, 0x00, __VA_ARGS__)
 
       typedef struct
       {
@@ -2090,7 +2129,7 @@ Volume attenuation is logarithmic.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       PSG_CHANNELS = 8
 
@@ -2103,7 +2142,7 @@ Volume attenuation is logarithmic.
       PSG_GATE = $01
 
       .macro xreg_ria_psg addr
-          xreg 0, 1, 0, addr
+          xreg $0, $1, $00, addr
       .endmacro
 
       .struct psg_t
@@ -2122,7 +2161,7 @@ Volume attenuation is logarithmic.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       PSG_CHANNELS = 8
@@ -2136,7 +2175,7 @@ Volume attenuation is logarithmic.
       PSG_GATE = $01
 
       .macro xreg_ria_psg addr
-          xreg 0, 1, 0, \addr
+          xreg $0, $1, $00, \addr
       .endm
 
       PSG_CHANNEL = 0
@@ -2153,34 +2192,54 @@ Volume attenuation is logarithmic.
       PSG_SIZE = PSG_CHANNEL + PSG_CHANNELS * PSG_CHANNEL_SIZE
 
 
+.. _ria-opl2:
+
 Yamaha OPL2 FM Sound Generator
 ==============================
 
-The RIA includes a YM3812 FM Sound Generator (OPL2), configured through
-extended register device 0, channel 1, address 0x01.
+The OPL2 works like the Yamaha YM3812, the nine-channel FM synthesizer
+chip of the AdLib and Sound Blaster cards. It has the same registers, so
+an OPL2 guide such as `Programming the AdLib/SoundBlaster FM Music Chips
+<https://www.shipbrook.net/jeff/sb.html>`_ explains them.
 
-Enable and disable the OPL2 by setting its extended register. The value
-is the XRAM start address for the 256 OPL2 registers, which must begin
-on a page boundary. So if xaddr is 0x4200, the 256 OPL2 registers map into
-XRAM from 0x4200 to 0x42FF. Enabling the OPL2 disables the PSG.
+The OPL2 takes one whole page of XRAM, 256 bytes starting at a page
+boundary, and register n of the OPL2 is byte n of that page.
+``OPL_PAGE_CHECK()`` checks the boundary when the program compiles.
+Mapping the OPL2 resets it, clears the page to zero, and turns off the
+PSG.
+
+This plays an A on channel 0:
 
 .. code-block:: C
 
-  xreg(0, 1, 0x01, xaddr);  // enable
-  xreg(0, 1, 0x01, 0xFFFF); // disable
-  xreg_ria_opl(xaddr);      // macro shortcut
+  xreg_ria_opl(XRAM_OPL);
 
+  xram0_poke8(XRAM_OPL + 0x20, 0x01); // modulator: multiple 1
+  xram0_poke8(XRAM_OPL + 0x40, 0x10); // modulator: level
+  xram0_poke8(XRAM_OPL + 0x60, 0xF0); // modulator: quick attack, long decay
+  xram0_poke8(XRAM_OPL + 0x80, 0x77); // modulator: medium sustain, release
+  xram0_poke8(XRAM_OPL + 0x23, 0x01); // carrier: multiple 1
+  xram0_poke8(XRAM_OPL + 0x43, 0x00); // carrier: full volume
+  xram0_poke8(XRAM_OPL + 0x63, 0xF0); // carrier: quick attack, long decay
+  xram0_poke8(XRAM_OPL + 0x83, 0x77); // carrier: medium sustain, release
+  xram0_poke8(XRAM_OPL + 0xA0, 0x44); // channel 0: frequency, low byte
+  xram0_poke8(XRAM_OPL + 0xB0, 0x32); // channel 0: key on, octave 4
 
-Timers, interrupts, and the status register are not supported. Those
-features existed mainly to cost-reduce consumer devices; computers of
-the era had their own timers and rarely used the chip's.
+Clearing the key-on bit lets the note fade out:
+
+.. code-block:: C
+
+  xram0_poke8(XRAM_OPL + 0xB0, 0x12);
+
+The OPL2 has no timers, interrupts, or status register. Computers of the
+time had their own timers and rarely used the chip's.
 
 .. tab:: C
 
    .. code-block:: C
-      :caption: xram.h
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
-      #define xreg_ria_opl(...) xreg(0, 1, 1, __VA_ARGS__)
+      #define xreg_ria_opl(...) xreg(0x0, 0x1, 0x01, __VA_ARGS__)
 
       typedef struct
       {
@@ -2194,10 +2253,10 @@ the era had their own timers and rarely used the chip's.
 .. tab:: ca65
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
 
       .macro xreg_ria_opl addr
-          xreg 0, 1, 1, addr
+          xreg $0, $1, $01, addr
       .endmacro
 
       .struct opl_t
@@ -2207,387 +2266,12 @@ the era had their own timers and rarely used the chip's.
 .. tab:: llvm-mc
 
    .. code-block:: ca65
-      :caption: xram.inc
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
       :force:
 
       .macro xreg_ria_opl addr
-          xreg 0, 1, 1, \addr
+          xreg $0, $1, $01, \addr
       .endm
 
       OPL_REG  = 0
       OPL_SIZE = 256
-
-
-Console
-=======
-
-The system console is the terminal connected to the RIA, and the
-`UART`_ registers above are its rawest form. The OS wraps that same port as
-``stdin``, ``stdout``, ``stderr``, and the ``CON:`` and ``TTY:`` device
-names. See :doc:`term` for cooked and raw reads, the non-blocking
-variants, and the line editor.
-
-Virtual COM Port
-================
-
-If you need serial ports beyond the console UART, USB adapters are
-available for CMOS/TTL, RS-232, RS-422, and RS-485, and each one appears
-as a Virtual COM Port (VCP). :doc:`pico` firmware includes drivers for FTDI,
-CP210X, CH34X, PL2303, and CDC ACM.
-
-The ``status`` command lists any connected VCP devices. Open one like a
-file, using a special name. By default ``"VCP0:"`` opens at 115200 bps
-with 8 data bits, no parity, and 1 stop bit. Set the baud rate with
-``"VCP0:115200"``, or the full bit configuration with
-``"VCP0:115200,8N1"``. The file won't open if your hardware can't
-support the requested configuration, and the open flags are ignored.
-
-.. code-block:: C
-
-  open("VCP0:1200,7E2", 0);
-  // then read and write
-
-Generous FIFO buffers serve both directions, and both reads and writes
-are non-blocking. Reads can return 0 bytes, and writes may send less than
-you asked for — resubmit any remaining bytes on a later call.
-
-
-MIDI
-====
-
-MIDI instruments attached to the machine appear as devices, and the
-``status`` command lists them. :doc:`pico` firmware includes a USB MIDI
-host driver, so a USB instrument plugs right in. Each virtual cable is
-its own device — ``"MIDI0:"`` onward, assigned in the order cables
-appear, up to four at a time. A simple keyboard is one cable (1X1); a
-multi-port interface is several. Open one like a file.
-
-A cable opens in one of two modes, chosen by the open name. Bare
-``"MIDI0:"`` is **raw** — reads and writes are plain wire MIDI, the same
-bytes a 5-pin DIN cable carries, with no timing and nothing added or
-removed. Give a division instead, ``"MIDI0:480"``, and the cable is
-**timed**: the RIA handles timing for you using the event format from
-Standard MIDI Files, prefixing every message with a variable length
-quantity delta time measured in ticks. The rest of this section is the
-timed format.
-
-In timed mode, time starts at the open. The first byte in either
-direction is a delta measuring from the open itself, and a delta of zero
-means right now. Writes are scheduled — the RIA holds each message and
-sends it to the instrument exactly on time, so your program only needs to
-keep the buffer fed. Reads are a recording — incoming messages arrive
-with delta times measuring when they actually happened, ready to store in
-a file or play back later.
-
-The division is ticks per quarter note, the value an SMF carries in its
-header. It accepts 1 to 32767 and is fixed while open; reopen between songs
-to change it. The open flags are ignored. A cable can be input, output, or both;
-reading an output-only cable or writing an input-only one returns an
-error.
-
-Tempo changes on the fly with the standard SMF Set Tempo meta event,
-which the RIA consumes locally and never forwards to the instrument. The
-event is ``FF``, a type, a length, then that many data bytes:
-
-.. list-table::
-   :widths: 32 68
-   :header-rows: 1
-
-   * - Control event
-     - Effect
-   * - ``FF 51 03 tt tt tt``
-     - Set tempo in microseconds per quarter note — the standard SMF
-       event. The tick rate becomes tempo × 1000 ÷ division.
-   * - ``FF FF``
-     - A wire System Reset. The doubled escape is the whole event, with no
-       length byte. Unlike the others, it is sent to the instrument.
-
-Tempo defaults to 500000 µs per quarter note — 120 BPM, a 1041667 ns
-tick at 480 PPQN. Every other ``FF`` event, including the rest of the
-SMF meta set, is swallowed without effect, so a Standard MIDI File track
-plays through nearly verbatim — division from the file header, tempo
-events straight from the track:
-
-.. code-block:: C
-
-  open("MIDI0:96", 0); // division from the MThd header
-  // FF 51 03 07 A1 20  tempo = 500000 (120 BPM at 96 PPQN)
-  // then delta-timed events; the RIA paces them and tracks tempo changes
-
-The RIA echoes every tempo event onto the read stream at the moment it
-takes effect, so a recording is self-describing. A rejected event is
-malformed, or carries a value of zero or out of range. The RIA echoes it
-with its value zeroed and the tempo unchanged; zero is never a valid tempo,
-so it unambiguously marks an event that didn't apply. Your read parser must
-handle ``FF``: a second ``FF`` is a System Reset, and anything else is
-a meta type and length to skip.
-
-The stream carries raw wire MIDI messages after each delta time: channel
-voice messages (running status accepted on writes), system common, and
-single-byte real-time messages F8-FE. System Reset travels as the
-``FF FF`` escape in both directions: write a delta then ``FF FF`` to
-send one, and a reset from the instrument is recorded the same way. The
-undefined bytes F4 and F5 are quietly dropped.
-
-System Exclusive, or sysex, is how instruments move the big stuff, like
-patch banks and sample dumps, in one long message: ``F0``, any number of
-data bytes, then ``F7`` to finish. Only the opening ``F0`` takes a delta
-time; the data bytes flow without timing until the ``F7``, on writes and
-recordings alike. Real MIDI lets real-time messages like clock barge
-into the middle of a sysex — the RIA passes them through in place, so
-expect the occasional F8-FE byte inside a recorded dump. And if a tempo
-echo comes due during a dump, the recording closes the sysex early and
-reopens it after — everything arrives, just split into two
-``F0`` ... ``F7`` fragments.
-
-Delta times measure from the previous event, so timing stays exact over
-any song length. Events are anchored to an absolute tick count, and
-ticks are kept internally in nanoseconds, holding arithmetic rounding
-below one part per million. The error left over comes from the machine's
-clock and transport. Where the RIA is paced by a crystal-driven microsecond
-timer and delivers over USB full speed, the crystal drifts single-digit
-milliseconds over a several-minute song and framing sets the
-moment-to-moment jitter near one millisecond — the same pace as the
-classic MIDI wire itself.
-
-If your program stops feeding the buffer and resumes, messages already
-past due play immediately and the timeline continues from there. If you
-stop reading, the recording drops whole messages rather than backing up,
-and the timing of everything that survives stays exact. Reads and writes
-are non-blocking with the same short read/write rules as other
-non-blocking devices.
-
-Closing a timed output cable blocks until its buffered tail has played
-out on schedule. The final notes reach the instrument before close returns,
-along with the note-offs that end them, and nothing is left ringing.
-``sync`` does the same without closing. It waits for the schedule to catch
-up between songs. Both follow the timeline, so a far-future delta
-still in the buffer makes them wait that long. If a sysex is still open
-when a timed cable closes, the RIA sends its ``F7`` so the instrument is
-not left waiting mid-dump. A raw cable has no schedule, so close and
-``sync`` flush what is buffered, and they inject no ``F7``.
-
-
-Near Field Communications (NFC)
-===============================
-
-NFC cards have become a popular media replacement in the retro
-community, and they map neatly onto the RP6502's use of "ROM files" in
-place of "ROM cartridges". In 1983 you might have grabbed a cartridge
-with colorful stickers to home in on the exact dopamine hit you were
-after. NFC cards are cheap and just as easy to decorate, whether with
-stickers or direct printing. Grab a card, tap it on the reader, and the
-ROM you want loads instantly.
-
-You'll need a PN532 card reader with a USB interface. It's the only
-reader RIA firmware drives, and it's cheap — around $10 USD. You'll also want a
-card (or fob, or sticker) for each ROM you plan to support. New to NFC?
-Buy a pack of NTAG215 cards and a sharpie.
-
-Do **not** buy a kit of separate USB-to-UART and PN532 boards unless you
-want an unsupported project on your hands. Buy a single board with
-everything already engineered and ready to use.
-
-With the reader plugged in, run the monitor command ``SET NFC 2`` to
-start USB detection. It may probe your other VCP devices with PN532 data
-along the way; that's normal. You'll hear an error buzz, or two beeps for
-success. You can also run ``status`` to see whether ``(NFC)`` is listed
-next to one of your VCP devices.
-
-``SET NFC 1`` turns the reader on and ``SET NFC 0`` turns it off; the
-choice persists across reboots (a successful ``SET NFC 2`` also leaves it
-on). ``SET NFC 86`` forgets the paired reader so a later ``SET NFC 2`` can
-pair a different one.
-
-From now on, scanning a card produces one of three sounds: an error buzz
-if something went wrong, two beeps for success, or a single beep for a
-partial success.
-
-Program each card with the filename and arguments of the ROM to launch.
-If you'd load the ROM with ``LOAD /jigsaw.rp6502``, put an NDEF TEXT
-record on the card holding just ``/jigsaw.rp6502`` — no load command. A
-leading ``/`` is implied if you leave it off, and the current working
-directory is ignored.
-
-Paths with spaces need quotes, and you can include arguments:
-``"/My Games/jigsaw.rp6502" cat.bmp``
-
-When a card is read, every mounted drive is scanned for the ROM file. On
-a match, you get two beeps, the 6502 stops, the current drive and
-directory switch to the ROM's location, and the new ROM starts loading.
-If that ROM is already running, you get a single beep and nothing else
-happens.
-
-To search just one drive, name it in the text record:
-``MSC0:/encabulator.rp6502``
-
-A card may also name an installed ROM, ``:NAME``. That ROM launches the
-same way, with the same beeps, except that no drive is scanned and the
-current drive and directory stay where they are. A name that is not
-installed gives the error buzz.
-
-NFC Device API
---------------
-
-Applications can take over the NFC reader for advanced uses, or to help
-program NFC tags. While the ``"NFC:"`` device is open, automatic ROM
-launching is suppressed.
-
-.. code-block:: text
-
-   int fd = open("NFC:", O_RDWR);
-
-The PN532 reader runs autonomously on the RIA. The 6502 arms operations
-with ``write()`` and polls results with ``read()``: ``NFC_CMD_READ``
-returns the current tag data immediately, ``NFC_CMD_WRITE`` arms a write,
-and ``NFC_CMD_CANCEL`` disarms a pending one. State changes and write
-completions are posted to ``read()`` automatically.
-
-write() -- Commands
-~~~~~~~~~~~~~~~~~~~
-
-``write()`` is non-blocking and streaming. A call may consume less than
-you passed; resubmit the remaining bytes on a later call.
-
-.. list-table::
-   :widths: 40 60
-   :header-rows: 1
-
-   * - Byte
-     - Command
-   * - ``NFC_CMD_WRITE`` (0x01), page, lenLo, lenHi, tag data...
-     - Arm a write
-   * - ``NFC_CMD_CANCEL`` (0x02)
-     - Disarm pending write
-   * - ``NFC_CMD_READ`` (0x03)
-     - Return current tag data
-   * - ``NFC_CMD_SUCCESS1`` (0x04)
-     - Play success tone 1
-   * - ``NFC_CMD_SUCCESS2`` (0x05)
-     - Play success tone 2
-   * - ``NFC_CMD_ERROR`` (0x06)
-     - Play error tone
-
-The ``NFC_CMD_WRITE`` payload starts with the start page, a two-byte
-length, then the tag data. ``page`` is the NTAG page to begin writing at
-(page 4 is the start of user data). Data is written in 4-byte pages, and
-the final page is zero-padded if the payload isn't a multiple of 4. The
-write arms once the full payload arrives and runs on the current card or
-the next one presented. A second ``NFC_CMD_WRITE`` overwrites the first.
-
-The payload may be at most 888 bytes; a longer length is rejected with the
-error tone and never armed. A write also fails (error tone) if it would run
-past the card's NDEF data area or target a page below 4, and a zero-length
-payload completes immediately as a no-op.
-
-``NFC_CMD_READ`` always returns ``NFC_RESP_READ`` on the next ``read()``;
-if no card data is available, the length is zero.
-
-read() -- Responses
-~~~~~~~~~~~~~~~~~~~
-
-``read()`` is non-blocking and streaming. It returns 0 bytes when there's
-nothing new. Responses may be split across multiple calls, so callers
-must buffer and reassemble them. State changes are sent once per change,
-including once right after ``open()``. Only the latest state is tracked, so
-a rapid transition (such as ``NFC_RESP_CARD_INSERTED`` immediately followed
-by ``NFC_RESP_CARD_READY``) may be coalesced to the later state if you don't
-``read()`` in between.
-
-.. list-table::
-   :widths: 40 60
-   :header-rows: 1
-
-   * - Byte
-     - Meaning
-   * - ``NFC_RESP_READ`` (0x01), lenLo, lenHi, tag data...
-     - Read result
-   * - ``NFC_RESP_WRITE`` (0x02)
-     - Armed write complete
-   * - ``NFC_RESP_NO_READER`` (0x03)
-     - State: no reader attached
-   * - ``NFC_RESP_NO_CARD`` (0x04)
-     - State: no card present
-   * - ``NFC_RESP_CARD_INSERTED`` (0x05)
-     - State: card present, tag data not ready
-   * - ``NFC_RESP_CARD_READY`` (0x06)
-     - State: card present, tag data ready
-
-The ``NFC_RESP_READ`` payload is a two-byte length followed by raw tag
-data starting at page 0, and it may span multiple ``read()`` calls.
-In the page layout, pages 0-2 are UID/lock bytes, page 3 is the Capability
-Container (CC[2] * 8 = max NDEF bytes), and pages 4+ are user data
-(TLV-wrapped NDEF records terminated with ``0xFE``).
-
-After ``NFC_RESP_READ`` or ``NFC_RESP_WRITE``, send one or more tone
-commands or play your own sounds. Typically you request reads on
-``NFC_RESP_CARD_READY`` and arm writes on ``NFC_RESP_NO_CARD``, but you
-can also arm a write after reading and verifying a card. The cached
-tag image is not refreshed by a write, so re-present the card before the
-next ``NFC_CMD_READ`` if you want to read back what you wrote.
-
-
-Reset
-=====
-
-Think of reset as two states rather than a pulse on RESB. While reset
-is low, the 6502 is stopped. On an :doc:`pico`, the monitor is connected
-to the console while in reset. On the Pocket, the system waits for a new
-ROM to be loaded from the settings menu. On the :doc:`emu`, some hosts
-wait for a new ROM to load while others exit the host process.
-
-Reset is mostly handled automatically and this works well for all hosts
-except the :doc:`pico`. Here we need a way to stop a wedged 6502. The monitor
-also provides two commands that will bring reset high.
-Either ``load`` a ROM that has a reset vector, or use the ``reset`` command
-if you've prepared RAM some other way.
-To drop reset from high to low and return to the monitor, even from a
-wedged 6502, use any terminal on the
-:ref:`console manifold <term-console-manifold>`:
-
-1. Press Ctrl-Alt-Del from a USB keyboard.
-2. Send a break from a serial terminal.
-3. Send a break from a telnet terminal.
-
-
-PIX Physical Layer
-==================
-
-None of this is needed to program the machine. What follows is the bus
-itself, for anyone building a device to put on it.
-
-On the :doc:`pico`, PIX is a physical bus between the RP6502-RIA and the
-RP6502-VGA. High-bandwidth devices like video systems need a bus of their
-own. PIX is that bus: an addressable broadcast system that any number of
-devices can receive, narrow enough to fit the GPIO budget of a Raspberry
-Pi Pico, wide enough to move data as fast as the 6502 writes.
-
-The signals are PHI2 and PIX0-3. This is a double-data-rate bus. It
-shifts PIX0-3 left on both transitions of PHI2, so a 32-bit frame is
-sent in just 4 PHI2 cycles. A PIO block on a Raspberry Pi Pico decodes
-it, since PIO is essentially a shift register.
-
-Bit 28 (0x10000000) is the framing bit, set in every message. When the
-bus is idle, an all-zero payload repeats on device ID 7. A receiver
-synchronizes by checking that PIX0 is high on a falling transition of
-PHI2; if it isn't, stall until the next clock cycle.
-
-Bits 31-29 (0xE0000000) hold the device ID of a message:
-
-- **Device 0** — XRAM broadcasts only. The extended registers of device
-  0 are handled inside the RIA and are never sent on the bus.
-- **Device 1** — the :doc:`vga`.
-- **Devices 2-6** — open for user expansion.
-- **Device 7** — synchronization. (0xF0000000 is hard to miss on test
-  equipment.)
-
-For devices 1-6, the remaining bits address an extended register:
-
-- **Bits 27-24** (0x0F000000) — the channel ID; each device can have 16
-  channels.
-- **Bits 23-16** (0x00FF0000) — the register address within that channel.
-- **Bits 15-0** (0x0000FFFF) — the value to store in the register.
-
-The RIA broadcasts every change to XRAM as a device 0 message, with the
-XRAM address in bits 15-0 and the XRAM data in bits 23-16. Each device
-keeps a local replica of the XRAM it uses, typically all 64 KB.

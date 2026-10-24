@@ -120,3 +120,18 @@ dl.c.function > dt.sig > span.pre {
 .highlight.collapsed button.expand:hover {
     border-color: var(--color-foreground-border);
 }
+
+/* Code blocks take their background from --color-code-background, which
+   conf.py sets, in place of the background of the Pygments style. */
+.highlight,
+body[data-theme] .highlight,
+body:not([data-theme="light"]) .highlight {
+    background: var(--color-code-background);
+}
+
+/* Sphinx marks the types and keywords of a C signature with the classes of
+   Pygments, but outside the .highlight that the code colors apply to. */
+.sig .k,
+.sig .kt {
+    color: var(--color-api-keyword);
+}

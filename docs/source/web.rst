@@ -4,6 +4,11 @@ RP6502-WEB
 
 RP6502 - Web Player
 
+.. note::
+
+   This page still needs a major review to bring it up to the standard of
+   the manual.
+
 
 Introduction
 ============
@@ -402,8 +407,8 @@ Building with CMake
 
 In a CMake project, ``rp6502_web()`` packages a ROM with the emulator and
 a page into a zip, ready to upload. This line builds ``web/game.zip`` in
-the build folder from the ROM of the ``game`` target, with the page from
-the web zip and the emulator of the latest release:
+the build folder from the ROM of the ``game`` target, with the page and
+the emulator from the web zip of a release:
 
 .. code-block:: cmake
 
@@ -437,16 +442,20 @@ root is the page. A page of your own holds a container, loads
 ``rp6502.js`` with ``<script src="rp6502.js">``, and calls ``rp6502()``
 in a later script, as in `The Page`_.
 
-``EMULATOR`` names the web zip that ``rp6502.js`` and ``rp6502.wasm``
-come from, in the forms of :ref:`Fetching BASIC and the Emulator
-<sdk-fetch>`:
+``rp6502.js`` and ``rp6502.wasm`` come from the web zip of a release:
+the newest one in ``tools/``, unless ``RP6502_WEB_VERSION`` selects
+another, as :ref:`Selecting Versions <sdk-selecting-versions>`
+describes. The variable selects the version of every ``rp6502_web()`` in
+its folder, and the property selects the version of one target.
+``RP6502_WEB`` names a web zip file in place of a release.
 
 .. code-block:: cmake
 
-  rp6502_web(game EMULATOR tools/rp6502-web.zip)
+  set(RP6502_WEB_VERSION 0.40)
+  set_target_properties(game PROPERTIES RP6502_WEB_VERSION 0.39)
 
-In VS Code, choose "RP6502-WEB" in the Run and Debug side panel and
-press F5. The project is built, and the browser opens a page with a link
+In VS Code, choose "RP6502-WEB" in the Run and Debug view of the Side Bar
+and press F5. The project is built, and the browser opens a page with a link
 to every web player in the build folder.
 
 
@@ -487,7 +496,7 @@ each one with ``rp6502_web()`` and publishes it on every push to
            source:
              description: Branch, tag or commit to build
            emulator:
-             description: Emulator, in the forms EMULATOR takes
+             description: Web player version, such as 0.40
      jobs:
        web:
          uses: picocomputer/.github/.github/workflows/web.yml@main
@@ -544,11 +553,8 @@ screenshot:
 
 "Run workflow" on the Actions tab of the repository runs the workflow by
 hand. ``source`` builds another branch, tag or commit of the repository,
-and ``emulator`` replaces the ``EMULATOR`` of every ``rp6502_web()``, in
-the forms of :ref:`Fetching BASIC and the Emulator <sdk-fetch>`. A commit
-of the emulator is for testing: it comes from the CI build of that
-commit, which is kept for 90 days, and the build of a pull request is the
-pull request merged with ``main``.
+and ``emulator`` sets ``RP6502_WEB_VERSION`` of every ``rp6502_web()`` to
+a release version, such as ``0.40``.
 
 
 .. _web-hosts:

@@ -16,10 +16,17 @@
    :caption: Machine
 
    RP6502-PICO <pico>
-   RP6502-PICO-W <ria_w>
    RP6502-FPGA <fpga>
    RP6502-EMU <emu>
    RP6502-WEB <web>
+
+.. toctree::
+   :hidden:
+   :caption: Build
+
+   With Soldering <pico-solder>
+   Without Soldering <pico-socket>
+   Parts Substitution <pico-parts>
 
 .. toctree::
    :hidden:
@@ -118,10 +125,9 @@ These are the features of the standalone machine, the :doc:`pico`:
 Read the Manual
 ===============
 
-Start with the :doc:`sdk`, then the :doc:`api`. The datasheets after
-them are for the parts of a Picocomputer. Read the datasheet for a part
-when a program starts to use that part. Read :doc:`port` before the
-program is published.
+Start with the :doc:`sdk`. It teaches you how to write software for the
+Picocomputer. The other pages describe the systems that your program
+can use.
 
 - :doc:`sdk`: writing software, from a new project to a running program.
 - :doc:`api`: the system calls, the ABI, and the C library built on them.
@@ -129,7 +135,8 @@ program is published.
   PSG and OPL2 sound generators.
 - :doc:`vga`: canvases, video modes, sprites, and the scanline
   programming underneath.
-- :doc:`term`: the console, its escape sequences, and the line editor.
+- :doc:`term`: the console, the line editor, and the terminal with its
+  escape sequences.
 - :doc:`port`: the portability guide, covering sprite limits, gamepads and
   filesystems.
 
@@ -143,8 +150,8 @@ Picocomputers.
 
 - :doc:`pico` — the standalone machine, which you build yourself. 100%
   through-hole, no IC programmer, and you don't even have to solder.
-  Built with a Pi Pico 2 W, it is the :doc:`ria_w`, with Wi-Fi and
-  Bluetooth.
+  Build it :doc:`with soldering <pico-solder>` or :doc:`without
+  <pico-socket>`.
 - :doc:`fpga` — the machine in fabric, on an Analogue Pocket today and
   MiSTer next.
 - :doc:`emu` — the machine on the device you use every day, for
