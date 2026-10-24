@@ -66,9 +66,6 @@ Step 4. Solder the Board
 
 Solder the board as the video in Step 1 shows.
 
-Every IC goes in one way, and the silkscreen on the board marks which
-way. If you are not sure about one, ask someone before you power on.
-
 
 Step 5. Pi Pico Firmware
 ========================
@@ -98,20 +95,16 @@ upgrades don't need BOOTSEL. See :ref:`Firmware Updates
 Step 6. First Boot
 ==================
 
-Plug the eight ICs into their sockets. Connect a VGA monitor, or an HDMI
-display with a VGA-to-HDMI cable, and plug a USB keyboard into the RIA.
-Apply 5V power to the VGA module, enough for all your devices plus one watt
-for the RP6502-PICO itself. A fresh RIA boots into the RP6502 monitor.
-Continue with :doc:`pico`.
+Plug the eight ICs into their sockets. Each one goes in only one way. The
+six black chips each have a notch at one end, and it lines up with the
+notch in the outline of the chip on the silkscreen. The two Pi Picos go in
+with their USB connectors at the edge of the board. If you are not sure
+about one, ask someone before you power on.
 
-
-Acrylic Sandwich Case
-=====================
-
-The circuit board is 150 x 100 mm (4 x 6 inches). Vendors on Amazon and eBay
-regularly sell 150 x 100 x 3 mm acrylic sheets to match. Drill 3 mm holes for
-M3 standoffs, and use standoffs of at least 16 mm on top and 3.5 mm on the
-bottom.
+Connect a VGA monitor, or an HDMI display with a VGA-to-HDMI cable, and
+plug a USB keyboard into the RIA. Apply 5V power to the VGA module, enough
+for all your devices plus one watt for the RP6502-PICO itself. A fresh RIA
+boots into the RP6502 monitor. Continue with :doc:`pico`.
 
 
 Full Parts List (All Components)
