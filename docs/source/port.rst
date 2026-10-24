@@ -184,35 +184,30 @@ Gamepads
 The RIA reports every gamepad in the same layout, which :ref:`Gamepads
 <ria-gamepads>` on the RIA page describes. The report has a bit for each
 of fifteen buttons, in the order that Linux and Android use for a generic
-gamepad, so each button of a gamepad sold as Android-compatible sets the
-bit of the same name. Xbox and PlayStation gamepads work too. Together
-they are nearly every gamepad sold today. A modern gamepad whose buttons
-do not map to the bits of the same name is a defect, and worth reporting.
-A controller made for something other than the major consoles, such as a
-controller built for emulation, is unlikely to get support, even when
-someone reports it.
+gamepad. Xbox and PlayStation gamepads work too. A modern gamepad that
+reports a button in the wrong bit is a defect, and worth reporting. A
+controller unlike the gamepads of the major consoles, such as one built
+for emulation, is unlikely to get support.
 
-The order has C and Z because the Linux names were chosen around 2000,
-when six-button gamepads were as common as four-button ones. Most gamepads
-today have four face buttons and report nothing in the C and Z bits, or
-report other buttons there, such as rear paddles. C and Z stay in the
-report for programs that let players map buttons themselves.
+The report has C and Z because the Linux names were chosen around 2000,
+when six-button gamepads were still common. Most gamepads today have four
+face buttons and report nothing in the C and Z bits, or report other
+buttons there, such as rear paddles.
 
-The four face buttons vary only in labeling: XY/AB, YX/BA, or
-Square/Triangle/Cross/Circle. The labeling rarely matters to a game until
-it prints a button's name, or the buttons stand in for directions. For
-those, the type bits of DPAD give the labeling of gamepad models with a
-known layout, such as Xbox, Nintendo, and PlayStation pads. Many gamepads
-report type 0, unknown, including every gamepad in RetroArch, the pads on
-an Analogue Pocket dock, and most generic USB gamepads. For a gamepad of
-type 0, a game can print which gamepad it was made for, or provide a
-setting.
+The four face buttons are labeled differently on different gamepads:
+XY/AB, YX/BA, or Square/Triangle/Cross/Circle. A game that shows the name
+of a button, or uses the face buttons by their position, such as for
+directions, needs to know which layout the gamepad has. The type bits of
+DPAD give the layout when the RIA recognizes the gamepad, such as an Xbox,
+Nintendo, or PlayStation pad, and type 0, unknown, when it does not. A
+game that depends on the layout needs to handle type 0, such as with a
+setting where the player picks the kind of gamepad.
 
 Home is the Guide button on an Xbox gamepad and the PS button on a
-PlayStation one. Steam, Windows, and macOS can open a menu when Home is
-pressed, and nothing in the report shows when that happens. In RetroArch
-and on the Pocket, the Home bit is never set. So a portable game does not
-use Home.
+PlayStation one. A game should not use Home, because the host operating
+system often uses it for itself. Windows opens its Game Bar, and Steam
+opens Big Picture. In RetroArch and on the Pocket, the Home bit is never
+set.
 
 A game that uses one stick and one or two buttons works with nearly every
 gamepad when it merges the d-pad with the left stick and gives each
@@ -251,6 +246,12 @@ gamepad, including those without analog sticks or triggers.
 
 Filesystems
 ===========
+
+.. note::
+
+   This section still needs a major review to bring it up to the standard
+   of the manual. The information is all here, but it is poorly organized
+   and repeats itself.
 
 A program that reads its data from ``ROM:`` and keeps its saves in
 ``SAVE:`` opens its files the same way on every machine. `Data Files`_
