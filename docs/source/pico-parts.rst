@@ -2,7 +2,22 @@
 Parts Substitution
 ============================
 
-RP6502-PICO
+Pi Picos Without Headers
+========================
+
+The parts lists of :doc:`pico-solder` and :doc:`pico-socket` both have Pi
+Picos with headers, which need no soldering. If you prefer to solder the
+headers yourself, these are the part numbers of the Pi Picos without them.
+
+`Pi Picos CSV <_static/rp6502-revb-picos.csv>`_
+
+.. csv-table::
+   :file: _static/rp6502-revb-picos.csv
+   :header-rows: 1
+
+
+Substitutions
+=============
 
 The WDC W65C02S and W65C22S must not be substituted. Don't try NMOS chips (the
 ones without the C in the part number). Some older CMOS designs may work, but
@@ -46,16 +61,3 @@ you find one, prefer it over the 74HC30.
 
 The RAM IC is 128K because two 32K chips cost more. Speed must be 70 ns or
 faster to reach 8 MHz.
-
-
-Pi Picos Parts List
-===================
-
-Alternative part numbers for the Pi Picos. These require soldering the
-headers yourself.
-
-`Pi Picos CSV <_static/rp6502-revb-picos.csv>`_
-
-.. csv-table::
-   :file: _static/rp6502-revb-picos.csv
-   :header-rows: 1

@@ -2,19 +2,12 @@
 Build Without Soldering
 ============================
 
-RP6502-PICO
-
 This page builds the :doc:`pico` from a board of sockets that a factory
-assembles. To solder the board yourself, see :doc:`pico-solder`.
+assembles. Prices vary, so you need to get a quote, but expect about $150
+in total. To solder the board yourself, see :doc:`pico-solder`.
 
-You don't need to understand the electronics, and you don't even need to
-solder, but you will need to plug the eight ICs into their sockets. Every
-part is currently in production, and the Raspberry Pi Pico 2 is slated to
-stay that way until at least `January 2040
-<https://www.raspberrypi.com/products/raspberry-pi-pico-2/>`_. The design
-was already updated once, from the Pico 1 to the Pico 2. The project does
-not depend on any one of these parts staying in production, because the
-:doc:`fpga`, the machine in fabric, uses none of them.
+You don't need to solder, but you will need to plug the eight ICs into
+their sockets and flash the two Pi Picos with a USB cable.
 
 Buying an RP6502-PICO
 =====================
@@ -94,6 +87,9 @@ reference column and your bags arrive labeled like "C1-C9, C11". If you
 forget, no problem — the PCB silkscreen already has the location info.
 
 If something is out of stock, check the :doc:`pico-parts` notes.
+
+Every IC goes in one way, and the silkscreen on the board marks which
+way. If you are not sure about one, ask someone before you power on.
 
 
 Step 5. Pi Pico Firmware
