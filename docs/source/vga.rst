@@ -1949,120 +1949,113 @@ byte.
 Video Timing
 ============
 
-How much time your program has between frames depends on the video
-signal. Every machine keeps the timing of a 640x480 VGA signal: the
-:doc:`pico` sends one out of its VGA connector, and the others draw the
-canvas at the same pace. The RP6502-PICO can also send an HD signal to a
-widescreen display or an SXGA signal to a 5:4 display, as its
-:ref:`display type <pico-settings>` selects, and each of these changes
-the time between frames. The machines don't draw the canvas the same way
-inside, but they agree to within one scanline, so leave one scanline of
-margin and your timing holds on all of them.
+To change the picture without tearing, make your changes between
+frames: after VSYNC, and before the VGA system starts the next frame.
+This section tells you how long that is for each canvas and video
+timing.
 
-Each signal has more pixels in a line and more lines in a frame than the
-display shows. The extra is blanking, the time a CRT beam took to get
-back to the left edge and back to the top. All three signals run at 60
-frames a second:
+Every machine uses VGA timing, 640x480 at 60 Hz. The :doc:`pico` can
+also use 720p or SXGA timing, depending on its :ref:`display type
+<pico-settings>`. Each machine works a little differently inside, so
+the times in this section already leave one scanline of a 320-wide
+canvas as margin. That covers a 640-wide canvas too.
+
+When the canvas fills the display, the time between frames is the
+vertical blanking interval:
 
 .. list-table::
-   :widths: 25 25 25 25
+   :widths: 35 20 20 25
    :header-rows: 1
 
-   * - Signal
-     - Visible
+   * - Canvas
+     - Timing
+     - Time
+     - Cycles at 8 MHz
+   * - 320x240, 640x480
+     - VGA
+     - 1.37 ms
+     - 10,900
+   * - 320x180, 640x360
+     - 720p
+     - 0.58 ms
+     - 4,600
+
+When the canvas doesn't fill the display, it is letterboxed, and the
+empty lines above and below it add to the time:
+
+.. list-table::
+   :widths: 35 20 20 25
+   :header-rows: 1
+
+   * - Canvas
+     - Timing
+     - Time
+     - Cycles at 8 MHz
+   * - 320x180, 640x360
+     - VGA
+     - 5.17 ms
+     - 41,400
+   * - 320x240, 640x480
+     - SXGA
+     - 1.59 ms
+     - 12,800
+   * - 320x180, 640x360
+     - SXGA
+     - 5.35 ms
+     - 42,800
+
+The VGA system sends VSYNC right after it draws the lowest scanline that
+you have programmed. The tables assume that this is the last scanline of
+the canvas. If you leave scanlines at the bottom unprogrammed, VSYNC
+comes that much sooner.
+
+The tightest timing is a 16:9 canvas on an RP6502-PICO with an HD
+display. The canvas fills the 720p display, which leaves only 0.58 ms,
+about 4,600 cycles. Everywhere else, a 16:9 canvas is letterboxed and
+has more than 5 ms, even in the emulator, where the window doesn't show
+the letterbox. If your program needs to run on an HD display, fit its
+changes into 0.58 ms.
+
+SXGA gives more time between frames than VGA, so a program that fits in
+VGA timing almost always fits in SXGA timing.
+
+VGA and 720p are the 60 Hz timings of the CEA-861 standard, and SXGA is
+the 60 Hz timing of the VESA standard. The total size includes the
+blanking around the active area:
+
+.. list-table::
+   :widths: 20 20 20 20 20
+   :header-rows: 1
+
+   * - Timing
+     - Active
      - Total
      - Pixel clock
+     - Refresh
    * - VGA
      - 640x480
      - 800x525
      - 25.2 MHz
-   * - HD (720p)
+     - 60 Hz
+   * - 720p
      - 1280x720
      - 1650x750
      - 74.25 MHz
+     - 60 Hz
    * - SXGA
      - 1280x1024
      - 1688x1066
      - 108 MHz
+     - 60 Hz
 
-The VGA system draws each scanline of the canvas on a whole number of
-lines of the signal. A scanline of a 320-wide canvas takes 2 lines of
-VGA, or 4 lines of HD or SXGA. A 640-wide canvas takes half as many, so
-it has the same timing as the 320-wide canvas of the same shape: 640x480
-matches 320x240, and 640x360 matches 320x180.
-
-When the canvas fills the display, the time between frames is the
-vertical blanking:
-
-.. list-table::
-   :widths: 30 15 15 20 20
-   :header-rows: 1
-
-   * - Canvas
-     - Signal
-     - Lines
-     - Time
-     - Cycles at 8 MHz
-   * - 320x240, 640x480
-     - VGA
-     - 45
-     - 1.43 ms
-     - 11,400
-   * - 320x180, 640x360
-     - HD
-     - 30
-     - 0.67 ms
-     - 5,300
-
-A canvas that doesn't fill the display is letterboxed, and the empty
-lines above and below it add to the time:
-
-.. list-table::
-   :widths: 30 15 15 20 20
-   :header-rows: 1
-
-   * - Canvas
-     - Signal
-     - Lines
-     - Time
-     - Cycles at 8 MHz
-   * - 320x180, 640x360
-     - VGA
-     - 165
-     - 5.24 ms
-     - 41,900
-   * - 320x240, 640x480
-     - SXGA
-     - 106
-     - 1.66 ms
-     - 13,300
-   * - 320x180, 640x360
-     - SXGA
-     - 346
-     - 5.41 ms
-     - 43,300
-
-These numbers assume that your modes run to the bottom of the canvas. If
-they stop higher, VSYNC comes sooner, and the scanlines below your modes
-add to the time.
-
-Take care with a 16:9 canvas on an RP6502-PICO with an HD display. The
-canvas fills the screen, so it has only 0.67 ms between frames, about
-5,300 cycles. Everywhere else, a 16:9 canvas is letterboxed and has more
-than 5 ms, the emulator included, even though its window doesn't show
-the letterbox. A program that has to run on HD must fit its changes
-between frames into 0.67 ms.
-
-SXGA gives more time between frames than VGA, so a program that fits VGA
-timing fits SXGA timing in almost every case.
-
-To work out a time of your own, start with the time of one line, the
-total width divided by the pixel clock. A VGA line is 800 pixels at
-25.2 MHz, 31.75 µs. A change at the top of the canvas has the time
-between frames, less your scanline of margin. A change lower on the
-canvas also has the time of every line above it. Scanline 100 of a
-320x240 canvas, for example, starts 200 VGA lines into the canvas, so a
-change there has 6.35 ms more than a change at the top.
+A change lower on the canvas has more time, because the VGA system draws
+the scanlines above it first. Each scanline of a 320-wide canvas is
+drawn on 2 lines of VGA, or 4 lines of 720p or SXGA. Each scanline of a
+640-wide canvas is drawn on 1 line of VGA, or 2 lines of 720p or SXGA.
+To get the length of a line, divide its total width by the pixel clock:
+a VGA line is 800 pixels at 25.2 MHz, or 31.75 µs. Scanline 100 of a
+320x240 canvas in VGA timing is 200 lines down, so a change there has
+6.35 ms more than a change at the top.
 
 
 .. _vga-control-channel:
