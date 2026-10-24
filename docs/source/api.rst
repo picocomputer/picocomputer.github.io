@@ -886,7 +886,9 @@ GETCWD
                 lib char* getcwd (char* buf, size_t size)
 
    ``getcwd()`` returns the current directory, as an absolute path that
-   starts with its drive, such as ``MSC0:/games``.
+   starts with its drive, such as ``MSC0:/games``. When the path is longer
+   than 255 bytes, as it can be in the directory that the :doc:`emu` was
+   started from, ``getcwd()`` fails with ERANGE.
 
    :Operation: RIA_OP_GETCWD 0x2B
    :C proto: unistd.h
