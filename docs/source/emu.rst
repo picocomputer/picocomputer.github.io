@@ -4,6 +4,11 @@ RP6502-EMU
 
 RP6502 - Emulator
 
+.. note::
+
+   This page still needs a major review to bring it up to the standard of
+   the manual.
+
 
 Introduction
 ============

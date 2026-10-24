@@ -6,7 +6,8 @@ RP6502 - Field Programmable Gate Array
 
 .. note::
 
-   The FPGA is new and will have better documentation later.
+   This page still needs a major review to bring it up to the standard
+   of the manual.
 
 
 Introduction

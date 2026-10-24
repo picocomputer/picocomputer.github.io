@@ -4,6 +4,11 @@ RP6502-WEB
 
 RP6502 - Web Player
 
+.. note::
+
+   This page still needs a major review to bring it up to the standard of
+   the manual.
+
 
 Introduction
 ============

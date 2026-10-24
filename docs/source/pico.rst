@@ -4,6 +4,16 @@ RP6502-PICO
 
 RP6502 - Standalone Machine
 
+.. image:: _static/ria-w-sandwich.jpg
+   :width: 600
+   :align: center
+   :alt: RP6502-PICO Photo
+
+.. note::
+
+   This page still needs a major review to bring it up to the standard of
+   the manual.
+
 The RP6502-PICO is the standalone machine, a 6502 computer you build
 yourself. It is the original Picocomputer, and the project is named after
 the Raspberry Pi Pico it was first built on. The machine is one circuit
@@ -33,11 +43,6 @@ from VS Code. A 6502 program can call a BBS through an emulated Hayes
 modem, or answer incoming calls as a BBS. An RP6502-RIA has none of these.
 The other machines use the Bluetooth of their host. Networking is only on
 the RP6502-PICO today, and support for other machines is planned.
-
-.. image:: _static/ria-w-sandwich.jpg
-   :width: 600
-   :align: center
-   :alt: RP6502-PICO Photo
 
 Schematic
 =========
