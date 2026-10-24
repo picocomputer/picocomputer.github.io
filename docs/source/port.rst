@@ -11,15 +11,14 @@ Introduction
 Every player should get a great experience from your game, whatever
 machine they play it on. The same ROM runs on the :doc:`pico`, the
 :doc:`fpga`, the :doc:`emu`, and the :doc:`web`, and most of what a
-program does works the same on all of them. This page covers the places
-where they differ, and how to write a program that works on every one of
-them.
+program does works the same on all of them. This page shows how to reach
+that widest audience: the number of sprites that fit on one row on every
+machine, gamepad input that works with nearly every gamepad, and data
+files and saves kept in the right place.
 
-The sections follow the order in which a game meets the differences: how
-many sprites it can draw, how it reads gamepads, and where it keeps its
-data and its saves. A program that opens the user's own files meets a few
-more, which the end of `Filesystems`_ describes. `Compatibility`_ sums up
-the differences in one table.
+A program that opens the user's own files meets a few more differences,
+which the end of `Filesystems`_ describes. `Compatibility`_ sums up the
+differences in one table.
 
 
 .. _port-sprite-limits:
@@ -33,9 +32,9 @@ draw more sprites than a program can move each frame. Sixty bullets
 already crowd the screen of a bullet-hell game, and moving that many each
 frame takes much of the 6502's time.
 
-The figures in this section count only the sprites drawn on a single row
-of the canvas. A hundred paletted 32x32 sprites on one row cover 3,200
-pixels, ten times the width of a 320-wide canvas, and they still fit.
+The figures below count only the sprites drawn on a single row of the
+canvas. A hundred paletted 32x32 sprites on one row cover 3,200 pixels,
+ten times the width of a 320-wide canvas, and they still fit.
 
 The figures are for the :doc:`fpga`, which has the least time per row of
 any machine, so sprites that fit there fit everywhere. They are also the
@@ -43,47 +42,6 @@ easiest to compute. On the RP6502-FPGA, the video system is a hardware
 renderer built in programmable logic, a real video chip. The :doc:`pico`,
 :doc:`emu`, and :doc:`web` render in software, which modern CPUs can do
 significantly faster than an affordable FPGA.
-
-This table gives the most sprites of each type that fit on one row, with
-all of them on that row. Sprites spread across different rows can number
-far more. Paletted and custom sprites are the sprites of :ref:`mode 5
-<vga-mode-5>`, and 16-bit and affine sprites are the sprites of
-:ref:`mode 4 <vga-mode-4>`.
-
-.. list-table:: Maximum sprites with all of them on one row
-   :widths: 40 30 30
-   :header-rows: 1
-
-   * -
-     - 320 wide
-     - 640 wide
-   * - 16-bit, 8x8
-     - 354
-     - 176
-   * - 16-bit, 16x16
-     - 245
-     - 122
-   * - 16-bit, 32x32
-     - 151
-     - 75
-   * - Paletted, 8x8
-     - 269
-     - 91
-   * - Paletted, 16x16
-     - 186
-     - 63
-   * - Paletted, 32x32
-     - 115
-     - 39
-   * - Affine, 8x8
-     - 145
-     - 72
-   * - Affine, 16x16
-     - 83
-     - 41
-   * - Affine, 32x32
-     - 45
-     - 22
 
 When the sprites of a row do not fit in its time, the result depends on
 the machine:
@@ -96,8 +54,7 @@ the machine:
   second, and the time of the 6502 falls behind the time of the clock on
   the wall.
 
-To work out a row of your own, start from the time that the RP6502-FPGA
-has for each row. Its video logic runs at 50.4 MHz, twice the 25.2 MHz
+The video logic of the RP6502-FPGA runs at 50.4 MHz, twice the 25.2 MHz
 pixel clock, and each row of the video signal is 800 pixel clocks long,
 of which 640 are visible. That gives 1,600 clocks per row. A 320-wide
 canvas is shown with every row doubled, so each canvas row gets 3,200
@@ -108,8 +65,10 @@ Fill layers and sprites are drawn by separate engines, each with its own
 XRAM read every clock, so fill never takes time from sprites.
 
 To check a row, add up the costs below for every sprite and compare the
-total with 1,600 clocks at 640 wide or 3,200 at 320 wide. The figures are
-measured on the RP6502-FPGA.
+total with 1,600 clocks at 640 wide or 3,200 at 320 wide. Paletted and
+custom sprites are the sprites of :ref:`mode 5 <vga-mode-5>`, and 16-bit
+and affine sprites are the sprites of :ref:`mode 4 <vga-mode-4>`. The
+figures are measured on the RP6502-FPGA.
 
 .. list-table::
    :widths: 40 15 15 15 15
@@ -166,8 +125,46 @@ pixels at half a clock each. The row also costs 9 clocks once, and 768
 clocks for 256 palette cache misses, which load all 512 colors of 1 KB of
 palettes. That leaves 823 clocks at 640 wide, room for 63 of these
 sprites on one row, and 2,423 at 320 wide, room for 186. 16-bit sprites
-have no palette, so a row of them has no cache misses. The table at the
-start of this section applies the same calculation to every sprite type.
+have no palette, so a row of them has no cache misses.
+
+The next table applies the same calculation to every sprite type, with
+all sprites on the same row. Sprites spread across different rows can
+number far more.
+
+.. list-table:: Maximum sprites with all of them on one row
+   :widths: 40 30 30
+   :header-rows: 1
+
+   * -
+     - 320 wide
+     - 640 wide
+   * - 16-bit, 8x8
+     - 354
+     - 176
+   * - 16-bit, 16x16
+     - 245
+     - 122
+   * - 16-bit, 32x32
+     - 151
+     - 75
+   * - Paletted, 8x8
+     - 269
+     - 91
+   * - Paletted, 16x16
+     - 186
+     - 63
+   * - Paletted, 32x32
+     - 115
+     - 39
+   * - Affine, 8x8
+     - 145
+     - 72
+   * - Affine, 16x16
+     - 83
+     - 41
+   * - Affine, 32x32
+     - 45
+     - 22
 
 A custom sprite costs the same as a paletted sprite of the same size,
 plus half a clock for each entry in the list. The list is read four bytes
@@ -228,6 +225,22 @@ today have four face buttons and report nothing in the C and Z bits, or
 report other buttons there, such as rear paddles. C and Z stay in the
 report for programs that let players map buttons themselves.
 
+The four face buttons vary only in labeling: XY/AB, YX/BA, or
+Square/Triangle/Cross/Circle. The labeling rarely matters to a game until
+it prints a button's name, or the buttons stand in for directions. For
+those, the type bits of DPAD give the labeling of gamepad models with a
+known layout, such as Xbox, Nintendo, and PlayStation pads. Many gamepads
+report type 0, unknown, including every gamepad in RetroArch, the pads on
+an Analogue Pocket dock, and most generic USB gamepads. For a gamepad of
+type 0, a game can print which gamepad it was made for, or provide a
+setting.
+
+Home is the Guide button on an Xbox gamepad and the PS button on a
+PlayStation one. Steam, Windows, and macOS can open a menu when Home is
+pressed, and nothing in the report shows when that happens. In RetroArch
+and on the Pocket, the Home bit is never set. So a portable game does not
+use Home.
+
 A game that uses one stick and one or two buttons works with nearly every
 gamepad when it merges the d-pad with the left stick and gives each
 action more than one face button. The low four bits of DPAD and of STICKS
@@ -259,22 +272,6 @@ names from the code block of :ref:`Gamepads <ria-gamepads>` in your
 The report has digital bits for every stick and trigger as well as their
 analog values. A game that reads only the digital bits works with every
 gamepad, including those without analog sticks or triggers.
-
-The four face buttons vary only in labeling: XY/AB, YX/BA, or
-Square/Triangle/Cross/Circle. The labeling rarely matters to a game until
-it prints a button's name, or the buttons stand in for directions. For
-those, the type bits of DPAD give the labeling of gamepad models with a
-known layout, such as Xbox, Nintendo, and PlayStation pads. Many gamepads
-report type 0, unknown, including every gamepad in RetroArch, the pads on
-an Analogue Pocket dock, and most generic USB gamepads. For a gamepad of
-type 0, a game can print which gamepad it was made for, or provide a
-setting.
-
-Home is the Guide button on an Xbox gamepad and the PS button on a
-PlayStation one. Steam, Windows, and macOS can open a menu when Home is
-pressed, and nothing in the report shows when that happens. In RetroArch
-and on the Pocket, the Home bit is never set. So a portable game does not
-use Home.
 
 
 .. _port-filesystems:
