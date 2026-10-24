@@ -78,8 +78,9 @@ watt for the RP6502-PICO itself.
 Inside the machine, the console is a UART between the RIA and the VGA
 module: 115200 bps, 8-bit words, no parity, 1 stop bit.
 
-The VGA terminal stops responding to the size and feature queries of
-:doc:`term` if a telnet or USB terminal is connected. **If both USB and
+The VGA terminal stops responding to the :ref:`size query
+<term-terminal-size>` of the line editor if a telnet or USB terminal is
+connected. **If both USB and
 telnet terminals are connected at the same time and both reply, the
 system may get confused.** If pagination or word-wrap seem wrong, check
 what terminals are attached to the console manifold.

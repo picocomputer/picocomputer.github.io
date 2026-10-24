@@ -135,7 +135,8 @@ can use.
   PSG and OPL2 sound generators.
 - :doc:`vga`: canvases, video modes, sprites, and the scanline
   programming underneath.
-- :doc:`term`: the console, its escape sequences, and the line editor.
+- :doc:`term`: the console, the line editor, and the terminal with its
+  escape sequences.
 - :doc:`port`: the portability guide, covering sprite limits, gamepads and
   filesystems.
 
