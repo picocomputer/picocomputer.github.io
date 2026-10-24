@@ -1737,10 +1737,6 @@ the array covers the sprites before it.
        each pixel twice across or down, so a doubled 16x16 image covers
        32x32 canvas pixels.
 
-On the :doc:`fpga`, the VGA system draws sprites fastest when all their
-palettes are within 1 KB of contiguous XRAM, as :ref:`Sprite Limits
-<port-sprite-limits>` explains.
-
 .. tab:: C
 
    .. code-block:: C
@@ -1933,16 +1929,14 @@ palettes are within 1 KB of contiguous XRAM, as :ref:`Sprite Limits
       MODE5_CSPRITE_ATTRIBUTES      = 9
       MODE5_CSPRITE_SIZE            = 10
 
-In a sprite palette, set the alpha bit of each color that shows, and
-clear it in the transparent color. In the built-in palette, color 0 is
-transparent.
-
 ``typedef MODE5_IMAGE(4, 16) image_t;`` declares a 4-bit color image of
-size 16x16. The pixels pack into bytes as in `Mode 3: Bitmap`_.
+size 16x16. An image has the same format as a :ref:`mode 2 <vga-mode-2>`
+tile of the same size and color depth. To make a tile into a sprite,
+point ``xram_sprite_ptr`` at the tile.
 
 With OPTIONS set to custom, each sprite sets its own size, color depth,
-and orientation in ``width_height`` and ``attributes``. Only custom
-sprites can be flipped or doubled.
+and orientation in ``width_height`` and ``attributes``. Each side can be
+any multiple of 4 pixels up to 64, which allows rectangular sprites.
 
 For a custom sprite, declare the image with ``MODE5_CUSTOM_IMAGE``. For
 example, ``typedef MODE5_CUSTOM_IMAGE(4, 24, 16) image_t;`` declares a
