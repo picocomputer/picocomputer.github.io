@@ -187,8 +187,12 @@ a plane behind it shows through.
 Like the Linux console, the terminal identifies itself as a VT102 and
 implements most of the escape sequences of the Linux console, with
 additions from ECMA-48, xterm, later DEC terminals, kitty, and SyncTERM.
-`Compatibility and Limits`_ lists the differences and where each
-addition comes from, and the tables below list the sequences.
+`To Do`_ lists where it falls short, and the tables below list the
+sequences.
+
+Text is in the 8-bit code page of :ref:`RIA_ATTR_CODE_PAGE
+<api-ria-attributes>`, one byte for each character. The terminal does
+not decode UTF-8.
 
 Some older terminals could not keep up at full speed, so a program sent
 padding or waited after a slow operation such as a screen clear, or
@@ -196,74 +200,44 @@ paused when the terminal sent XOFF. This terminal keeps up with the
 console at full speed, even through a screen clear, so a program needs
 no flow control, padding, or delays.
 
-Compatibility and Limits
-------------------------
+To Do
+-----
 
-* Answers Primary DA (``CSI c``) with ``ESC[?6c``, the reply of a VT102
-  and of the Linux console. It does not implement the ECMA-48 modes,
-  which ``CSI h`` and ``CSI l`` set without a ``?``, such as insert mode
-  (``CSI 4 h``). A program that expects a VT102 and inserts text with
-  insert mode overwrites text instead. ICH (``CSI n @``) inserts
-  characters.
-* Implements most of the sequences of the Linux console, which
-  ``man 4 console_codes`` documents. It does not implement VT as a line
-  feed, the null and user mappings (``ESC ( U`` and ``ESC ( K``), the
-  palette sequences (``OSC P`` and ``OSC R``), DECID (``ESC Z``), DECALN
-  (``ESC # 8``), the cursor-key and keypad modes, keyboard autorepeat
-  (``?8``), mouse reporting, the keyboard LEDs, HPR and VPR, ED 3, SGR
-  10-12, reverse video for the whole screen (``?5``), or the private
-  sequences of Linux (``CSI ]``).
-* FF clears the screen and homes the cursor, where the Linux console, a
-  VT102, and xterm treat FF as a line feed. SGR 100-107 select the bright
-  backgrounds, colors 8-15, where the Linux console draws the same
-  colors as 40-47.
-* From ECMA-48, beyond the Linux console: scrolling (SU and SD), tab
-  movement (CHT and CBT), rapid blink (SGR 6), conceal (SGR 8),
-  strikethrough (SGR 9), and overline (SGR 53), with their resets.
-* From xterm: 256-color (``;5``) and 24-bit color (``;2``) in SGR 38 and
-  48, dynamic colors in OSC 10, 11, and 12, and the alternate screen
-  (``?47``, ``?1047``, and ``?1049``). The Linux console accepts the same
-  color codes but reduces them to 16 foreground colors and 8 background
-  colors.
-* From ITU T.416: the transparent color, ``;1`` in SGR 38 and 48.
-* From kitty: underline color in SGR 58, with the arguments of SGR 38.
-  The terminal does not implement SGR 59, which resets the underline
-  color in kitty.
-* From later DEC terminals: soft reset (DECSTR) and cursor styles
-  (DECSCUSR).
-* From SyncTERM: the switch for iCE colors (``?33``).
-* Text is in the 8-bit code page of :ref:`RIA_ATTR_CODE_PAGE
-  <api-ria-attributes>`, one byte for each character. The terminal does
-  not decode UTF-8, and it does not implement ``ESC %``, which selects
-  UTF-8 on the Linux console.
+These sequences of the VT102 and the Linux console are missing or work
+differently. Each one is on the to-do list.
 
-Behavior Notes
---------------
+VT102:
 
-**Blink and iCE colors.** SGR 5 blinks the foreground of a cell, and
-SGR 6 blinks it twice as fast. In the text mode of an IBM PC, each
-character has an attribute byte, and one bit of it makes the character
-blink. Some ANSI art was drawn with blinking turned off in the display
-adapter of the PC, so that bit brightened the background instead and
-gave 16 background colors. This is called iCE color. ``CSI ?33h``, from
-SyncTERM, turns on iCE colors, and SGR 5 and 6 then brighten the
-background instead of blinking. ``CSI ?33l`` turns iCE colors off,
-which is the default.
+* FF (``0x0C``) clears the screen and homes the cursor. A VT102 moves
+  the cursor down a line, as LF does, and so do the Linux console and
+  xterm.
+* Insert mode (``CSI 4 h``) and newline mode (``CSI 20 h``), the
+  ECMA-48 modes that ``CSI h`` and ``CSI l`` set without a ``?``, are
+  missing. A program that expects a VT102 and inserts text with insert
+  mode overwrites text instead. ICH (``CSI n @``) inserts characters.
+* VT (``0x0B``), which moves the cursor down a line, as LF does.
+* DECID (``ESC Z``), which asks for the same reply as Primary DA.
+* Double-height and double-width lines (``ESC # 3`` to ``ESC # 6``), and
+  DECALN (``ESC # 8``), which fills the screen with E.
+* Cursor-key mode (``?1``) and the keypad modes (``ESC =`` and
+  ``ESC >``), which change what the arrow keys and the keypad send.
+* Reverse video for the whole screen (``?5``).
+* Keyboard autorepeat (``?8``) and the keyboard LEDs (``CSI q``).
 
-**Alternate screen buffer.** The alternate screen is a second screen for
-a full-screen program. ``CSI ?47h`` switches to it, and ``CSI ?47l``
-switches back to the normal screen, with its text as it was. ``?1047``
-also clears the alternate screen when it switches back. ``?1049`` saves
-the cursor and clears the alternate screen when it switches to it, and
-restores the cursor when it switches back. The terminfo entries of
-xterm use ``?1049``, so most full-screen software on Unix sends it.
+Linux console:
 
-**DEC Special Graphics.** The terminal has a built-in font of
-line-drawing characters, with corners, tees, horizontal and vertical
-lines, and a few symbols. Software written for DEC terminals and xterm,
-such as programs that use curses, draws borders and frames with it
-rather than with the box characters of a code page. See `Charset
-Designation`_.
+* The null and user mappings (``ESC ( U`` and ``ESC ( K``).
+* The palette sequences (``OSC P`` and ``OSC R``).
+* Mouse reporting (``?9`` and ``?1000``).
+* HPR (``CSI a``) and VPR (``CSI e``), which move the cursor right and
+  down relative to its position.
+* ED 3 (``CSI 3 J``), which erases the scrollback.
+* SGR 10-12, which select the font mapping.
+* The private sequences of Linux (``CSI ]``).
+
+kitty:
+
+* SGR 59, which resets the underline color that SGR 58 sets.
 
 
 C0 Control Codes
@@ -689,6 +663,13 @@ DEC Private Modes
 
 Set with ``CSI ?n h``, reset with ``CSI ?n l``. Multiple modes
 may be combined in one sequence (semicolon-separated parameters).
+
+Mode 33 is for ANSI art. In the text mode of an IBM PC, one bit of the
+attribute byte of each character makes it blink. Some ANSI art was drawn
+with blinking turned off in the display adapter, so that bit brightened
+the background instead and gave 16 background colors. This is called
+iCE color. Mode 33, from SyncTERM, makes SGR 5 and 6 brighten the
+background in the same way.
 
 .. list-table::
    :widths: 6 10 22 62
