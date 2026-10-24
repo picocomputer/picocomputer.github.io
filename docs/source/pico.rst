@@ -9,11 +9,6 @@ RP6502 - Standalone Machine
    :align: center
    :alt: RP6502-PICO Photo
 
-.. note::
-
-   This page still needs a major review to bring it up to the standard of
-   the manual.
-
 The RP6502-PICO is the standalone machine, a 6502 computer you build
 yourself. It is the original Picocomputer, and the project is named after
 the Raspberry Pi Pico it was first built on. The machine is one circuit
@@ -25,9 +20,9 @@ Bluetooth. The other Pico runs the video system, the RP6502 Video
 Graphics Array (:doc:`vga`).
 
 This page is the reference for the RP6502-PICO: its schematic and how to
-build one, the console and the monitor, storage, settings, the devices it
-drives over USB and Bluetooth, its network features, firmware updates,
-and the PIX bus between its two Picos.
+build one, firmware updates, the console and the monitor, storage,
+settings, the devices it drives over USB and Bluetooth, its network
+features, and the PIX bus between its two Picos.
 
 Schematic and Building
 ======================
@@ -43,6 +38,32 @@ today without ever touching a soldering iron. Choose your path.
 
 - :doc:`pico-solder`
 - :doc:`pico-socket`
+
+
+.. _pico-firmware-updates:
+
+Firmware Updates
+================
+
+Download the `pico zip
+<https://github.com/picocomputer/rp6502/releases/latest>`_ and unpack the
+UF2 files inside it. The VGA file is the same for everyone. The RIA file
+depends on which Pi Pico you have. Use the "-w" if you have a Pi Pico 2 W.
+
+To program a new Pi Pico, or one with a failed flash, hold its BOOTSEL
+button while plugging it into a computer, and copy the UF2 file to the
+storage device that appears. The computer can even be another
+RP6502-PICO, so one Picocomputer can build or repair the next. A failed
+flash cannot "brick" a Pi Pico, because this method always works.
+
+On a working system, updates don't need BOOTSEL. Put the UF2 files on a
+USB drive, plug it into the RIA, and flash both from the monitor. The
+system reboots after each one.
+
+.. code-block:: text
+
+  FLASH rp6502-<version>-ria-w.uf2
+  FLASH rp6502-<version>-vga.uf2
 
 
 .. _pico-console:
@@ -721,31 +742,6 @@ commands or play your own sounds. Typically you request reads on
 can also arm a write after reading and verifying a card. The cached
 tag image is not refreshed by a write, so re-present the card before the
 next ``NFC_CMD_READ`` if you want to read back what you wrote.
-
-
-.. _pico-firmware-updates:
-
-Firmware Updates
-================
-
-Download the `pico zip
-<https://github.com/picocomputer/rp6502/releases/latest>`_ and unpack the
-UF2 files inside it. The VGA file is the same for everyone. The RIA file
-depends on which Pi Pico you have. Use the "-w" if you have a Pi Pico 2 W.
-
-Updates don't need BOOTSEL. Put the UF2 files on a USB drive, plug it into
-the RIA, and flash both from the monitor. The system reboots after each
-one.
-
-.. code-block:: text
-
-  FLASH rp6502-<version>-ria-w.uf2
-  FLASH rp6502-<version>-vga.uf2
-
-It is not possible to "brick" a Pi Pico from a failed flash. You can always
-recover with the BOOTSEL method: hold the BOOTSEL button of the Pi Pico
-while plugging it into a computer, and copy the UF2 file to the storage
-device that appears.
 
 
 .. _pico-pix:
