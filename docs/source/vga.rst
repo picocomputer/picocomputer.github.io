@@ -1634,8 +1634,12 @@ the ``transform`` of each ``mode4_asprite_t``. The transform is a 3x3
 affine matrix without its bottom row, which is always 0, 0, 1. Its six
 values are signed 8.8 fixed point, in the order a00, a01, b0, a10, a11,
 b1. ``MODE4_A00`` to ``MODE4_B1`` are their indexes in C and their byte
-offsets in assembly. The matrix maps each pixel of the sprite on the
-canvas to a pixel of the image.
+offsets in assembly.
+
+The transform follows the Nintendo convention, the one used by Mode 7 of
+the Super Nintendo and the affine sprites of the Game Boy Advance. With
+2.0 in a00 and a11, the VGA system steps through the image two pixels
+for each pixel of the canvas, so the image appears at half size.
 
 An affine sprite draws only inside a square the size of its image, even
 when the transform scales the image up. Anything that the transform
