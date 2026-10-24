@@ -219,8 +219,8 @@ Bitmap`_ describes how pixels pack into bytes at every color depth.
 **Step 3** fills in the bitmap's configuration structure and copies it
 into XRAM. The structure holds the bitmap's size, 320x160, and where the
 bitmap is in XRAM. To use the built-in palette, the program sets the
-palette address to $FFFF. `Mode 3: Bitmap`_ declares ``mode3_config_t``,
-and `Structures`_ explains each member. The llvm-mos program sets just
+palette address to $FFFF. `Mode 3: Bitmap`_ declares ``mode3_config_t``
+and explains each member. The llvm-mos program sets just
 four members, because C99 designated initializers set the rest to 0.
 cc65 does not have designated initializers, so its program sets every
 member.
@@ -364,34 +364,10 @@ sprite moves. Write new pixels into a bitmap, and the picture changes.
 You can make these changes at any time, without programming the
 scanlines again.
 
-In modes 1 to 3, the configuration structure starts with these members:
-
-.. list-table::
-   :widths: 35 65
-   :header-rows: 1
-
-   * - Member
-     - Meaning
-   * - ``xram_data_ptr``
-     - The XRAM address of the data: the cells for mode 1, the tile map
-       for mode 2, or the bitmap for mode 3.
-   * - ``xram_palette_ptr``
-     - The XRAM address of the palette, as `Colors and Palettes`_
-       describes.
-   * - ``width_chars``, ``height_chars``, ``width_tiles``,
-       ``height_tiles``, ``width_px``, ``height_px``
-     - The size of the image: in characters for mode 1, in tiles for
-       mode 2, and in pixels for mode 3.
-   * - ``x_pos_px``, ``y_pos_px``
-     - Where the image's top left pixel goes on the canvas, in canvas
-       pixels. They can be negative, so an image can start above or to
-       the left of the canvas.
-   * - ``x_wrap``, ``y_wrap``
-     - When ``x_wrap`` is true, the image repeats across the canvas.
-       When ``y_wrap`` is true, it repeats down the canvas.
-
-:ref:`Mode 1 <vga-mode-1>` adds ``xram_font_ptr`` for its font, and
-:ref:`mode 2 <vga-mode-2>` adds ``xram_tile_ptr`` for its tiles.
+In modes 1 to 3, the configuration structure gives the XRAM address of
+the image and its palette, the size of the image, where it goes on the
+canvas, and whether it repeats. The section of each mode lists the
+members of its structure.
 
 An image does not have to be the size of the canvas. A smaller image
 covers part of the canvas, and the layer around it is transparent,
@@ -789,15 +765,37 @@ For example, this call puts mode 1 on plane 0, in 8-bit color with the
 
   xreg_vga_mode1(MODE1_8BPP | MODE1_8X16, xaddr, 0);
 
-Every color depth uses the same configuration structure,
-``mode1_config_t``, with the members described in `Structures`_ plus
-``xram_font_ptr`` for the font. Each color depth has its own structure
-for a cell, named to match its constant: ``MODE1_1BPP`` cells are
-``mode1_1bpp_data_t``, ``MODE1_4BPP`` cells are ``mode1_4bpp_data_t``,
-and so on. The cells are stored row by row from the top left. Each is 8
-pixels wide, so a row of 40 cells spans a canvas 320 pixels wide. In
-16-bit color, the VGA system ignores a cell's ``attributes``, so your
-program can keep its own data there.
+The configuration structure is ``mode1_config_t``:
+
+.. list-table::
+   :widths: 35 65
+   :header-rows: 1
+
+   * - Member
+     - Description
+   * - ``x_wrap``, ``y_wrap``
+     - When ``x_wrap`` is true, the cells repeat across the canvas. When
+       ``y_wrap`` is true, they repeat down the canvas.
+   * - ``x_pos_px``, ``y_pos_px``
+     - Where the top left pixel of the first cell goes on the canvas.
+       They can be negative, so the cells can start above or to the left
+       of the canvas.
+   * - ``width_chars``, ``height_chars``
+     - The number of cells across and down.
+   * - ``xram_data_ptr``
+     - The XRAM address of the cells.
+   * - ``xram_palette_ptr``
+     - The XRAM address of the palette, or $FFFF for the built-in
+       palette.
+   * - ``xram_font_ptr``
+     - The XRAM address of the font, or $FFFF for the built-in font.
+
+Each color depth has its own structure for a cell, named to match its
+constant: ``MODE1_1BPP`` cells are ``mode1_1bpp_data_t``, ``MODE1_4BPP``
+cells are ``mode1_4bpp_data_t``, and so on. The cells are stored row by
+row from the top left. Each is 8 pixels wide, so a row of 40 cells spans
+a canvas 320 pixels wide. In 16-bit color, the VGA system ignores a
+cell's ``attributes``, so your program can keep its own data there.
 
 .. tab:: C
 
@@ -1040,10 +1038,33 @@ color, using the configuration structure at ``xaddr``:
 
   xreg_vga_mode2(MODE2_4BPP | MODE2_8X8, xaddr, 0);
 
-The configuration structure is ``mode2_config_t``, with the members
-described in `Structures`_ plus ``xram_tile_ptr`` for the tiles. The map
-is an array of tile IDs, one byte each, stored row by row from the top
-left. Every tile of a map shares the palette at ``xram_palette_ptr``.
+The configuration structure is ``mode2_config_t``:
+
+.. list-table::
+   :widths: 35 65
+   :header-rows: 1
+
+   * - Member
+     - Description
+   * - ``x_wrap``, ``y_wrap``
+     - When ``x_wrap`` is true, the map repeats across the canvas. When
+       ``y_wrap`` is true, it repeats down the canvas.
+   * - ``x_pos_px``, ``y_pos_px``
+     - Where the top left pixel of the map goes on the canvas. They can
+       be negative, so the map can start above or to the left of the
+       canvas.
+   * - ``width_tiles``, ``height_tiles``
+     - The number of tiles across and down the map.
+   * - ``xram_data_ptr``
+     - The XRAM address of the map.
+   * - ``xram_palette_ptr``
+     - The XRAM address of the palette, or $FFFF for the built-in
+       palette. Every tile of the map uses this palette.
+   * - ``xram_tile_ptr``
+     - The XRAM address of the tiles.
+
+The map is an array of tile IDs, one byte each, stored row by row from
+the top left.
 
 .. tab:: C
 
@@ -1212,8 +1233,28 @@ configuration structure at ``xaddr``:
 
   xreg_vga_mode3(MODE3_4BPP, xaddr, 0);
 
-The configuration structure is ``mode3_config_t``, with the members
-described in `Structures`_.
+The configuration structure is ``mode3_config_t``:
+
+.. list-table::
+   :widths: 35 65
+   :header-rows: 1
+
+   * - Member
+     - Description
+   * - ``x_wrap``, ``y_wrap``
+     - When ``x_wrap`` is true, the bitmap repeats across the canvas. When
+       ``y_wrap`` is true, it repeats down the canvas.
+   * - ``x_pos_px``, ``y_pos_px``
+     - Where the top left pixel of the bitmap goes on the canvas. They can
+       be negative, so the bitmap can start above or to the left of the
+       canvas.
+   * - ``width_px``, ``height_px``
+     - The size of the bitmap, in pixels.
+   * - ``xram_data_ptr``
+     - The XRAM address of the bitmap.
+   * - ``xram_palette_ptr``
+     - The XRAM address of the palette, or $FFFF for the built-in
+       palette.
 
 .. tab:: C
 
@@ -1364,18 +1405,28 @@ sprite array at ``xaddr``:
   xreg_vga_mode4(0, xaddr, length, 1);
 
 Each sprite in the sprite array is a ``mode4_sprite_t``, or a
-``mode4_asprite_t`` with ``MODE4_AFFINE`` set in OPTIONS:
+``mode4_asprite_t`` with ``MODE4_AFFINE`` set in OPTIONS. A sprite later
+in the array covers the sprites before it.
 
-- ``x_pos_px`` and ``y_pos_px`` are the position of the sprite on the
-  canvas.
-- ``xram_sprite_ptr`` is the XRAM address of its image.
-- ``log_size`` is the size of the image.
-- ``has_opacity_metadata`` is true when opacity metadata follows the
-  image.
-- ``transform`` rotates and scales an affine sprite.
+.. list-table::
+   :widths: 35 65
+   :header-rows: 1
 
-`Structures`_ describes how a program moves sprites and in what order
-the VGA system draws them.
+   * - Member
+     - Description
+   * - ``x_pos_px``, ``y_pos_px``
+     - Where the top left pixel of the sprite goes on the canvas. They can
+       be negative, so the sprite can start above or to the left of the
+       canvas.
+   * - ``xram_sprite_ptr``
+     - The XRAM address of the image.
+   * - ``log_size``
+     - The size of the image, as a power of 2.
+   * - ``has_opacity_metadata``
+     - True when the image has opacity metadata.
+   * - ``transform``
+     - In ``mode4_asprite_t`` only. The affine transform, which rotates
+       and scales the sprite.
 
 .. tab:: C
 
@@ -1446,12 +1497,12 @@ the VGA system draws them.
 
       MODE4_AFFINE = $01
 
-      MODE4_A00 = 0
-      MODE4_A01 = 1
-      MODE4_B0  = 2
-      MODE4_A10 = 3
-      MODE4_A11 = 4
-      MODE4_B1  = 5
+      MODE4_A00 = 0 * 2
+      MODE4_A01 = 1 * 2
+      MODE4_B0  = 2 * 2
+      MODE4_A10 = 3 * 2
+      MODE4_A11 = 4 * 2
+      MODE4_B1  = 5 * 2
 
       .macro MODE4_OPACITY_METADATA start, end, solid
           .dword ((solid) << 31) | ((start) << 16) | (end)
@@ -1509,12 +1560,12 @@ the VGA system draws them.
 
       MODE4_AFFINE = $01
 
-      MODE4_A00 = 0
-      MODE4_A01 = 1
-      MODE4_B0  = 2
-      MODE4_A10 = 3
-      MODE4_A11 = 4
-      MODE4_B1  = 5
+      MODE4_A00 = 0 * 2
+      MODE4_A01 = 1 * 2
+      MODE4_B0  = 2 * 2
+      MODE4_A10 = 3 * 2
+      MODE4_A11 = 4 * 2
+      MODE4_B1  = 5 * 2
 
       .macro MODE4_OPACITY_METADATA start, end, solid
           .4byte (((\solid) << 31) | ((\start) << 16) | (\end))
@@ -1550,23 +1601,26 @@ the VGA system draws them.
       MODE4_ASPRITE_HAS_OPACITY_METADATA = 19
       MODE4_ASPRITE_SIZE                 = 20
 
-A mode 4 image is always square, and each pixel is a 16-bit color. Each
-side is 2 to the power ``log_size`` pixels, from 1 to 128. For example,
-``typedef MODE4_IMAGE(4) image_t;`` declares a 16x16 image.
+A mode 4 image is always square, with sides of 2 to the power
+``log_size`` pixels, from 1 to 128. For example,
+``typedef MODE4_IMAGE(4) image_t;`` declares a 16x16 image. Each pixel
+is a 16-bit color, as `Colors and Palettes`_ describes.
 
-Opacity metadata lets the VGA system skip the transparent pixels at the
-ends of each row. When ``has_opacity_metadata`` is true, the opacity
-metadata follows the image, one 32-bit value for each row.
-``MODE4_IMAGE_WITH_METADATA`` declares an image with its opacity
-metadata, and ``MODE4_OPACITY_METADATA(start, end, solid)`` builds the
-value for one row. ``start`` is the first opaque pixel of the row, and
-``end`` is one past the last. The VGA system draws only the pixels from
-``start`` up to ``end``. When ``solid`` is true, it draws them without
-checking the alpha bit, so set ``solid`` only when every one of them is
-opaque. Affine sprites ignore opacity metadata.
+Opacity metadata makes a sprite faster to draw by letting the VGA
+system skip the transparent pixels at the ends of each row. To use it,
+declare the image with ``MODE4_IMAGE_WITH_METADATA`` in place of
+``MODE4_IMAGE``, and set ``has_opacity_metadata``. Affine sprites ignore
+opacity metadata.
 
-This code declares a 16x16 image with its opacity metadata, and sets row
-0 to draw pixels 4 to 11, all opaque:
+Each row of the image has a value in ``opacity_metadata``, which
+``MODE4_OPACITY_METADATA(start, end, solid)`` builds. ``start`` is the
+first opaque pixel of the row, and ``end`` is one past the last. The VGA
+system draws only the pixels from ``start`` up to ``end``. When all of
+them are opaque, set ``solid``. The VGA system then draws them without
+checking each alpha bit.
+
+This code declares a 16x16 image with opacity metadata, and sets row 0
+to draw pixels 4 to 11, all opaque:
 
 .. code-block:: C
 
@@ -1575,16 +1629,18 @@ This code declares a 16x16 image with its opacity metadata, and sets row
 
   image.opacity_metadata[0] = MODE4_OPACITY_METADATA(4, 12, true);
 
-Affine sprites can be rotated and scaled. Their ``transform`` is a 3x3
-affine matrix without its bottom row, which is always 0, 0, 1. It holds
-six signed 8.8 fixed-point values, in the order a00, a01, b0, a10, a11,
-b1, and ``MODE4_A00`` to ``MODE4_B1`` are their indexes. The matrix maps
-each pixel of the sprite on the canvas to a pixel of the image.
+To rotate and scale sprites, set ``MODE4_AFFINE`` in OPTIONS and fill in
+the ``transform`` of each ``mode4_asprite_t``. The transform is a 3x3
+affine matrix without its bottom row, which is always 0, 0, 1. Its six
+values are signed 8.8 fixed point, in the order a00, a01, b0, a10, a11,
+b1. ``MODE4_A00`` to ``MODE4_B1`` are their indexes in C and their byte
+offsets in assembly. The matrix maps each pixel of the sprite on the
+canvas to a pixel of the image.
 
-An affine sprite draws only inside its own square, the size that
-``log_size`` gives it, even when the transform scales the image up.
-Whatever the transform moves outside that square is cut off, so leave a
-transparent margin around an image that you scale up or rotate.
+An affine sprite draws only inside a square the size of its image, even
+when the transform scales the image up. Anything that the transform
+moves outside the square is cut off, so leave a transparent margin
+around an image that you scale up or rotate.
 
 
 .. _vga-mode-5:
@@ -1648,12 +1704,37 @@ custom sprites on plane 2, from a second sprite array at ``xaddr2``:
   xreg_vga_mode5(MODE5_4BPP | MODE5_16X16, xaddr, length, 1);
   xreg_vga_mode5(MODE5_CUSTOM, xaddr2, length2, 2);
 
-The sprite array holds ``mode5_sprite_t``, or ``mode5_csprite_t`` with
-OPTIONS set to custom. `Structures`_ describes how a program moves
-sprites and in what order the VGA system draws them. ``xram_sprite_ptr``
-is the XRAM address of the sprite's image, and ``palette_ptr`` is the
-XRAM address of its palette, so each sprite can have its own palette. On
-the :doc:`fpga`, the VGA system draws sprites fastest when all their
+Each sprite in the sprite array is a ``mode5_sprite_t``, or a
+``mode5_csprite_t`` with OPTIONS set to custom. A sprite later in the
+array covers the sprites before it.
+
+.. list-table::
+   :widths: 35 65
+   :header-rows: 1
+
+   * - Member
+     - Description
+   * - ``x_pos_px``, ``y_pos_px``
+     - Where the top left pixel of the sprite goes on the canvas. They can
+       be negative, so the sprite can start above or to the left of the
+       canvas.
+   * - ``xram_sprite_ptr``
+     - The XRAM address of the image.
+   * - ``palette_ptr``
+     - The XRAM address of the palette, or $FFFF for the built-in
+       palette. Each sprite can have its own palette.
+   * - ``width_height``
+     - In ``mode5_csprite_t`` only. The width and height, each 4 to 64
+       pixels in steps of 4. ``MODE5_SIZE(width, height)`` builds it.
+   * - ``options``
+     - In ``mode5_csprite_t`` only. Bits 0:2 are the color depth, with
+       the same values as bits 0:2 of OPTIONS. Bit 3 must be 0.
+       ``MODE5_HFLIP`` and ``MODE5_VFLIP`` flip the image left to right
+       and top to bottom. ``MODE5_HDOUBLE`` and ``MODE5_VDOUBLE`` draw
+       each pixel twice across or down, so a doubled 16x16 image covers
+       32x32 canvas pixels.
+
+On the :doc:`fpga`, the VGA system draws sprites fastest when all their
 palettes are within 1 KB of contiguous XRAM, as :ref:`Sprite Limits
 <port-sprite-limits>` explains.
 
@@ -1862,21 +1943,11 @@ and sprite size, so ``typedef MODE5_IMAGE(4, 16) image_t;`` is a 16x16
 image in 4-bit color.
 
 With OPTIONS set to custom, each sprite sets its own size, color depth,
-and orientation. Only custom sprites can be flipped or doubled. Their
-flip and double flags go in each sprite's ``options`` member. They must
-not go in the OPTIONS register, where bits 3:5 select the sprite size:
+and orientation in ``width_height`` and ``options``. Only custom sprites
+can be flipped or doubled. The flip and double flags go in ``options``,
+never in the OPTIONS register, where bits 3:5 select the sprite size:
 ``MODE5_4BPP | MODE5_16X16 | MODE5_HFLIP`` in OPTIONS selects 64x64
 sprites, not flipped ones.
-
-- ``width_height`` holds the width and height, each 4 to 64 pixels in
-  steps of 4. ``MODE5_SIZE(width, height)`` builds it.
-- Bits 0:2 of ``options`` hold the color depth, with the same values as
-  bits 0:2 of OPTIONS. Bit 3 is reserved and must be 0.
-- ``MODE5_HFLIP`` and ``MODE5_VFLIP`` in ``options`` flip the image left
-  to right and top to bottom.
-- ``MODE5_HDOUBLE`` and ``MODE5_VDOUBLE`` in ``options`` draw each pixel
-  twice across or down, so a doubled 16x16 image covers 32x32 canvas
-  pixels.
 
 ``MODE5_CUSTOM_IMAGE`` declares one image from its color depth, width,
 and height, so ``typedef MODE5_CUSTOM_IMAGE(4, 24, 16) image_t;`` is a
