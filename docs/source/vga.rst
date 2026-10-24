@@ -1956,9 +1956,9 @@ timing.
 
 Every machine uses VGA timing, 640x480 at 60 Hz. The :doc:`pico` can
 also use 720p or SXGA timing, depending on its :ref:`display type
-<pico-settings>`. Each machine works a little differently inside, so
-the times in this section already leave one scanline of a 320-wide
-canvas as margin. That covers a 640-wide canvas too.
+<pico-settings>`. The times in this section stop at least one scanline
+early, because the machines match each other only to within one
+scanline.
 
 When the canvas fills the display, the time between frames is the
 vertical blanking interval:
