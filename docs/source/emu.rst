@@ -181,6 +181,15 @@ work.
        ``sharp``
      - How pixels are scaled to the window. Default ``sharp``, which
        prescales by an integer and then interpolates.
+   * - ``--aspect``
+     - ``4:3``,
+       ``16:9``,
+       ``16:10``
+     - A fixed shape for the window. The console canvas has the same
+       shape, at 640x480, 640x360, or 640x400, with 30, 22, or 25 rows,
+       and a canvas of another shape is letterboxed or pillarboxed.
+       Without it, the console canvas is 640x480, and the window takes
+       the shape of each canvas.
    * - ``--script``
      - ``file``, or
        ``-``

@@ -254,9 +254,10 @@ Canvas
 ------
 
 The canvas is where you draw your picture, on a grid of pixels such as
-320x240. Your program selects its size from four choices: 320x240 and
-640x480, which are 4:3, and 320x180 and 640x360, which are 16:9.
-`Canvas Types`_ gives the CANVAS value of each size.
+320x240. Your program selects its size from six choices: 320x240 and
+640x480, which are 4:3, 320x180 and 640x360, which are 16:9, and 320x200
+and 640x400, which are 16:10. `Canvas Types`_ gives the CANVAS value of
+each size.
 
 The size that you choose is the resolution that you draw at. Standard
 VGA is 640x480, so on a VGA display, the VGA system scales a 320x240
@@ -271,7 +272,7 @@ renders as many scanlines as the canvas has rows: a 320x240 canvas has
 
 Your ROM starts on the console canvas, which shows only the console and
 cannot be programmed. Before you draw, select a graphics canvas in one of
-the four sizes. It starts blank, without even the console. Anything that
+the six sizes. It starts blank, without even the console. Anything that
 you print stays hidden until you put mode 0 on a plane. When your ROM
 stops, the VGA system goes back to the console canvas.
 
@@ -573,7 +574,7 @@ Canvas Types
 ------------
 
 The CANVAS register selects the console canvas or a graphics canvas in
-one of four sizes. Selecting a graphics canvas always starts it blank,
+one of six sizes. Selecting a graphics canvas always starts it blank,
 with no scanlines programmed, even if it was already selected. The
 console canvas shows only the console and cannot be programmed. Your ROM
 starts on the console canvas, and the VGA system goes back to it when
@@ -588,11 +589,13 @@ your ROM stops.
      - Description
    * - $1:0:00
      - CANVAS
-     - * 0 - console (4:3 or 5:4)
+     - * 0 - console (4:3, 5:4, 16:9, or 16:10)
        * 1 - 320x240 (4:3)
        * 2 - 320x180 (16:9)
        * 3 - 640x480 (4:3)
        * 4 - 640x360 (16:9)
+       * 5 - 320x200 (16:10)
+       * 6 - 640x400 (16:10)
 
 This call selects the 320x240 canvas:
 
@@ -612,6 +615,8 @@ This call selects the 320x240 canvas:
       #define CANVAS_320X180 2
       #define CANVAS_640X480 3
       #define CANVAS_640X360 4
+      #define CANVAS_320X200 5
+      #define CANVAS_640X400 6
 
 .. tab:: ca65
 
@@ -627,6 +632,8 @@ This call selects the 320x240 canvas:
       CANVAS_320X180 = 2
       CANVAS_640X480 = 3
       CANVAS_640X360 = 4
+      CANVAS_320X200 = 5
+      CANVAS_640X400 = 6
 
 .. tab:: llvm-mc
 
@@ -643,6 +650,8 @@ This call selects the 320x240 canvas:
       CANVAS_320X180 = 2
       CANVAS_640X480 = 3
       CANVAS_640X360 = 4
+      CANVAS_320X200 = 5
+      CANVAS_640X400 = 6
 
 
 .. _vga-mode-0:
@@ -685,9 +694,15 @@ canvas:
 
 On a canvas 640 pixels wide, the console has 80 columns in an 8x16 font.
 On a canvas 320 pixels wide, it has 40 columns in an 8x8 font. With
-BEGIN and END at 0, the console fits the canvas, whatever its size. For
-any other BEGIN and END, the number of scanlines between them must be a
-multiple of the font height, so that the console has a whole number of
+BEGIN and END at 0, the console has as many rows as fit on the canvas:
+
+- 30 rows on a canvas 240 or 480 tall.
+- 25 rows on a canvas 200 or 400 tall.
+- 22 rows on a canvas 180 or 360 tall.
+- 32 rows on the 640x512 console canvas of an SXGA display.
+
+For any other BEGIN and END, the number of scanlines between them must be
+a multiple of the font height, so that the console has a whole number of
 rows.
 
 There is only one console. When you program scanlines with mode 0 again,
@@ -1197,7 +1212,7 @@ Mode 3: Bitmap
 
 Mode 3 draws a bitmap. The 64 KB of XRAM caps the color depth of an
 image that fills the canvas: monochrome at 640x480, 16 colors at
-320x240, or 256 colors at 320x180 (16:9).
+320x240, or 256 colors at 320x180 (16:9) and 320x200 (16:10).
 
 .. list-table::
    :widths: 5 5 90
@@ -1997,6 +2012,10 @@ to its time:
      - VGA
      - 1.37 ms
      - 10,900
+   * - 320x200, 640x400
+     - VGA
+     - 3.90 ms
+     - 31,200
    * - 320x180, 640x360
      - VGA
      - 5.17 ms
@@ -2005,6 +2024,10 @@ to its time:
      - SXGA
      - 1.59 ms
      - 12,800
+   * - 320x200, 640x400
+     - SXGA
+     - 4.09 ms
+     - 32,800
    * - 320x180, 640x360
      - SXGA
      - 5.35 ms

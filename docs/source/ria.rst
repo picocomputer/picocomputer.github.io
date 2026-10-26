@@ -1411,8 +1411,9 @@ writes at most once every millisecond, so that third read is clean.
 Each coordinate is 12 bits. ``x_lo`` and ``y_lo`` hold the low eight bits,
 and ``yx_hi`` holds the top four bits of y in its upper half and the top
 four bits of x in its lower half. The example puts them back together. On
-the 320x240 and 320x180 canvases, the top bits of y are always 0, so
-``x_lo`` and ``yx_hi`` read together as x, a little-endian 16-bit value.
+the 320x240, 320x200, and 320x180 canvases, the top bits of y are always
+0, so ``x_lo`` and ``yx_hi`` read together as x, a little-endian 16-bit
+value.
 
 A touchscreen can track several fingers, so the tablet has room for eight
 contacts after its four-byte header. A mouse or a pen uses only the first

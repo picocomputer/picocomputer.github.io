@@ -92,7 +92,10 @@ This ``index.html`` plays ``game.rp6502``, which is in the same folder.
 ``async`` or ``defer``, loads it before the script with the call.
 
 The player is as wide as its container. In a container with no height,
-the screen is 4:3 and the footer goes below it. A container given a
+the footer goes below the screen, and the screen has the shape of the
+canvas on it. The screen starts at 4:3, on the console canvas, and
+changes shape when the program selects a canvas of another shape. With
+``aspect``, the screen has one shape from the start. A container given a
 height is filled, as ``#game`` fills the window here.
 
 A browser does not run a web player opened as a file, from a ``file://``
@@ -135,14 +138,18 @@ open http://localhost:8000.
        ``#``. Default ``000000``.
    * - ``border``
      - ``'8px'``
-     - Space around the game, in the ``bgcolor`` color, as a CSS length such as
-       ``8px`` or ``1em``. It keeps text on the edge of the canvas apart
-       from the page around it.
+     - Space around the screen, in the ``bgcolor`` color, as a CSS length
+       such as ``8px`` or ``1em``. It keeps text on the edge of the canvas
+       apart from the page around it, and does not change the shape of
+       the screen.
    * - ``filter``
      - ``'sharp'``
      - How pixels are scaled: ``nearest``, ``linear`` or ``sharp``.
        Default ``sharp``, which enlarges by a whole number and then
        smooths.
+   * - ``aspect``
+     - ``'16:9'``
+     - A fixed shape for the screen: ``4:3``, ``16:9``, or ``16:10``.
    * - ``autoplay``
      - ``'muted'``
      - When the program and the sound start: ``on``, ``auto``, ``off`` or
