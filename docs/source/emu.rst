@@ -81,8 +81,9 @@ The RP6502-EMU is also a libretro core. RetroArch reaches devices that a
 dedicated emulator would make no sense for: Android phones, tablets and
 TVs, iPhone, iPad and Apple TV, and Linux on ARM boards. Install the core
 from Online Updater > Core Downloader, under "Picocomputer 6502", then
-load a ``.rp6502`` ROM the way you would a cartridge. Save states are deterministic, so rewind,
-run-ahead and netplay all work.
+load a ``.rp6502`` ROM the way you would a cartridge. Save states are
+deterministic, so rewind, run-ahead and netplay all work.
+A save state can't be taken while a program has a file open for writing.
 
 The core runs the ROM by its full path, so argv[0] is the absolute path
 of the file. A ROM whose path no program could name runs from the null

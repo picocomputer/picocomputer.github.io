@@ -394,6 +394,10 @@ for reaching BBSes (bulletin board systems). It places outgoing calls
 and answers incoming ones over either raw TCP or telnet. As with the
 telnet console, the connection is unencrypted.
 
+.. note::
+
+   AT commands are beta and may change.
+
 Example AT commands:
 
 - ``ATA`` — Answer incoming call

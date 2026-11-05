@@ -18,10 +18,11 @@ needs only minimal hardware.
 
 The RIA provides the operating system calls of the :doc:`api`, such as
 files, the console, and the real-time clock. It also provides keyboard,
-mouse, tablet, and gamepad input, and two sound generators: a
+mouse, tablet, and gamepad input, two sound generators: a
 programmable sound generator (:ref:`PSG <ria-psg>`) and a Yamaha FM sound
-generator (:ref:`OPL2 <ria-opl2>`). This page describes these devices,
-and the registers that a program uses to reach them.
+generator (:ref:`OPL2 <ria-opl2>`), and playback of sampled sound
+(:ref:`PCM <ria-pcm>`). This page describes these devices, and the
+registers that a program uses to reach them.
 
 
 Reset
