@@ -1474,6 +1474,11 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        cursor on the row of the field, so a field on the last row does not
        scroll the console. The line that the program reads still ends with
        ``\n``.
+   * - | 0x0F
+       | ``RIA_ATTR_OPL_DROPS``
+     - Read-only. The writes to the :ref:`OPL2 <ria-opl2>` that came too
+       fast for its queue and were dropped, since the last get, up to
+       0x7FFFFFFF. A get clears it.
    * - | 0x10
        | ``RIA_ATTR_CLK_RUN_MS``
      - Read-only. The time that the 6502 has run since the release of

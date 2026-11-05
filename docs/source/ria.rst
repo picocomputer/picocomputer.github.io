@@ -1938,8 +1938,8 @@ and stereo panning.
 
 The PSG takes 64 bytes of XRAM, eight for each channel. They must start
 at an even address and fit inside one 256-byte page.
-``PSG_PAGE_CHECK()`` checks the page when the program compiles. You can
-use the PSG or the OPL2, but not both. Mapping one turns the other off.
+``PSG_PAGE_CHECK()`` checks the page when the program compiles. The PSG
+and the OPL2 can play at the same time.
 
 This plays an A on channel 0, as a square wave:
 
@@ -2206,8 +2206,7 @@ an OPL2 guide such as `Programming the AdLib/SoundBlaster FM Music Chips
 The OPL2 takes one whole page of XRAM, 256 bytes starting at a page
 boundary, and register n of the OPL2 is byte n of that page.
 ``OPL_PAGE_CHECK()`` checks the boundary when the program compiles.
-Mapping the OPL2 resets it, clears the page to zero, and turns off the
-PSG.
+Mapping the OPL2 resets it and clears the page.
 
 This plays an A on channel 0:
 
@@ -2232,8 +2231,41 @@ Clearing the key-on bit lets the note fade out:
 
   xram0_poke8(XRAM_OPL + 0xB0, 0x12);
 
-The OPL2 has no timers, interrupts, or status register. Computers of the
-time had their own timers and rarely used the chip's.
+A real YM3812 needs time between writes: 12 cycles of its 3.58 MHz
+clock after a register number and 84 after the data, 96 cycles or about
+27 µs for each register. Without the RIA's help, a program would have
+to wait out that time after every write, at a heavy cost in CPU time.
+
+The RIA paces the writes for you. Each write to the page goes into a
+queue of 256, and the OPL2 takes them in order at the real chip's
+fastest pace, one every 96 cycles, about 37,000 a second. Music played
+at 50 to 100 Hz comes nowhere near filling it. A write that finds the
+queue full is dropped, so if you suspect a program writes too fast,
+``RIA_ATTR_OPL_DROPS`` (see :doc:`api`) tells you how many writes were
+dropped.
+
+The OPL2 is checked in the test suite, sample for sample, against
+`YM3812-LLE <https://github.com/nukeykt/YM3812-LLE>`_, nukeykt's model
+of the chip traced gate by gate from a photograph of its die.
+
+The OPL2 supports everything the YM3812 does except its timers,
+interrupts, and status register. Time music with the VIA's timers or
+:ref:`VSYNC <ria-registers>` instead. These registers are not supported:
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Register
+     - On a YM3812
+   * - $02, $03
+     - The counts of timers 1 and 2.
+   * - $04
+     - Timer control and the reset of the timer flags.
+   * - $08 bit 7
+     - CSM, the speech synthesis mode.
+   * - $01 bits 0 and 2
+     - Test bits. The other test bits, 3 and 7, work as the chip's do.
 
 .. tab:: C
 

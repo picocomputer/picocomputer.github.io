@@ -240,7 +240,8 @@ work.
        ``--memfill``, not both.
    * - ``--mute``
      - \-
-     - No synthesis and no audio device opened at all.
+     - No sound and no audio device opened at all. The sound generators
+       still run, so a program behaves as it does with sound.
    * - ``--debug``
      - \-
      - The on-screen machine debugger. It also holds the window open
