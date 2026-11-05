@@ -2309,3 +2309,37 @@ interrupts, and status register. Time music with the VIA's timers or
 
       OPL_REG  = 0
       OPL_SIZE = 256
+
+
+.. _ria-pcm:
+
+PCM Sampled Sound
+=================
+
+A program plays sampled sound, such as the samples of a WAV file, by
+opening the device ``PCM:`` and writing the samples to it. The full name is
+``PCM:rate,bits,channels``, where ``rate`` is 1 to 48000 hertz, ``bits``
+is 8 or 16, and ``channels`` is 1 for mono or 2 for stereo. For example:
+
+.. code-block:: C
+
+  int pcm = open("PCM:48000,16,2", O_WRONLY);
+
+The samples are raw binary with no header. An 8-bit sample is one
+unsigned byte, from 0 to 255, with silence at 128. A 16-bit sample is two
+bytes, signed, from -32768 to 32767, low byte first, with silence at 0. In
+stereo, each left sample is followed by its right sample. This is the same
+format as the sample data of a WAV file.
+
+The device can be open only once at a time, and it plays from a buffer of
+4096 bytes. Writes are non-blocking: a write puts in as many bytes as fit
+and returns that count, so a program writes the rest later and does other
+work in between. The sound plays without a gap as long as the buffer
+never empties.
+
+The device has no file position, so :c:func:`lseek` with an offset of 0
+controls the buffer instead: SEEK_CUR returns the number of bytes waiting
+to play, SEEK_END returns the size of the buffer, and SEEK_SET empties the
+buffer, which stops the sound. :c:func:`close` waits until the buffer has
+played, and :c:func:`syncfs` waits the same way without closing the
+device.
