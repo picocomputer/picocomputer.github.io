@@ -1937,10 +1937,7 @@ and sound effects. It has eight channels, and each one plays a sine,
 square, sawtooth, triangle, or noise wave, with an ADSR volume envelope
 and stereo panning.
 
-The PSG takes 64 bytes of XRAM, eight for each channel. They must start
-at an even address and fit inside one 256-byte page.
-``PSG_PAGE_CHECK()`` checks the page when the program compiles. The PSG
-and the OPL2 can play at the same time.
+The PSG takes 64 bytes anywhere in XRAM, eight for each channel.
 
 This plays an A on channel 0, as a square wave:
 
@@ -2124,10 +2121,6 @@ logarithmic scale. A rate is how long a full change of volume takes:
           psg_channel_t channel[PSG_CHANNELS];
       } psg_t; /* layout */
 
-      /* After the XRAM_ names: PSG_PAGE_CHECK(XRAM_PSG); */
-      #define PSG_PAGE_CHECK(addr) \
-          _Static_assert((addr) % 256 + sizeof(psg_t) <= 256, #addr " crosses a page.")
-
 .. tab:: ca65
 
    .. code-block:: ca65
@@ -2204,10 +2197,7 @@ chip of the AdLib and Sound Blaster cards. It has the same registers, so
 an OPL2 guide such as `Programming the AdLib/SoundBlaster FM Music Chips
 <https://www.shipbrook.net/jeff/sb.html>`_ explains them.
 
-The OPL2 takes one whole page of XRAM, 256 bytes starting at a page
-boundary, and register n of the OPL2 is byte n of that page.
-``OPL_PAGE_CHECK()`` checks the boundary when the program compiles.
-Mapping the OPL2 resets it and clears the page.
+The OPL2 takes 256 bytes anywhere in XRAM.
 
 This plays an A on channel 0:
 
@@ -2237,13 +2227,13 @@ clock after a register number and 84 after the data, 96 cycles or about
 27 µs for each register. Without the RIA's help, a program would have
 to wait out that time after every write, at a heavy cost in CPU time.
 
-The RIA paces the writes for you. Each write to the page goes into a
+The RIA paces the writes for you. Each write to a register goes into a
 queue of 256, and the OPL2 takes them in order at the real chip's
 fastest pace, one every 96 cycles, about 37,000 a second. Music played
 at 50 to 100 Hz comes nowhere near filling it. A write that finds the
 queue full is dropped, so if you suspect a program writes too fast,
-``RIA_ATTR_OPL_DROPS`` (see :doc:`api`) tells you how many writes were
-dropped.
+:ref:`RIA_ATTR_OPL_OVERRUNS <api-ria-attributes>` tells you how many
+writes were dropped.
 
 The OPL2 is checked in the test suite, sample for sample, against
 `YM3812-LLE <https://github.com/nukeykt/YM3812-LLE>`_, nukeykt's model
@@ -2279,10 +2269,6 @@ interrupts, and status register. Time music with the VIA's timers or
       {
           uint8_t reg[256];
       } opl_t; /* layout */
-
-      /* After the XRAM_ names: OPL_PAGE_CHECK(XRAM_OPL); */
-      #define OPL_PAGE_CHECK(addr) \
-          _Static_assert((addr) % 256 == 0, #addr " does not start a page.")
 
 .. tab:: ca65
 
@@ -2343,3 +2329,8 @@ to play, SEEK_END returns the size of the buffer, and SEEK_SET empties the
 buffer, which stops the sound. :c:func:`close` waits until the buffer has
 played, and :c:func:`syncfs` waits the same way without closing the
 device.
+
+If you suspect gaps in music,
+:ref:`RIA_ATTR_PCM_UNDERRUNS <api-ria-attributes>` tells you how many
+times the buffer ran dry. With one-shot sound effects, the count goes up by
+one each time an effect ends, as intended.

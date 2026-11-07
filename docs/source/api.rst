@@ -1474,11 +1474,16 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        cursor on the row of the field, so a field on the last row does not
        scroll the console. The line that the program reads still ends with
        ``\n``.
+   * - | 0x0E
+       | ``RIA_ATTR_PCM_UNDERRUNS``
+     - Read-only. The times the buffer of the :ref:`PCM <ria-pcm>` device
+       ran dry since the last get, up to 0x7FFFFFFF. A get clears it, and
+       so does opening the device.
    * - | 0x0F
-       | ``RIA_ATTR_OPL_DROPS``
+       | ``RIA_ATTR_OPL_OVERRUNS``
      - Read-only. The writes to the :ref:`OPL2 <ria-opl2>` that came too
        fast for its queue and were dropped, since the last get, up to
-       0x7FFFFFFF. A get clears it.
+       0x7FFFFFFF. A get clears it, and so does mapping the OPL2.
    * - | 0x10
        | ``RIA_ATTR_CLK_RUN_MS``
      - Read-only. The time that the 6502 has run since the release of

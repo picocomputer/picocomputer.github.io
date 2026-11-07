@@ -771,18 +771,6 @@ presses a key.
           bne 1b
 
 
-The PSG and the OPL2 have placement rules: the 64 bytes of the PSG must
-not cross a 256-byte page, and the OPL2 registers must start on a page.
-Their code blocks on the :doc:`ria` page define ``PSG_PAGE_CHECK``
-and ``OPL_PAGE_CHECK``. For each sound generator that your program uses,
-add its check to ``xram.h``, after the ``XRAM_`` symbols:
-
-.. code-block:: C
-
-  PSG_PAGE_CHECK(XRAM_PSG);
-  OPL_PAGE_CHECK(XRAM_OPL);
-
-
 Program Symbols
 ===============
 
@@ -833,8 +821,8 @@ Any symbol in the file works, such as
 ``#define XRAM_LOGO_ROW_2 (XRAM_LOGO + 64)`` or an equate of an assembly
 program.
 
-Mode configurations, palettes, and the PSG must be at even addresses, and
-neither compiler pads structures. ``rp6502_align()`` checks that symbols
+Mode configurations and palettes must be at even addresses, and neither
+compiler pads structures. ``rp6502_align()`` checks that symbols
 are even. With this call in ``CMakeLists.txt``, the tools check every
 ``XRAM_`` symbol. The regular expression is in Python's syntax:
 
@@ -1776,6 +1764,11 @@ This table lists the changes that break an older project:
      - One macro per mode from the :doc:`vga` page,
        ``xreg_vga_mode0`` to ``xreg_vga_mode5``. ``xreg_vga_mode(3, ...)``
        becomes ``xreg_vga_mode3(...)``.
+   * - ``PSG_PAGE_CHECK``, ``OPL_PAGE_CHECK``
+     - None. The PSG and the OPL2 may start anywhere in XRAM.
+   * - Clearing the XRAM of the PSG or the OPL2 before
+       ``xreg_ria_psg()`` or ``xreg_ria_opl()``
+     - None. It is no longer necessary.
    * - ``phi2()``
      - ``ria_attr_get(RIA_ATTR_PHI2_KHZ)``
    * - ``code_page(cp)``, ``codepage(cp)``
