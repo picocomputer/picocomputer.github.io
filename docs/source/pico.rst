@@ -90,12 +90,13 @@ watt for the RP6502-PICO itself.
 Inside the machine, the console is a UART between the RIA and the VGA
 module: 115200 bps, 8-bit words, no parity, 1 stop bit.
 
-The VGA terminal stops responding to the :ref:`size query
-<term-terminal-size>` of the line editor if a telnet or USB terminal is
-connected. **If both USB and
-telnet terminals are connected at the same time and both reply, the
-system may get confused.** If pagination or word-wrap seem wrong, check
-what terminals are attached to the console manifold.
+One terminal is :ref:`in charge <term-terminal-size>`: the line editor
+lays out each line for it, and asks it alone where the cursor is. A
+telnet terminal that reports its size with NAWS is in charge while it
+is connected. Otherwise the VGA terminal is in charge, or the terminal
+on the UART when no VGA module is connected.
+If pagination or word-wrap seem wrong, check which terminal is in
+charge.
 
 
 .. _pico-monitor:
@@ -131,8 +132,8 @@ The table lists every command.
      - Show the state of the system and of every connected device.
    * - ``SET (attr) (value)``
      - Show or change a setting. See `Settings`_.
-   * - ``LS (dir|drive)``
-     - List a directory. ``DIR`` is the same command.
+   * - ``DIR (dir|drive)``
+     - List a directory. ``LS`` is the same command.
    * - ``CD (dir)``
      - Show or change the current directory. ``CHDIR`` is the same
        command.
@@ -615,10 +616,11 @@ along the way; that's normal. You'll hear an error buzz, or two beeps for
 success. You can also run ``STATUS`` to see whether ``(NFC)`` is listed
 next to one of your VCP devices.
 
-``SET NFC 1`` turns the reader on and ``SET NFC 0`` turns it off; the
-choice persists across reboots (a successful ``SET NFC 2`` also leaves it
-on). ``SET NFC 86`` forgets the paired reader so a later ``SET NFC 2`` can
-pair a different one.
+``SET NFC 1`` turns the reader on and ``SET NFC 0`` turns it off; the choice
+persists across reboots (a successful ``SET NFC 2`` also leaves it on).
+``SET NFC 86`` forgets the paired reader so a later ``SET NFC 2`` can pair a
+different one. While the reader is on, its VCP is reserved for it, and
+``STATUS`` marks it ``(NFC)``.
 
 From now on, scanning a card produces one of three sounds: an error buzz
 if something went wrong, two beeps for success, or a single beep for a
@@ -633,10 +635,10 @@ directory is ignored.
 Paths with spaces need quotes, and you can include arguments:
 ``"/My Games/jigsaw.rp6502" cat.bmp``
 
-When a card is read, every mounted drive is scanned for the ROM file. On
-a match, you get two beeps, the 6502 stops, the current drive and
-directory switch to the ROM's location, and the new ROM starts loading.
-If that ROM is already running, you get a single beep and nothing else
+When a card is read, every mounted drive is scanned for the ROM file. On a
+match, you get two beeps, the 6502 stops, the current drive and directory
+switch to the ROM's location, and the new ROM starts loading. If that ROM is
+already running with the same arguments, you get a single beep and nothing else
 happens.
 
 To search just one drive, name it in the text record:

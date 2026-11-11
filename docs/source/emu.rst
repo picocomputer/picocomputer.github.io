@@ -49,7 +49,7 @@ you may have it already.
   Allow it under System Settings > Privacy & Security >
   "Open Anyway", or ``xattr -dr com.apple.quarantine rp6502-emu.app``.
 - **Linux** — built on Ubuntu 22.04, so it needs glibc 2.35 or
-  later plus the GL, X11, and ALSA runtime libraries.
+  later plus the GL, X11, and PulseAudio runtime libraries.
   The tarball preserves the execute bit; if something
   along the way stripped it, ``chmod +x rp6502-emu``.
 - **RetroArch** — the core is in the Online Updater, under

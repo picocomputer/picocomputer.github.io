@@ -2107,8 +2107,9 @@ program set these registers.
        as :ref:`RIA_ATTR_CODE_PAGE <api-ria-attributes>`.
    * - $1:F:02
      - SUPPRESS_TERM_REPLY
-     - Suppresses replies from the VGA system's terminal. The telnet
-       server sets it.
+     - Suppresses replies from the VGA system's terminal. The RIA sets
+       it while a telnet terminal that reports its size is
+       :ref:`in charge <term-terminal-size>` of the console.
    * - $1:F:03
      - UART_TX
      - Carries UART Tx data over the PIX bus while the :ref:`backchannel
@@ -2120,6 +2121,10 @@ program set these registers.
        * 0 - Disable
        * 1 - Enable
        * 2 - Request
+   * - $1:F:05
+     - TERM_TX
+     - Writes one byte to the VGA system's terminal only. The USB port
+       of the VGA module does not get it.
    * - $1:F:06
      - REBOOT_OR_LOCKUP
      - The RIA sets it after writing the flash of the VGA module. 0

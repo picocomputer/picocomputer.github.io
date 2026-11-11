@@ -98,24 +98,58 @@ Terminal Size
 -------------
 
 A program that fits its output to the console, such as MS-BASIC, needs
-the width and the height of the console. At the start of each line that
-the line editor reads, it asks the terminals for the size with a Cursor
-Position Report (CPR) sequence. After the line editor reads a line, the
-program gets the size from :ref:`RIA_ATTR_RLN_WIDTH and
+the width and the height of the console. After the line editor reads a
+line, the program gets the size from :ref:`RIA_ATTR_RLN_WIDTH and
 RIA_ATTR_RLN_HEIGHT <api-ria-attributes>`. The monitor of an
 :doc:`pico` fits its output to the same size.
 
-The question goes to every terminal on the console manifold, so the size
-is right only when one terminal answers. On an :doc:`pico`, the VGA
-terminal stops answering while a USB serial or telnet terminal is
-connected. When a USB serial terminal and a telnet terminal are both
-connected and both answer, the line editor might get the wrong size. If
-the word wrap or the paging of a program looks wrong, check which
-terminals are connected.
+One terminal on the console manifold is **in charge**. The line editor
+lays out each line for that terminal, takes the size from it, and sends
+questions to it alone. It is the first of these that is connected:
+
+#. **A telnet terminal that reports its size.** Most telnet clients,
+   such as the telnet of Linux, PuTTY and the telnet of Windows, report
+   the size of their window with NAWS. The size comes from NAWS. At the
+   start of each line, the line editor asks for the column of the cursor
+   with a Cursor Position Report (CPR) sequence. Until the terminal
+   first answers the Secondary Device Attributes (DA2) query, the line
+   editor also asks that, to learn whether the terminal can change the
+   shape of the cursor.
+#. **The VGA terminal.** On an :doc:`pico`, the VGA terminal is in
+   charge while the VGA module is connected. On the :doc:`emu`, the
+   terminal in the window is in charge. On the :doc:`fpga` and the
+   :doc:`web`, the VGA terminal is the only terminal. The size comes
+   from the console canvas, and the line editor asks the VGA terminal
+   for the column of the cursor. The question goes to the VGA terminal
+   only, never to the USB port of the VGA module.
+#. **A terminal on the UART.** On an :doc:`pico` with no VGA module,
+   the UART of the RIA goes to one terminal. On the :doc:`emu` with
+   ``--headless``, the terminal the emulator runs in is in charge when
+   both ``stdin`` and ``stdout`` are on it. At the start of each line,
+   the line editor asks for the column of the cursor, for the type of
+   the terminal with DA2, and for the size, by asking for the position
+   of the bottom right corner.
+
+Otherwise no terminal is in charge. This is the :doc:`emu` with
+``--headless`` and ``stdin`` or ``stdout`` on a pipe or a file. The
+line editor asks nothing and does not wrap the line, and the size is
+80 columns by 24 rows.
+
+When terminals of different sizes are connected, the line editor lays
+out the line for the terminal in charge, and the line can look wrong on
+the others. If the word wrap or the paging of a program looks wrong,
+check which terminal is in charge.
+
+The line editor shows its mode with the shape of the cursor, a bar to
+insert and a block to overwrite. Only a terminal that can change the
+shape gets it. The VGA terminal always can. A telnet terminal can once
+it answers DA2. A terminal on the UART can unless it answers the
+position of the cursor and not DA2.
 
 A program that is built for a fixed size can set the size instead. Write
 non-zero values to RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT. With both
-set, the line editor does not ask the terminals. Write 0 to go back to
+set, the line editor does not ask for the size. It still asks for the
+column of the cursor, to place the line. Write 0 to go back to
 detection. Both attributes return to 0 when the ROM stops.
 
 .. _term-nonblocking-read-line:

@@ -1197,11 +1197,12 @@ left button:
 
 The ``x`` and ``y`` values are just counters. ``x`` counts up as the mouse
 moves right, and ``y`` counts up as it moves down. Both roll over at 255.
-That's why the example subtracts the last reading: the difference is how
-far the mouse moved, and keeping it in an ``int8_t`` makes the rollover
-come out right. ``wheel`` counts the scroll wheel and ``pan`` counts
-sideways scrolling, and they work the same way. The buttons are bits,
-such as ``MOUSE_BUTTON_LEFT``.
+That's why the example subtracts the last reading: the difference is how far
+the mouse moved, and keeping it in an ``int8_t`` makes the rollover come out
+right. ``wheel`` counts the scroll wheel and ``pan`` counts sideways scrolling,
+and they work the same way. ``wheel`` counts up as the wheel scrolls up, and
+``pan`` counts up as it scrolls right. The buttons are bits, such as
+``MOUSE_BUTTON_LEFT``.
 
 A count is one pixel on a 640-wide canvas and half a pixel on a 320-wide
 one. Reading the mouse once a frame, at 60 Hz, is period-correct but slow
@@ -1289,9 +1290,8 @@ Tablet
 The tablet interface reports where the pointer is on the canvas, in
 pixels, and which buttons are down. A mouse moves the pointer, which stops
 at the edges of the canvas. A pen or a touchscreen points straight at a
-spot, because its whole surface is scaled to the canvas. This is the
-interface for menus, buttons, painting, and anything else where the player
-points at things on the canvas.
+spot. This is the interface for menus, buttons, painting, and anything else
+where the player points at things on the canvas.
 
 This finds where the pointer is, and checks the left button:
 
@@ -1425,10 +1425,17 @@ whole ``tablet_t``. A multi-touch program reads a ``tablet_t`` instead.
 
 Each contact has flags for the buttons. The tip of a pen and a finger on a
 touchscreen count as the left button. ``TABLET_FLAG_HOVER`` is set while a
-contact has a position without touching: always for a mouse, for a pen
-while it is in range, and never for a touchscreen. When a finger lifts or
-a pen moves out of range, the flags of its contact go to 0, and the
-contact keeps its last position.
+contact has a position without touching: always for a mouse, for a pen while it
+is in range, and never for a touchscreen. When a finger lifts or a pen moves
+out of range, the flags of its contact go to 0, and the contact keeps its last
+position. Every mouse and pen moves the first contact, so with several plugged
+in, the first contact is where the last one moved it, and its flags combine the
+buttons and hover of all of them.
+
+A pen tablet keeps its proportions on the canvas, so a circle traced on the
+tablet is a circle on the canvas, not an oval. When the tablet and the canvas
+have different shapes, the canvas is centered on the tablet, and a pen on the
+part of the tablet beyond the canvas holds the pointer at the nearest edge.
 
 ``wheel`` and ``pan`` count the scroll wheel and sideways scrolling, the
 same way as the counters of the `Mouse`_. Reading them once a frame is
