@@ -18,10 +18,11 @@ needs only minimal hardware.
 
 The RIA provides the operating system calls of the :doc:`api`, such as
 files, the console, and the real-time clock. It also provides keyboard,
-mouse, tablet, and gamepad input, and two sound generators: a
+mouse, tablet, and gamepad input, two sound generators: a
 programmable sound generator (:ref:`PSG <ria-psg>`) and a Yamaha FM sound
-generator (:ref:`OPL2 <ria-opl2>`). This page describes these devices,
-and the registers that a program uses to reach them.
+generator (:ref:`OPL2 <ria-opl2>`), and playback of sampled sound
+(:ref:`PCM <ria-pcm>`). This page describes these devices, and the
+registers that a program uses to reach them.
 
 
 Reset
@@ -1196,11 +1197,12 @@ left button:
 
 The ``x`` and ``y`` values are just counters. ``x`` counts up as the mouse
 moves right, and ``y`` counts up as it moves down. Both roll over at 255.
-That's why the example subtracts the last reading: the difference is how
-far the mouse moved, and keeping it in an ``int8_t`` makes the rollover
-come out right. ``wheel`` counts the scroll wheel and ``pan`` counts
-sideways scrolling, and they work the same way. The buttons are bits,
-such as ``MOUSE_BUTTON_LEFT``.
+That's why the example subtracts the last reading: the difference is how far
+the mouse moved, and keeping it in an ``int8_t`` makes the rollover come out
+right. ``wheel`` counts the scroll wheel and ``pan`` counts sideways scrolling,
+and they work the same way. ``wheel`` counts up as the wheel scrolls up, and
+``pan`` counts up as it scrolls right. The buttons are bits, such as
+``MOUSE_BUTTON_LEFT``.
 
 A count is one pixel on a 640-wide canvas and half a pixel on a 320-wide
 one. Reading the mouse once a frame, at 60 Hz, is period-correct but slow
@@ -1288,9 +1290,8 @@ Tablet
 The tablet interface reports where the pointer is on the canvas, in
 pixels, and which buttons are down. A mouse moves the pointer, which stops
 at the edges of the canvas. A pen or a touchscreen points straight at a
-spot, because its whole surface is scaled to the canvas. This is the
-interface for menus, buttons, painting, and anything else where the player
-points at things on the canvas.
+spot. This is the interface for menus, buttons, painting, and anything else
+where the player points at things on the canvas.
 
 This finds where the pointer is, and checks the left button:
 
@@ -1424,10 +1425,17 @@ whole ``tablet_t``. A multi-touch program reads a ``tablet_t`` instead.
 
 Each contact has flags for the buttons. The tip of a pen and a finger on a
 touchscreen count as the left button. ``TABLET_FLAG_HOVER`` is set while a
-contact has a position without touching: always for a mouse, for a pen
-while it is in range, and never for a touchscreen. When a finger lifts or
-a pen moves out of range, the flags of its contact go to 0, and the
-contact keeps its last position.
+contact has a position without touching: always for a mouse, for a pen while it
+is in range, and never for a touchscreen. When a finger lifts or a pen moves
+out of range, the flags of its contact go to 0, and the contact keeps its last
+position. Every mouse and pen moves the first contact, so with several plugged
+in, the first contact is where the last one moved it, and its flags combine the
+buttons and hover of all of them.
+
+A pen tablet keeps its proportions on the canvas, so a circle traced on the
+tablet is a circle on the canvas, not an oval. When the tablet and the canvas
+have different shapes, the canvas is centered on the tablet, and a pen on the
+part of the tablet beyond the canvas holds the pointer at the nearest edge.
 
 ``wheel`` and ``pan`` count the scroll wheel and sideways scrolling, the
 same way as the counters of the `Mouse`_. Reading them once a frame is
@@ -1936,10 +1944,7 @@ and sound effects. It has eight channels, and each one plays a sine,
 square, sawtooth, triangle, or noise wave, with an ADSR volume envelope
 and stereo panning.
 
-The PSG takes 64 bytes of XRAM, eight for each channel. They must start
-at an even address and fit inside one 256-byte page.
-``PSG_PAGE_CHECK()`` checks the page when the program compiles. You can
-use the PSG or the OPL2, but not both. Mapping one turns the other off.
+The PSG takes 64 bytes anywhere in XRAM, eight for each channel.
 
 This plays an A on channel 0, as a square wave:
 
@@ -2123,10 +2128,6 @@ logarithmic scale. A rate is how long a full change of volume takes:
           psg_channel_t channel[PSG_CHANNELS];
       } psg_t; /* layout */
 
-      /* After the XRAM_ names: PSG_PAGE_CHECK(XRAM_PSG); */
-      #define PSG_PAGE_CHECK(addr) \
-          _Static_assert((addr) % 256 + sizeof(psg_t) <= 256, #addr " crosses a page.")
-
 .. tab:: ca65
 
    .. code-block:: ca65
@@ -2203,11 +2204,7 @@ chip of the AdLib and Sound Blaster cards. It has the same registers, so
 an OPL2 guide such as `Programming the AdLib/SoundBlaster FM Music Chips
 <https://www.shipbrook.net/jeff/sb.html>`_ explains them.
 
-The OPL2 takes one whole page of XRAM, 256 bytes starting at a page
-boundary, and register n of the OPL2 is byte n of that page.
-``OPL_PAGE_CHECK()`` checks the boundary when the program compiles.
-Mapping the OPL2 resets it, clears the page to zero, and turns off the
-PSG.
+The OPL2 takes 256 bytes anywhere in XRAM.
 
 This plays an A on channel 0:
 
@@ -2232,8 +2229,41 @@ Clearing the key-on bit lets the note fade out:
 
   xram0_poke8(XRAM_OPL + 0xB0, 0x12);
 
-The OPL2 has no timers, interrupts, or status register. Computers of the
-time had their own timers and rarely used the chip's.
+A real YM3812 needs time between writes: 12 cycles of its 3.58 MHz
+clock after a register number and 84 after the data, 96 cycles or about
+27 µs for each register. Without the RIA's help, a program would have
+to wait out that time after every write, at a heavy cost in CPU time.
+
+The RIA paces the writes for you. Each write to a register goes into a
+queue of 256, and the OPL2 takes them in order at the real chip's
+fastest pace, one every 96 cycles, about 37,000 a second. Music played
+at 50 to 100 Hz comes nowhere near filling it. A write that finds the
+queue full is dropped, so if you suspect a program writes too fast,
+:ref:`RIA_ATTR_OPL_OVERRUNS <api-ria-attributes>` tells you how many
+writes were dropped.
+
+The OPL2 is checked in the test suite, sample for sample, against
+`YM3812-LLE <https://github.com/nukeykt/YM3812-LLE>`_, nukeykt's model
+of the chip traced gate by gate from a photograph of its die.
+
+The OPL2 supports everything the YM3812 does except its timers,
+interrupts, and status register. Time music with the VIA's timers or
+:ref:`VSYNC <ria-registers>` instead. These registers are not supported:
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Register
+     - On a YM3812
+   * - $02, $03
+     - The counts of timers 1 and 2.
+   * - $04
+     - Timer control and the reset of the timer flags.
+   * - $08 bit 7
+     - CSM, the speech synthesis mode.
+   * - $01 bits 0 and 2
+     - Test bits. The other test bits, 3 and 7, work as the chip's do.
 
 .. tab:: C
 
@@ -2246,10 +2276,6 @@ time had their own timers and rarely used the chip's.
       {
           uint8_t reg[256];
       } opl_t; /* layout */
-
-      /* After the XRAM_ names: OPL_PAGE_CHECK(XRAM_OPL); */
-      #define OPL_PAGE_CHECK(addr) \
-          _Static_assert((addr) % 256 == 0, #addr " does not start a page.")
 
 .. tab:: ca65
 
@@ -2276,3 +2302,42 @@ time had their own timers and rarely used the chip's.
 
       OPL_REG  = 0
       OPL_SIZE = 256
+
+
+.. _ria-pcm:
+
+PCM Sampled Sound
+=================
+
+A program plays sampled sound, such as the samples of a WAV file, by
+opening the device ``PCM:`` and writing the samples to it. The full name is
+``PCM:rate,bits,channels``, where ``rate`` is 1 to 48000 hertz, ``bits``
+is 8 or 16, and ``channels`` is 1 for mono or 2 for stereo. For example:
+
+.. code-block:: C
+
+  int pcm = open("PCM:48000,16,2", O_WRONLY);
+
+The samples are raw binary with no header. An 8-bit sample is one
+unsigned byte, from 0 to 255, with silence at 128. A 16-bit sample is two
+bytes, signed, from -32768 to 32767, low byte first, with silence at 0. In
+stereo, each left sample is followed by its right sample. This is the same
+format as the sample data of a WAV file.
+
+The device can be open only once at a time, and it plays from a buffer of
+4096 bytes. Writes are non-blocking: a write puts in as many bytes as fit
+and returns that count, so a program writes the rest later and does other
+work in between. The sound plays without a gap as long as the buffer
+never empties.
+
+The device has no file position, so :c:func:`lseek` with an offset of 0
+controls the buffer instead: SEEK_CUR returns the number of bytes waiting
+to play, SEEK_END returns the size of the buffer, and SEEK_SET empties the
+buffer, which stops the sound. :c:func:`close` waits until the buffer has
+played, and :c:func:`syncfs` waits the same way without closing the
+device.
+
+If you suspect gaps in music,
+:ref:`RIA_ATTR_PCM_UNDERRUNS <api-ria-attributes>` tells you how many
+times the buffer ran dry. With one-shot sound effects, the count goes up by
+one each time an effect ends, as intended.

@@ -76,7 +76,6 @@ use the upstream project or the Picocomputer fork of it, and why.
 
 The command for each compiler puts the compiler in the ``.rp6502``
 directory of the home directory and adds its ``bin`` directory to PATH.
-Run the command again to update the compiler.
 
 Windows
 -------
@@ -172,6 +171,53 @@ serial port of an RP6502-PICO and install the compilers:
    curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.sh | sh
 
 Restart the login session, so that the new group and PATH take effect.
+
+
+.. _sdk-updating-tools:
+
+Updating the Tools
+==================
+
+You can bring new Picocomputer features and compiler improvements into
+your project as they come out. There are two things to update: the
+compilers and the tools in your project's ``tools/`` directory.
+
+To update a compiler, run its install command again. On Windows, in
+PowerShell:
+
+.. code-block:: powershell
+
+   irm https://raw.githubusercontent.com/picocomputer/.github/main/install/cc65.ps1 | iex
+   irm https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.ps1 | iex
+
+On macOS and Linux:
+
+.. code-block:: sh
+
+   curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/cc65.sh | sh
+   curl -fsSL https://raw.githubusercontent.com/picocomputer/.github/main/install/llvm-mos.sh | sh
+
+To update your project's tools, run the "RP6502: update tools" task
+(Terminal > Run Task), or run this command in the project directory:
+
+.. code-block:: text
+
+  cmake -P tools/rp6502.cmake
+
+This update does three things:
+
+#. It downloads the latest scripts from the `tools directory
+   <https://github.com/picocomputer/rp6502/tree/main/tools>`__ of the
+   ``main`` branch of picocomputer/rp6502.
+#. It updates the settings in ``.vscode/``, ``.gitignore``, and
+   ``CMakeLists.txt`` when they are out of date.
+#. It downloads the latest release of the emulator, the web player, and
+   BASIC, for each one that ``tools/`` already has.
+
+After the update, check its output for errors. An error leaves only part
+of the update in place, so resolve the error and run the update again.
+Then run "CMake: Clean Rebuild" from the VS Code Command Palette, so that
+the whole project builds with the new compilers and tools.
 
 
 Getting Started
@@ -281,7 +327,7 @@ language, these changes remove the parts you do not use:
 - Delete the presets and the source files that the project does not use.
 
 Commit ``tools/`` with the project. Git ignores some of its files on
-purpose. To learn which ones and why, read `Updating the Tools`_.
+purpose. To learn which ones and why, read `Pinning the Tools`_.
 
 
 Running and Debugging
@@ -725,18 +771,6 @@ presses a key.
           bne 1b
 
 
-The PSG and the OPL2 have placement rules: the 64 bytes of the PSG must
-not cross a 256-byte page, and the OPL2 registers must start on a page.
-Their code blocks on the :doc:`ria` page define ``PSG_PAGE_CHECK``
-and ``OPL_PAGE_CHECK``. For each sound generator that your program uses,
-add its check to ``xram.h``, after the ``XRAM_`` symbols:
-
-.. code-block:: C
-
-  PSG_PAGE_CHECK(XRAM_PSG);
-  OPL_PAGE_CHECK(XRAM_OPL);
-
-
 Program Symbols
 ===============
 
@@ -787,8 +821,8 @@ Any symbol in the file works, such as
 ``#define XRAM_LOGO_ROW_2 (XRAM_LOGO + 64)`` or an equate of an assembly
 program.
 
-Mode configurations, palettes, and the PSG must be at even addresses, and
-neither compiler pads structures. ``rp6502_align()`` checks that symbols
+Mode configurations and palettes must be at even addresses, and neither
+compiler pads structures. ``rp6502_align()`` checks that symbols
 are even. With this call in ``CMakeLists.txt``, the tools check every
 ``XRAM_`` symbol. The regular expression is in Python's syntax:
 
@@ -1246,38 +1280,16 @@ and packages them:
 is the empty ``TOUCH`` file.
 
 
-.. _sdk-updating-tools:
+.. _sdk-pinning-tools:
 
-Updating the Tools
-==================
+Pinning the Tools
+=================
 
 ``tools/`` holds the tools that build and test your program. They change
-only when you update them. To update them, run the "RP6502: update
-tools" task (Terminal > Run Task), or run this command in the project
-directory:
-
-.. code-block:: text
-
-  cmake -P tools/rp6502.cmake
-
-The update does these steps:
-
-#. It downloads the latest scripts from the `tools directory
-   <https://github.com/picocomputer/rp6502/tree/main/tools>`__ of the
-   ``main`` branch of picocomputer/rp6502. Each new script replaces the
-   old one, so the update discards local changes to the scripts.
-#. It updates the settings in ``.vscode/``, ``.gitignore``, and
-   ``CMakeLists.txt`` when they are out of date.
-#. It downloads the latest release of the emulator, the web player, and
-   BASIC, for each one that ``tools/`` already has.
-
-After the update, check its output for errors. An error leaves only part
-of the update in place, so resolve the error and run the update again.
-Then test that your project still works, and commit the changes.
-
-When CMake configures your project, it downloads each tool that the
-project uses and that ``tools/`` lacks. You do not download any tool
-yourself.
+only when you update them, as in `Updating the Tools`_, so a project
+stays on the tools it has. When CMake configures your project, it
+downloads each tool that the project uses and that ``tools/`` lacks. You
+do not download any tool yourself.
 
 The scripts, ``rp6502.cmake``, ``rp6502.py``, ``cc65-toolchain.cmake``,
 and ``cc65-config.cmake``, come from the ``main`` branch of
@@ -1752,6 +1764,11 @@ This table lists the changes that break an older project:
      - One macro per mode from the :doc:`vga` page,
        ``xreg_vga_mode0`` to ``xreg_vga_mode5``. ``xreg_vga_mode(3, ...)``
        becomes ``xreg_vga_mode3(...)``.
+   * - ``PSG_PAGE_CHECK``, ``OPL_PAGE_CHECK``
+     - None. The PSG and the OPL2 may start anywhere in XRAM.
+   * - Clearing the XRAM of the PSG or the OPL2 before
+       ``xreg_ria_psg()`` or ``xreg_ria_opl()``
+     - None. It is no longer necessary.
    * - ``phi2()``
      - ``ria_attr_get(RIA_ATTR_PHI2_KHZ)``
    * - ``code_page(cp)``, ``codepage(cp)``

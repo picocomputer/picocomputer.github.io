@@ -49,7 +49,7 @@ you may have it already.
   Allow it under System Settings > Privacy & Security >
   "Open Anyway", or ``xattr -dr com.apple.quarantine rp6502-emu.app``.
 - **Linux** — built on Ubuntu 22.04, so it needs glibc 2.35 or
-  later plus the GL, X11, and ALSA runtime libraries.
+  later plus the GL, X11, and PulseAudio runtime libraries.
   The tarball preserves the execute bit; if something
   along the way stripped it, ``chmod +x rp6502-emu``.
 - **RetroArch** — the core is in the Online Updater, under
@@ -81,8 +81,9 @@ The RP6502-EMU is also a libretro core. RetroArch reaches devices that a
 dedicated emulator would make no sense for: Android phones, tablets and
 TVs, iPhone, iPad and Apple TV, and Linux on ARM boards. Install the core
 from Online Updater > Core Downloader, under "Picocomputer 6502", then
-load a ``.rp6502`` ROM the way you would a cartridge. Save states are deterministic, so rewind,
-run-ahead and netplay all work.
+load a ``.rp6502`` ROM the way you would a cartridge. Save states are
+deterministic, so rewind, run-ahead and netplay all work.
+A save state can't be taken while a program has a file open for writing.
 
 The core runs the ROM by its full path, so argv[0] is the absolute path
 of the file. A ROM whose path no program could name runs from the null
@@ -93,9 +94,8 @@ ROM starts if RetroArch has no save folder. The core never changes the
 working directory, so a program starts in the working directory of
 RetroArch.
 
-Each of the four ports is a **Gamepad** by default. **Gamepad (Analog)**
-adds the analog sticks. **Lightgun** is the Picocomputer's tablet,
-because a lightgun is libretro's only absolute pointing device.
+Each of the four ports is a **Gamepad** by default, with analog sticks.
+A **Lightgun** port drives the Picocomputer's tablet.
 
 libretro was built for consoles with gamepads, and a core cannot work
 around these limits:
@@ -240,7 +240,8 @@ work.
        ``--memfill``, not both.
    * - ``--mute``
      - \-
-     - No synthesis and no audio device opened at all.
+     - No sound and no audio device opened at all. The sound generators
+       still run, so a program behaves as it does with sound.
    * - ``--debug``
      - \-
      - The on-screen machine debugger. It also holds the window open

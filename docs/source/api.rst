@@ -588,7 +588,9 @@ SYNCFS
 
 .. c:function:: int syncfs (int fildes)
 
-   ``syncfs()`` flushes the pending writes of a file descriptor to storage.
+   ``syncfs()`` waits until the writes to a file descriptor are done. For a
+   file, it writes the pending data to storage. For ``PCM:`` and the MIDI
+   devices, it waits until the data has played or been sent.
 
    :Operation: RIA_OP_SYNCFS 0x1E
    :C proto: unistd.h
@@ -1436,8 +1438,8 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        ``srand(ria_attr_get(RIA_ATTR_LRAND))``.
    * - | 0x05
        | ``RIA_ATTR_BEL``
-     - Set it to 0 to silence the bell of the machine, which sounds for
-       each BEL (``\a``) on the console.
+     - Set it to 0 to silence the console bell, which rings when a program
+       prints BEL (``\a``). Set it to 1 to turn it back on.
    * - | 0x06
        | ``RIA_ATTR_LAUNCHER``
      - Set it to 1 to register the running ROM as the launcher, and to 0
@@ -1474,6 +1476,16 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        cursor on the row of the field, so a field on the last row does not
        scroll the console. The line that the program reads still ends with
        ``\n``.
+   * - | 0x0E
+       | ``RIA_ATTR_PCM_UNDERRUNS``
+     - Read-only. The times the buffer of the :ref:`PCM <ria-pcm>` device
+       ran dry since the last get, up to 0x7FFFFFFF. A get clears it, and
+       so does opening the device.
+   * - | 0x0F
+       | ``RIA_ATTR_OPL_OVERRUNS``
+     - Read-only. The writes to the :ref:`OPL2 <ria-opl2>` that came too
+       fast for its queue and were dropped, since the last get, up to
+       0x7FFFFFFF. A get clears it, and so does mapping the OPL2.
    * - | 0x10
        | ``RIA_ATTR_CLK_RUN_MS``
      - Read-only. The time that the 6502 has run since the release of
@@ -1492,6 +1504,8 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
      - Read-only. The run time of the 6502 in seconds. It wraps about
        every 68 years.
 
+
+.. _api-launcher:
 
 Launcher
 ========
@@ -1519,7 +1533,9 @@ launcher starts does not load, the console shows the error, and the
 launcher does not run again.
 
 A menu works best when every game in it has a way to exit, such as an
-Exit item in its menu.
+Exit item in its menu. On a keyboard, Alt-F4 also exits the running ROM as
+``exit(-1)`` does, so the launcher runs again and reads 65535 from
+``RIA_ATTR_EXIT_CODE``. In the launcher itself, Alt-F4 is an ordinary key.
 
 
 Application Binary Interface
