@@ -94,9 +94,8 @@ ROM starts if RetroArch has no save folder. The core never changes the
 working directory, so a program starts in the working directory of
 RetroArch.
 
-Each of the four ports is a **Gamepad** by default. **Gamepad (Analog)**
-adds the analog sticks. **Lightgun** is the Picocomputer's tablet,
-because a lightgun is libretro's only absolute pointing device.
+Each of the four ports is a **Gamepad** by default, with analog sticks.
+A **Lightgun** port drives the Picocomputer's tablet.
 
 libretro was built for consoles with gamepads, and a core cannot work
 around these limits:

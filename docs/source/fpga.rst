@@ -75,7 +75,7 @@ The Dock
 
 The Pocket supports four controller slots, and the core passes all
 four to the RIA software as HID reports of buttons and axes. Keyboard and
-mouse is fully supported as well.
+mouse is supported as well.
 
 
 Internals

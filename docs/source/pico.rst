@@ -635,6 +635,10 @@ directory is ignored.
 Paths with spaces need quotes, and you can include arguments:
 ``"/My Games/jigsaw.rp6502" cat.bmp``
 
+The text can be UTF-8 or UTF-16, as phone apps write it, and is converted to
+the configured code page (``SET CP``). A card with a character the code page
+cannot hold gives the error buzz.
+
 When a card is read, every mounted drive is scanned for the ROM file. On a
 match, you get two beeps, the 6502 stops, the current drive and directory
 switch to the ROM's location, and the new ROM starts loading. If that ROM is
@@ -820,8 +824,9 @@ or 0x0A. Sent immediately after the :ref:`backchannel-enable message
 When bit 0x80 is set, the 0x70 bits give the command type and the 0x0F
 bits give a scalar for that command.
 
-0x80 VSYNC - The scalar will increment and be used for the LSB of the
-:ref:`RIA VSYNC <ria-registers>` register.
+0x80 VSYNC - The scalar is the low 4 bits of the frame count. The RIA
+counts the upper 4 bits of the :ref:`RIA VSYNC <ria-registers>` register
+itself.
 
 0x90 OP_ACK - Some XREG locations are triggers for remote calls which
 may fail or take time to complete. This acknowledges a successful

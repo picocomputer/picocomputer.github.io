@@ -586,8 +586,8 @@ the core runs there, and the root, ``FS:/``, on an :doc:`web`.
 The :doc:`emu` and the :doc:`web` never change the current drive or
 directory themselves. Only CHDIR from a program changes them, and a ROM
 starts with the drive and directory that the ROM before it left. On an
-:doc:`pico`, an :ref:`NFC card <pico-nfc>` is different: the ROM it
-names starts in the directory that holds the ROM.
+:doc:`pico`, an :ref:`NFC card <pico-nfc>` that names a file is
+different: the ROM starts in the directory that holds it.
 
 A CHDIR into a directory on another drive also makes that drive current.
 Each drive keeps the last directory used on it, so a later CHDIR to the

@@ -588,7 +588,9 @@ SYNCFS
 
 .. c:function:: int syncfs (int fildes)
 
-   ``syncfs()`` flushes the pending writes of a file descriptor to storage.
+   ``syncfs()`` waits until the writes to a file descriptor are done. For a
+   file, it writes the pending data to storage. For ``PCM:`` and the MIDI
+   devices, it waits until the data has played or been sent.
 
    :Operation: RIA_OP_SYNCFS 0x1E
    :C proto: unistd.h
@@ -1436,8 +1438,8 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        ``srand(ria_attr_get(RIA_ATTR_LRAND))``.
    * - | 0x05
        | ``RIA_ATTR_BEL``
-     - Set it to 0 to silence the bell of the machine, which sounds for
-       each BEL (``\a``) on the console.
+     - Set it to 0 to silence the console bell, which rings when a program
+       prints BEL (``\a``). Set it to 1 to turn it back on.
    * - | 0x06
        | ``RIA_ATTR_LAUNCHER``
      - Set it to 1 to register the running ROM as the launcher, and to 0
@@ -1503,6 +1505,8 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        every 68 years.
 
 
+.. _api-launcher:
+
 Launcher
 ========
 
@@ -1529,7 +1533,9 @@ launcher starts does not load, the console shows the error, and the
 launcher does not run again.
 
 A menu works best when every game in it has a way to exit, such as an
-Exit item in its menu.
+Exit item in its menu. On a keyboard, Alt-F4 also exits the running ROM as
+``exit(-1)`` does, so the launcher runs again and reads 65535 from
+``RIA_ATTR_EXIT_CODE``. In the launcher itself, Alt-F4 is an ordinary key.
 
 
 Application Binary Interface
