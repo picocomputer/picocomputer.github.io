@@ -460,6 +460,21 @@ Each color is a 16-bit RGB555 value: 5 bits each of red, green, and
 blue, and an alpha bit. Set the alpha bit, and the color is opaque.
 Clear it, and the color is transparent.
 
+.. list-table::
+   :widths: 15 85
+   :header-rows: 1
+
+   * - Bits
+     - Description
+   * - 0:4
+     - Red, 0-31.
+   * - 5
+     - Alpha. 1 is opaque, 0 is transparent.
+   * - 6:10
+     - Green, 0-31.
+   * - 11:15
+     - Blue, 0-31.
+
 The code blocks below define ``COLOR_FROM_RGBA``, a macro that builds a
 color. It takes red, green, blue, and alpha from 0 to 255, and an alpha
 of 128 or more makes the color opaque. This is opaque red:
@@ -773,8 +788,9 @@ color.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-For example, this call puts mode 1 in 8-bit color with the 8x16 font,
-using the configuration structure at ``xaddr``, on plane 0:
+For example, this call puts mode 1 in 8-bit color, ``MODE1_8BPP`` (0x03),
+with the 8x16 font, ``MODE1_8X16`` (0x08), using the configuration
+structure at ``xaddr``, on plane 0:
 
 .. code-block:: C
 
@@ -805,12 +821,42 @@ The configuration structure is ``mode1_config_t``:
    * - ``xram_font_ptr``
      - The XRAM address of the font, or $FFFF for the built-in font.
 
-Each color depth has its own structure for a cell, named to match its
-constant: ``MODE1_1BPP`` cells are ``mode1_1bpp_data_t``, ``MODE1_4BPP``
-cells are ``mode1_4bpp_data_t``, and so on. The cells are stored row by
-row from the top left. Each is 8 pixels wide, so a row of 40 cells spans
-a canvas 320 pixels wide. In 16-bit color, the VGA system ignores the
-``user_data`` of each cell, so your program can keep its own data there.
+The cells are stored row by row from the top left. A cell is 8 pixels
+wide, so a row of 40 cells spans a canvas 320 pixels wide. The color depth
+sets what a cell holds. The foreground color draws the set bits of the
+glyph, and the background color draws the rest. A color index picks a
+color from the palette.
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Color depth
+     - Cell
+   * - 0, 1-bit
+     - | byte 0 - glyph code
+       | The foreground is palette color 1, and the background is color 0.
+   * - 1, 4-bit reversed
+     - | byte 0 - glyph code
+       | byte 1 - bit 0:3 background index, bit 4:7 foreground index
+   * - 2, 4-bit
+     - | byte 0 - glyph code
+       | byte 1 - bit 0:3 foreground index, bit 4:7 background index
+   * - 3, 8-bit
+     - | byte 0 - glyph code
+       | byte 1 - foreground index
+       | byte 2 - background index
+   * - 4, 16-bit
+     - | byte 0 - glyph code
+       | byte 1 - free for your program's own data
+       | byte 2:3 - foreground color, as in `Colors and Palettes`_
+       | byte 4:5 - background color
+
+The code block declares a structure for the cell of every color depth,
+named to match its constant: ``MODE1_1BPP`` cells are
+``mode1_1bpp_data_t``, ``MODE1_4BPP`` cells are ``mode1_4bpp_data_t``,
+and so on. ``MODE1_FG_BG(fg, bg)`` and ``MODE1_BG_FG(bg, fg)`` build the
+color byte of the two 4-bit depths.
 
 .. tab:: C
 
@@ -1046,8 +1092,9 @@ small set of tiles is repeated across a large map.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-For example, this call puts mode 2 in 4-bit color with 8x8 tiles, using
-the configuration structure at ``xaddr``, on plane 0:
+For example, this call puts mode 2 in 4-bit color, ``MODE2_4BPP``
+(0x02), with 8x8 tiles, ``MODE2_8X8`` (0x00), using the configuration
+structure at ``xaddr``, on plane 0:
 
 .. code-block:: C
 
@@ -1241,8 +1288,8 @@ image that fills the canvas: monochrome at 640x480, 16 colors at
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-For example, this call puts mode 3 in 4-bit color, using the
-configuration structure at ``xaddr``, on plane 0:
+For example, this call puts mode 3 in 4-bit color, ``MODE3_4BPP``
+(0x02), using the configuration structure at ``xaddr``, on plane 0:
 
 .. code-block:: C
 
@@ -1627,12 +1674,24 @@ declare the image with ``MODE4_IMAGE_WITH_METADATA`` in place of
 ``MODE4_IMAGE``, and set ``has_opacity_metadata``. Affine sprites ignore
 opacity metadata.
 
-Each row of the image has a value in ``opacity_metadata``.
-``MODE4_OPACITY_METADATA(start, end, solid)`` builds the value. ``start``
-is the first opaque pixel of the row, and ``end`` is one past the last. The VGA
-system draws only the pixels from ``start`` up to ``end``. When all of
-them are opaque, set ``solid``. The VGA system then draws them without
-checking each alpha bit.
+Every row of the image has a 32-bit value in ``opacity_metadata``:
+
+.. list-table::
+   :widths: 15 85
+   :header-rows: 1
+
+   * - Bits
+     - Description
+   * - 0:15
+     - End, one past the last opaque pixel of the row.
+   * - 16:30
+     - Start, the first opaque pixel of the row.
+   * - 31
+     - Solid. 1 when every pixel from start up to end is opaque.
+
+The VGA system draws only the pixels from start up to end. With solid
+set, it draws them without checking their alpha bits.
+``MODE4_OPACITY_METADATA(start, end, solid)`` builds the value.
 
 This code declares a 16x16 image with opacity metadata, and sets row 0
 to draw pixels 4 to 11, all opaque:
@@ -1712,9 +1771,10 @@ shows the math.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-For example, the first call programs 4-bit color sprites of size 16x16
-from the sprite array at ``xaddr``, with ``length`` sprites, on plane 1.
-The second call programs custom sprites from a second sprite array at
+For example, the first call programs 4-bit color sprites, ``MODE5_4BPP``
+(0x02), of size 16x16, ``MODE5_16X16`` (0x08), from the sprite array at
+``xaddr``, with ``length`` sprites, on plane 1. The second call programs
+custom sprites, ``MODE5_CUSTOM`` (0x38), from a second sprite array at
 ``xaddr2``, with ``length2`` sprites, on plane 2:
 
 .. code-block:: C
@@ -1742,15 +1802,17 @@ the array covers the sprites before it.
      - The XRAM address of the palette, or $FFFF for the built-in
        palette. Each sprite can have its own palette.
    * - ``width_height``
-     - In ``mode5_csprite_t`` only. The width and height, each 4 to 64
-       pixels in steps of 4. ``MODE5_SIZE(width, height)`` builds it.
+     - | In ``mode5_csprite_t`` only. The size of the image.
+       | bit 0:3 - the width, 0=4 to 15=64 pixels in steps of 4
+       | bit 4:7 - the height, 0=4 to 15=64 pixels in steps of 4
    * - ``attributes``
-     - In ``mode5_csprite_t`` only. Bits 0:2 are the color depth, with
-       the same values as bits 0:2 of OPTIONS. Bit 3 must be 0.
-       ``MODE5_HFLIP`` and ``MODE5_VFLIP`` flip the image left to right
-       and top to bottom. ``MODE5_HDOUBLE`` and ``MODE5_VDOUBLE`` draw
-       each pixel twice across or down, so a doubled 16x16 image covers
-       32x32 canvas pixels.
+     - | In ``mode5_csprite_t`` only.
+       | bit 0:2 - 0=1, 1=2, 2=4, or 3=8 bit color
+       | bit 3 - reserved, must be 0
+       | bit 4 - flip the image left to right
+       | bit 5 - flip the image top to bottom
+       | bit 6 - draw every pixel twice across
+       | bit 7 - draw every pixel twice down
 
 The :doc:`fpga` draws mode 5 sprites fastest when all of their palettes
 fit in 1 KB of XRAM. A game with more palettes still draws correctly, with
@@ -1974,9 +2036,13 @@ size 16x16. An image has the same format as a :ref:`mode 2 <vga-mode-2>`
 tile of the same size and color depth. To make a tile into a sprite,
 point ``xram_sprite_ptr`` at the tile.
 
-With OPTIONS set to custom, each sprite sets its own size, color depth,
-and orientation in ``width_height`` and ``attributes``. Each side can be
-any multiple of 4 pixels up to 64, which allows rectangular sprites.
+With OPTIONS set to custom, every sprite sets its own size, color depth,
+and orientation in ``width_height`` and ``attributes``. A side can be any
+multiple of 4 pixels up to 64, which allows rectangular sprites.
+``MODE5_SIZE(width, height)`` builds ``width_height`` from the size in
+pixels. ``MODE5_HFLIP``, ``MODE5_VFLIP``, ``MODE5_HDOUBLE``, and
+``MODE5_VDOUBLE`` are bits 4 to 7 of ``attributes``. Doubled, a 16x16
+image covers 32x32 pixels of the canvas.
 
 For a custom sprite, declare the image with ``MODE5_CUSTOM_IMAGE``. For
 example, ``typedef MODE5_CUSTOM_IMAGE(4, 24, 16) image_t;`` declares a
