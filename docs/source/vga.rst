@@ -677,8 +677,8 @@ Mode 0: Console
 Mode 0 draws the console, the built-in terminal that a program prints
 to. :doc:`term` describes the terminal and its escape sequences. The
 console can be composited with graphics and sprites. Its default
-background, ANSI color 0, is transparent, so a picture on a plane behind
-the console shows as the background of every character.
+background is transparent, as is ANSI color 0, so a picture on a plane
+behind the console shows as the background of every character.
 
 .. list-table::
    :widths: 5 5 90
@@ -1078,7 +1078,13 @@ small set of tiles is repeated across a large map.
      - | bit 0:2 - 0=1, 1=2, 2=4, or 3=8 bit color
        | bit 3 - 0=8x8, 1=16x16
        | bit 4:7 - X trim, columns to drop from the right of each tile (0-15)
+         or, with bit 12 set, the width, 0=4 to 15=64 pixels in steps of 4
        | bit 8:11 - Y trim, rows to drop from the bottom of each tile (0-15)
+         or, with bit 12 set, the height, 0=4 to 15=64 pixels in steps of 4
+       | bit 12 - custom size, which ignores bit 3
+       | bit 13 - draw every pixel of a tile twice across
+       | bit 14 - draw every pixel of a tile twice down
+       | bit 15 - reserved, must be 0
    * - $1:0:03
      - CONFIG
      - The XRAM address of the configuration structure.
@@ -1146,6 +1152,14 @@ the top left.
       #define MODE2_X_TRIM(cols) ((cols) << 4)
       #define MODE2_Y_TRIM(rows) ((rows) << 8)
 
+      #define MODE2_CUSTOM 0x1000
+      #define MODE2_HDOUBLE 0x2000
+      #define MODE2_VDOUBLE 0x4000
+
+      #define MODE2_SIZE(width, height)                   \
+          (MODE2_CUSTOM | (((height) / 4 - 1) << 8) | \
+           (((width) / 4 - 1) << 4))
+
       #define MODE2_TILE(bpp, size)                 \
           struct                                    \
           {                                         \
@@ -1153,6 +1167,15 @@ the top left.
               {                                     \
                   uint8_t cols[(size) * (bpp) / 8]; \
               } rows[size];                         \
+          }
+
+      #define MODE2_CUSTOM_TILE(bpp, width, height)        \
+          struct                                           \
+          {                                                \
+              struct                                       \
+              {                                            \
+                  uint8_t cols[((width) * (bpp) + 7) / 8]; \
+              } rows[height];                              \
           }
 
       typedef struct
@@ -1185,12 +1208,27 @@ the top left.
       MODE2_8X8   = $00
       MODE2_16X16 = $08
 
+      MODE2_CUSTOM  = $1000
+      MODE2_HDOUBLE = $2000
+      MODE2_VDOUBLE = $4000
+
+      .define MODE2_SIZE(width, height) (MODE2_CUSTOM | (((height) / 4 - 1) << 8) | (((width) / 4 - 1) << 4))
+
       .macro MODE2_TILE name, bpp, size
           .struct name
               rows .struct
                   cols .res (size) * (bpp) / 8
               .endstruct
               .res ((size) - 1) * .sizeof(rows)
+          .endstruct
+      .endmacro
+
+      .macro MODE2_CUSTOM_TILE name, bpp, width, height
+          .struct name
+              rows .struct
+                  cols .res ((width) * (bpp) + 7) / 8
+              .endstruct
+              .res ((height) - 1) * .sizeof(rows)
           .endstruct
       .endmacro
 
@@ -1224,11 +1262,26 @@ the top left.
       MODE2_8X8   = $00
       MODE2_16X16 = $08
 
+      MODE2_CUSTOM  = $1000
+      MODE2_HDOUBLE = $2000
+      MODE2_VDOUBLE = $4000
+
+      ; llvm-mc has no macro that works inside an expression, so this file
+      ; can't define MODE2_SIZE. MODE2_SIZE(width, height) is
+      ; MODE2_CUSTOM | (height / 4 - 1) << 8 | (width / 4 - 1) << 4.
+
       .macro MODE2_TILE name, bpp, size
           \name\()_ROWS      = 0
           \name\()_ROWS_COLS = 0
           \name\()_ROWS_SIZE = (\size) * (\bpp) / 8
           \name\()_SIZE      = (\size) * \name\()_ROWS_SIZE
+      .endm
+
+      .macro MODE2_CUSTOM_TILE name, bpp, width, height
+          \name\()_ROWS      = 0
+          \name\()_ROWS_COLS = 0
+          \name\()_ROWS_SIZE = ((\width) * (\bpp) + 7) / 8
+          \name\()_SIZE      = (\height) * \name\()_ROWS_SIZE
       .endm
 
       MODE2_CONFIG_X_WRAP           = 0
@@ -1250,6 +1303,22 @@ Pixels pack into bytes as in `Mode 3: Bitmap`_.
 Trim cuts tiles down to other sizes. The Apple II's text characters are
 7x8, for example, so ``MODE2_X_TRIM(1)`` on 8x8 tiles lets a game from
 that machine keep its screen layout pixel for pixel.
+
+For tiles bigger than 16x16, or a size that isn't 8 or 16 less a trim,
+set bit 12 of OPTIONS. Bits 4:11 then give the tile its own width and
+height, any multiple of 4 pixels up to 64. ``MODE2_SIZE(width, height)``
+sets all of these bits, so ``MODE2_4BPP | MODE2_SIZE(24, 24)`` is 24x24
+tiles in 4-bit color. A tile of a custom size is stored like a custom
+sprite of `Mode 5: Sprite 1,2,4,8-bit`_, row by row, and every row starts
+on a new byte. ``MODE2_CUSTOM_TILE`` declares its type:
+``typedef MODE2_CUSTOM_TILE(4, 24, 24) tile_t;`` is a 4-bit color tile of
+size 24x24.
+
+``MODE2_HDOUBLE`` and ``MODE2_VDOUBLE`` draw every pixel of a tile twice
+across and down, so doubled both ways, a 16x16 tile covers 32x32 pixels
+of the canvas. Doubling works with any tile size, trimmed or custom. The
+map still moves a pixel of the canvas at a time, because ``x_pos_px`` and
+``y_pos_px`` don't double.
 
 
 .. _vga-mode-3:
@@ -2160,8 +2229,9 @@ program set these registers.
      - Description
    * - $1:F:00
      - DISPLAY
-     - Sets the aspect ratio of the display and resets CANVAS to the
-       console canvas.
+     - Sets the aspect ratio of the display, resets CANVAS to the
+       console canvas, and resets the console's terminal. The reset
+       leaves the text on the screen and the cursor where it is.
 
        * 0 - VGA (4:3) 640x480
        * 1 - HD (16:9) 640x480 and 1280x720

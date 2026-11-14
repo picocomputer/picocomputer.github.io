@@ -1029,9 +1029,10 @@ RLN_POKE
    the line editor is not reading a line, the call does nothing.
 
    A control byte, 0x00 to 0x1F, ends the input and discards the rest of
-   the string. An empty string sends 0x00. ESC (``\33``) and CAN
-   (``\30``) are the exceptions: ESC starts an escape sequence, and CAN
-   cancels one. When ``RIA_ATTR_RLN_LENGTH`` is 2 or more, the line editor
+   the string. An empty string sends 0x00. ESC (``\33``) is the
+   exception: it starts an escape sequence, which must end within the same
+   string. A poke never lands in the middle of a key that the user is
+   typing. When ``RIA_ATTR_RLN_LENGTH`` is 2 or more, the line editor
    shows the byte that ends the input at the cursor in caret notation,
    ``^@`` to ``^_``, but does not put it in the text. CR (``\r``) shows
    nothing.
