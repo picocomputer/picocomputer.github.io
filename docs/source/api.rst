@@ -1463,20 +1463,22 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
    * - | 0x0A
        | ``RIA_ATTR_RLN_WIDTH``
      - The width of the console, in columns, for a program that fits its
-       output to the console. The line editor detects the width and the
-       height of the console each time it reads a line. Get them after the
-       line editor reads a line. Set it to a width to use that width, or to
-       0 to use the detected width.
+       output to the console. Set it to a width from 2 to 255 to use that
+       width, or to 0 to use the width of the terminal.
    * - | 0x0B
        | ``RIA_ATTR_RLN_HEIGHT``
-     - The height of the console, in rows. Set it to a height to use that
-       height, or to 0 to use the detected height.
+     - The height of the console, in rows. Set it to a height from 1 to
+       255 to use that height, or to 0 to use the height of the terminal.
    * - | 0x0C
        | ``RIA_ATTR_RLN_SUPPRESS_NL``
      - Set it to 1 for a program that draws a form. Enter then keeps the
        cursor on the row of the field, so a field on the last row does not
        scroll the console. The line that the program reads still ends with
        ``\n``.
+   * - | 0x0D
+       | ``RIA_ATTR_TERM_QUIET``
+     - Set it to 1 to turn off the replies of the terminal to
+       :ref:`reports <term-reports>`.
    * - | 0x0E
        | ``RIA_ATTR_PCM_UNDERRUNS``
      - Read-only. The times the buffer of the :ref:`PCM <ria-pcm>` device

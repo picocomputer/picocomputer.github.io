@@ -97,59 +97,18 @@ descriptor as the first, and a close succeeds as a no-op.
 Terminal Size
 -------------
 
-A program that fits its output to the console, such as MS-BASIC, needs
-the width and the height of the console. After the line editor reads a
-line, the program gets the size from :ref:`RIA_ATTR_RLN_WIDTH and
-RIA_ATTR_RLN_HEIGHT <api-ria-attributes>`. The monitor of an
-:doc:`pico` fits its output to the same size.
+A program that fits its output to the console, such as MS-BASIC, gets
+the width and the height of the terminal from :ref:`RIA_ATTR_RLN_WIDTH
+and RIA_ATTR_RLN_HEIGHT <api-ria-attributes>`. The line editor and the
+monitor of an :doc:`pico` use the same size. With no VGA module, the
+size is 80 columns by 24 rows. A program that is built for a fixed size
+can set it instead. Write a width from 2 to 255 to RIA_ATTR_RLN_WIDTH
+and a height from 1 to 255 to RIA_ATTR_RLN_HEIGHT, or 0 to both to go
+back to the size of the terminal.
 
-One terminal on the console manifold is **in charge**. The line editor
-lays out each line for that terminal, takes the size from it, and sends
-questions to it alone. It is the first of these that is connected:
-
-#. **A telnet terminal that reports its size.** Most telnet clients,
-   such as the telnet of Linux, PuTTY and the telnet of Windows, report
-   the size of their window with NAWS. The size comes from NAWS. At the
-   start of each line, the line editor asks for the column of the cursor
-   with a Cursor Position Report (CPR) sequence. Until the terminal
-   first answers the Secondary Device Attributes (DA2) query, the line
-   editor also asks that, to learn whether the terminal can change the
-   shape of the cursor.
-#. **The VGA terminal.** On an :doc:`pico`, the VGA terminal is in
-   charge while the VGA module is connected. On the :doc:`emu`, the
-   terminal in the window is in charge. On the :doc:`fpga` and the
-   :doc:`web`, the VGA terminal is the only terminal. The size comes
-   from the console canvas, and the line editor asks the VGA terminal
-   for the column of the cursor. The question goes to the VGA terminal
-   only, never to the USB port of the VGA module.
-#. **A terminal on the UART.** On an :doc:`pico` with no VGA module,
-   the UART of the RIA goes to one terminal. On the :doc:`emu` with
-   ``--headless``, the terminal the emulator runs in is in charge when
-   both ``stdin`` and ``stdout`` are on it. At the start of each line,
-   the line editor asks for the column of the cursor, for the type of
-   the terminal with DA2, and for the size, by asking for the position
-   of the bottom right corner.
-
-Otherwise no terminal is in charge. This is the :doc:`emu` with
-``--headless`` and ``stdin`` or ``stdout`` on a pipe or a file. The
-line editor asks nothing and does not wrap the line, and the size is
-80 columns by 24 rows.
-
-When terminals of different sizes are connected, the line editor lays
-out the line for the terminal in charge, and the line can look wrong on
-the others. If the word wrap or the paging of a program looks wrong,
-check which terminal is in charge.
-
-The line editor shows its mode with the shape of the cursor, a bar to
-insert and a block to overwrite. Only a terminal that can change the
-shape gets it. The VGA terminal always can. A telnet terminal or a
-terminal on the UART can once it answers DA2.
-
-A program that is built for a fixed size can set the size instead. Write
-non-zero values to RIA_ATTR_RLN_WIDTH and RIA_ATTR_RLN_HEIGHT. With both
-set, the line editor does not ask for the size. It still asks for the
-column of the cursor, to place the line. Write 0 to go back to
-detection. Both attributes return to 0 when the ROM stops.
+The line editor turns insert mode (IRM) off at the start of input. In
+`VT52 Mode`_ it edits with characters and backspaces alone, and the
+terminal wraps a long line.
 
 .. _term-nonblocking-read-line:
 
@@ -198,9 +157,6 @@ The basic pattern:
      to get the current input text and cursor position. Respond by
      poking literal characters or ANSI sequences (``CUF``, ``CUB``,
      ``ICH``, ``DCH``) back into the editor.
-
-#. **Read ``RIA_ATTR_RLN_WIDTH`` and ``RIA_ATTR_RLN_HEIGHT``** to obtain
-   the dynamic size after the read line completes.
 
 A poke edits as typing does, with two differences. A control byte ends
 the input, as :ref:`RLN_POKE <api-rln-poke>` describes. ICH, DCH, and
@@ -444,18 +400,34 @@ Fe Escape Sequences
      - SS2, SS3
      - Single Shift Two, Three
      - Ignored. The next byte prints as itself.
-   * - ESC # 3 to ESC # 6
-     - DECDHL, DECSWL, DECDWL
-     - Line size
-     - Ignored. Every line is single size. See `To Do`_.
+   * - ESC # 3, ESC # 4
+     - DECDHL
+     - Double-Height Line
+     - Make the cursor's line the top half (3) or the bottom half (4) of
+       a double-height line. Write the same text on both rows.
+   * - ESC # 5
+     - DECSWL
+     - Single-Width Line
+     - Make the cursor's line single size.
+   * - ESC # 6
+     - DECDWL
+     - Double-Width Line
+     - Make the cursor's line double width. It holds half as many
+       columns.
    * - ESC # 8
      - DECALN
      - Screen Alignment
-     - Ignored. The screen is not filled with E. See `To Do`_.
-   * - ESC =, ESC >
-     - DECKPAM, DECKPNM
-     - Keypad modes
-     - Ignored. See `To Do`_.
+     - Fill the screen with E. The scroll region becomes the whole
+       screen, every line becomes single size, and the cursor moves to
+       the top left.
+   * - ESC =
+     - DECKPAM
+     - Application Keypad
+     - The keypad sends escape sequences. See `Keyboard`_.
+   * - ESC >
+     - DECKPNM
+     - Numeric Keypad
+     - The keypad types its characters (default). See `Keyboard`_.
    * - ESC <
      - —
      - ANSI mode
@@ -716,6 +688,16 @@ alternate screens share it.
      - Scroll Down
      - Scroll the region down n lines. Blank lines come in at the top.
        The cursor does not move.
+   * - CSI n SP @
+     - SL
+     - Scroll Left
+     - Move every line of the region n columns left. Blank cells come
+       in at the right. The cursor does not move.
+   * - CSI n SP A
+     - SR
+     - Scroll Right
+     - Move every line of the region n columns right. Blank cells come
+       in at the left. The cursor does not move.
    * - CSI t ; b r
      - DECSTBM
      - Set Top and Bottom Margins
@@ -751,13 +733,15 @@ puts them back to every 8 columns.
      - - 0: Clear the stop at the cursor's column.
        - 3: Clear all stops.
 
+.. _term-reports:
+
 Reports
 -------
 
 The terminal sends its replies to the console as input. The 40-column
 and 80-column terminals both follow the output, and only the one on the
-canvas replies. While a telnet terminal that reports its size is in
-charge (see `Terminal Size`_), the RIA suppresses the replies.
+canvas replies. Set :ref:`RIA_ATTR_TERM_QUIET <api-ria-attributes>` to 1
+to turn the replies off.
 
 .. list-table::
    :widths: 18 13 22 47
@@ -865,9 +849,9 @@ listed are ignored.
    * - 20
      - LNM
      - Line Feed/New Line
-     - Set: LF, VT, and FF also move the cursor to column 1. Reset
-       (default): they only move it down. The Return key is not
-       affected.
+     - Set: LF, VT, and FF also move the cursor to column 1, and the
+       Enter key sends CR and LF. Reset (default): they only move the
+       cursor down, and Enter sends CR.
 
 DEC Private Modes
 -----------------
@@ -891,6 +875,12 @@ background in the same way.
      - Abbr
      - Name
      - Effect
+   * - 1
+     - DECCKM
+     - Cursor Keys
+     - Set: the arrow keys, Home, and End send ``ESC O`` and a letter.
+       Reset (default): they send ``ESC [`` and a letter. See
+       `Keyboard`_.
    * - 2
      - DECANM
      - ANSI/VT52 Mode
@@ -901,6 +891,12 @@ background in the same way.
      - 132 Columns
      - Ignored. The width does not change, and the screen is not
        cleared.
+   * - 5
+     - DECSCNM
+     - Reverse Screen
+     - Set: the whole screen is in reverse video, with the foreground
+       and the background of every cell swapped. Reset (default): the
+       screen is normal.
    * - 6
      - DECOM
      - Origin Mode
@@ -914,6 +910,11 @@ background in the same way.
        next row. Reset: the cursor stays on the last column, and the
        next character replaces the one there. Autowrap is on by
        default, as in xterm and Linux.
+   * - 8
+     - DECARM
+     - Autorepeat
+     - Set (default): a key that is held down repeats. Reset: a key
+       types once, however long it is held.
    * - 12
      - —
      - Cursor blink
@@ -934,6 +935,11 @@ background in the same way.
      - Alternate screen
      - Set: switch to the alternate screen. Reset: switch back to the
        primary screen. The cursor and SGR carry over both ways.
+   * - 66
+     - DECNKM
+     - Keypad
+     - Set: application keypad, as ``ESC =``. Reset (default): numeric
+       keypad, as ``ESC >``. See `Keyboard`_.
    * - 1047
      - —
      - Alternate screen
@@ -978,7 +984,7 @@ reset.
        terminal takes.
    * - ?3 (DECCOLM), ?4 (DECSCLM)
      - 4, permanently reset: 80 columns and no smooth scroll.
-   * - ?6, ?7, ?25, ?33
+   * - ?1, ?5, ?6, ?7, ?8, ?25, ?33, ?66
      - 1 or 2.
    * - ?12
      - 2 for a steady cursor style, 1 for a blinking one.
@@ -1029,7 +1035,9 @@ VT52 Mode
 
 ``CSI ? 2 l`` puts the terminal in VT52 mode, as on a VT102. In VT52
 mode the terminal takes only the escape sequences below, and ``ESC <``
-returns it to ANSI mode. Characters and controls work as in ANSI mode.
+returns it to ANSI mode. Characters and controls work as in ANSI mode,
+except that insert mode (IRM) is off until the return to ANSI mode. The
+keys send the codes of a VT52, as `Keyboard`_ describes.
 RIS is not a VT52 sequence, so the resets of the system start with
 ``ESC <``, which ends VT52 mode and does nothing in ANSI mode.
 
@@ -1068,9 +1076,196 @@ RIS is not a VT52 sequence, so the resets of the system start with
      - Identify: reply ``ESC / Z``, a VT100 in VT52 mode.
    * - ESC <
      - Return to ANSI mode.
+   * - ESC =
+     - Application keypad, as in ANSI mode.
+   * - ESC >
+     - Numeric keypad, as in ANSI mode.
 
-Any other escape sequence is ignored in VT52 mode, including the keypad
-modes, ``ESC =`` and ``ESC >``.
+Any other escape sequence is ignored in VT52 mode.
+
+Keyboard
+--------
+
+The keys send what they send in xterm, except on the keypad. A key
+with a character types it. Alt sends ESC before the character. Ctrl
+turns it into a control code:
+
+.. list-table::
+   :widths: 40 60
+   :header-rows: 1
+
+   * - Ctrl with
+     - Sends
+   * - ``@``, A to Z, ``[``, ``\``, ``]``, ``^``, ``_``
+     - 0x00 to 0x1F. Ctrl-C is 0x03.
+   * - The backquote, a to z, ``{``, ``|``, ``}``, ``~``
+     - 0x00 to 0x1E, as the row above.
+   * - Space, 2
+     - 0x00, NUL.
+   * - 3 to 7
+     - 0x1B to 0x1F.
+   * - 8, ``?``
+     - 0x7F, DEL.
+   * - ``/``
+     - 0x1F.
+   * - Any other character
+     - The character.
+
+These keys send a control code:
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Key
+     - Sends
+   * - Enter
+     - CR. With LNM set, CR and LF.
+   * - Tab
+     - HT. Shift-Tab sends ``ESC [ Z``.
+   * - Escape
+     - ESC.
+   * - Backspace
+     - DEL, 0x7F. Ctrl-Backspace sends BS, 0x08.
+
+Alt sends ESC before these too.
+
+The cursor keys and the function keys send escape sequences:
+
+.. list-table::
+   :widths: 30 35 35
+   :header-rows: 1
+
+   * - Key
+     - Sends
+     - With a modifier
+   * - Up, Down, Right, Left
+     - ``ESC [ A``, ``ESC [ B``, ``ESC [ C``, ``ESC [ D``
+     - ``ESC [ 1 ; m A`` to ``ESC [ 1 ; m D``
+   * - Home, End
+     - ``ESC [ H``, ``ESC [ F``
+     - ``ESC [ 1 ; m H``, ``ESC [ 1 ; m F``
+   * - F1 to F4
+     - ``ESC O P``, ``ESC O Q``, ``ESC O R``, ``ESC O S``
+     - ``ESC [ 1 ; m P`` to ``ESC [ 1 ; m S``
+   * - Insert, Delete
+     - ``ESC [ 2 ~``, ``ESC [ 3 ~``
+     - ``ESC [ 2 ; m ~``, ``ESC [ 3 ; m ~``
+   * - Page Up, Page Down
+     - ``ESC [ 5 ~``, ``ESC [ 6 ~``
+     - ``ESC [ 5 ; m ~``, ``ESC [ 6 ; m ~``
+   * - F5 to F8
+     - ``ESC [ n ~``, where n is 15, 17, 18, 19
+     - ``ESC [ n ; m ~``
+   * - F9 to F12
+     - ``ESC [ n ~``, where n is 20, 21, 23, 24
+     - ``ESC [ n ; m ~``
+
+A modifier is Shift, Alt, or Ctrl held with the key. In the sequence, m
+is 1, plus 1 for Shift, 2 for Alt, and 4 for Ctrl. GUI-Space switches to
+the next keyboard layout.
+
+Three modes change these keys:
+
+- **Cursor key mode** (``CSI ? 1 h``). The arrow keys, Home, and End
+  send ``ESC O`` and their letter, such as ``ESC O A``.
+- **Autorepeat off** (``CSI ? 8 l``). A key that is held down types
+  once.
+- **VT52 mode.** The arrow keys, Home, End, and F1 to F4 send ESC and
+  their letter, such as ``ESC A`` and ``ESC P``.
+
+The keypad follows NumLock, and Shift with NumLock on acts as NumLock
+off. A program sets the application keypad with ``ESC =`` and leaves it
+with ``ESC >``.
+
+.. list-table::
+   :widths: 16 22 28 34
+   :header-rows: 1
+
+   * - Key
+     - NumLock on
+     - NumLock off
+     - NumLock off, application keypad
+   * - 0
+     - 0
+     - Insert
+     - ``ESC O p``
+   * - 1
+     - 1
+     - End
+     - ``ESC O q``
+   * - 2
+     - 2
+     - Down
+     - ``ESC O r``
+   * - 3
+     - 3
+     - Page Down
+     - ``ESC O s``
+   * - 4
+     - 4
+     - Left
+     - ``ESC O t``
+   * - 5
+     - 5
+     - Begin, ``ESC [ E``
+     - ``ESC O u``
+   * - 6
+     - 6
+     - Right
+     - ``ESC O v``
+   * - 7
+     - 7
+     - Home
+     - ``ESC O w``
+   * - 8
+     - 8
+     - Up
+     - ``ESC O x``
+   * - 9
+     - 9
+     - Page Up
+     - ``ESC O y``
+   * - Period
+     - ``.``
+     - Delete
+     - ``ESC O n``
+   * - Plus
+     - ``+``
+     - ``+``
+     - ``ESC O l``
+   * - Comma
+     - ``,``
+     - ``,``
+     - ``ESC O l``
+   * - Minus
+     - ``-``
+     - ``-``
+     - ``ESC O m``
+   * - Multiply
+     - ``*``
+     - ``*``
+     - ``ESC O j``
+   * - Divide
+     - ``/``
+     - ``/``
+     - ``ESC O o``
+   * - Equals
+     - ``=``
+     - ``=``
+     - ``ESC O X``
+   * - Enter
+     - Enter
+     - Enter
+     - ``ESC O M``
+
+The application keypad is the keypad of a VT100, which has a comma key
+where a PC keypad has its plus key. F1 to F4 are its PF1 to PF4. In VT52
+mode, the application keypad sends ``ESC ?`` and the letter, such as
+``ESC ? p``.
+
+On an :doc:`pico` with NumLock on, hold Alt and type the number of a
+character of the code page on the keypad to type that character.
 
 SGR Parameters
 --------------
@@ -1275,7 +1470,7 @@ Resets
    * - ESC c
      - RIS
      - Reset to Initial State
-     - Reset everything except the size and the code page.
+     - Reset everything.
    * - CSI 2 ; 1 y
      - DECTST
      - Invoke Confidence Test
@@ -1286,41 +1481,17 @@ Resets
      - Soft Terminal Reset
      - Reset the modes on the DEC list.
 
-**RIS** leaves the terminal in one known state, whatever came before.
-It clears both screens, forgets the rows above the screen (see ED 3),
-shows the primary screen, and moves the cursor home. It resets every
-mode and setting: SGR, the charsets, insert mode, LNM, SGR 11 and CRM,
-VT52 mode, iCE colors, autowrap (on), origin mode, the visibility (on)
-and the style (0) of the cursor, the scroll region, the tab stops, both
-saved cursors, the palette, the default colors, and the cursor color.
-The cursor and the blinking text start to blink again together. Only
-the size and the code page stay.
+**RIS** clears both screens and puts every mode and setting of the
+terminal back to its default.
 
-**DECSTR** is the soft reset that a program sends. It turns insert mode
-and origin mode off, turns autowrap on, shows the cursor, puts US ASCII
-in G0 and G1 with G0 active, and resets SGR, the scroll region, and both
-saved cursors. It ends a pending wrap but does not move the cursor. It
-leaves the cursor style, iCE colors, LNM, SGR 11, the palette, the
-default colors, the tab stops, and the screen as they are.
-
-**When a program stops**, the console sends a soft reset to every
-terminal that is attached to it. It holds only what any VT100-class
-terminal takes: CAN, ``ESC <``, ``CSI ? 47 l``, ``CSI 0 m``, ``ESC ( B``, SI,
-``CSI 4 l``, ``CSI ? 7 h``, and ``CSI ? 25 h``, then CR and LF when the
-cursor is not at the start of a line. The terminals that take cursor
-shapes also get ``CSI 0 SP q``. The VGA terminal gets the rest of the
-reset out of band, through the DISPLAY register of the VGA system on an
-:doc:`pico`, and directly on the other machines. This reset does
-everything that RIS does, iCE colors and the palette included, except
-clear the screen. The cursor stays where it is, and the primary screen
-replaces the alternate screen. Text written afterwards starts from the
-clean state. On an :doc:`pico`, a program that writes the DISPLAY
-register gets the same reset.
-
-**When an RP6502-PICO starts**, the monitor sends CAN, ``ESC <``, and
-RIS to the VGA terminal alone, which clears it, and then the soft reset
-to every terminal. Every other terminal, such as one on the UART, keeps what it
-shows.
+**DECSTR** is the soft reset that a program sends. It turns insert
+mode, origin mode, and cursor key mode off, sets the numeric keypad,
+turns autowrap on, shows the cursor, puts US ASCII in G0 and G1 with G0
+active, and resets SGR, the scroll region, and both saved cursors. It
+ends a pending wrap but does not move the cursor. It leaves the cursor
+style, iCE colors, the reverse screen, autorepeat, LNM, SGR 11, the
+palette, the default colors, the tab stops, the line sizes, and the
+screen as they are.
 
 **A change of the code page**, through :ref:`RIA_ATTR_CODE_PAGE
 <api-ria-attributes>` or the CODE_PAGE register of the VGA system, does
@@ -1333,17 +1504,9 @@ To Do
 These features of xterm, DEC terminals, and the Linux console are not in
 the terminal. It is not yet decided whether they will be added.
 
-* Scrolling left and right with SL and SR (``CSI n SP @`` and
-  ``CSI n SP A``), from ECMA-48 and xterm. The terminal ignores them.
-* Double-height and double-width lines (``ESC # 3`` to ``ESC # 6``).
-  Every line is single size.
-* DECALN (``ESC # 8``), which fills the screen with E.
-* Cursor-key mode (``?1``), the keypad modes (``ESC =`` and ``ESC >``),
-  and the keyboard half of LNM, where Return sends CR and LF. These
-  change what the keys send, and the keys do not pass through the
-  terminal.
-* Reverse video for the whole screen (``?5``).
-* Keyboard autorepeat (``?8``) and the keyboard LEDs (``CSI q``).
+* The keyboard LEDs (``CSI q``).
+* Double-size lines (``ESC # 3`` to ``ESC # 6``) and the reverse screen
+  (``?5``) on the :doc:`fpga`.
 * Mouse reporting (``?9`` and ``?1000`` to ``?1006``). DECRQM reports
   these modes as unknown.
 * Recoloring text already on the screen when the palette or the default

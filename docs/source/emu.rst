@@ -629,14 +629,20 @@ is the a key.
 character and the keys that have an escape sequence. ``+shift`` types the
 shifted character, ``+alt`` prefixes ESC, and ``+ctrl`` sends the control
 byte, which makes ``key c+ctrl`` Ctrl-C and ``key leftbracket+ctrl`` an
-ESC. Ctrl with a digit from 2 to 8, with Space or with / sends what xterm
-sends, so ``key 2+ctrl`` is a zero byte. Those characters are a US keyboard's, whatever layout the machine is
-set to, so that a script sends the same bytes under every layout.
+ESC. Ctrl with a digit from 2 to 8, with Space, with / or with ? sends
+what xterm sends, so ``key 2+ctrl`` is a zero byte. A ``+ctrl`` on a
+character that has no control byte types the character, so ``key 1+ctrl``
+is a 1. Those characters are a US keyboard's, whatever layout the machine
+is set to, so that a script sends the same bytes under every layout.
+
+``key`` always types with NumLock on, whatever ``lock num`` did, so
+``key kp8`` is an 8. With ``+shift`` a keypad key acts as it does with
+NumLock off, and ``key kp8+shift`` is the up arrow. :doc:`term` lists
+what every key sends.
 
 A key that types nothing is an error, which
 covers ``capslock``, ``numlock``, ``scrolllock``, ``printscreen``,
-``pause``, ``menu`` and the modifiers. So is a ``+ctrl`` on a key that has
-no control byte, such as ``key 1+ctrl``.
+``pause``, ``menu`` and the modifiers.
 
 
 .. _emu-symbols:

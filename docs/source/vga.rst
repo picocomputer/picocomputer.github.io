@@ -2241,11 +2241,6 @@ program set these registers.
      - CODE_PAGE
      - Sets the code page of the built-in fonts. It holds the same value
        as :ref:`RIA_ATTR_CODE_PAGE <api-ria-attributes>`.
-   * - $1:F:02
-     - SUPPRESS_TERM_REPLY
-     - Suppresses replies from the VGA system's terminal. The RIA sets
-       it while a telnet terminal that reports its size is
-       :ref:`in charge <term-terminal-size>` of the console.
    * - $1:F:03
      - UART_TX
      - Carries UART Tx data over the PIX bus while the :ref:`backchannel

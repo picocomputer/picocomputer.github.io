@@ -90,13 +90,9 @@ watt for the RP6502-PICO itself.
 Inside the machine, the console is a UART between the RIA and the VGA
 module: 115200 bps, 8-bit words, no parity, 1 stop bit.
 
-One terminal is :ref:`in charge <term-terminal-size>`: the line editor
-lays out each line for it, and asks it alone where the cursor is. A
-telnet terminal that reports its size with NAWS is in charge while it
-is connected. Otherwise the VGA terminal is in charge, or the terminal
-on the UART when no VGA module is connected.
-If pagination or word-wrap seem wrong, check which terminal is in
-charge.
+The line editor lays out lines for the :ref:`size <term-terminal-size>`
+of the VGA terminal, or for 80 columns by 24 rows when no VGA module is
+connected.
 
 
 .. _pico-monitor:
@@ -273,7 +269,7 @@ they last through a reboot. A Pi Pico 2 W adds ``BLE`` and the settings of
        ``strftime()``. While ``CP`` is 0, it also selects the code page.
    * - ``SET KB (layouts)``
      - One or more keyboard layouts, such as ``SET KB US US-INTL``.
-       Super+Space cycles through them.
+       GUI-Space cycles through them.
    * - ``SET CP (cp)``
      - The code page. 0, the default, follows ``LOC``. Any other value is
        fixed: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862,
