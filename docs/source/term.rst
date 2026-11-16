@@ -1504,11 +1504,8 @@ To Do
 These features of xterm, DEC terminals, and the Linux console are not in
 the terminal. It is not yet decided whether they will be added.
 
-* The keyboard LEDs (``CSI q``).
 * Double-size lines (``ESC # 3`` to ``ESC # 6``) and the reverse screen
   (``?5``) on the :doc:`fpga`.
-* Mouse reporting (``?9`` and ``?1000`` to ``?1006``). DECRQM reports
-  these modes as unknown.
 * Recoloring text already on the screen when the palette or the default
   colors change (``OSC 4``, ``OSC 104``, ``OSC 10``, ``OSC 11``, the
   Linux palette sequences). xterm and the Linux console recolor it. Here

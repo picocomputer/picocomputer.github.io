@@ -425,8 +425,8 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
        ``release <key>...``
      - Set and clear bits in the HID bitmap a program reads. Each key is a
        name or a keycode. See `Key Names`_.
-   * - ``lock num|caps|scroll``
-     - Toggle a lock LED.
+   * - ``lock num|caps|scroll [on|off]``
+     - Turn a lock on or off, or toggle it. All three start off.
    * - ``pad <n> connect [western|eastern|playstation] [sticks]``,
        ``pad <n> disconnect``
      - Attach or detach one of four gamepads, optionally saying how its
@@ -464,6 +464,9 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
        ``expect-not exit <code>``
      - Check the exit code of the program. The check fails while the
        program runs, so put ``wait exit`` first.
+   * - ``expect lock num|caps|scroll on|off``,
+       ``expect-not lock num|caps|scroll on|off``
+     - Check a lock.
    * - ``discard [stdout|stderr|console]``
      - Drop what the program printed on that stream after the last match,
        or on all three streams without a stream name. ``load`` keeps the captured output, so
@@ -635,10 +638,10 @@ character that has no control byte types the character, so ``key 1+ctrl``
 is a 1. Those characters are a US keyboard's, whatever layout the machine
 is set to, so that a script sends the same bytes under every layout.
 
-``key`` always types with NumLock on, whatever ``lock num`` did, so
-``key kp8`` is an 8. With ``+shift`` a keypad key acts as it does with
-NumLock off, and ``key kp8+shift`` is the up arrow. :doc:`term` lists
-what every key sends.
+``key`` types by the locks. After ``lock num on``, ``key kp8`` is an 8;
+with NumLock off, or with ``+shift``, it is the up arrow. After
+``lock caps on``, ``key a`` is an A and ``key a+shift`` is an a.
+:doc:`term` lists what every key sends.
 
 A key that types nothing is an error, which
 covers ``capslock``, ``numlock``, ``scrolllock``, ``printscreen``,
