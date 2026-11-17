@@ -178,10 +178,9 @@ terminal goes on the canvas, its 80 or 40 columns, and how a picture on
 a plane behind it shows through.
 
 The terminal is a VT102 with most of what xterm and the Linux console
-add, such as 256 colors and 24-bit color, the alternate screen, and the
-palette sequences. It identifies itself as a VT102. The tables below
-list every sequence that it acts on, and `To Do`_ lists features that
-might be added.
+add, such as 256 colors and 24-bit color, the alternate screen, the
+palette sequences, and bracketed paste. It identifies itself as a
+VT102. The tables below list every sequence that it acts on.
 
 Text is in the 8-bit code page of :ref:`RIA_ATTR_CODE_PAGE
 <api-ria-attributes>`, one byte for each character. The terminal does
@@ -428,6 +427,15 @@ Fe Escape Sequences
      - DECKPNM
      - Numeric Keypad
      - The keypad types its characters (default). See `Keyboard`_.
+   * - ESC V
+     - SPA
+     - Start of Guarded Area
+     - Protect the characters written after it. See `Protected
+       Areas`_.
+   * - ESC W
+     - EPA
+     - End of Guarded Area
+     - The characters written after it are not protected.
    * - ESC <
      - —
      - ANSI mode
@@ -632,10 +640,11 @@ Erase
 -----
 
 An erased cell is a space in the current background color, with no
-attributes. Reverse video does not apply, so an erase under SGR 7 uses
-the background color, not the foreground color. This is true of every
-erase: the sequences below, the blank cells and lines of the editing
-and scrolling sequences, and the clear of the alternate screen.
+attributes and no protection. Reverse video does not apply, so an erase
+under SGR 7 uses the background color, not the foreground color. This is
+true of every erase: the sequences below, the blank cells and lines of
+the editing and scrolling sequences, and the clear of the alternate
+screen.
 
 .. list-table::
    :widths: 15 5 20 60
@@ -661,6 +670,61 @@ and scrolling sequences, and the clear of the alternate screen.
      - - 0: From the cursor to the end of the line.
        - 1: From the start of the line to the cursor.
        - 2: The whole line.
+   * - CSI ? n J
+     - DECSED
+     - Selective Erase in Display
+     - As ED 0 to 2, but protected characters stay. See `Protected
+       Areas`_. ``CSI ? 3 J`` is ignored.
+   * - CSI ? n K
+     - DECSEL
+     - Selective Erase in Line
+     - As EL, but protected characters stay.
+
+Protected Areas
+---------------
+
+A form on the screen can protect its labels and leave them in place
+while a program erases its fields. A protected character stays when an
+erase that respects protection reaches it. DEC terminals and ECMA-48
+each have a way to mark characters as protected, and the terminal
+combines them as xterm does.
+
+.. list-table::
+   :widths: 15 8 25 52
+   :header-rows: 1
+
+   * - Code
+     - Abbr
+     - Name
+     - Effect
+   * - CSI n " q
+     - DECSCA
+     - Select Character Protection Attribute
+     - - 1: The characters written after it are protected.
+       - 0 or 2: They are not.
+   * - ESC V
+     - SPA
+     - Start of Guarded Area
+     - The characters written after it are protected.
+   * - ESC W
+     - EPA
+     - End of Guarded Area
+     - The characters written after it are not protected.
+
+After a DECSCA, only DECSED and DECSEL leave protected characters in
+place. After an SPA, ED, EL, and ECH leave them too, unless ERM (ANSI
+mode 6) is set. The later of the two decides.
+
+Writing a character, ICH, DCH, IL, DL, and scrolling do not respect
+protection. A character written over a protected one takes the
+protection of the characters being written, and characters that move
+keep theirs. An erase that leaves protected characters on a line also
+leaves the line's size, where ED and EL make a line single size.
+
+DECSC saves the protection of the characters being written, and DECRC
+restores it. SGR 0 does not change it. DECSTR and RIS turn it off, and
+until the next DECSCA or SPA no erase leaves a protected character in
+place.
 
 Scrolling and Margins
 ---------------------
@@ -842,6 +906,12 @@ listed are ignored.
      - Set: a character inserts at the cursor, and the rest of the line
        moves right. Cells pushed past the right edge are lost. Reset
        (default): a character replaces the cell at the cursor.
+   * - 6
+     - ERM
+     - Erasure
+     - Set: ED, EL, and ECH erase protected characters too. Reset
+       (default): after an SPA, they leave them. See `Protected
+       Areas`_.
    * - 12
      - SRM
      - Send/Receive
@@ -957,6 +1027,13 @@ background in the same way.
        it. Reset: switch back to the primary screen and restore the
        cursor, which it does on the primary screen too, as in xterm. Most
        full-screen programs use this mode.
+   * - 2004
+     - —
+     - Bracketed paste
+     - Set: text pasted into the :doc:`emu` or the :doc:`web` arrives
+       between ``ESC [ 200 ~`` and ``ESC [ 201 ~``, so a program can
+       tell it from typing, and any ESC in the text is left out. Reset
+       (default): a paste arrives as if typed.
 
 Mode Reports
 ------------
@@ -975,7 +1052,7 @@ reset.
      - Reply s
    * - 2 (KAM)
      - 4, permanently reset.
-   * - 3 (CRM), 4 (IRM), 20 (LNM)
+   * - 3 (CRM), 4 (IRM), 6 (ERM), 20 (LNM)
      - 1 or 2.
    * - 12 (SRM)
      - 3, permanently set: there is no local echo.
@@ -984,7 +1061,7 @@ reset.
        terminal takes.
    * - ?3 (DECCOLM), ?4 (DECSCLM)
      - 4, permanently reset: 80 columns and no smooth scroll.
-   * - ?1, ?5, ?6, ?7, ?8, ?25, ?33, ?66
+   * - ?1, ?5, ?6, ?7, ?8, ?25, ?33, ?66, ?2004
      - 1 or 2.
    * - ?12
      - 2 for a steady cursor style, 1 for a blinking one.
@@ -1277,9 +1354,13 @@ The default foreground and background colors are separate from the
 256-color palette. They start as the white of palette entry 7 and the
 black of entry 0, but SGR 39 and 49 select them, OSC 10 and 11 change
 them, and OSC 4 does not. Palette entry 0 and the default background
-are transparent, so a plane behind the console shows through. A change
-to the palette or to the default colors applies to text written
-afterwards. Text already on the screen keeps its colors.
+are transparent, so a plane behind the console shows through.
+
+A change to a palette entry or to a default color also changes the text
+already on the screen that was written in it.
+Text that SGR 1 made bright follows its bright entry, 8-15. A
+24-bit color, a transparent color, and an underline color from SGR 58
+do not change.
 
 .. list-table::
    :widths: 8 22 70
@@ -1445,16 +1526,7 @@ accepted, and an item longer than 20 bytes is ignored.
      - Reset the default background color.
    * - OSC 112 ST
      - Reset the cursor color.
-   * - ESC ] P nrrggbb
-     - Linux: set palette entry n, a hex digit from 0 to f, to the hex
-       color rrggbb. There is no terminator. A byte that is not a hex
-       digit ends the sequence and is dropped.
-   * - ESC ] R
-     - Linux: reset palette entries 0-15. There is no terminator.
 
-Other OSC commands, such as window titles, are ignored. A color change
-applies at once to the current colors and the saved cursors, so text
-written afterwards uses it. Text already on the screen keeps its colors.
 
 Resets
 ------
@@ -1487,7 +1559,8 @@ terminal back to its default.
 **DECSTR** is the soft reset that a program sends. It turns insert
 mode, origin mode, and cursor key mode off, sets the numeric keypad,
 turns autowrap on, shows the cursor, puts US ASCII in G0 and G1 with G0
-active, and resets SGR, the scroll region, and both saved cursors. It
+active, and resets SGR, character protection, the scroll region, and
+both saved cursors. It
 ends a pending wrap but does not move the cursor. It leaves the cursor
 style, iCE colors, the reverse screen, autorepeat, LNM, SGR 11, the
 palette, the default colors, the tab stops, the line sizes, and the
@@ -1497,20 +1570,3 @@ screen as they are.
 <api-ria-attributes>` or the CODE_PAGE register of the VGA system, does
 a RIS of the VGA terminal. When a program that changed the code page
 stops, the system puts the code page back, with the same RIS.
-
-To Do
------
-
-These features of xterm, DEC terminals, and the Linux console are not in
-the terminal. It is not yet decided whether they will be added.
-
-* Double-size lines (``ESC # 3`` to ``ESC # 6``) and the reverse screen
-  (``?5``) on the :doc:`fpga`.
-* Recoloring text already on the screen when the palette or the default
-  colors change (``OSC 4``, ``OSC 104``, ``OSC 10``, ``OSC 11``, the
-  Linux palette sequences). xterm and the Linux console recolor it. Here
-  the new colors apply to text written afterwards.
-* Protected areas and selective erase: DECSCA marks characters that
-  DECSED and DECSEL leave alone, and ECMA-48's SPA, EPA and ERM do the
-  same, for the form screens of VT220 and later terminals and xterm. The
-  terminal accepts these sequences and ignores them.

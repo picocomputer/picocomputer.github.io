@@ -402,15 +402,10 @@ sprite, move it off the canvas.
 VSYNC
 -----
 
-The VGA system draws the canvas one scanline at a time, from the top
-down, 60 times a second. A change to XRAM appears on the next scanline
-that the VGA system draws. The colors of the cells in mode 1 are the
-exception: on the RP6502-PICO, a color that you change while its row of
-cells is being drawn can appear on the next frame instead. If you change
-an image partway through a frame, that frame can show the top of the old
-image and the bottom of the new one. To change the whole picture at
-once, make your changes between frames. VSYNC, short for vertical sync,
-marks the start of that time.
+The VGA system draws the canvas 60 times a second. To change the picture
+without tearing, make your changes between frames. VSYNC, short for
+vertical sync, marks the start of that time. What a frame shows of a
+change made while it is being drawn is undefined.
 
 The time between frames is a legacy of CRT displays. A 640x480 VGA
 signal is really 800x525, with 640x480 of it visible. The rest is
