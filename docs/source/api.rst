@@ -1165,9 +1165,86 @@ STRFTIME
    ``%z %Z`` follow the time zone of the machine, and ``%a %A %b %B %c %p
    %r %x %X`` follow its locale. On an :doc:`pico`, the locale and the
    time zone are :ref:`settings <pico-settings>` of the monitor. The
-   :doc:`emu` uses the locale of the computer that runs it. The :doc:`web`
-   and the :doc:`fpga` use the C locale, in English. The format and the
-   result are code page text. The ``%E`` and ``%O`` modifiers have no effect.
+   :doc:`emu` uses the locale and the time zone of the computer that runs
+   it. The :doc:`web` and the :doc:`fpga` use the C locale, in English.
+   The format and the result are code page text.
+
+   Every machine has the same conversions, which are these. The ones
+   marked \* are not in C99.
+
+   .. list-table::
+      :widths: 12 88
+      :header-rows: 1
+
+      * - Conversion
+        - Result
+      * - ``%a %A``
+        - The day of the week, short and whole: ``Sun``, ``Sunday``.
+      * - ``%b %h %B``
+        - The month, short and whole: ``Sep``, ``September``.
+      * - ``%c``
+        - The date and time in the locale's form.
+      * - ``%C``
+        - The century: the year without its last two digits.
+      * - ``%d %e``
+        - The day of the month, ``01`` to ``31``, padded with a zero
+          or with a space.
+      * - ``%D``
+        - ``%m/%d/%y``.
+      * - ``%F``
+        - ``%Y-%m-%d``.
+      * - ``%g %G``
+        - The year of the ISO 8601 week, as two digits and whole.
+      * - ``%H %I``
+        - The hour, ``00`` to ``23`` and ``01`` to ``12``.
+      * - ``%k %l`` \*
+        - ``%H`` and ``%I`` padded with a space.
+      * - ``%j``
+        - The day of the year, ``001`` to ``366``.
+      * - ``%m``
+        - The month, ``01`` to ``12``.
+      * - ``%M``
+        - The minute, ``00`` to ``59``.
+      * - ``%n %t``
+        - A newline and a tab.
+      * - ``%p``
+        - AM or PM in the locale's words.
+      * - ``%P`` \*
+        - ``%p`` in lower case.
+      * - ``%r``
+        - The time on a 12-hour clock in the locale's form.
+      * - ``%R``
+        - ``%H:%M``.
+      * - ``%s`` \*
+        - The seconds since 1970, read from the date as `MKTIME`_ reads
+          it.
+      * - ``%S``
+        - The second, ``00`` to ``60``.
+      * - ``%T``
+        - ``%H:%M:%S``.
+      * - ``%u %w``
+        - The day of the week as a number: ``1`` to ``7`` from Monday,
+          and ``0`` to ``6`` from Sunday.
+      * - ``%U %W``
+        - The week of the year, ``00`` to ``53``, with weeks from Sunday
+          and from Monday.
+      * - ``%V``
+        - The ISO 8601 week, ``01`` to ``53``.
+      * - ``%x %X``
+        - The date, and the time, in the locale's form.
+      * - ``%y %Y``
+        - The year, as two digits and whole.
+      * - ``%z``
+        - The offset from UTC: ``-0800``.
+      * - ``%Z``
+        - The time zone's name.
+      * - ``%%``
+        - A percent sign.
+
+   A flag after the ``%`` changes the padding of a number \*: ``-`` for
+   none, ``_`` for spaces, and ``0`` for zeros, so ``%-d`` is ``5`` where
+   ``%d`` is ``05``. The ``%E`` and ``%O`` modifiers have no effect.
+   Anything else after a ``%`` is copied as it is.
 
    :Operation: RIA_OP_STRFTIME 0x3D
    :C proto: time.h
