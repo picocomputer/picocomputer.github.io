@@ -177,29 +177,29 @@ The :doc:`vga` system includes a color terminal that draws the console.
 terminal goes on the canvas, its 80 or 40 columns, and how a picture on
 a plane behind it shows through.
 
-The terminal is a VT102 with most of what xterm and the Linux console
-add, such as 256 colors and 24-bit color, the alternate screen, the
-palette sequences, and bracketed paste. It identifies itself as a
-VT102. The tables below list every sequence that it acts on.
+The terminal is a VT102 with most of what xterm adds: 256 colors and
+24-bit color, the alternate screen, the palette sequences, bracketed
+paste, left and right margins, and the rectangle sequences of the
+VT420. It runs what is written for ``xterm-256color``. It identifies
+itself as a VT102. The tables below list every sequence that it acts
+on.
 
 Text is in the 8-bit code page of :ref:`RIA_ATTR_CODE_PAGE
 <api-ria-attributes>`, one byte for each character. The terminal does
 not decode UTF-8 and has no C1 controls: bytes 0x80 to 0xFF are always
 characters of the code page.
 
-The terminal also keeps a few features from other terminals:
+The terminal also has a few features from other terminals:
 
+- The underline styles of kitty (SGR 4:n): double, curly, dotted, and
+  dashed underlines, in a color of their own (SGR 58 and 59).
+  See `Setting Reports`_.
 - iCE colors from SyncTERM (mode 33), for ANSI art.
-- Fast blink (SGR 6).
-- Overline (SGR 53 and 55).
-- Underline color (SGR 58 and 59), and the underline styles of kitty
-  (SGR 4:n).
-- A transparent color (SGR 38;1).
-- A faster cursor blink while a wrap is pending.
 
 The terminal parses escape sequences as xterm does. It ignores a
-sequence that it does not know, whole, and ignores DCS, APC, PM, and SOS
-strings up to the ST that ends them. Inside a sequence, CAN and SUB
+sequence that it does not know, whole. It ignores APC, PM, and SOS
+strings up to the ST that ends them, and DCS strings too, except the
+one that asks for a setting (DECRQSS). Inside a sequence, CAN and SUB
 cancel the sequence, and ESC starts a new one. BS, HT, LF, VT, FF, CR,
 SO, SI, and BEL act without ending the sequence, NUL and DEL are
 ignored, and any other control or a byte from 0x80 to 0xFF ends it.
@@ -241,19 +241,20 @@ C0 Control Codes
      - 0x08
      - BS
      - Backspace
-     - Move the cursor left one column, stopping at column 1.
+     - Move the cursor left one column, stopping at column 1 or at
+       the left margin.
    * - ^I
      - 0x09
      - HT
      - Tab
      - Move the cursor right to the next tab stop, or to the last
-       column when there is none.
+       column or the right margin when there is none.
    * - ^J
      - 0x0A
      - LF
      - Line Feed
      - Move the cursor down one row, and scroll the region at the
-       bottom margin. With LNM set, also move to column 1.
+       bottom margin. With LNM set, also do a CR.
    * - ^K
      - 0x0B
      - VT
@@ -268,7 +269,7 @@ C0 Control Codes
      - 0x0D
      - CR
      - Carriage Return
-     - Move the cursor to column 1.
+     - Move the cursor to column 1, or to the left margin.
    * - ^N
      - 0x0E
      - SO
@@ -319,11 +320,11 @@ The controls marked "Drawn" are the ones that the Linux console does
 not act on. As on Linux, the terminal draws them as the characters of
 the code page at those codes.
 
-SGR 11 and CRM (``CSI 3 h``) draw every control except NUL, BS, LF, FF,
-CR, SO, SI, and ESC, and draw DEL too, so HT, VT, BEL, CAN, and SUB show
-as characters instead of acting. SGR 10 and ``CSI 3 l`` turn this off.
-It applies only outside escape sequences, so a control inside a
-sequence still acts. SGR 0 leaves it on, and RIS turns it off.
+CRM (``CSI 3 h``) draws every control except NUL, BS, LF, FF, CR, SO,
+SI, and ESC, and draws DEL too, so HT, VT, BEL, CAN, and SUB show as
+characters instead of acting. ``CSI 3 l`` turns this off. It applies
+only outside escape sequences, so a control inside a sequence still
+acts. SGR 0 leaves it on, and RIS turns it off.
 
 Fe Escape Sequences
 -------------------
@@ -364,7 +365,7 @@ Fe Escape Sequences
      - Save the cursor's position, a pending wrap, SGR, the charset
        slots and which one is active, and origin mode. Autowrap is not
        saved. The primary and alternate screens have separate saves.
-       ``CSI s`` is the same.
+       ``CSI s`` is the same, unless mode 69 has made it DECSLRM.
    * - ESC 8
      - DECRC
      - Restore Cursor
@@ -383,8 +384,13 @@ Fe Escape Sequences
      - OSC
      - Operating System Command
      - Start an OSC sequence. See `OSC Sequences`_.
-   * - ESC P, ESC X, ESC ^, ``ESC _``
-     - DCS, SOS, PM, APC
+   * - ESC P
+     - DCS
+     - Device Control String
+     - Start a string, which runs up to ST. ``ESC P $ q`` asks for a
+       setting. See `Setting Reports`_. Any other is ignored.
+   * - ESC X, ESC ^, ``ESC _``
+     - SOS, PM, APC
      - Strings
      - Start a string, which is ignored up to ST.
    * - ``ESC \``
@@ -403,7 +409,8 @@ Fe Escape Sequences
      - DECDHL
      - Double-Height Line
      - Make the cursor's line the top half (3) or the bottom half (4) of
-       a double-height line. Write the same text on both rows.
+       a double-height line. Write the same text on both rows. Ignored
+       while mode 69 is set, as DECDWL is.
    * - ESC # 5
      - DECSWL
      - Single-Width Line
@@ -416,9 +423,9 @@ Fe Escape Sequences
    * - ESC # 8
      - DECALN
      - Screen Alignment
-     - Fill the screen with E. The scroll region becomes the whole
-       screen, every line becomes single size, and the cursor moves to
-       the top left.
+     - Fill the screen with E. The margins become the whole screen,
+       every line becomes single size, and the cursor moves to the top
+       left.
    * - ESC =
      - DECKPAM
      - Application Keypad
@@ -514,9 +521,11 @@ Cursor Movement
 
 Writing a character in the last column leaves the cursor on that column
 with a wrap pending, as on a VT102. The next character goes to column 1
-of the next row. Any move of the cursor cancels the pending wrap, and
-so do the erase and edit sequences. While a wrap is pending, the cursor
-shows as a block, and a blinking cursor blinks twice as fast.
+of the next row. Any move of the cursor cancels the pending wrap, and so
+do the erase and edit sequences.
+With left and right margins set, the wrap is at the right
+margin and the next character goes to the left margin. See `Scrolling
+and Margins`_.
 
 A CSI sequence takes up to 16 parameters separated by ``;``, and
 ignores any after the 16th. A missing number is 0, and a number above
@@ -545,19 +554,21 @@ between numbers, and any other sequence with a ``:`` is ignored.
    * - CSI n C
      - CUF
      - Cursor Forward
-     - Move n columns right, stopping at the last column.
+     - Move n columns right, stopping at the last column or at the
+       right margin.
    * - CSI n D
      - CUB
      - Cursor Back
-     - Move n columns left, stopping at column 1.
+     - Move n columns left, stopping at column 1 or at the left
+       margin.
    * - CSI n E
      - CNL
      - Cursor Next Line
-     - CUD, then move to column 1.
+     - CUD, then CR.
    * - CSI n F
      - CPL
      - Cursor Previous Line
-     - CUU, then move to column 1.
+     - CUU, then CR.
    * - CSI n G
      - CHA
      - Cursor Horizontal Absolute
@@ -589,8 +600,9 @@ between numbers, and any other sequence with a ``:`` is ignored.
 
 Rows and columns count from 1. In origin mode (``CSI ? 6 h``), CUP, HVP,
 and VPA count rows from the top margin and stay inside the scroll
-region. DECSC and DECRC (``ESC 7`` and ``ESC 8``) save and restore the
-cursor.
+region, and CUP, HVP, CHA, and HPA count columns from the left margin
+and stay inside the right one. DECSC and DECRC (``ESC 7`` and
+``ESC 8``) save and restore the cursor.
 
 Editing
 -------
@@ -607,12 +619,13 @@ Editing
      - ICH
      - Insert Character
      - Insert n blank cells at the cursor. The rest of the line moves
-       right, and cells pushed past the right edge are lost.
+       right, and cells pushed past the right edge, or the right
+       margin, are lost.
    * - CSI n P
      - DCH
      - Delete Character
      - Delete n cells at the cursor. The rest of the line moves left,
-       and blank cells come in at the right.
+       and blank cells come in at the right edge, or the right margin.
    * - CSI n X
      - ECH
      - Erase Character
@@ -621,14 +634,14 @@ Editing
      - IL
      - Insert Line
      - Insert n blank lines at the cursor's row. Lines pushed past the
-       bottom margin are lost. The cursor moves to column 1. Ignored
-       when the cursor is outside the scroll region.
+       bottom margin are lost. The cursor moves to column 1, or to the
+       left margin. Ignored when the cursor is outside the margins.
    * - CSI n M
      - DL
      - Delete Line
      - Delete n lines at the cursor's row. Blank lines come in at the
-       bottom margin. The cursor moves to column 1. Ignored when the
-       cursor is outside the scroll region.
+       bottom margin. The cursor moves to column 1, or to the left
+       margin. Ignored when the cursor is outside the margins.
    * - CSI n b
      - REP
      - Repeat
@@ -726,6 +739,71 @@ restores it. SGR 0 does not change it. DECSTR and RIS turn it off, and
 until the next DECSCA or SPA no erase leaves a protected character in
 place.
 
+Rectangles
+----------
+
+These are the rectangle sequences of the VT420, as xterm has them. A
+rectangle is given by its top row t, left column l, bottom row b, and
+right column r. A side that is left out is the edge of the screen, and a
+side past the edge is the edge. A rectangle whose bottom is above its
+top, or whose right is left of its left, does nothing. In origin mode
+the rows and columns count from the margins, and a rectangle stays
+inside them. A double-width line has only its own columns of a
+rectangle. The cursor does not move.
+
+.. list-table::
+   :widths: 30 10 60
+   :header-rows: 1
+
+   * - Code
+     - Abbr
+     - Effect
+   * - CSI c ; t ; l ; b ; r $ x
+     - DECFRA
+     - Fill the rectangle with the character whose code is c, as if it
+       were written in the current colors and attributes. A c that is
+       left out or 0 is a space. A control code (1-31 or 127) or a code
+       above 255 does nothing.
+   * - CSI t ; l ; b ; r $ z
+     - DECERA
+     - Erase the rectangle, protected characters too.
+   * - CSI t ; l ; b ; r $ {
+     - DECSERA
+     - Erase the rectangle, but protected characters stay, as with
+       DECSED. See `Protected Areas`_.
+   * - CSI t ; l ; b ; r ; 1 ; t2 ; l2 ; 1 $ v
+     - DECCRA
+     - Copy the rectangle so that its top left is at row t2, column
+       l2, with its colors and attributes. The copy can lie over the
+       rectangle. What would land past the edge is lost. The two 1s
+       are page numbers, which are ignored: there is one page.
+   * - CSI t ; l ; b ; r ; n ... $ r
+     - DECCARA
+     - Change the attributes of the characters already there. Each n
+       is 1, 4, 5, or 7 to set bold, underline, blink, or reverse; 22,
+       24, 25, or 27 to clear one; or 0 to clear all four.
+   * - CSI t ; l ; b ; r ; n ... $ t
+     - DECRARA
+     - Reverse attributes of the characters already there: each n is
+       1, 4, 5, or 7, or 0 for all four. What was on goes off, and what
+       was off goes on.
+   * - CSI n * x
+     - DECSACE
+     - Choose what DECCARA and DECRARA change. 2: the rectangle. 0 or
+       1 (default): the stream of characters from the top left of the
+       rectangle to its bottom right, which on the rows between those
+       two is the whole row. The stream runs to the edges of the
+       screen, also outside the left and right margins in origin mode.
+
+DECCARA and DECRARA leave a character as SGR would have written it.
+Bold is the brighter color of SGR 1, and taking bold off leaves a color
+that was bright without it, such as one from SGR 90-97. A 24-bit color
+has no brighter color and does not change. An underline that they set
+is a single one in the foreground color. In iCE colors mode 5 does
+nothing: it does not set or reverse blink, and it does not brighten the
+background as SGR 5 does. 25 and 0 still clear blink from a character
+that has it.
+
 Scrolling and Margins
 ---------------------
 
@@ -733,6 +811,39 @@ The scroll region runs from the top margin to the bottom margin, and is
 the whole screen by default. LF, IND, and NEL scroll it up at the bottom
 margin, and RI scrolls it down at the top margin. The primary and
 alternate screens share it.
+
+Mode 69 (DECLRMM) allows left and right margins, which DECSLRM sets.
+They work as in xterm. A cursor between them stays between them, except
+with CBT:
+
+- A character written on the right margin wraps to the left margin of
+  the next row.
+- CR, BS, and CUB stop at the left margin, and CUF, HT, and CHT stop at
+  the right one.
+- CBT stops at the left margin only in origin mode. Otherwise it goes
+  on to column 1, outside the margins.
+- Scrolling moves only the columns between the margins. This includes
+  LF, IND, NEL, and RI at the top or the bottom margin, SU, SD, SL, SR,
+  IL, and DL. The columns either side stay where they are.
+- ICH, DCH, and insert mode move the characters up to the right margin.
+
+A program can still move the cursor outside the margins with CUP. From
+there a move away from the margins stops at the edge of the screen, as
+with no margins. A move toward them, or text written left of them, goes
+in and stops or wraps at the far margin. CR goes to the left margin
+from right of it, and to column 1 from left of it unless origin mode is
+set.
+
+With the cursor left or right of the margins, LF, IND, NEL, and RI at
+the top or bottom margin do not scroll, ICH and DCH do nothing, and
+insert mode writes over the character at the cursor. SL, SR, IL, and DL
+do nothing there, or with the cursor above or below the scroll region.
+SU and SD scroll wherever the cursor is.
+
+While mode 69 is set every line is single size, and ``CSI s`` sets the
+margins and no longer saves the cursor. Resetting mode 69 makes the
+left and right margins the whole width again. When a program stops,
+the system resets mode 69.
 
 .. list-table::
    :widths: 17 10 25 48
@@ -756,18 +867,30 @@ alternate screens share it.
      - SL
      - Scroll Left
      - Move every line of the region n columns left. Blank cells come
-       in at the right. The cursor does not move.
+       in at the right. The cursor does not move. Ignored when the
+       cursor is outside the margins.
    * - CSI n SP A
      - SR
      - Scroll Right
      - Move every line of the region n columns right. Blank cells come
-       in at the left. The cursor does not move.
+       in at the left. The cursor does not move. Ignored when the
+       cursor is outside the margins.
    * - CSI t ; b r
      - DECSTBM
      - Set Top and Bottom Margins
      - Set the scroll region to rows t to b. The defaults are the top
-       and the bottom rows. The cursor moves home, to the top margin in
-       origin mode. A region of less than two rows is ignored.
+       and the bottom rows. The cursor moves home, which in origin mode
+       is the top and left margins. A region of less than two rows is
+       ignored.
+   * - CSI l ; r s
+     - DECSLRM
+     - Set Left and Right Margins
+     - With mode 69 set, set the margins to columns l to r. The
+       defaults are the first and the last columns. The cursor moves
+       home, which in origin mode is the top and left margins. Margins
+       of less than two columns are ignored. With mode 69 reset,
+       ``CSI s`` with no numbers saves the cursor, and with numbers it
+       is ignored.
 
 Tabs
 ----
@@ -786,11 +909,13 @@ puts them back to every 8 columns.
    * - CSI n I
      - CHT
      - Cursor Horizontal Tab
-     - Move forward n tab stops, stopping at the last column.
+     - Move forward n tab stops, stopping at the last column or at the
+       right margin.
    * - CSI n Z
      - CBT
      - Cursor Backward Tab
-     - Move back n tab stops, stopping at column 1.
+     - Move back n tab stops, stopping at column 1, or at the left
+       margin in origin mode.
    * - CSI n g
      - TBC
      - Tab Clear
@@ -806,6 +931,13 @@ The terminal sends its replies to the console as input. The 40-column
 and 80-column terminals both follow the output, and only the one on the
 canvas replies. Set :ref:`RIA_ATTR_TERM_QUIET <api-ria-attributes>` to 1
 to turn the replies off.
+
+Replies wait until the program reads them. Up to 256 bytes can wait,
+and a reply that does not fit is dropped whole, so a program that asks
+many questions should read the replies before it asks more. This covers
+the replies of `Mode Reports`_ and `Setting Reports`_ and the color
+questions of `OSC Sequences`_ too, and RIA_ATTR_TERM_QUIET turns those
+off as well.
 
 .. list-table::
    :widths: 18 13 22 47
@@ -832,6 +964,10 @@ to turn the replies off.
      - DECID
      - Identify Terminal
      - The same as DA.
+   * - CSI > q, CSI > 0 q
+     - XTVERSION
+     - Terminal name and version
+     - ``ESC P > | RP6502(version) ESC \``
    * - CSI 5 n
      - DSR
      - Device Status Report
@@ -840,7 +976,8 @@ to turn the replies off.
      - CPR
      - Cursor Position Report
      - ``ESC [ n ; m R``, where n is the row and m is the column. In
-       origin mode, the row counts from the top margin.
+       origin mode, the row counts from the top margin and the column
+       from the left margin.
    * - CSI x, CSI 0 x
      - DECREQTPARM
      - Request Terminal Parameters
@@ -854,7 +991,8 @@ to turn the replies off.
    * - CSI 11 t
      - —
      - Window state
-     - ``ESC [ 1 t``, not minimized.
+     - ``ESC [ 1 t``, not minimized. Only the desktop :doc:`emu`
+       replies ``ESC [ 2 t``, while its window is minimized.
    * - CSI 14 t
      - —
      - Text area in pixels
@@ -898,8 +1036,8 @@ listed are ignored.
    * - 3
      - CRM
      - Control Representation
-     - Set: draw controls, as SGR 11 does. Reset (default): controls
-       act. See `C0 Control Codes`_.
+     - Set: draw controls. Reset (default): controls act. See `C0
+       Control Codes`_.
    * - 4
      - IRM
      - Insert
@@ -919,8 +1057,8 @@ listed are ignored.
    * - 20
      - LNM
      - Line Feed/New Line
-     - Set: LF, VT, and FF also move the cursor to column 1, and the
-       Enter key sends CR and LF. Reset (default): they only move the
+     - Set: LF, VT, and FF also do a CR, and the Enter key sends CR and
+       LF. Reset (default): they only move the
        cursor down, and Enter sends CR.
 
 DEC Private Modes
@@ -970,9 +1108,12 @@ background in the same way.
    * - 6
      - DECOM
      - Origin Mode
-     - Set: CUP, HVP, VPA, and CPR count rows from the top margin,
-       inside the scroll region. Reset (default): they count from the
-       top row. Both move the cursor home. DECSC saves this mode.
+     - Set: CUP, HVP, and VPA count rows from the top margin and stay
+       inside the scroll region, and CUP, HVP, CHA, and HPA count
+       columns from the left margin and stay inside the right one. CPR
+       reports the same way. Reset (default): they count from the top
+       row and column 1. Both move the cursor home, which is the top
+       and left margins when set. DECSC saves this mode.
    * - 7
      - DECAWM
      - Autowrap
@@ -1010,6 +1151,13 @@ background in the same way.
      - Keypad
      - Set: application keypad, as ``ESC =``. Reset (default): numeric
        keypad, as ``ESC >``. See `Keyboard`_.
+   * - 69
+     - DECLRMM
+     - Left and Right Margins
+     - Set: ``CSI l ; r s`` sets left and right margins, and every line
+       is single size. Reset (default): the margins are the whole
+       width, and ``CSI s`` saves the cursor. See `Scrolling and
+       Margins`_.
    * - 1047
      - —
      - Alternate screen
@@ -1061,7 +1209,7 @@ reset.
        terminal takes.
    * - ?3 (DECCOLM), ?4 (DECSCLM)
      - 4, permanently reset: 80 columns and no smooth scroll.
-   * - ?1, ?5, ?6, ?7, ?8, ?25, ?33, ?66, ?2004
+   * - ?1, ?5, ?6, ?7, ?8, ?25, ?33, ?66, ?69, ?2004
      - 1 or 2.
    * - ?12
      - 2 for a steady cursor style, 1 for a blinking one.
@@ -1072,6 +1220,57 @@ reset.
        reset, 2 otherwise.
    * - Any other mode
      - 0.
+
+Setting Reports
+---------------
+
+``ESC P $ q`` and the end of a sequence, then ST (DECRQSS), asks what
+that sequence's setting is now. The reply is ``ESC P 1 $ r``, the
+setting written as the sequence that would set it, and ST. For any
+other sequence the reply is ``ESC P 0 $ r ESC \``.
+
+.. list-table::
+   :widths: 22 18 60
+   :header-rows: 1
+
+   * - Ask with
+     - Setting
+     - Reply after ``ESC P 1 $ r``
+   * - ``ESC P $ q m ESC \``
+     - SGR
+     - 0, then every attribute and color that is set, and ``m``. See
+       below.
+   * - ``ESC P $ q r ESC \``
+     - DECSTBM
+     - ``t ; b r``, the top and bottom margins.
+   * - ``ESC P $ q s ESC \``
+     - DECSLRM
+     - ``l ; r s``, the left and right margins.
+   * - ``ESC P $ q SP q ESC \``
+     - DECSCUSR
+     - ``n SP q``, the cursor style, 1 to 6.
+   * - ``ESC P $ q " q ESC \``
+     - DECSCA
+     - ``1 " q`` while DECSCA 1 protects the characters written,
+       otherwise ``0 " q``, also when SPA protects them.
+   * - ``ESC P $ q * x ESC \``
+     - DECSACE
+     - ``2 * x`` for the rectangle, otherwise ``0 * x``.
+
+The SGR reply lists what `SGR Parameters`_ would set, separated by
+``;``: 1, 2, 3, the underline (4, or ``4:n`` for another style), 5 or
+6, 7, 8, 9, 53, then the foreground, the background, and the underline
+color. A foreground or background in palette entries 0-15 is 30-37,
+90-97, 40-47, or 100-107, however it was set. Any other palette color,
+and every palette underline color, is the ``38:5:n`` form. A 24-bit
+color is ``38:2::r:g:b`` with the numbers that set it. A default color
+is not listed.
+
+This is how a program finds what the terminal can draw without knowing
+its name. Neovim sets a curly underline with ``CSI 4:3 m``, asks for
+SGR, and uses the underline styles and the underline color when the
+reply is ``ESC P 1 $ r 0 ; 4:3 m ESC \``. It finds 24-bit color the
+same way.
 
 Cursor Style
 ------------
@@ -1102,8 +1301,7 @@ blinks. The space before the ``q`` is part of the sequence.
 
 Values above 6 are ignored. Mode 12 switches between the blinking and
 the steady style of the same shape, and OSC 12 sets the color of the
-cursor. While a wrap is pending, the cursor shows as a block on the last
-column. RIS puts the style back to 0, and DECSTR leaves it alone. The
+cursor. RIS puts the style back to 0, and DECSTR leaves it alone. The
 line editor changes the shape to show its mode, as `Terminal Size`_
 describes.
 
@@ -1357,10 +1555,9 @@ them, and OSC 4 does not. Palette entry 0 and the default background
 are transparent, so a plane behind the console shows through.
 
 A change to a palette entry or to a default color also changes the text
-already on the screen that was written in it.
-Text that SGR 1 made bright follows its bright entry, 8-15. A
-24-bit color, a transparent color, and an underline color from SGR 58
-do not change.
+already on the screen that was written in it, and an underline in that
+palette entry. Text that SGR 1 made bright follows its bright entry,
+8-15. A 24-bit color does not change.
 
 .. list-table::
    :widths: 8 22 70
@@ -1371,7 +1568,7 @@ do not change.
      - Effect
    * - 0
      - Reset
-     - The default colors, and all attributes off. SGR 11 stays on.
+     - The default colors, and all attributes off.
    * - 1
      - Bold
      - Brighter foreground: palette colors 0-7 become 8-15, and the
@@ -1385,8 +1582,8 @@ do not change.
    * - 4
      - Underline
      - A single underline. ``4:n`` (kitty) selects a style: ``4:0``
-       none, ``4:1`` single, ``4:2`` double, and ``4:3`` to ``4:5``
-       (curly, dotted, and dashed) draw as single.
+       none, ``4:1`` single, ``4:2`` double, ``4:3`` curly, ``4:4``
+       dotted, and ``4:5`` dashed. SGR 58 gives it a color of its own.
    * - 5
      - Blink (slow)
      - Blinks foreground. With iCE colors mode (``?33h``) set,
@@ -1403,13 +1600,6 @@ do not change.
    * - 9
      - Strikethrough
      - —
-   * - 10
-     - Primary font
-     - Controls act (SCO, Linux). Turns off SGR 11.
-   * - 11
-     - First alternate font
-     - Draw controls as characters (SCO, Linux). See
-       `C0 Control Codes`_.
    * - 21
      - Double underline
      - Per ECMA-48 and xterm.
@@ -1421,7 +1611,7 @@ do not change.
      - —
    * - 24
      - Underline off
-     - Clears both single and double underline.
+     - Clears an underline of any style.
    * - 25
      - Blink off
      - Clears slow and rapid blink.
@@ -1478,8 +1668,6 @@ SGR 38, 48, and 58 take a color in these forms, shown here for 38:
 - ``38;2;r;g;b``, ``38:2:r:g:b``, or ``38:2::r:g:b``: a 24-bit color.
   The empty field of the last form is the color space, which is
   ignored. A channel above 255 does nothing.
-- ``38;1`` or ``38:1``: the color as it is, made transparent, so a plane
-  behind the console shows through.
 
 An unknown or incomplete form is taken whole, so its numbers do not act
 as SGR parameters of their own.
@@ -1494,8 +1682,16 @@ ignored, and CAN and SUB cancel it.
 
 A color is an X11 color spec, as xterm takes it: ``#rgb``,
 ``#rrggbb``, ``#rrrgggbbb``, ``#rrrrggggbbbb``, or ``rgb:r/g/b`` with 1
-to 4 hex digits per channel. Color names and ``?`` queries are not
-accepted, and an item longer than 20 bytes is ignored.
+to 4 hex digits per channel. Color names are not accepted, and an item
+longer than 20 bytes is ignored.
+
+A ``?`` in place of a color asks what the color is. The reply is the
+OSC that sets that one color, with the color as ``rgb:rrrr/gggg/bbbb``,
+ended the way the question was ended, with BEL or ST. So
+``OSC 10 ; ? ; ? ST`` replies ``OSC 10 ; rgb:... ST`` and
+``OSC 11 ; rgb:... ST``. The terminal shows 5 bits of each
+channel, so the reply has the color to those 5 bits. One OSC can ask
+for up to 6 colors.
 
 .. list-table::
    :widths: 33 67
@@ -1506,6 +1702,7 @@ accepted, and an item longer than 20 bytes is ignored.
    * - OSC 4 ; n ; color ST
      - Set palette entry n, 0-255. More pairs of n and a color can
        follow, as in ``OSC 4 ; 1 ; #f00 ; 2 ; #0f0 ST``.
+       ``OSC 4 ; n ; ? ST`` replies ``OSC 4 ; n ; rgb:.../.../... ST``.
    * - OSC 104 ST
      - Reset the palette.
    * - OSC 104 ; n ST
@@ -1519,7 +1716,8 @@ accepted, and an item longer than 20 bytes is ignored.
      - Set the default background color. A second item sets the cursor
        color.
    * - OSC 12 ; color ST
-     - Set the cursor color.
+     - Set the cursor color. ``OSC 10 ; ? ST``, ``OSC 11 ; ? ST``, and
+       ``OSC 12 ; ? ST`` reply with each color.
    * - OSC 110 ST
      - Reset the default foreground color.
    * - OSC 111 ST
@@ -1559,10 +1757,10 @@ terminal back to its default.
 **DECSTR** is the soft reset that a program sends. It turns insert
 mode, origin mode, and cursor key mode off, sets the numeric keypad,
 turns autowrap on, shows the cursor, puts US ASCII in G0 and G1 with G0
-active, and resets SGR, character protection, the scroll region, and
-both saved cursors. It
-ends a pending wrap but does not move the cursor. It leaves the cursor
-style, iCE colors, the reverse screen, autorepeat, LNM, SGR 11, the
+active, and resets SGR, character protection, the scroll region, the
+left and right margins with mode 69, and both saved cursors. It ends a
+pending wrap but does not move the cursor. It leaves the cursor style,
+iCE colors, the reverse screen, autorepeat, LNM, CRM, DECSACE, the
 palette, the default colors, the tab stops, the line sizes, and the
 screen as they are.
 
