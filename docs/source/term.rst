@@ -359,6 +359,17 @@ Fe Escape Sequences
      - Reverse Index
      - Move the cursor up one row, and scroll the region down at the
        top margin.
+   * - ESC 6
+     - DECBI
+     - Back Index
+     - Move the cursor left one column. At the left margin, move the
+       columns between the margins right one column instead, on every
+       line of the scroll region.
+   * - ESC 9
+     - DECFI
+     - Forward Index
+     - Move the cursor right one column. At the right margin, move the
+       columns between the margins left one column instead.
    * - ESC 7
      - DECSC
      - Save Cursor
@@ -875,6 +886,18 @@ the system resets mode 69.
      - Move every line of the region n columns right. Blank cells come
        in at the left. The cursor does not move. Ignored when the
        cursor is outside the margins.
+   * - CSI n ' }
+     - DECIC
+     - Insert Column
+     - Insert n blank columns at the cursor's column, on every line of
+       the region. The columns up to the right margin move right.
+       Ignored when the cursor is outside the margins.
+   * - CSI n ' ~
+     - DECDC
+     - Delete Column
+     - Delete n columns at the cursor's column, on every line of the
+       region. Blank columns come in at the right margin. Ignored when
+       the cursor is outside the margins.
    * - CSI t ; b r
      - DECSTBM
      - Set Top and Bottom Margins
@@ -1508,7 +1531,7 @@ with ``ESC >``.
    * - Plus
      - ``+``
      - ``+``
-     - ``ESC O l``
+     - ``ESC O k``
    * - Comma
      - ``,``
      - ``,``
@@ -1534,13 +1557,70 @@ with ``ESC >``.
      - Enter
      - ``ESC O M``
 
-The application keypad is the keypad of a VT100, which has a comma key
-where a PC keypad has its plus key. F1 to F4 are its PF1 to PF4. In VT52
+The application keypad sends what xterm's does. A VT100 has a comma key
+where a PC keypad has its plus key: plus sends xterm's ``ESC O k``, and a
+keypad with a comma key sends the VT100's ``ESC O l``. F1 to F4 are the
+VT100's PF1 to PF4. In VT52
 mode, the application keypad sends ``ESC ?`` and the letter, such as
 ``ESC ? p``.
 
 On an :doc:`pico` with NumLock on, hold Alt and type the number of a
 character of the code page on the keypad to type that character.
+
+Modified Keys
+-------------
+
+Most keys with a character send one byte, so some keys cannot be told
+apart: Tab and Ctrl-I, Enter and Ctrl-M, Ctrl-A and Ctrl-Shift-A. A
+program that wants to tell them apart sets xterm's modifyOtherKeys, and
+those keys then send a sequence of their own:
+
+``ESC [ 27 ; m ; code ~``
+
+Here m is the modifier number of `Keyboard`_, and code is the code of
+the character the key types, in the code page: 97 for ``a``, 65 for
+``A``, 13 for Enter, 9 for Tab, 27 for Escape, and 127 for Backspace.
+Editors such as Vim, Neovim, and Emacs set it when they start.
+
+.. list-table::
+   :widths: 28 72
+   :header-rows: 1
+
+   * - Code
+     - Effect
+   * - CSI > 4 ; n m
+     - Set modifyOtherKeys to level n, 0 to 3. See below.
+   * - CSI > 4 m
+     - Level 0. ``CSI > 4 n`` and ``CSI > m`` do the same.
+   * - CSI ? 4 m
+     - Report the level, as ``ESC [ > 4 ; n m``.
+   * - CSI > 4 ; 1 f
+     - Set formatOtherKeys: the sequence is the shorter
+       ``ESC [ code ; m u``.
+   * - CSI > 4 ; 0 f
+     - Back to ``ESC [ 27 ; m ; code ~``. ``CSI > 4 f`` and ``CSI > f``
+       do the same.
+   * - CSI ? 4 g
+     - Report formatOtherKeys, as ``ESC [ > 4 ; n f``.
+
+The levels are xterm's:
+
+- **Level 0** (default). Keys send what `Keyboard`_ describes.
+- **Level 1.** Only a key that has no byte of its own sends the
+  sequence: Ctrl-Shift with a letter, Ctrl with a character that Ctrl
+  makes no control code of (such as Ctrl-1 or Ctrl-comma), and Enter or
+  Tab with Shift or Ctrl. Shift-Tab still sends ``ESC [ Z``. Alt still
+  sends ESC first.
+- **Level 2.** Every key with a modifier sends the sequence. That
+  includes Shift with a letter, so Shift-A sends ``ESC [ 27 ; 2 ; 65 ~``,
+  and Alt, which no longer sends ESC first. A character that only Shift
+  makes, such as ``!``, is typed as it is, but Shift-Space sends the
+  sequence. Ctrl-Backspace still sends BS.
+- **Level 3.** Every key sends the sequence, modified or not, with m
+  as 1 for no modifier.
+
+The cursor keys, the function keys, the editing keys, and the keypad
+send what they always do at every level. VT52 mode has no modified keys.
 
 SGR Parameters
 --------------
