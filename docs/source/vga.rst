@@ -1341,6 +1341,8 @@ image that fills the canvas: monochrome at 640x480, 16 colors at
      - OPTIONS
      - | bit 0:2 - 0=1, 1=2, 2=4, 3=8, or 4=16 bit color
        | bit 3 - reverse the order of the pixels in each byte
+       | bit 4 - draw every pixel twice across
+       | bit 5 - draw every pixel twice down
    * - $1:0:03
      - CONFIG
      - The XRAM address of the configuration structure.
@@ -1398,6 +1400,8 @@ The configuration structure is ``mode3_config_t``:
       #define MODE3_16BPP 0x04
 
       #define MODE3_REVERSE_BITS 0x08
+      #define MODE3_HDOUBLE 0x10
+      #define MODE3_VDOUBLE 0x20
 
       typedef struct
       {
@@ -1427,6 +1431,8 @@ The configuration structure is ``mode3_config_t``:
       MODE3_16BPP = $04
 
       MODE3_REVERSE_BITS = $08
+      MODE3_HDOUBLE      = $10
+      MODE3_VDOUBLE      = $20
 
       .struct mode3_config_t
           x_wrap           .byte
@@ -1456,6 +1462,8 @@ The configuration structure is ``mode3_config_t``:
       MODE3_16BPP = $04
 
       MODE3_REVERSE_BITS = $08
+      MODE3_HDOUBLE      = $10
+      MODE3_VDOUBLE      = $20
 
       MODE3_CONFIG_X_WRAP           = 0
       MODE3_CONFIG_Y_WRAP           = 1
@@ -1481,6 +1489,14 @@ new byte:
 When a byte holds more than one pixel, the leftmost pixel is in the most
 significant bits. ``MODE3_REVERSE_BITS`` selects the other order, with
 the leftmost pixel in the least significant bits.
+
+``MODE3_HDOUBLE`` and ``MODE3_VDOUBLE`` draw every pixel of the bitmap
+twice across and down. Doubled both ways, a 160x120 bitmap fills a
+320x240 canvas from a quarter of the XRAM that a 320x240 bitmap takes.
+``width_px`` and ``height_px`` are still the size of the bitmap, and a
+wrapped bitmap repeats at twice that size. The bitmap still moves a
+pixel of the canvas at a time, because ``x_pos_px`` and ``y_pos_px``
+don't double.
 
 
 .. _vga-mode-4:

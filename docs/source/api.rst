@@ -638,7 +638,8 @@ SYNCFS
 
    ``syncfs()`` waits until the writes to a file descriptor are done. For a
    file, it writes the pending data to storage. For ``PCM:`` and the MIDI
-   devices, it waits until the data has played or been sent.
+   devices, it waits until the data has played or been sent. For ``CON:``
+   and ``TTY:``, it waits until the text is on the screen.
 
    :Operation: RIA_OP_SYNCFS 0x1E
    :C proto: unistd.h

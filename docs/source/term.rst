@@ -208,8 +208,10 @@ ignored, and any other control or a byte from 0x80 to 0xFF ends it.
 Some older terminals could not keep up at full speed, so a program sent
 padding or waited after a slow operation such as a screen clear, or
 paused when the terminal sent XOFF. This terminal keeps up with the
-console at full speed, even through a screen clear, so a program needs
-no flow control, padding, or delays.
+console at full speed, even through a screen clear. In smooth scroll
+mode, the console holds a program's output while a line scrolls in, so
+a write takes as long as the scroll. A program needs no flow control,
+padding, or delays.
 
 C0 Control Codes
 ----------------
@@ -824,6 +826,12 @@ the whole screen by default. LF, IND, and NEL scroll it up at the bottom
 margin, and RI scrolls it down at the top margin. The primary and
 alternate screens share it.
 
+Mode ?4 (DECSCLM) turns on smooth scroll, as on a VT102. A new line
+moves into the scroll region one scanline at a time instead of all at
+once, about four lines a second, and the program's output waits while it
+does. A program that wants its last lines to finish moving before it
+exits calls ``syncfs()`` on ``stdout``.
+
 Mode 69 (DECLRMM) allows left and right margins, which DECSLRM sets.
 They work as in xterm. A cursor between them stays between them, except
 with CBT:
@@ -1231,9 +1239,9 @@ reset.
    * - ?2 (DECANM)
      - 1, ANSI mode. In VT52 mode, the request is not a sequence the
        terminal takes.
-   * - ?3 (DECCOLM), ?4 (DECSCLM)
-     - 4, permanently reset: 80 columns and no smooth scroll.
-   * - ?1, ?5, ?6, ?7, ?8, ?25, ?33, ?66, ?69, ?2004
+   * - ?3 (DECCOLM)
+     - 4 when the terminal is 80 columns wide, otherwise 0.
+   * - ?1, ?4, ?5, ?6, ?7, ?8, ?25, ?33, ?66, ?69, ?2004
      - 1 or 2.
    * - ?12
      - 2 for a steady cursor style, 1 for a blinking one.
