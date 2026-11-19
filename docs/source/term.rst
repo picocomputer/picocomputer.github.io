@@ -57,40 +57,41 @@ depend on the machine:
 - **RP6502-FPGA** and **RP6502-WEB.** The VGA terminal with a keyboard
   is the only terminal.
 
+A program uses the console through two device names, ``CON:`` and
+``TTY:``. A read of ``CON:`` returns cooked input from the `line editor
+<Read Line_>`_, a whole line that the user has typed and edited. A read
+of ``TTY:`` returns raw input, the bytes of the keys pressed so far, with
+no echo and no editing. Both take their input from the console, so a key
+that a read of ``TTY:`` returns never reaches the line editor. A write to
+``CON:`` adds a carriage return before each newline that lacks one, as a
+terminal needs. A write to ``TTY:`` sends its bytes unchanged. ``TTY:``
+is what the :ref:`RIA TX and RX registers <ria-uart>` provide, packaged
+as stdio.
+
+``stdin``, ``stdout``, and ``stderr`` start as ``CON:0``, ``CON:1``, and
+``CON:2``. These three block, as a C program expects. A read returns
+when the user presses Enter, and a write returns when every byte is
+sent. A write to ``CON:2`` goes to ``stderr``, and a write to the other
+two goes to ``stdout``. ``stdout`` and ``stderr`` are the same output
+except on a machine that keeps them apart, such as the :doc:`emu`.
+
+``CON:`` without a number does not block. A read returns 0 until the
+user presses Enter, and then returns the line. A write sends as many
+bytes as it can, returns how many it sent, and goes to ``stdout``. A
+program that keeps running while the user types, such as a game, uses
+``CON:``. ``TTY:`` does not block either.
+
+
 
 Read Line
 =========
 
-A **cooked** read returns a complete line. The user has edited freely
-with backspace, arrow keys, and optionally command completion and
-history; the editor flushes the line when Enter is pressed. A **raw**
-read returns bytes as they arrive, keystroke by keystroke, with no echo
-and no editing. The line editor of the RIA implements cooked input.
-
-A modern operating system layers canonical input and translated output
-over something configurable like termios. A full termios is too heavy
-for an 8-bit system, so the two modes worth having arrive as separate
-device names instead.
-
-Reading ``stdin`` is cooked and blocks until the user presses Enter.
-``stdout`` and ``stderr`` block too, inserting a carriage return before
-any newline that lacks one; all of the data is always sent, and a write
-blocks until it has fully drained into the output FIFOs. That is what a
-C programmer expects, and a poor fit for a multitasking 6502 program.
-Two alternate file paths offer non-blocking variants of the same
-channels:
-
-* ``CON:`` — non-blocking cooked input. ``read()`` returns 0 while the
-  user is still editing and returns the full newline-terminated line
-  once the editor flushes. Writes may send less than you asked for.
-* ``TTY:`` — non-blocking raw input, with no canonical input and no
-  newline translation. ``read()`` returns whatever bytes are queued.
-  This is what the :ref:`RIA TX and RX registers <ria-uart>` provide,
-  packaged as stdio.
-
-``CON:`` is locked to file descriptor 3 and ``TTY:`` to file descriptor
-4, and neither can be closed. A second open returns the same file
-descriptor as the first, and a close succeeds as a no-op.
+A read of ``CON:`` starts the line editor. The user types a line, edits
+it with backspace and the arrow keys, and presses Enter. The read then
+returns the line, ending with a newline. When the buffer of a read is
+shorter than the line, the next reads return the rest of it. Every
+``CON:`` uses the same line editor, so each line is returned once, to
+whichever ``CON:`` reads it first.
 
 .. _term-terminal-size:
 

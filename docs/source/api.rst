@@ -316,6 +316,14 @@ EXEC
    file is missing or is not a valid ROM, when its absolute path is longer than
    255 bytes, or when the argv data with that path does not fit in 512 bytes.
 
+   The new ROM gets the file descriptors of the ROM that called, as they
+   are, so a ROM can put a file or another console stream on ``stdin``,
+   ``stdout``, or ``stderr`` before it starts another. An open file of
+   ``ROM:`` or ``SAVE:`` belongs to the ROM that opened it, so while one is
+   open the call fails with EBUSY. When the last ROM of the chain exits,
+   every file closes, and the console is on 0, 1, and 2 again as
+   ``CON:0``, ``CON:1``, and ``CON:2``.
+
    To run again when the new ROM exits, a ROM first registers as the
    `Launcher`_.
 
@@ -334,7 +342,7 @@ EXEC
    :Operation: RIA_OP_EXEC 0x09
    :C proto: rp6502.h
    :returns: Does not return on success. -1 on error.
-   :errno: EINVAL
+   :errno: EBUSY, EINVAL
 
 
 EXIT
@@ -405,7 +413,7 @@ OPEN
    :C proto: fcntl.h
    :param path: Path of the file or the device stream.
    :param oflag: Options, ORed together.
-   :returns: File descriptor. -1 on error.
+   :returns: The lowest free file descriptor. -1 on error.
    :a regs: return, oflag
    :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM,
       ENOSPC
@@ -424,6 +432,46 @@ CLOSE
    :returns: 0 on success. -1 on error.
    :a regs: return, fildes
    :errno: EBADF, EIO, ENOSPC
+
+
+DUP
+~~~
+
+.. c:function:: int dup (int fildes)
+
+   ``dup()`` gives the open file of ``fildes`` another descriptor, the
+   lowest one free. The two descriptors share one read/write position, and
+   the file closes when the last of them closes.
+
+   :Operation: RIA_OP_DUP 0x12
+   :C proto: unistd.h
+   :param fildes: File descriptor.
+   :returns: The new file descriptor. -1 on error.
+   :a regs: return, fildes
+   :errno: EBADF, EMFILE
+
+
+.. _api-dup2:
+
+DUP2
+~~~~
+
+.. c:function:: int dup2 (int fildes, int fildes2)
+
+   ``dup2()`` gives the open file of ``fildes`` the descriptor
+   ``fildes2``. The two descriptors share one read/write position, and the
+   file closes when the last of them closes. If ``fildes2`` is already
+   open, ``dup2()`` closes it first and does not report an error from that
+   close. If ``fildes`` and ``fildes2`` are the same descriptor, ``dup2()``
+   changes nothing.
+
+   :Operation: RIA_OP_DUP2 0x13
+   :C proto: unistd.h
+   :param fildes: File descriptor.
+   :param fildes2: The descriptor it is to have.
+   :returns: ``fildes2``. -1 on error.
+   :a regs: return, fildes2
+   :errno: EBADF, EINVAL
 
 
 READ
@@ -603,14 +651,18 @@ SYNCFS
 ISATTY
 ~~~~~~
 
-.. c:function:: lib int isatty (int fildes)
+.. c:function:: int isatty (int fildes)
 
-   ``isatty()`` returns 1 when a file descriptor is the console: stdin,
-   stdout, stderr, ``CON:``, or ``TTY:``.
+   ``isatty()`` returns 1 when a file descriptor is the console, a ``CON:``
+   or a ``TTY:``, whichever descriptor it is on.
 
+   :Operation: RIA_OP_ISATTY 0x11
    :C proto: unistd.h
    :param fildes: File descriptor.
-   :returns: 1 for the console. 0 for any other file descriptor.
+   :returns: 1 for the console. 0 for any other file descriptor, and for a
+      closed one, which sets errno.
+   :a regs: return, fildes
+   :errno: EBADF
 
 
 Paths
@@ -1606,8 +1658,9 @@ To write a launcher:
    its own path in ``argv``. ``RIA_ATTR_EXIT_CODE`` holds the exit code
    of the ROM that exited.
 
-The launcher starts fresh each time, so it keeps anything that it needs
-between runs in a file, such as the next step of a shell. The
+The launcher starts fresh each time, with every file closed and the
+console on 0, 1 and 2, so it keeps anything that it needs between runs in
+a file, such as the next step of a shell. The
 registration clears when the launcher itself exits. When a ROM that the
 launcher starts does not load, the console shows the error, and the
 launcher does not run again.
