@@ -57,8 +57,9 @@ program writes the operation ID of the API call to RIA_OP.
 
 **canvas.** The grid of pixels that the VGA draws.
 
-**console.** The main terminal, connected to stdin, stdout, stderr, CON:,
-and TTY:.
+**console.** The standard streams of a program: stdin, stdout, stderr,
+CON:, and TTY:. Terminals attach to the console through the console
+manifold.
 
 **debug overlay.** The windows of machine state that `--debug` draws
 over the emulator window, such as the CPU, the VIA, and the memory
@@ -139,6 +140,11 @@ CMake, Testing, and other views.
 "your project".
 
 **terminal.** A device that a user types into and reads from.
+
+**VGA terminal.** The terminal of the VGA system: the terminal emulator
+that mode 0 draws, with the keyboard. Use "terminal" alone for any
+terminal, and "VGA terminal" only where the text is about this one. A
+machine built without the VGA system has no VGA terminal.
 
 **USB drive.** Removable USB storage that the RIA mounts as MSC0: to
 MSC9:.

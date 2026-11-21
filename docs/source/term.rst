@@ -21,9 +21,9 @@ This page covers three closely related parts. The `console manifold
 <Console Manifold_>`_ connects the streams to the terminals. The `line
 editor <Read Line_>`_ lets the user edit a line before pressing Enter,
 with no editing code in the program, and a program can keep running
-while the user types. The `terminal <Terminal_>`_ of the :doc:`vga`
-system draws the console, and its escape sequences let a program move
-the cursor, color its text, and draw boxes.
+while the user types. The escape sequences of the `VGA terminal
+<Terminal_>`_ let a program move the cursor, color its text, and draw
+boxes.
 
 
 .. _term-console-manifold:
@@ -31,18 +31,19 @@ the cursor, color its text, and draw boxes.
 Console Manifold
 ================
 
+The **console** is the standard streams of a program: ``stdin``,
+``stdout``, ``stderr``, ``CON:``, and ``TTY:``. On an :doc:`pico`, the
+**monitor** runs on the console too, for configuration and for loading
+ROMs.
+
 A **terminal** is a device that a user types into and reads from. The
-**console** is the main terminal, connected to ``stdin``, ``stdout``,
-``stderr``, ``CON:``, and ``TTY:``. On an :doc:`pico`, the **monitor**
-also runs on the console, for configuration and for loading ROMs.
+**console manifold** attaches several terminals to the console at once.
+Input from every terminal goes to the console, and the output of the
+console goes to every terminal.
 
-Several terminals can be attached to the console at once, and the
-machine combines them into one console. This is the **console
-manifold**. Input from every terminal goes to the console, and the
-output of the console goes to every terminal.
-
-Every machine has the VGA terminal with a keyboard. The other terminals
-depend on the machine:
+The **VGA terminal** is the terminal that :ref:`mode 0 <vga-mode-0>` of
+the :doc:`vga` system draws, with a keyboard. The other terminals depend
+on the machine:
 
 - **RP6502-PICO.** A terminal program on another computer connects to
   the USB port of the VGA module as a USB serial terminal. When the RIA
@@ -54,8 +55,8 @@ depend on the machine:
   choose how, and :ref:`In a Toolchain <emu-toolchain>` on the
   :doc:`emu` page describes them. When VS Code runs the emulator,
   ``stdout`` and ``stderr`` appear in the Debug Console of VS Code.
-- **RP6502-FPGA** and **RP6502-WEB.** The VGA terminal with a keyboard
-  is the only terminal.
+- **RP6502-FPGA** and **RP6502-WEB.** The VGA terminal is the only
+  terminal.
 
 A program uses the console through two device names, ``CON:`` and
 ``TTY:``. A read of ``CON:`` returns cooked input from the `line editor
@@ -98,14 +99,17 @@ whichever ``CON:`` reads it first.
 Terminal Size
 -------------
 
-A program that fits its output to the console, such as MS-BASIC, gets
-the width and the height of the terminal from :ref:`RIA_ATTR_RLN_WIDTH
-and RIA_ATTR_RLN_HEIGHT <api-ria-attributes>`. The line editor and the
-monitor of an :doc:`pico` use the same size. With no VGA module, the
-size is 80 columns by 24 rows. A program that is built for a fixed size
-can set it instead. Write a width from 2 to 255 to RIA_ATTR_RLN_WIDTH
-and a height from 1 to 255 to RIA_ATTR_RLN_HEIGHT, or 0 to both to go
-back to the size of the terminal.
+A program that fits its output to the terminal, such as MS-BASIC, gets
+the width and the height from :ref:`RIA_ATTR_RLN_WIDTH and
+RIA_ATTR_RLN_HEIGHT <api-ria-attributes>`. The line editor and the
+monitor of an :doc:`pico` use the same size. It is the size of the VGA
+terminal. With no VGA terminal, the size is 80 columns by 24 rows.
+
+A program that is built for a fixed size can set the size instead, and
+so can a program whose user types on another terminal, such as a USB
+serial terminal or a telnet terminal. Write a width from 2 to 255 to
+RIA_ATTR_RLN_WIDTH and a height from 1 to 255 to RIA_ATTR_RLN_HEIGHT,
+or 0 to both to go back to the size of the VGA terminal.
 
 The line editor turns insert mode (IRM) off at the start of input. In
 `VT52 Mode`_ it edits with characters and backspaces alone, and the
@@ -173,11 +177,6 @@ move on, entering the next field with a fresh ``read()`` and
 Terminal
 ========
 
-The :doc:`vga` system includes a color terminal that draws the console.
-:ref:`Mode 0 <vga-mode-0>` on the :doc:`vga` page describes where the
-terminal goes on the canvas, its 80 or 40 columns, and how a picture on
-a plane behind it shows through.
-
 The terminal is built to run software written for ``xterm-256color``,
 and to be as much like a DEC VT as that allows. Like xterm, it
 identifies itself as a VT420 with xterm's extensions. From the VT420 it
@@ -210,11 +209,10 @@ other control or a byte from 0x80 to 0xFF ends it.
 
 Some older terminals could not keep up at full speed, so a program sent
 padding or waited after a slow operation such as a screen clear, or
-paused when the terminal sent XOFF. This terminal keeps up with the
-console at full speed, even through a screen clear. In smooth scroll
-mode, the console holds a program's output while a line scrolls in, so
-a write takes as long as the scroll. A program needs no flow control,
-padding, or delays.
+paused when the terminal sent XOFF. This terminal keeps up with a
+program's output at full speed, even through a screen clear. In smooth
+scroll mode, a write takes as long as the scroll. A program needs no
+flow control, padding, or delays.
 
 C0 Control Codes
 ----------------
@@ -1089,10 +1087,8 @@ screen.
      - - 0: From the cursor to the end of the screen.
        - 1: From the start of the screen to the cursor.
        - 2: The whole screen. The cursor does not move.
-       - 3: Forget the rows that scrolled off the top. While the
-         console is shorter than the tallest it can be, the terminal
-         keeps these rows, and a taller console shows them again. The
-         screen is not erased.
+       - 3: Forget the rows that scrolled off the top. The screen is
+         not erased.
    * - CSI n K
      - EL
      - Erase in Line
@@ -1368,17 +1364,15 @@ State`_.
 Reports
 -------
 
-The terminal sends its replies to the console as input. The 40-column
-and 80-column terminals both follow the output, and only the one on the
-canvas replies. Set :ref:`RIA_ATTR_TERM_QUIET <api-ria-attributes>` to 1
-to turn the replies off.
+The terminal sends its replies to the console as input. These are the
+replies in the table below, the replies of `Mode Reports`_, `Setting
+Reports`_, and `Presentation State`_, and the answers to the color
+questions of `OSC Sequences`_. Set :ref:`RIA_ATTR_TERM_QUIET
+<api-ria-attributes>` to 1 to turn the replies off.
 
 Replies wait until the program reads them. Up to 256 bytes can wait,
 and a reply that does not fit is dropped whole, so a program that asks
-many questions should read the replies before it asks more. This covers
-the replies of `Mode Reports`_ and `Setting Reports`_ and the color
-questions of `OSC Sequences`_ too, and RIA_ATTR_TERM_QUIET turns those
-off as well.
+many questions should read the replies before it asks more.
 
 .. list-table::
    :widths: 18 13 22 47
@@ -2229,7 +2223,7 @@ The default foreground and background colors are separate from the
 256-color palette. They start as the white of palette entry 7 and the
 black of entry 0, but SGR 39 and 49 select them, OSC 10 and 11 change
 them, and OSC 4 does not. Palette entry 0 and the default background
-are transparent, so a plane behind the console shows through.
+are transparent, so a plane behind the terminal shows through.
 
 A change to a palette entry or to a default color also changes the text
 already on the screen that was written in it, and an underline in that

@@ -309,12 +309,12 @@ EXEC
    ``ria_execv()``, becomes ``argv[1]`` in the new ROM.
 
    After a successful call, the RIA stops the 6502, loads the new ROM, and
-   starts it. When the ROM does not load, the 6502 stays stopped, and the
-   display shows the console, with its text and the error. An :doc:`pico`
-   returns to its monitor. The :doc:`emu` exits, unless it runs with
-   ``--debug``. The other machines stay stopped. The ROM does not load when the
-   file is missing or is not a valid ROM, when its absolute path is longer than
-   255 bytes, or when the argv data with that path does not fit in 512 bytes.
+   starts it. When the ROM does not load, the 6502 stays stopped and the RIA
+   prints the error on the console. An :doc:`pico` returns to its monitor.
+   The :doc:`emu` exits, unless it runs with ``--debug``. The other machines
+   stay stopped. The ROM does not load when the file is missing or is not a
+   valid ROM, when its absolute path is longer than 255 bytes, or when the
+   argv data with that path does not fit in 512 bytes.
 
    The new ROM gets the file descriptors of the ROM that called, as they
    are, so a ROM can put a file or another console stream on ``stdin``,
@@ -639,7 +639,7 @@ SYNCFS
    ``syncfs()`` waits until the writes to a file descriptor are done. For a
    file, it writes the pending data to storage. For ``PCM:`` and the MIDI
    devices, it waits until the data has played or been sent. For ``CON:``
-   and ``TTY:``, it waits until the text is on the screen.
+   and ``TTY:``, it waits until the terminals show the text.
 
    :Operation: RIA_OP_SYNCFS 0x1E
    :C proto: unistd.h
@@ -1569,8 +1569,8 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        ``srand(ria_attr_get(RIA_ATTR_LRAND))``.
    * - | 0x05
        | ``RIA_ATTR_BEL``
-     - Set it to 0 to silence the console bell, which rings when a program
-       prints BEL (``\a``). Set it to 1 to turn it back on.
+     - Set it to 0 to silence the bell of the VGA terminal, which rings when
+       a program prints BEL (``\a``). Set it to 1 to turn it back on.
    * - | 0x06
        | ``RIA_ATTR_LAUNCHER``
      - Set it to 1 to register the running ROM as the launcher, and to 0
@@ -1582,7 +1582,7 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        for a launcher to test. ``exit(-1)`` reads back as 65535.
    * - | 0x08
        | ``RIA_ATTR_SIGINT``
-     - Read-only. 1 after the user presses Ctrl-C on the console, even
+     - Read-only. 1 after the user presses Ctrl-C on a terminal, even
        while the input before the Ctrl-C is still unread. A get clears it.
        It is the SIGINT bit of `IRQ`_.
    * - | 0x09
@@ -1592,22 +1592,27 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        the line editor to upper case, or to 2 to invert their case.
    * - | 0x0A
        | ``RIA_ATTR_RLN_WIDTH``
-     - The width of the console, in columns, for a program that fits its
-       output to the console. Set it to a width from 2 to 255 to use that
-       width, or to 0 to use the width of the terminal.
+     - The width of the terminal, in columns. The line editor uses it, and a
+       program that fits its output to the terminal can read it. It is the
+       width of the VGA terminal until a program sets it. Set it to a width
+       from 2 to 255 when the user types on another terminal, such as a USB
+       serial terminal, or to 0 to use the width of the VGA terminal again.
    * - | 0x0B
        | ``RIA_ATTR_RLN_HEIGHT``
-     - The height of the console, in rows. Set it to a height from 1 to
-       255 to use that height, or to 0 to use the height of the terminal.
+     - The height of the terminal, in rows. The line editor uses it, and a
+       program that fits its output to the terminal can read it. It is the
+       height of the VGA terminal until a program sets it. Set it to a height
+       from 1 to 255 when the user types on another terminal, such as a USB
+       serial terminal, or to 0 to use the height of the VGA terminal again.
    * - | 0x0C
        | ``RIA_ATTR_RLN_SUPPRESS_NL``
      - Set it to 1 for a program that draws a form. Enter then keeps the
        cursor on the row of the field, so a field on the last row does not
-       scroll the console. The line that the program reads still ends with
+       scroll the terminal. The line that the program reads still ends with
        ``\n``.
    * - | 0x0D
        | ``RIA_ATTR_TERM_QUIET``
-     - Set it to 1 to turn off the replies of the terminal to
+     - Set it to 1 to turn off the replies of the VGA terminal to
        :ref:`reports <term-reports>`.
    * - | 0x0E
        | ``RIA_ATTR_PCM_UNDERRUNS``
@@ -1663,8 +1668,8 @@ The launcher starts fresh each time, with every file closed and the
 console on 0, 1 and 2, so it keeps anything that it needs between runs in
 a file, such as the next step of a shell. The
 registration clears when the launcher itself exits. When a ROM that the
-launcher starts does not load, the console shows the error, and the
-launcher does not run again.
+launcher starts does not load, the RIA prints the error on the console,
+and the launcher does not run again.
 
 A menu works best when every game in it has a way to exit, such as an
 Exit item in its menu. On a keyboard, Alt-F4 also exits the running ROM as

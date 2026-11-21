@@ -186,10 +186,10 @@ work.
        ``16:9``,
        ``16:10``
      - A fixed shape for the window. The console canvas has the same
-       shape, at 640x480, 640x360, or 640x400, with 30, 22, or 25 rows,
-       and a canvas of another shape is letterboxed or pillarboxed.
-       Without it, the console canvas is 640x480, and the window takes
-       the shape of each canvas.
+       shape, at 640x480, 640x360, or 640x400, and the VGA terminal on it
+       has 30, 22, or 25 rows. A canvas of another shape is letterboxed or
+       pillarboxed. Without it, the console canvas is 640x480, and the
+       window takes the shape of each canvas.
    * - ``--script``
      - ``file``, or
        ``-``
@@ -202,7 +202,7 @@ work.
    * - ``--stdin``
      - \-
      - The host's stdin becomes the machine's console input. A terminal
-       there becomes the console itself. Implied by ``--headless``. See
+       there attaches to the console. Implied by ``--headless``. See
        `In a Toolchain`_.
    * - ``--install``
      - ``file``
@@ -341,9 +341,9 @@ Scripting
 
 ``--script`` drives the machine with no one at the keyboard. It types,
 works the gamepads and the pointer, waits for what the program writes to
-stdout and stderr and for what reaches the screen, and checks what the
-program produced, which is enough to turn a ROM into a test that passes or
-fails.
+stdout and stderr and for everything the console outputs, and checks what
+the program produced, which is enough to turn a ROM into a test that passes
+or fails.
 
 .. code-block:: text
 
@@ -380,10 +380,10 @@ Text is UTF-8, and so is what ``wait`` and ``expect`` search, converted
 from the machine's code page as it is written. ``stdout`` and ``stderr``
 are the bytes the program wrote, before the console puts a carriage return
 in front of each newline, so a line the program prints ends in ``\n``.
-``console`` is what reaches the screen: those bytes with the carriage
-returns, the line editor's echo of what is typed, and the system's own
-messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
-``"caf\xC3\xA9"`` is ``"café"``.
+``console`` is everything the console outputs: those bytes with the
+carriage returns, the line editor's echo of what is typed, and the system's
+own messages. An escape from ``\x80`` to ``\xFF`` is a byte of
+UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
 
 .. code-block:: text
 
@@ -511,8 +511,8 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
        the first line, or just before or after ``load``. ``state load``
        replaces the stream.
    * - ``sys run|stop|break``
-     - Start the machine, stop it, or interrupt it the way a break at
-       the console would.
+     - Start the machine, stop it, or interrupt it the way a break from
+       a terminal would.
    * - ``reply [on|off]``
      - Answer every command on stdout. See `Driving it from a program`_.
    * - ``let name = expr``

@@ -366,10 +366,10 @@ debugging <emu-debugging>`.
 
 The **RP6502-PICO** launch configuration builds the project and runs the
 ROM on an :doc:`pico`. It uploads the ROM to the RP6502-PICO, then runs
-it from there. The upload replaces any file with the same name. The
-console opens in the VS Code Terminal panel. The RP6502-PICO has no
-breakpoints or stepping, so a common debugging technique is ``printf()``
-to the console.
+it from there. The upload replaces any file with the same name. The VS
+Code Terminal panel attaches to the console as a terminal. The
+RP6502-PICO has no breakpoints or stepping, so a common debugging
+technique is ``printf()`` to the console.
 
 An RP6502-PICO may connect through the USB port of the VGA module or
 over :ref:`telnet <pico-telnet-console>`, so the launch configuration

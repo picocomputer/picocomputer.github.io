@@ -1441,13 +1441,14 @@ part of the tablet beyond the canvas holds the pointer at the nearest edge.
 same way as the counters of the `Mouse`_. Reading them once a frame is
 enough for normal use.
 
-Sometimes the pointer is already on the screen, and sometimes you have to
-draw it. ``TABLET_STATUS_HOST_CURSOR`` in ``status`` is set when it's
-already there, which happens only with a mouse on the :doc:`emu` or the
-:doc:`web`. Writing one of the ``TABLET_CURSOR_`` values to ``control``
-changes its shape, and ``TABLET_CURSOR_OFF`` hides it. If
-``TABLET_STATUS_HOST_CURSOR`` is clear, there's no pointer for ``control``
-to change, so you need to draw your own.
+A pointer shows wherever the first contact hovers, on top of the canvas,
+in the shape that ``control`` holds. Mapping the tablet sets ``control`` to
+``TABLET_CURSOR_ARROW``. Write another ``TABLET_CURSOR_`` value to
+``control`` to change the shape, or ``TABLET_CURSOR_OFF`` to hide the
+pointer and draw your own. A touchscreen has no pointer.
+
+``TABLET_STATUS_HOST_CURSOR`` in ``status`` is always set, so a program can
+ignore it.
 
 .. tab:: C
 

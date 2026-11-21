@@ -35,7 +35,7 @@ VGA system has six rendering modes:
    * - Mode
      - Draws
    * - :ref:`Mode 0 <vga-mode-0>`
-     - The console, with the text that your program prints.
+     - The VGA terminal, with the text that your program prints.
    * - :ref:`Mode 1 <vga-mode-1>`
      - Colored text in cells, for menus and status bars.
    * - :ref:`Mode 2 <vga-mode-2>`
@@ -52,8 +52,8 @@ A mode can render on only a portion of the canvas, a range of scanlines
 another, without using interrupts.
 
 Most modes need a configuration structure in XRAM. It holds the address
-of the mode's data and where that data goes on the canvas. The console,
-mode 0, needs nothing in XRAM.
+of the mode's data and where that data goes on the canvas. Mode 0, the
+VGA terminal, needs nothing in XRAM.
 
 Putting a picture on the canvas takes four steps.
 
@@ -73,21 +73,21 @@ mode.
 
 Here are the four steps in a program, the start of a graphical text
 adventure. It splits the canvas in two: a picture at the top, and the
-console under it, where you type. The split takes just two calls.
+VGA terminal under it, where you type. The split takes just two calls.
 
 .. image:: _static/vga/ranges-light.svg
    :class: only-light
    :width: 560
    :alt: A 320 by 240 canvas. Mode 3 draws a bitmap of sky and grass on
-         scanlines 0 to 159, and mode 0 draws the console on scanlines 160 to
-         239.
+         scanlines 0 to 159, and mode 0 draws the VGA terminal on scanlines
+         160 to 239.
 
 .. image:: _static/vga/ranges-dark.svg
    :class: only-dark
    :width: 560
    :alt: A 320 by 240 canvas. Mode 3 draws a bitmap of sky and grass on
-         scanlines 0 to 159, and mode 0 draws the console on scanlines 160 to
-         239.
+         scanlines 0 to 159, and mode 0 draws the VGA terminal on scanlines
+         160 to 239.
 
 You lay out XRAM in your program's ``xram.h``, which :ref:`XRAM Memory
 Map <sdk-xram-memory-map>` in the :doc:`sdk` covers in full. The file
@@ -144,7 +144,7 @@ configuration structure:
           };
           xram0_write(XRAM_BITMAP_CONFIG, &config, sizeof(config));
 
-          // 4. Program the scanlines: the bitmap above, the console below.
+          // 4. Program the scanlines: bitmap above, VGA terminal below.
           xreg_vga_mode3(MODE3_8BPP, XRAM_BITMAP_CONFIG, 0, 0, 160);
           xreg_vga_mode0(0, 160);
 
@@ -189,7 +189,7 @@ configuration structure:
           config.xram_palette_ptr = 0xFFFF;
           xram0_write(XRAM_BITMAP_CONFIG, &config, sizeof(config));
 
-          // 4. Program the scanlines: the bitmap above, the console below.
+          // 4. Program the scanlines: bitmap above, VGA terminal below.
           xreg_vga_mode3(MODE3_8BPP, XRAM_BITMAP_CONFIG, 0, 0, 160);
           xreg_vga_mode0(0, 160);
 
@@ -227,11 +227,11 @@ member.
 
 **Step 4** programs the scanlines, and the picture appears.
 ``xreg_vga_mode3()`` puts the bitmap on scanlines 0 to 159.
-``xreg_vga_mode0()`` puts the console on the scanlines from 160 down. It
-leaves off END, so the console runs to the bottom of the canvas. The
-first 0 in each call is the plane, which `Planes`_ describes. `Modes`_
-explains the range of scanlines, and `Mode 3: Bitmap`_ and `Mode 0:
-Console`_ give each macro's arguments.
+``xreg_vga_mode0()`` puts the VGA terminal on the scanlines from 160
+down. It leaves off END, so the VGA terminal runs to the bottom of the
+canvas. The first 0 in each call is the plane, which `Planes`_
+describes. `Modes`_ explains the range of scanlines, and `Mode 3:
+Bitmap`_ and `Mode 0: Terminal`_ give each macro's arguments.
 
 Last, the program prints "You are standing in an open field." Then,
 after each line that you type, it prints "Nothing happens." This
@@ -270,11 +270,11 @@ lines rarely match the rows of the canvas. To the program, the display
 renders as many scanlines as the canvas has rows: a 320x240 canvas has
 240 scanlines, even on a 640x480 display.
 
-Your ROM starts on the console canvas, which shows only the console and
-cannot be programmed. Before you draw, select a graphics canvas in one of
-the six sizes. It starts blank, without even the console. Anything that
-you print stays hidden until you put mode 0 on a plane. When your ROM
-stops, the VGA system goes back to the console canvas.
+Your ROM starts on the console canvas, which shows only the VGA terminal
+and cannot be programmed. Before you draw, select a graphics canvas in
+one of the six sizes. It starts blank, without even the VGA terminal.
+Anything that you print stays hidden until you put mode 0 on a plane.
+When your ROM stops, the VGA system goes back to the console canvas.
 
 
 Planes
@@ -588,8 +588,8 @@ Canvas Types
 The CANVAS register selects the console canvas or a graphics canvas in
 one of six sizes. Selecting a graphics canvas always starts it blank,
 with no scanlines programmed, even if it was already selected. The
-console canvas shows only the console and cannot be programmed. Your ROM
-starts on the console canvas, and the VGA system goes back to it when
+console canvas shows only the VGA terminal and cannot be programmed. Your
+ROM starts on the console canvas, and the VGA system goes back to it when
 your ROM stops.
 
 .. list-table::
@@ -668,14 +668,14 @@ This call selects the 320x240 canvas:
 
 .. _vga-mode-0:
 
-Mode 0: Console
----------------
+Mode 0: Terminal
+----------------
 
-Mode 0 draws the console, the built-in terminal that a program prints
-to. :doc:`term` describes the terminal and its escape sequences. The
-console can be composited with graphics and sprites. Its default
-background is transparent, as is ANSI color 0, so a picture on a plane
-behind the console shows as the background of every character.
+Mode 0 draws the VGA terminal, which shows the text that a program
+prints. :doc:`term` describes its escape sequences. The VGA terminal can
+be composited with graphics and sprites. Its default background is
+transparent, as is ANSI color 0, so a picture on a plane behind it shows
+as the background of every character.
 
 .. list-table::
    :widths: 5 5 90
@@ -686,7 +686,7 @@ behind the console shows as the background of every character.
      - Description
    * - $1:0:01
      - MODE
-     - 0 - Console
+     - 0 - Terminal
    * - $1:0:02
      - PLANE
      - The plane, 0-2.
@@ -697,16 +697,16 @@ behind the console shows as the background of every character.
      - END
      - One past the last scanline, or 0 for the height of the canvas.
 
-For example, this call puts the console on plane 0, over the whole
+For example, this call puts the VGA terminal on plane 0, over the whole
 canvas:
 
 .. code-block:: C
 
   xreg_vga_mode0(0);
 
-On a canvas 640 pixels wide, the console has 80 columns in an 8x16 font.
-On a canvas 320 pixels wide, it has 40 columns in an 8x8 font. With
-BEGIN and END at 0, the console has as many rows as fit on the canvas:
+On a canvas 640 pixels wide, the VGA terminal has 80 columns in an 8x16
+font. On a canvas 320 pixels wide, it has 40 columns in an 8x8 font.
+With BEGIN and END at 0, it has as many rows as fit on the canvas:
 
 - 30 rows on a canvas 240 or 480 tall.
 - 25 rows on a canvas 200 or 400 tall.
@@ -714,11 +714,11 @@ BEGIN and END at 0, the console has as many rows as fit on the canvas:
 - 32 rows on the 640x512 console canvas of an SXGA display.
 
 For any other BEGIN and END, the number of scanlines between them must be
-a multiple of the font height, so that the console has a whole number of
-rows.
+a multiple of the font height, so that the VGA terminal has a whole
+number of rows.
 
-There is only one console. When you program scanlines with mode 0 again,
-the console moves to the new plane and scanlines.
+There is only one VGA terminal. When you program scanlines with mode 0
+again, it moves to the new plane and scanlines.
 
 .. tab:: C
 
@@ -2243,8 +2243,8 @@ program set these registers.
    * - $1:F:00
      - DISPLAY
      - Sets the aspect ratio of the display, resets CANVAS to the
-       console canvas, and resets the console's terminal. The reset
-       leaves the text on the screen and the cursor where it is.
+       console canvas, and resets the VGA terminal. The reset leaves the
+       text on the screen and the cursor where it is.
 
        * 0 - VGA (4:3) 640x480
        * 1 - HD (16:9) 640x480 and 1280x720
@@ -2267,7 +2267,7 @@ program set these registers.
        * 2 - Request
    * - $1:F:05
      - TERM_TX
-     - Writes one byte to the VGA system's terminal only. The USB port
+     - Writes one byte to the VGA terminal only. The USB port
        of the VGA module does not get it.
    * - $1:F:06
      - REBOOT_OR_LOCKUP

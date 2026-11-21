@@ -71,24 +71,21 @@ system reboots after each one.
 Console
 =======
 
-The console of an RP6502-PICO is on the :ref:`console manifold
-<term-console-manifold>`, and a terminal can be attached in three ways:
+Terminals attach to the console of an RP6502-PICO through the
+:ref:`console manifold <term-console-manifold>`, in three ways that all
+work at once:
 
-* **VGA and USB keyboard.** In the standard configuration with a
-  :doc:`vga` module, the console is accessed with a VGA monitor, or an
-  HDMI display with a VGA-to-HDMI cable, and a USB keyboard plugged into
-  the RIA.
-* **USB CDC ACM.** Connect the USB port on the VGA module to a computer
-  and access the console over the USB CDC ACM serial port that appears.
-  No driver is needed.
-* **Telnet.** With a Pi Pico 2 W, the console is also on the network. See
-  `Telnet Console`_ for setup.
+* **VGA terminal.** In the standard configuration with a :doc:`vga`
+  module, the VGA terminal is on a VGA monitor, or an HDMI display with a
+  VGA-to-HDMI cable, and a USB keyboard is plugged into the RIA.
+* **USB serial terminal.** Connect the USB port on the VGA module to a
+  computer and open the USB CDC ACM serial port that appears. No driver
+  is needed.
+* **Telnet terminal.** With a Pi Pico 2 W, the console is also on the
+  network. See `Telnet Console`_ for setup.
 
-5V Power is applied to the VGA module, enough for all your devices plus one
-watt for the RP6502-PICO itself.
-
-Inside the machine, the console is a UART between the RIA and the VGA
-module: 115200 bps, 8-bit words, no parity, 1 stop bit.
+Inside the machine, the console runs over a UART between the RIA and the
+VGA module: 115200 bps, 8-bit words, no parity, 1 stop bit.
 
 The line editor lays out lines for the :ref:`size <term-terminal-size>`
 of the VGA terminal, or for 80 columns by 24 rows when no VGA module is
@@ -363,7 +360,7 @@ Telnet Console
 ==============
 
 The console can be exposed over the network. A telnet client is then a
-console like any other, for the monitor and for a running 6502. The
+terminal like any other, for the monitor and for a running program. The
 traffic is unencrypted, so anything typed or printed can be read along
 the way, including the key.
 
@@ -375,12 +372,11 @@ the way, including the key.
      - Description
    * - ``SET PORT (port|0)``
      - The TCP port to listen on. The default is ``23``, the standard
-       telnet port; ``0`` disables the telnet console.
+       telnet port; ``0`` disables telnet.
    * - ``SET KEY (key|-)``
      - The passkey a client sends to connect. Use ``-`` to clear it.
 
-The telnet console starts listening once ``KEY`` is set and ``PORT`` is
-non-zero.
+Telnet starts listening once ``KEY`` is set and ``PORT`` is non-zero.
 
 
 Modem Emulation
@@ -388,8 +384,8 @@ Modem Emulation
 
 The RP6502-PICO emulates a Hayes modem — the classic AT command set —
 for reaching BBSes (bulletin board systems). It places outgoing calls
-and answers incoming ones over either raw TCP or telnet. As with the
-telnet console, the connection is unencrypted.
+and answers incoming ones over either raw TCP or telnet. As with telnet
+terminals, the connection is unencrypted.
 
 .. note::
 
