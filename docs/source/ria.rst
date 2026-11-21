@@ -1472,6 +1472,10 @@ to change, so you need to draw your own.
       #define TABLET_CURSOR_HAND 4
       #define TABLET_CURSOR_RESIZE_EW 5
       #define TABLET_CURSOR_RESIZE_NS 6
+      #define TABLET_CURSOR_RESIZE_NWSE 7
+      #define TABLET_CURSOR_RESIZE_NESW 8
+      #define TABLET_CURSOR_MOVE 9
+      #define TABLET_CURSOR_NOT_ALLOWED 10
 
       #define xreg_ria_tablet(...) xreg(0x0, 0x0, 0x03, __VA_ARGS__)
 
@@ -1517,13 +1521,17 @@ to change, so you need to draw your own.
       TABLET_FLAG_FORWARD  = $10
       TABLET_FLAG_HOVER    = $80
 
-      TABLET_CURSOR_OFF       = 0
-      TABLET_CURSOR_ARROW     = 1
-      TABLET_CURSOR_CROSSHAIR = 2
-      TABLET_CURSOR_IBEAM     = 3
-      TABLET_CURSOR_HAND      = 4
-      TABLET_CURSOR_RESIZE_EW = 5
-      TABLET_CURSOR_RESIZE_NS = 6
+      TABLET_CURSOR_OFF         = 0
+      TABLET_CURSOR_ARROW       = 1
+      TABLET_CURSOR_CROSSHAIR   = 2
+      TABLET_CURSOR_IBEAM       = 3
+      TABLET_CURSOR_HAND        = 4
+      TABLET_CURSOR_RESIZE_EW   = 5
+      TABLET_CURSOR_RESIZE_NS   = 6
+      TABLET_CURSOR_RESIZE_NWSE = 7
+      TABLET_CURSOR_RESIZE_NESW = 8
+      TABLET_CURSOR_MOVE        = 9
+      TABLET_CURSOR_NOT_ALLOWED = 10
 
       .macro xreg_ria_tablet addr
           xreg $0, $0, $03, addr
@@ -1573,13 +1581,17 @@ to change, so you need to draw your own.
       TABLET_FLAG_FORWARD  = $10
       TABLET_FLAG_HOVER    = $80
 
-      TABLET_CURSOR_OFF       = 0
-      TABLET_CURSOR_ARROW     = 1
-      TABLET_CURSOR_CROSSHAIR = 2
-      TABLET_CURSOR_IBEAM     = 3
-      TABLET_CURSOR_HAND      = 4
-      TABLET_CURSOR_RESIZE_EW = 5
-      TABLET_CURSOR_RESIZE_NS = 6
+      TABLET_CURSOR_OFF         = 0
+      TABLET_CURSOR_ARROW       = 1
+      TABLET_CURSOR_CROSSHAIR   = 2
+      TABLET_CURSOR_IBEAM       = 3
+      TABLET_CURSOR_HAND        = 4
+      TABLET_CURSOR_RESIZE_EW   = 5
+      TABLET_CURSOR_RESIZE_NS   = 6
+      TABLET_CURSOR_RESIZE_NWSE = 7
+      TABLET_CURSOR_RESIZE_NESW = 8
+      TABLET_CURSOR_MOVE        = 9
+      TABLET_CURSOR_NOT_ALLOWED = 10
 
       .macro xreg_ria_tablet addr
           xreg $0, $0, $03, \addr

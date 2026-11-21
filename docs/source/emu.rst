@@ -108,8 +108,8 @@ around these limits:
   Settings > Input > Auto Enable 'Game Focus' Mode > Detect turns Game
   Focus on whenever the core is loaded.
 - **Mouse** — libretro has no way to share the host's cursor, so the
-  core reports no host cursor and the program draws its own. With Game
-  Focus off, RetroArch shows its own cursor as well. With Game Focus on,
+  core draws the tablet's pointer on the canvas itself. With Game Focus
+  off, RetroArch shows its own cursor as well. With Game Focus on,
   RetroArch captures the mouse, and the edges of the screen are hard to
   reach.
 

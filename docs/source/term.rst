@@ -178,12 +178,14 @@ The :doc:`vga` system includes a color terminal that draws the console.
 terminal goes on the canvas, its 80 or 40 columns, and how a picture on
 a plane behind it shows through.
 
-The terminal is a VT102 with most of what xterm adds: 256 colors and
-24-bit color, the alternate screen, the palette sequences, bracketed
-paste, left and right margins, and the rectangle sequences of the
-VT420. It runs what is written for ``xterm-256color``. It identifies
-itself as a VT102. The tables below list every sequence that it acts
-on.
+The terminal is built to run software written for ``xterm-256color``,
+and to be as much like a DEC VT as that allows. Like xterm, it
+identifies itself as a VT420 with xterm's extensions. From the VT420 it
+has the left and right margins, the rectangle sequences, the four
+character sets G0 to G3 with DEC Technical, and the reports of the
+VT420. From xterm it has 256 colors and 24-bit color, the alternate
+screen, the palette sequences, and bracketed paste. The tables below
+list every sequence that it acts on.
 
 Text is in the 8-bit code page of :ref:`RIA_ATTR_CODE_PAGE
 <api-ria-attributes>`, one byte for each character. The terminal does
@@ -199,11 +201,12 @@ The terminal also has a few features from other terminals:
 
 The terminal parses escape sequences as xterm does. It ignores a
 sequence that it does not know, whole. It ignores APC, PM, and SOS
-strings up to the ST that ends them, and DCS strings too, except the
-one that asks for a setting (DECRQSS). Inside a sequence, CAN and SUB
-cancel the sequence, and ESC starts a new one. BS, HT, LF, VT, FF, CR,
-SO, SI, and BEL act without ending the sequence, NUL and DEL are
-ignored, and any other control or a byte from 0x80 to 0xFF ends it.
+strings up to the ST that ends them, and DCS strings too, except
+DECRQSS, which asks for a setting, and DECRSPS, which restores the
+cursor or the tab stops. Inside a sequence, CAN and SUB cancel the
+sequence, and ESC starts a new one. BS, HT, LF, VT, FF, CR, SO, SI, and
+BEL act without ending the sequence, NUL and DEL are ignored, and any
+other control or a byte from 0x80 to 0xFF ends it.
 
 Some older terminals could not keep up at full speed, so a program sent
 padding or waited after a slow operation such as a screen clear, or
@@ -277,12 +280,14 @@ C0 Control Codes
      - 0x0E
      - SO
      - Shift Out
-     - Make G1 the active charset slot. See `Charset Designation`_.
+     - LS1: put G1 in GL, the set that characters draw from. See
+       `Character Sets`_.
    * - ^O
      - 0x0F
      - SI
      - Shift In
-     - Make G0 the active charset slot. See `Charset Designation`_.
+     - LS0: put G0 in GL, the set that characters draw from. See
+       `Character Sets`_.
    * - ^P-^W
      - 0x10-0x17
      - —
@@ -376,20 +381,21 @@ Fe Escape Sequences
    * - ESC 7
      - DECSC
      - Save Cursor
-     - Save the cursor's position, a pending wrap, SGR, the charset
-       slots and which one is active, and origin mode. Autowrap is not
-       saved. The primary and alternate screens have separate saves.
-       ``CSI s`` is the same, unless mode 69 has made it DECSLRM.
+     - Save the cursor's position, a pending wrap, SGR, the character
+       sets in G0 to G3, which of them is in GL, a pending single
+       shift, and origin mode. Autowrap is not saved. The primary and
+       alternate screens have separate saves. ``CSI s`` is the same,
+       unless mode 69 has made it DECSLRM.
    * - ESC 8
      - DECRC
      - Restore Cursor
      - Restore what DECSC saved. With nothing saved, move the cursor
-       home with SGR 0, US ASCII in G0 and G1, G0 active, and origin
-       mode off. ``CSI u`` is the same.
+       home with SGR 0, US ASCII in G0 to G3, G0 in GL, no single
+       shift, and origin mode off. ``CSI u`` is the same.
    * - ESC Z
      - DECID
      - Identify Terminal
-     - Reply as Primary DA does, ``ESC [ ? 6 c``.
+     - Reply as Primary DA does, ``ESC [ ? 64 ; 6 ; 21 ; 22 ; 28 c``.
    * - ESC [
      - CSI
      - Control Sequence Introducer
@@ -402,7 +408,9 @@ Fe Escape Sequences
      - DCS
      - Device Control String
      - Start a string, which runs up to ST. ``ESC P $ q`` asks for a
-       setting. See `Setting Reports`_. Any other is ignored.
+       setting. See `Setting Reports`_. ``ESC P 1 $ t`` restores the
+       cursor and ``ESC P 2 $ t`` the tab stops. See `Presentation
+       State`_. Any other is ignored.
    * - ESC X, ESC ^, ``ESC _``
      - SOS, PM, APC
      - Strings
@@ -411,29 +419,44 @@ Fe Escape Sequences
      - ST
      - String Terminator
      - End an OSC sequence or a string.
-   * - ESC (, ESC )
-     - —
-     - Designate G0, G1
-     - Load a charset into G0 or G1. See `Charset Designation`_.
+   * - ESC (, ESC ), ``ESC *``, ESC +
+     - SCS
+     - Designate G0, G1, G2, G3
+     - Load a character set into G0, G1, G2, or G3. See `Character
+       Sets`_.
+   * - ESC n, ESC o
+     - LS2, LS3
+     - Locking Shift Two, Three
+     - Put G2 or G3 in GL, the set that characters draw from.
    * - ESC N, ESC O
      - SS2, SS3
      - Single Shift Two, Three
-     - Ignored. The next byte prints as itself.
+     - Draw the next character from G2 or G3. The character after it
+       draws from GL again.
+   * - ESC ~, ESC }, ``ESC |``
+     - LS1R, LS2R, LS3R
+     - Locking Shift Right
+     - Ignored. Bytes 0x80 to 0xFF are always characters of the code
+       page.
    * - ESC # 3, ESC # 4
      - DECDHL
      - Double-Height Line
      - Make the cursor's line the top half (3) or the bottom half (4) of
-       a double-height line. Write the same text on both rows. Ignored
+       a double-height line. Write the same text on both rows. The line
+       shows half as many columns, and the characters past the middle
+       stay on it out of sight until it is made single size. Ignored
        while mode 69 is set, as DECDWL is.
    * - ESC # 5
      - DECSWL
      - Single-Width Line
-     - Make the cursor's line single size.
+     - Make the cursor's line single size. Characters that were past
+       the middle of a double-size line show again.
    * - ESC # 6
      - DECDWL
      - Double-Width Line
-     - Make the cursor's line double width. It holds half as many
-       columns.
+     - Make the cursor's line double width. It shows half as many
+       columns. The characters past the middle stay on the line out of
+       sight, and show again when the line is made single width.
    * - ESC # 8
      - DECALN
      - Screen Alignment
@@ -461,74 +484,448 @@ Fe Escape Sequences
      - —
      - ANSI mode
      - Ignored in ANSI mode. Leaves `VT52 Mode`_.
-   * - ESC %, ESC SP, ``ESC *``, ESC +
+   * - ESC %, ESC SP, ESC -, ESC ., ESC /
      - —
      - Other
      - Ignored, with their final byte: the UTF-8 selection, the 7-bit and
-       8-bit control selection, and the G2 and G3 charsets.
+       8-bit control selection (S7C1T and S8C1T), and the
+       96-character sets for G1, G2, and G3.
 
-Charset Designation
--------------------
+Character Sets
+--------------
 
-The terminal keeps two character-set slots, named **G0** and
-**G1**. You load a font into each slot independently, then switch
-which slot is active at any time. This lets you mix regular text
-with the DEC line-drawing characters (corners, tees, and lines)
-without an escape sequence per character. Load the line-drawing
-font into G1 once, then toggle between G0 and G1 as you go.
+The terminal has four places for a character set, named **G0**, **G1**,
+**G2**, and **G3**. You load a set into each of them, and put one of
+them in **GL**. The characters from 0x21 to 0x7E draw from the set in
+GL. This lets you mix regular text with the DEC line-drawing characters
+(corners, tees, and lines) or with mathematical symbols, without an
+escape sequence per character. Load the line-drawing set into G1 once,
+then switch between G0 and G1 with SI and SO as you go.
 
-**Load a font into a slot.** The byte after the sequence selects
-which font to load:
+**Load a set.** The sequence picks the place, and the byte after it
+picks the set:
 
 .. list-table::
    :widths: 22 78
    :header-rows: 1
 
    * - Sequence
-     - Font loaded
-   * - ESC ( B
-     - US ASCII (default) into G0.
-   * - ESC ( A
-     - UK into G0: US ASCII with the pound sign (£) in place of ``#``.
-   * - ESC ( 0
-     - DEC Special Graphics into G0.
-   * - ESC ( U, ESC ( K
-     - US ASCII into G0. These are the null and the user mappings of
-       the Linux console.
-   * - ESC ) B
-     - US ASCII (default) into G1.
-   * - ESC ) A
-     - UK into G1.
-   * - ESC ) 0
-     - DEC Special Graphics into G1.
-   * - ESC ) U, ESC ) K
-     - US ASCII into G1.
-
-DEC Special Graphics replaces the characters from 0x5F to 0x7E with
-line-drawing characters and symbols. It and the pound sign of UK work
-in every code page.
-
-Any other byte after ``ESC (`` or ``ESC )`` leaves the slot as it was.
-The national charsets of the VT220, such as German and French, are not
-supported, and neither are the alternate ROM charsets of the VT100
-(``ESC ( 1`` and ``ESC ( 2``). On a VT220, ``ESC ( K`` selects German,
-but here it is the user mapping of Linux.
-
-**Switch the active slot.** Send one byte:
+     - Loads the set into
+   * - ESC ( F
+     - G0.
+   * - ESC ) F
+     - G1.
+   * - ``ESC * F``
+     - G2.
+   * - ESC + F
+     - G3.
 
 .. list-table::
-   :widths: 17 83
+   :widths: 22 78
+   :header-rows: 1
+
+   * - F
+     - Set loaded
+   * - B
+     - US ASCII (default).
+   * - A
+     - UK: US ASCII with the pound sign (£) in place of ``#``.
+   * - 0
+     - DEC Special Graphics.
+   * - >
+     - DEC Technical. See `DEC Technical Set`_.
+   * - U, K
+     - US ASCII. These are the null and the user mappings of the Linux
+       console. On a VT220, ``ESC ( K`` selects German, but here it is
+       the user mapping of Linux.
+
+DEC Special Graphics replaces the characters from 0x5F to 0x7E with
+line-drawing characters and symbols. DEC Technical replaces the
+characters from 0x21 to 0x7E with the pieces of tall brackets, braces,
+integrals, radicals, and sigmas, mathematical symbols, Greek letters,
+and arrows. These two sets and the pound sign of UK work in every code
+page.
+
+Any other byte after the sequence leaves the place as it was, and so do
+``ESC - F``, ``ESC . F``, and ``ESC / F``, which load a 96-character
+set into G1, G2, or G3 on a DEC terminal.
+
+**Switch the set in GL.** A locking shift puts a set in GL until the
+next locking shift. A single shift draws one character from G2 or G3,
+and the character after it draws from GL again. Controls do not use up
+a single shift.
+
+.. list-table::
+   :widths: 17 12 71
    :header-rows: 1
 
    * - Code
+     - Abbr
      - Effect
    * - SI (^O)
-     - Make G0 the active charset.
+     - LS0
+     - Put G0 in GL.
    * - SO (^N)
-     - Make G1 the active charset.
+     - LS1
+     - Put G1 in GL.
+   * - ESC n
+     - LS2
+     - Put G2 in GL.
+   * - ESC o
+     - LS3
+     - Put G3 in GL.
+   * - ESC N
+     - SS2
+     - Draw the next character from G2.
+   * - ESC O
+     - SS3
+     - Draw the next character from G3.
 
-Both slots are US ASCII at startup, so until you load something
-into G1 you can ignore this entire feature.
+On a DEC terminal, ESC ~, ESC }, and ``ESC |`` (LS1R, LS2R, and LS3R)
+put G1, G2, or G3 in GR, the set that draws the characters from 0xA0 to
+0xFF. Here those characters are always the code page, and these
+sequences are ignored.
+
+DECSC saves the four sets, which of them is in GL, and a pending single
+shift, and DECRC restores them. DECSTR and RIS put US ASCII in all four,
+with G0 in GL and no single shift pending. Entering `VT52 Mode`_ puts US
+ASCII in G0 and G1, puts G0 in GL, and ends a pending single shift.
+When a program stops, the system puts US ASCII in G0, G1, G2, and G3,
+with G0 in GL.
+
+All four places hold US ASCII at startup, with G0 in GL, so until you
+load another set you can ignore this entire feature.
+
+DEC Technical Set
+-----------------
+
+DEC Technical draws mathematical text. It has 94 codes, from 0x21 to
+0x7E. The codes 0x38 to 0x3B, 0x52, 0x54, 0x55, 0x6D, and 0x75 are
+undefined and draw a blank cell.
+
+The codes from 0x21 to 0x37 are pieces that build tall shapes, one
+piece in each row. A piece fills its cell from top to bottom, and its
+vertical stroke is on the same columns as the box-drawing lines, so the
+pieces in one column of consecutive rows join. The vertical line 0x26
+makes an integral, a bracket, a brace, or a radical taller wherever it
+is placed between two of its pieces. Written from the top row down:
+
+- An integral, three rows tall: 0x24, 0x26, 0x25.
+- A left square bracket, three rows tall: 0x27, 0x26, 0x28. A right
+  square bracket: 0x29, 0x26, 0x2A.
+- A left curly brace, three rows tall: 0x2B, 0x2F, 0x2C. A right curly
+  brace: 0x2D, 0x30, 0x2E. A brace five rows tall has 0x26 above and
+  below its middle piece.
+- A radical, three rows tall: 0x22 with 0x23 to its right as the bar
+  over the expression, 0x26, and 0x21.
+
+The big sigma is two columns wide and three rows tall. Each line below
+is one row, and 0x20 is a space:
+
+::
+
+   0x31 0x35
+   0x20 0x37
+   0x32 0x36
+
+0x33 and 0x34 are the upper and the lower diagonal of the sigma alone,
+without the bars.
+
+The table gives the character that each code draws, as the Unicode
+character that xterm draws for it. The pieces of the big sigma have no
+Unicode character.
+
+.. list-table::
+   :widths: 12 12 76
+   :header-rows: 1
+
+   * - Code
+     - Draws
+     - Unicode
+   * - 0x21
+     - ⎷
+     - U+23B7, radical symbol bottom.
+   * - 0x22
+     - ┌
+     - U+250C, box drawings light down and right.
+   * - 0x23
+     - ─
+     - U+2500, box drawings light horizontal.
+   * - 0x24
+     - ⌠
+     - U+2320, top half integral.
+   * - 0x25
+     - ⌡
+     - U+2321, bottom half integral.
+   * - 0x26
+     - │
+     - U+2502, box drawings light vertical.
+   * - 0x27
+     - ⎡
+     - U+23A1, left square bracket upper corner.
+   * - 0x28
+     - ⎣
+     - U+23A3, left square bracket lower corner.
+   * - 0x29
+     - ⎤
+     - U+23A4, right square bracket upper corner.
+   * - 0x2A
+     - ⎦
+     - U+23A6, right square bracket lower corner.
+   * - 0x2B
+     - ⎧
+     - U+23A7, left curly bracket upper hook.
+   * - 0x2C
+     - ⎩
+     - U+23A9, left curly bracket lower hook.
+   * - 0x2D
+     - ⎫
+     - U+23AB, right curly bracket upper hook.
+   * - 0x2E
+     - ⎭
+     - U+23AD, right curly bracket lower hook.
+   * - 0x2F
+     - ⎨
+     - U+23A8, left curly bracket middle piece.
+   * - 0x30
+     - ⎬
+     - U+23AC, right curly bracket middle piece.
+   * - 0x31
+     - —
+     - None. The top left of the big sigma: the top bar and the upper
+       diagonal.
+   * - 0x32
+     - —
+     - None. The bottom left of the big sigma: the lower diagonal and
+       the bottom bar.
+   * - 0x33
+     - —
+     - None. The upper diagonal of the big sigma, alone.
+   * - 0x34
+     - —
+     - None. The lower diagonal of the big sigma, alone.
+   * - 0x35
+     - —
+     - None. The top right of the big sigma: the end of the top bar.
+   * - 0x36
+     - —
+     - None. The bottom right of the big sigma: the end of the bottom bar.
+   * - 0x37
+     - —
+     - None. The middle of the big sigma, where the diagonals meet.
+   * - 0x38
+     - Blank
+     - None. Undefined.
+   * - 0x39
+     - Blank
+     - None. Undefined.
+   * - 0x3A
+     - Blank
+     - None. Undefined.
+   * - 0x3B
+     - Blank
+     - None. Undefined.
+   * - 0x3C
+     - ≤
+     - U+2264, less-than or equal to.
+   * - 0x3D
+     - ≠
+     - U+2260, not equal to.
+   * - 0x3E
+     - ≥
+     - U+2265, greater-than or equal to.
+   * - 0x3F
+     - ∫
+     - U+222B, integral.
+   * - 0x40
+     - ∴
+     - U+2234, therefore.
+   * - 0x41
+     - ∝
+     - U+221D, proportional to.
+   * - 0x42
+     - ∞
+     - U+221E, infinity.
+   * - 0x43
+     - ÷
+     - U+00F7, division sign.
+   * - 0x44
+     - Δ
+     - U+0394, Greek capital letter delta.
+   * - 0x45
+     - ∇
+     - U+2207, nabla.
+   * - 0x46
+     - Φ
+     - U+03A6, Greek capital letter phi.
+   * - 0x47
+     - Γ
+     - U+0393, Greek capital letter gamma.
+   * - 0x48
+     - ∼
+     - U+223C, tilde operator.
+   * - 0x49
+     - ≃
+     - U+2243, asymptotically equal to.
+   * - 0x4A
+     - Θ
+     - U+0398, Greek capital letter theta.
+   * - 0x4B
+     - ×
+     - U+00D7, multiplication sign.
+   * - 0x4C
+     - Λ
+     - U+039B, Greek capital letter lamda.
+   * - 0x4D
+     - ⇔
+     - U+21D4, left right double arrow.
+   * - 0x4E
+     - ⇒
+     - U+21D2, rightwards double arrow.
+   * - 0x4F
+     - ≡
+     - U+2261, identical to.
+   * - 0x50
+     - Π
+     - U+03A0, Greek capital letter pi.
+   * - 0x51
+     - Ψ
+     - U+03A8, Greek capital letter psi.
+   * - 0x52
+     - Blank
+     - None. Undefined.
+   * - 0x53
+     - Σ
+     - U+03A3, Greek capital letter sigma.
+   * - 0x54
+     - Blank
+     - None. Undefined.
+   * - 0x55
+     - Blank
+     - None. Undefined.
+   * - 0x56
+     - √
+     - U+221A, square root.
+   * - 0x57
+     - Ω
+     - U+03A9, Greek capital letter omega.
+   * - 0x58
+     - Ξ
+     - U+039E, Greek capital letter xi.
+   * - 0x59
+     - Υ
+     - U+03A5, Greek capital letter upsilon.
+   * - 0x5A
+     - ⊂
+     - U+2282, subset of.
+   * - 0x5B
+     - ⊃
+     - U+2283, superset of.
+   * - 0x5C
+     - ∩
+     - U+2229, intersection.
+   * - 0x5D
+     - ∪
+     - U+222A, union.
+   * - 0x5E
+     - ∧
+     - U+2227, logical and.
+   * - 0x5F
+     - ∨
+     - U+2228, logical or.
+   * - 0x60
+     - ¬
+     - U+00AC, not sign.
+   * - 0x61
+     - α
+     - U+03B1, Greek small letter alpha.
+   * - 0x62
+     - β
+     - U+03B2, Greek small letter beta.
+   * - 0x63
+     - χ
+     - U+03C7, Greek small letter chi.
+   * - 0x64
+     - δ
+     - U+03B4, Greek small letter delta.
+   * - 0x65
+     - ε
+     - U+03B5, Greek small letter epsilon.
+   * - 0x66
+     - φ
+     - U+03C6, Greek small letter phi.
+   * - 0x67
+     - γ
+     - U+03B3, Greek small letter gamma.
+   * - 0x68
+     - η
+     - U+03B7, Greek small letter eta.
+   * - 0x69
+     - ι
+     - U+03B9, Greek small letter iota.
+   * - 0x6A
+     - θ
+     - U+03B8, Greek small letter theta.
+   * - 0x6B
+     - κ
+     - U+03BA, Greek small letter kappa.
+   * - 0x6C
+     - λ
+     - U+03BB, Greek small letter lamda.
+   * - 0x6D
+     - Blank
+     - None. Undefined.
+   * - 0x6E
+     - ν
+     - U+03BD, Greek small letter nu.
+   * - 0x6F
+     - ∂
+     - U+2202, partial differential.
+   * - 0x70
+     - π
+     - U+03C0, Greek small letter pi.
+   * - 0x71
+     - ψ
+     - U+03C8, Greek small letter psi.
+   * - 0x72
+     - ρ
+     - U+03C1, Greek small letter rho.
+   * - 0x73
+     - σ
+     - U+03C3, Greek small letter sigma.
+   * - 0x74
+     - τ
+     - U+03C4, Greek small letter tau.
+   * - 0x75
+     - Blank
+     - None. Undefined.
+   * - 0x76
+     - ƒ
+     - U+0192, Latin small letter f with hook.
+   * - 0x77
+     - ω
+     - U+03C9, Greek small letter omega.
+   * - 0x78
+     - ξ
+     - U+03BE, Greek small letter xi.
+   * - 0x79
+     - υ
+     - U+03C5, Greek small letter upsilon.
+   * - 0x7A
+     - ζ
+     - U+03B6, Greek small letter zeta.
+   * - 0x7B
+     - ←
+     - U+2190, leftwards arrow.
+   * - 0x7C
+     - ↑
+     - U+2191, upwards arrow.
+   * - 0x7D
+     - →
+     - U+2192, rightwards arrow.
+   * - 0x7E
+     - ↓
+     - U+2193, downwards arrow.
 
 Cursor Movement
 ---------------
@@ -594,7 +991,9 @@ between numbers, and any other sequence with a ``:`` is ignored.
    * - CSI n a
      - HPR
      - Horizontal Position Relative
-     - Same as CUF.
+     - Move to the column n columns right, as HPA does: past the right
+       margin, stopping at the last column. In origin mode, stop at the
+       right margin.
    * - CSI n d
      - VPA
      - Vertical Position Absolute
@@ -602,7 +1001,9 @@ between numbers, and any other sequence with a ``:`` is ignored.
    * - CSI n e
      - VPR
      - Vertical Position Relative
-     - Same as CUD.
+     - Move to the row n rows down, as VPA does: past the bottom margin,
+       stopping at the last row. In origin mode, stop at the bottom
+       margin. The column does not change.
    * - CSI n ; m H
      - CUP
      - Cursor Position
@@ -615,8 +1016,9 @@ between numbers, and any other sequence with a ``:`` is ignored.
 Rows and columns count from 1. In origin mode (``CSI ? 6 h``), CUP, HVP,
 and VPA count rows from the top margin and stay inside the scroll
 region, and CUP, HVP, CHA, and HPA count columns from the left margin
-and stay inside the right one. DECSC and DECRC (``ESC 7`` and
-``ESC 8``) save and restore the cursor.
+and stay inside the right one. VPR stops at the bottom margin and HPR
+at the right margin. DECSC and DECRC (``ESC 7`` and ``ESC 8``) save and
+restore the cursor.
 
 Editing
 -------
@@ -738,9 +1140,9 @@ combines them as xterm does.
      - End of Guarded Area
      - The characters written after it are not protected.
 
-After a DECSCA, only DECSED and DECSEL leave protected characters in
-place. After an SPA, ED, EL, and ECH leave them too, unless ERM (ANSI
-mode 6) is set. The later of the two decides.
+After a DECSCA, only DECSED, DECSEL, and DECSERA leave protected
+characters in place. After an SPA, ED, EL, and ECH leave them too,
+unless ERM (ANSI mode 6) is set. The later of the two decides.
 
 Writing a character, ICH, DCH, IL, DL, and scrolling do not respect
 protection. A character written over a protected one takes the
@@ -780,11 +1182,14 @@ rectangle. The cursor does not move.
        above 255 does nothing.
    * - CSI t ; l ; b ; r $ z
      - DECERA
-     - Erase the rectangle, protected characters too.
+     - Erase the rectangle, protected characters too. Each cell becomes
+       a space in the current background color, with no attributes and
+       no protection.
    * - CSI t ; l ; b ; r $ {
      - DECSERA
-     - Erase the rectangle, but protected characters stay, as with
-       DECSED. See `Protected Areas`_.
+     - Make the characters of the rectangle spaces. Each cell keeps its
+       colors and attributes, as in xterm. Protected characters stay,
+       as with DECSED. See `Protected Areas`_.
    * - CSI t ; l ; b ; r ; 1 ; t2 ; l2 ; 1 $ v
      - DECCRA
      - Copy the rectangle so that its top left is at row t2, column
@@ -834,7 +1239,7 @@ exits calls ``syncfs()`` on ``stdout``.
 
 Mode 69 (DECLRMM) allows left and right margins, which DECSLRM sets.
 They work as in xterm. A cursor between them stays between them, except
-with CBT:
+with CBT and HPR:
 
 - A character written on the right margin wraps to the left margin of
   the next row.
@@ -842,6 +1247,8 @@ with CBT:
   the right one.
 - CBT stops at the left margin only in origin mode. Otherwise it goes
   on to column 1, outside the margins.
+- HPR stops at the right margin only in origin mode. Otherwise it goes
+  on to the last column, outside the margins.
 - Scrolling moves only the columns between the margins. This includes
   LF, IND, NEL, and RI at the top or the bottom margin, SU, SD, SL, SR,
   IL, and DL. The columns either side stay where they are.
@@ -928,7 +1335,9 @@ Tabs
 ----
 
 Tab stops start every 8 columns. HTS (``ESC H``) sets a stop, and RIS
-puts them back to every 8 columns.
+puts them back to every 8 columns. ``CSI 2 $ w`` reports the columns of
+the stops, and ``ESC P 2 $ t`` sets them all at once. See `Presentation
+State`_.
 
 .. list-table::
    :widths: 14 8 20 58
@@ -982,12 +1391,14 @@ off as well.
    * - CSI c, CSI 0 c
      - DA
      - Primary Device Attributes
-     - ``ESC [ ? 6 c``, a VT102.
+     - ``ESC [ ? 64 ; 6 ; 21 ; 22 ; 28 c``: a VT420 (64) with
+       selective erase (6), horizontal scrolling and left and right
+       margins (21), ANSI color (22), and rectangular editing (28).
    * - CSI > c, CSI > 0 c
      - DA2
      - Secondary Device Attributes
-     - ``ESC [ > 0 ; 1 ; 0 c``: a VT100 (type 0), firmware version 1,
-       and ROM 0.
+     - ``ESC [ > 41 ; 10 ; 0 c``: a VT420 (type 41), firmware version
+       1.0 (10), and ROM 0.
    * - CSI = c, CSI = 0 c
      - DA3
      - Tertiary Device Attributes
@@ -1010,12 +1421,71 @@ off as well.
      - ``ESC [ n ; m R``, where n is the row and m is the column. In
        origin mode, the row counts from the top margin and the column
        from the left margin.
+   * - CSI ? 5 n
+     - DSR
+     - Device Status Report
+     - ``ESC [ ? 0 n``, terminal OK.
+   * - CSI ? 6 n
+     - DECXCPR
+     - Extended Cursor Position Report
+     - ``ESC [ ? n ; m ; 1 R``, where n is the row, m is the column,
+       and 1 is the page. In origin mode, the row counts from the top
+       margin and the column from the left margin.
+   * - CSI ? 15 n
+     - DSR
+     - Printer Status
+     - ``ESC [ ? 13 n``, no printer.
+   * - CSI ? 25 n
+     - DSR
+     - User-Defined Key Status
+     - ``ESC [ ? 20 n``, user-defined keys unlocked.
+   * - CSI ? 26 n
+     - DSR
+     - Keyboard Status
+     - ``ESC [ ? 27 ; 1 ; 0 ; 0 n``: a North American keyboard (1),
+       ready (0), and an LK201 (0).
+   * - CSI ? 55 n
+     - DSR
+     - Locator Status
+     - ``ESC [ ? 53 n``, no locator.
+   * - CSI ? 56 n
+     - DSR
+     - Locator Type
+     - ``ESC [ ? 57 ; 0 n``, no locator.
+   * - CSI ? 62 n
+     - DECMSR
+     - Macro Space Report
+     - ``ESC [ 0000 * {``, no space for macros.
+   * - CSI ? 63 ; id n
+     - DECCKSR
+     - Memory Checksum Report
+     - ``ESC P id ! ~ 0000 ESC \``, the checksum of no macros. A missing
+       id is 0.
+   * - CSI ? 75 n
+     - DSR
+     - Data Integrity Report
+     - ``ESC [ ? 70 n``, no errors.
+   * - CSI ? 85 n
+     - DSR
+     - Multiple Session Status
+     - ``ESC [ ? 83 n``, sessions not configured.
+   * - CSI 1 $ w
+     - DECRQPSR
+     - Request Presentation State
+     - DECCIR, ``ESC P 1 $ u``, the cursor and its settings, and
+       ``ESC \``. See `Presentation State`_.
+   * - CSI 2 $ w
+     - DECRQPSR
+     - Request Presentation State
+     - DECTABSR, ``ESC P 2 $ u``, the columns of the tab stops, and
+       ``ESC \``. See `Presentation State`_.
    * - CSI x, CSI 0 x
      - DECREQTPARM
      - Request Terminal Parameters
-     - ``ESC [ 2 ; 1 ; 1 ; 112 ; 112 ; 1 ; 0 x``: no parity, 8 bits,
-       19200 baud to send and to receive, clock multiplier 1, and no
-       flags.
+     - ``ESC [ 2 ; 1 ; 1 ; 128 ; 128 ; 1 ; 0 x``: no parity, 8 bits,
+       38400 baud to send and to receive, clock multiplier 1, and no
+       flags. The speed codes of the VT100 end at 120 for 19200 baud,
+       and 128 is the next step.
    * - CSI 1 x
      - DECREQTPARM
      - Request Terminal Parameters
@@ -1124,13 +1594,16 @@ background in the same way.
    * - 2
      - DECANM
      - ANSI/VT52 Mode
-     - Reset: enter `VT52 Mode`_, with US ASCII in G0 and G1 and G0
-       active. Set: no effect.
+     - Reset: enter `VT52 Mode`_, with US ASCII in G0 and G1, G0 in
+       GL, and no single shift. Set: no effect.
    * - 3
      - DECCOLM
      - 132 Columns
-     - Ignored. The width does not change, and the screen is not
-       cleared.
+     - With mode 40 set, set and reset both erase the screen, make
+       every line single size, make the scroll region and the left and
+       right margins the whole screen, and move the cursor to the top
+       left. The width does not change, because the terminal has no
+       132-column mode. With mode 40 reset, DECCOLM does nothing.
    * - 5
      - DECSCNM
      - Reverse Screen
@@ -1142,7 +1615,8 @@ background in the same way.
      - Origin Mode
      - Set: CUP, HVP, and VPA count rows from the top margin and stay
        inside the scroll region, and CUP, HVP, CHA, and HPA count
-       columns from the left margin and stay inside the right one. CPR
+       columns from the left margin and stay inside the right one. VPR
+       stops at the bottom margin and HPR at the right margin. CPR
        reports the same way. Reset (default): they count from the top
        row and column 1. Both move the cursor home, which is the top
        and left margins when set. DECSC saves this mode.
@@ -1173,6 +1647,14 @@ background in the same way.
      - iCE colors
      - Set: SGR 5 and 6 brighten the background (iCE colors).
        Reset (default): SGR 5 and 6 blink.
+   * - 40
+     - —
+     - Allow 80 to 132
+     - Set: DECCOLM (mode 3), set or reset, erases the screen, makes
+       every line single size, makes the scroll region and the left and
+       right margins the whole screen, and moves the cursor to the top
+       left. The width does not change. Reset (default): DECCOLM does
+       nothing. RIS and DECSTR leave this mode as it is, as in xterm.
    * - 47
      - —
      - Alternate screen
@@ -1183,6 +1665,13 @@ background in the same way.
      - Keypad
      - Set: application keypad, as ``ESC =``. Reset (default): numeric
        keypad, as ``ESC >``. See `Keyboard`_.
+   * - 67
+     - DECBKM
+     - Backarrow Key
+     - Set: Backspace sends BS (0x08), and Ctrl-Backspace sends DEL
+       (0x7F). Reset (default): Backspace sends DEL, and Ctrl-Backspace
+       sends BS. When a program stops, the system resets mode 67. See
+       `Keyboard`_.
    * - 69
      - DECLRMM
      - Left and Right Margins
@@ -1240,8 +1729,9 @@ reset.
      - 1, ANSI mode. In VT52 mode, the request is not a sequence the
        terminal takes.
    * - ?3 (DECCOLM)
-     - 4 when the terminal is 80 columns wide, otherwise 0.
-   * - ?1, ?4, ?5, ?6, ?7, ?8, ?25, ?33, ?66, ?69, ?2004
+     - 4, permanently reset, on the 80-column terminal, and 0 on the
+       40-column terminal.
+   * - ?1, ?4, ?5, ?6, ?7, ?8, ?25, ?33, ?40, ?66, ?67, ?69, ?2004
      - 1 or 2.
    * - ?12
      - 2 for a steady cursor style, 1 for a blinking one.
@@ -1288,6 +1778,20 @@ other sequence the reply is ``ESC P 0 $ r ESC \``.
    * - ``ESC P $ q * x ESC \``
      - DECSACE
      - ``2 * x`` for the rectangle, otherwise ``0 * x``.
+   * - ``ESC P $ q " p ESC \``
+     - DECSCL
+     - ``n ; 1 " p``, where n is the conformance level, 62 to 64, and
+       1 means 7-bit controls. The level is 64 unless DECSCL sets
+       another. At level 61, a VT100, the reply is ``61 " p``.
+   * - ``ESC P $ q t ESC \``
+     - DECSLPP
+     - ``n t``, where n is the number of rows.
+   * - ``ESC P $ q $ | ESC \``
+     - DECSCPP
+     - ``n $ |``, where n is the number of columns.
+   * - ``ESC P $ q * | ESC \``
+     - DECSNLS
+     - ``n * |``, where n is the number of rows.
 
 The SGR reply lists what `SGR Parameters`_ would set, separated by
 ``;``: 1, 2, 3, the underline (4, or ``4:n`` for another style), 5 or
@@ -1303,6 +1807,86 @@ its name. Neovim sets a curly underline with ``CSI 4:3 m``, asks for
 SGR, and uses the underline styles and the underline color when the
 reply is ``ESC P 1 $ r 0 ; 4:3 m ESC \``. It finds 24-bit color the
 same way.
+
+Presentation State
+------------------
+
+A program can ask for the cursor and its settings, or for the tab stops,
+keep the reply, and send it back later to restore them. ``CSI 1 $ w``
+and ``CSI 2 $ w`` (DECRQPSR) ask. To restore, the program sends the
+reply with ``$ t`` in place of ``$ u`` (DECRSPS).
+
+**The cursor.** ``CSI 1 $ w`` replies with DECCIR: ``ESC P 1 $ u``,
+these fields separated by ``;``, and ``ESC \``.
+
+.. list-table::
+   :widths: 6 20 74
+   :header-rows: 1
+
+   * - n
+     - Field
+     - Value
+   * - 1
+     - Row
+     - The cursor's row, counted from the top row, also in origin mode.
+   * - 2
+     - Column
+     - The cursor's column, counted from column 1, also in origin mode.
+   * - 3
+     - Page
+     - 1.
+   * - 4
+     - Rendition
+     - One character: ``@`` (0x40), plus 8 for reverse video, 4 for
+       blink, 2 for an underline of any style, and 1 for bold.
+   * - 5
+     - Protection
+     - One character: ``@``, plus 1 while DECSCA 1 protects the
+       characters written. See `Protected Areas`_.
+   * - 6
+     - Flags
+     - One character: ``@``, plus 8 for a pending wrap, 4 for a pending
+       SS3, 2 for a pending SS2, and 1 for origin mode.
+   * - 7
+     - GL
+     - The number of the set in GL, 0 to 3.
+   * - 8
+     - GR
+     - 2.
+   * - 9
+     - Sizes
+     - ``@``: the sets in G0 to G3 are all of 94 characters.
+   * - 10
+     - Sets
+     - The final bytes of the sets in G0, G1, G2, and G3, with nothing
+       between them, as `Character Sets`_ lists them.
+
+A terminal fresh from RIS replies
+``ESC P 1 $ u 1 ; 1 ; 1 ; @ ; @ ; @ ; 0 ; 2 ; @ ; BBBB ESC \``.
+
+``ESC P 1 $ t``, the same fields, and ``ESC \`` restores them. The
+cursor moves to the row and the column, counted from the top row and
+column 1. Bold, blink, underline, and reverse video go on or off, and
+the other SGR attributes and the colors stay as they are. Blink is the
+slow blink of SGR 5, and an underline that goes on is a single
+underline unless one of another style is already on. Protection 1
+protects the characters written after it, as DECSCA 1 does, and 0 does
+not. The pending wrap, the single shift, origin mode, the set in GL,
+and the four sets are set as the fields give them. A final byte with an
+intermediate byte in front of it, such as ``%5``, leaves that place as
+it was. When a field is out of range, such as a row below the screen,
+or a field is missing, nothing changes.
+
+**The tab stops.** ``CSI 2 $ w`` replies with DECTABSR:
+``ESC P 2 $ u``, the column of each tab stop with ``/`` between them,
+and ``ESC \``. With the stops every 8 columns on a screen 80 columns
+wide, the reply is ``ESC P 2 $ u 9/17/25/33/41/49/57/65/73 ESC \``.
+With no stops, nothing comes between ``u`` and ``ESC \``.
+
+``ESC P 2 $ t``, columns with ``/`` between them, and ``ESC \`` clears
+every tab stop and sets one at each column given. A column past the
+last column of the screen sets no stop. When the string holds a byte
+other than a digit or ``/``, the stops stay as they were.
 
 Cursor Style
 ------------
@@ -1363,9 +1947,9 @@ RIS is not a VT52 sequence, so the resets of the system start with
    * - ESC D
      - Move the cursor left one column.
    * - ESC F
-     - Enter graphics mode: DEC Special Graphics into G0, and G0 active.
+     - Enter graphics mode: DEC Special Graphics into G0, and G0 in GL.
    * - ESC G
-     - Leave graphics mode: US ASCII into G0, and G0 active.
+     - Leave graphics mode: US ASCII into G0, and G0 in GL.
    * - ESC H
      - Move the cursor to the top left.
    * - ESC I
@@ -1433,7 +2017,9 @@ These keys send a control code:
    * - Escape
      - ESC.
    * - Backspace
-     - DEL, 0x7F. Ctrl-Backspace sends BS, 0x08.
+     - DEL, 0x7F. Ctrl-Backspace sends BS, 0x08. With DECBKM
+       (``CSI ? 67 h``) set, Backspace sends BS and Ctrl-Backspace
+       sends DEL.
 
 Alt sends ESC before these too.
 
@@ -1588,7 +2174,8 @@ those keys then send a sequence of their own:
 
 Here m is the modifier number of `Keyboard`_, and code is the code of
 the character the key types, in the code page: 97 for ``a``, 65 for
-``A``, 13 for Enter, 9 for Tab, 27 for Escape, and 127 for Backspace.
+``A``, 13 for Enter, 9 for Tab, 27 for Escape, and 127 for Backspace,
+or 8 with DECBKM set.
 Editors such as Vim, Neovim, and Emacs set it when they start.
 
 .. list-table::
@@ -1624,7 +2211,8 @@ The levels are xterm's:
   includes Shift with a letter, so Shift-A sends ``ESC [ 27 ; 2 ; 65 ~``,
   and Alt, which no longer sends ESC first. A character that only Shift
   makes, such as ``!``, is typed as it is, but Shift-Space sends the
-  sequence. Ctrl-Backspace still sends BS.
+  sequence. Ctrl-Backspace still sends one byte: BS, or DEL with DECBKM
+  set.
 - **Level 3.** Every key sends the sequence, modified or not, with m
   as 1 for no modifier.
 
@@ -1839,19 +2427,34 @@ Resets
      - DECSTR
      - Soft Terminal Reset
      - Reset the modes on the DEC list.
+   * - CSI Pl ; Pc " p
+     - DECSCL
+     - Select Conformance Level
+     - Set the conformance level to Pl, and do a DECSTR.
 
 **RIS** clears both screens and puts every mode and setting of the
-terminal back to its default.
+terminal back to its default, except mode 40, which it leaves as it is.
+The conformance level goes back to 64.
 
 **DECSTR** is the soft reset that a program sends. It turns insert
 mode, origin mode, and cursor key mode off, sets the numeric keypad,
-turns autowrap on, shows the cursor, puts US ASCII in G0 and G1 with G0
-active, and resets SGR, character protection, the scroll region, the
-left and right margins with mode 69, and both saved cursors. It ends a
-pending wrap but does not move the cursor. It leaves the cursor style,
-iCE colors, the reverse screen, autorepeat, LNM, CRM, DECSACE, the
-palette, the default colors, the tab stops, the line sizes, and the
-screen as they are.
+turns autowrap on, shows the cursor, puts US ASCII in G0 to G3 with G0
+in GL and no single shift pending, and resets SGR, character
+protection, the scroll region, the left and right margins with mode 69,
+and both saved cursors. It ends a pending wrap but does not move the
+cursor. It leaves the cursor style, iCE colors, the reverse screen,
+autorepeat, the backarrow key mode (mode 67), mode 40, LNM, CRM,
+DECSACE, the conformance level, the palette, the default colors, the
+tab stops, the line sizes, and the screen as they are.
+
+**DECSCL** sets the conformance level: 61 for a VT100, 62 for a VT220,
+63 for a VT320, or 64 for a VT420. Then it does the same soft reset as
+DECSTR. The terminal acts as a VT420 at every level, and the level
+changes only the reply when DECRQSS asks for ``" p``: the level and
+``; 1`` for 7-bit controls, such as ``62 ; 1 " p``, or ``61 " p`` alone
+at level 61. A level other than 61 to 64 is ignored, with no reset. Pc,
+which selects 7-bit or 8-bit controls on a DEC terminal, is ignored, and
+the controls stay 7-bit.
 
 **A change of the code page**, through :ref:`RIA_ATTR_CODE_PAGE
 <api-ria-attributes>` or the CODE_PAGE register of the VGA system, does

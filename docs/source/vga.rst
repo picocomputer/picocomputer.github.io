@@ -2280,3 +2280,16 @@ program set these registers.
        module. The value is the number of the page. The VGA module erases
        the sector of the page first, unless the page already reads as
        erased.
+   * - $1:F:08
+     - POINTER_SHAPE
+     - The tablet's pointer: its shape, one of the ``TABLET_CURSOR_``
+       values of the :ref:`Tablet <ria-tablet>`. Shape 0 hides it.
+   * - $1:F:09
+     - POINTER_X
+     - The tablet's pointer: its x. The pointer moves when POINTER_Y is
+       written.
+   * - $1:F:0A
+     - POINTER_Y
+     - The tablet's pointer: its y. Writing it moves the pointer to this y
+       and to the x of POINTER_X. The VGA draws the pointer over every
+       plane, with the point of its shape at x and y in canvas pixels.
