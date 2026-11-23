@@ -97,16 +97,14 @@ connected.
 Monitor
 =======
 
-A fresh RIA boots into the RP6502 monitor. It is not an operating-system
-shell; think of it more like a UEFI shell. Its main job is loading ROMs,
-with just enough hardware and locale configuration to get going — kept
-deliberately minimal.
+A fresh RIA boots into the RP6502 monitor. The monitor loads ROMs and
+sets up the hardware and the locale.
 
 The monitor runs on the console, so it is reachable from any terminal on
 the :ref:`console manifold <term-console-manifold>`.
 
-The monitor's built-in help is extensive and always current. Type
-``HELP`` to get started, then dig into deep help like ``HELP SET PHI2``.
+Type ``HELP`` for the list of commands, and ``HELP`` with a command for
+its help, such as ``HELP SET PHI2``.
 The table lists every command.
 
 .. list-table::

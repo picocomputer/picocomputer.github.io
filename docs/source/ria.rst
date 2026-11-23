@@ -1447,8 +1447,9 @@ in the shape that ``control`` holds. Mapping the tablet sets ``control`` to
 ``control`` to change the shape, or ``TABLET_CURSOR_OFF`` to hide the
 pointer and draw your own. A touchscreen has no pointer.
 
-``TABLET_STATUS_HOST_CURSOR`` in ``status`` is always set, so a program can
-ignore it.
+While a program uses the tablet, a click or a drag on the text of the
+VGA terminal still selects and pastes text. To turn that off, clear
+``TABLET_STATUS_SHARED`` in ``status`` after mapping the tablet.
 
 .. tab:: C
 
@@ -1457,14 +1458,14 @@ ignore it.
 
       #define TABLET_CONTACTS 8
 
-      #define TABLET_STATUS_HOST_CURSOR 0x01
-
       #define TABLET_FLAG_LEFT 0x01
       #define TABLET_FLAG_RIGHT 0x02
       #define TABLET_FLAG_MIDDLE 0x04
       #define TABLET_FLAG_BACKWARD 0x08
       #define TABLET_FLAG_FORWARD 0x10
       #define TABLET_FLAG_HOVER 0x80
+
+      #define TABLET_STATUS_SHARED 0x01
 
       #define TABLET_CURSOR_OFF 0
       #define TABLET_CURSOR_ARROW 1
@@ -1513,14 +1514,14 @@ ignore it.
 
       TABLET_CONTACTS = 8
 
-      TABLET_STATUS_HOST_CURSOR = $01
-
       TABLET_FLAG_LEFT     = $01
       TABLET_FLAG_RIGHT    = $02
       TABLET_FLAG_MIDDLE   = $04
       TABLET_FLAG_BACKWARD = $08
       TABLET_FLAG_FORWARD  = $10
       TABLET_FLAG_HOVER    = $80
+
+      TABLET_STATUS_SHARED = $01
 
       TABLET_CURSOR_OFF         = 0
       TABLET_CURSOR_ARROW       = 1
@@ -1573,14 +1574,14 @@ ignore it.
 
       TABLET_CONTACTS = 8
 
-      TABLET_STATUS_HOST_CURSOR = $01
-
       TABLET_FLAG_LEFT     = $01
       TABLET_FLAG_RIGHT    = $02
       TABLET_FLAG_MIDDLE   = $04
       TABLET_FLAG_BACKWARD = $08
       TABLET_FLAG_FORWARD  = $10
       TABLET_FLAG_HOVER    = $80
+
+      TABLET_STATUS_SHARED = $01
 
       TABLET_CURSOR_OFF         = 0
       TABLET_CURSOR_ARROW       = 1

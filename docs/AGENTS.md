@@ -9,6 +9,21 @@ person. Write each passage the way you would explain it to that person.
 **Most important rule:** Write for a person - a person learning about the
 machine or referencing the manual.
 
+**Answer the reader's questions, in order.** A section answers three
+questions for the person who arrives at it, in this order:
+
+1. What is this?
+2. Why would I want it?
+3. How do I use it?
+
+The first sentence answers the first question for a person who has never
+heard of the thing. Start from what the reader is trying to do, not from
+how the system works.
+
+**Leave out what is not a thing.** Do not name a problem, a limit, or a
+technique that the reader does not have to deal with. Naming it tells the
+reader that it matters.
+
 **Edit the passage, not the sentence.** Before any change, read the
 section from its start, as the person who arrives there.
 

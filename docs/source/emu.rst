@@ -37,9 +37,9 @@ Install
 =======
 
 Pre-built emulators are on the `releases page
-<https://github.com/picocomputer/rp6502/releases/latest>`__. A project made from
-the :doc:`sdk` template will fetch the right one into ``tools/``, so
-you may have it already.
+<https://github.com/picocomputer/rp6502/releases/latest>`__. A project made
+from the :doc:`sdk` template will fetch the right one into ``tools/``, so you
+may have it already.
 
 - **Windows** — ``rp6502-emu.exe`` is the program itself, not an installer.
   Requires a GPU with Direct3D 11. It isn't code signed, so SmartScreen
@@ -112,6 +112,8 @@ around these limits:
   off, RetroArch shows its own cursor as well. With Game Focus on,
   RetroArch captures the mouse, and the edges of the screen are hard to
   reach.
+- **Clipboard** — The clipboard is not shared with the computer. Copy
+  and paste work only inside the Picocomputer.
 
 
 .. _emu-toolchain:
@@ -414,6 +416,9 @@ UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
        converted to the machine's code page, so a byte that is not UTF-8
        becomes ``?``. The command waits until the keyboard ring takes it
        all.
+   * - ``clip set "text"``
+     - Put the text on the clipboard. A script has a clipboard of its
+       own, so the clipboard of the computer does not change.
    * - ``eof [frames]``
      - End the program's stdin, the way a piped ``--stdin`` ends. It
        waits until the program is reading stdin and has taken everything
@@ -467,6 +472,9 @@ UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
    * - ``expect lock num|caps|scroll on|off``,
        ``expect-not lock num|caps|scroll on|off``
      - Check a lock.
+   * - ``expect clip "text"``,
+       ``expect-not clip "text"``
+     - Check that the clipboard holds exactly this text.
    * - ``discard [stdout|stderr|console]``
      - Drop what the program printed on that stream after the last match,
        or on all three streams without a stream name. ``load`` keeps the captured output, so

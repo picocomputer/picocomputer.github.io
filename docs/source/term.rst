@@ -19,7 +19,7 @@ once. The :doc:`emu` can also connect the streams to the ``stdin``,
 
 This page covers three closely related parts. The `console manifold
 <Console Manifold_>`_ connects the streams to the terminals. The `line
-editor <Read Line_>`_ lets the user edit a line before pressing Enter,
+editor <Line Editor_>`_ lets the user edit a line before pressing Enter,
 with no editing code in the program, and a program can keep running
 while the user types. The escape sequences of the `VGA terminal
 <Terminal_>`_ let a program move the cursor, color its text, and draw
@@ -60,7 +60,7 @@ on the machine:
 
 A program uses the console through two device names, ``CON:`` and
 ``TTY:``. A read of ``CON:`` returns cooked input from the `line editor
-<Read Line_>`_, a whole line that the user has typed and edited. A read
+<Line Editor_>`_, a whole line that the user has typed and edited. A read
 of ``TTY:`` returns raw input, the bytes of the keys pressed so far, with
 no echo and no editing. Both take their input from the console, so a key
 that a read of ``TTY:`` returns never reaches the line editor. A write to
@@ -84,15 +84,58 @@ program that keeps running while the user types, such as a game, uses
 
 
 
-Read Line
-=========
+Line Editor
+===========
 
 A read of ``CON:`` starts the line editor. The user types a line, edits
-it with backspace and the arrow keys, and presses Enter. The read then
-returns the line, ending with a newline. When the buffer of a read is
-shorter than the line, the next reads return the rest of it. Every
-``CON:`` uses the same line editor, so each line is returned once, to
-whichever ``CON:`` reads it first.
+it, and presses Enter. The read then returns the line, ending with a
+newline. When the buffer of a read is shorter than the line, the next
+reads return the rest of it. Every ``CON:`` uses the same line editor, so
+each line is returned once, to whichever ``CON:`` reads it first.
+
+The line editor has these keys:
+
+.. list-table::
+   :widths: 45 55
+   :header-rows: 1
+
+   * - Keys
+     - Action
+   * - Left, Right, Ctrl-B, Ctrl-F
+     - Move the cursor one character.
+   * - Ctrl-Left, Ctrl-Right, Alt-B, Alt-F
+     - Move the cursor one word.
+   * - Home, End, Ctrl-A, Ctrl-E
+     - Move the cursor to the start or the end of the line.
+   * - Backspace
+     - Delete the character before the cursor.
+   * - Delete, Ctrl-D
+     - Delete the character under the cursor.
+   * - Ctrl-W, Alt-Backspace
+     - Delete the word before the cursor.
+   * - Alt-D
+     - Delete the word after the cursor.
+   * - Ctrl-U
+     - Delete from the start of the line to the cursor.
+   * - Ctrl-K
+     - Delete from the cursor to the end of the line.
+   * - Insert
+     - Switch between insert mode and overwrite mode.
+   * - Up, Down, Ctrl-P, Ctrl-N
+     - Bring back an earlier line, in the monitor of an :doc:`pico`.
+   * - Shift with Left, Right, Home, or End
+     - Select text.
+   * - Ctrl-Shift-C, Ctrl-Insert
+     - Copy the selected text.
+   * - Ctrl-Shift-X, Shift-Delete
+     - Cut the selected text.
+   * - Ctrl-Shift-V, Shift-Insert
+     - Paste.
+   * - Enter
+     - End the line.
+
+On the VGA terminal, the mouse edits the line too. Click in the line to
+move the cursor there, or drag across text to select it.
 
 .. _term-terminal-size:
 
@@ -111,111 +154,95 @@ serial terminal or a telnet terminal. Write a width from 2 to 255 to
 RIA_ATTR_RLN_WIDTH and a height from 1 to 255 to RIA_ATTR_RLN_HEIGHT,
 or 0 to both to go back to the size of the VGA terminal.
 
-The line editor turns insert mode (IRM) off at the start of input. In
-`VT52 Mode`_ it edits with characters and backspaces alone, and the
-terminal wraps a long line.
-
 .. _term-nonblocking-read-line:
 
 Non-blocking Read Line
 ----------------------
 
-Between the activating read and the line flush, the application
-can inspect and modify the editor's state. That is what makes features
-like history recall, tab completion, and multi-field form navigation
-possible. The hooks are :ref:`RLN_LASTKEY <api-rln-lastkey>`,
-:ref:`RLN_PEEK <api-rln-peek>`, and :ref:`RLN_POKE <api-rln-poke>`.
+A program normally stops while the user types a line. ``fgets()`` does
+not return until the user presses Enter. A non-blocking read line lets
+the program keep running while the user types. Use it when the program
+has other work to do, such as a game that asks for a name while the
+screen keeps moving.
 
-The basic pattern:
+Open ``CON:`` and call ``read()`` from the main loop of the program.
+``read()`` returns 0 while the user is typing. After the user presses
+Enter, it returns the line.
 
-#. **Open the channel.** ``open("CON:", O_RDWR)`` returns a file descriptor.
-#. **Set the input cap** (optional). Write ``RIA_ATTR_RLN_LENGTH``.
-   Different prompts, or different fields in a form, can use
-   different caps. The default is 254.
-#. **Pin the terminal size** (optional). Write ``RIA_ATTR_RLN_WIDTH``
-   and ``RIA_ATTR_RLN_HEIGHT`` when the layout is built for a fixed
-   canvas. See `Terminal Size`_.
-#. **Loop on ``read()``** until the line flushes.
+.. code-block:: c
 
-   * The first call always returns 0 and activates the editor at the
-     current cursor position and SGR state. Position the cursor *before*
-     this read.
-   * A non-zero return means the line is complete. Pull it whole with a
-     buffer at least ``RIA_ATTR_RLN_LENGTH`` + 1 bytes long, or drain it
-     in fragments until you see the newline.
-   * On the first pass after activation, call ``ria_rln_poke()`` to
-     pre-load any text you want to appear in the line. The poked bytes
-     are echoed by the editor as if the user had typed them.
-   * Optionally check for Ctrl-C via ``RIA_ATTR_SIGINT`` or the RIA SIGINT IRQ.
-     To leave cooked input cleanly, poke ``\x03`` to print a visible
-     ``^C``, or poke ``\r`` to flush silently. Then wait for
-     ``read()`` to return the line.
-   * ``ria_rln_lastkey()`` reports the last keystroke and whether the
-     editor consumed it as an editing action. When ``action == 0`` the
-     editor passed the key through. That is the application's chance
-     to handle Tab, function keys, arrow keys for history or form
-     navigation, and any other keys it claims. The line editor keeps no
-     history while a program reads a line, so Up and Down always have
-     ``action == 0``. The Escape key arrives once 100 ms pass with no
-     other byte from its terminal, because ESC also starts the sequences
-     that other keys send. Call ``ria_rln_peek()``
-     to get the current input text and cursor position. Respond by
-     poking literal characters or ANSI sequences (``CUF``, ``CUB``,
-     ``ICH``, ``DCH``) back into the editor.
+   char line[256];
+   int n;
+   int fd = open("CON:", O_RDWR);
 
-A poke edits as typing does, with two differences. A control byte ends
-the input, as :ref:`RLN_POKE <api-rln-poke>` describes. ICH, DCH, and
-ECH edit the line only when poked; typed, they are function keys, such
-as Shift-F1, and do nothing. Poke ``\r`` to pull the
-buffer out without the user pressing Enter, for example when Tab should
-jump to the next field of a form. The editor
-flushes through ``read()`` like any other line, and the application can
-move on, entering the next field with a fresh ``read()`` and
-``ria_rln_poke()`` to restore its prior contents.
+   printf("Name? ");
+   do
+   {
+       /* The other work of the program goes here. */
+       n = read(fd, line, sizeof(line));
+   } while (n == 0);
+   /* line holds n bytes and ends with a newline. */
+
+The user types the line where the cursor is at the first ``read()``. A
+line can be up to 254 characters. To change that, write
+:ref:`RIA_ATTR_RLN_LENGTH <api-ria-attributes>`.
+
+The program can also watch the keys and change the line while the user
+types. Use this to add history, Tab completion, or a form with several
+fields. Call these between reads:
+
+.. list-table::
+   :widths: 30 70
+   :header-rows: 1
+
+   * - Call
+     - What it does
+   * - :ref:`ria_rln_lastkey() <api-rln-lastkey>`
+     - Returns the last key that the user pressed, and whether the line
+       editor used it. The program handles the keys that the line editor
+       does not use, such as Tab, Escape, Up, Down, and the function
+       keys.
+   * - :ref:`ria_rln_peek() <api-rln-peek>`
+     - Returns the line so far and where the cursor is in it.
+   * - :ref:`ria_rln_poke() <api-rln-poke>`
+     - Types text into the line. The text replaces the characters at the
+       cursor.
+
+Poke these to change the line:
+
+- To start the line with text already in it, poke the text after the
+  first ``read()``.
+- To move the cursor, poke CUF or CUB. See `Cursor Movement`_.
+- To insert, delete, or erase characters, poke ICH, DCH, or ECH. See
+  `Editing`_.
+- To end the line as Enter does, poke ``\r``. A form does this when the
+  user presses Tab to go to the next field.
+- To cancel the line when the user presses Ctrl-C, poke ``\x03``. The
+  line shows ``^C`` and ends. :ref:`RIA_ATTR_SIGINT <api-ria-attributes>`
+  tells the program that the user pressed Ctrl-C.
 
 
 Terminal
 ========
 
-The terminal is built to run software written for ``xterm-256color``,
-and to be as much like a DEC VT as that allows. Like xterm, it
-identifies itself as a VT420 with xterm's extensions. From the VT420 it
-has the left and right margins, the rectangle sequences, the four
-character sets G0 to G3 with DEC Technical, and the reports of the
-VT420. From xterm it has 256 colors and 24-bit color, the alternate
-screen, the palette sequences, and bracketed paste. The tables below
-list every sequence that it acts on.
+The VGA terminal shows the text of a program on the VGA monitor and
+sends the program the keys of the keyboard. A program controls it with
+escape sequences. It prints them to move the cursor, color the text,
+clear the screen, and more.
+
+The VGA terminal runs software written for ``xterm-256color``. Like
+xterm, it identifies itself as a VT420 with xterm's extensions. The
+sections below list every sequence that it acts on.
 
 Text is in the 8-bit code page of :ref:`RIA_ATTR_CODE_PAGE
-<api-ria-attributes>`, one byte for each character. The terminal does
-not decode UTF-8 and has no C1 controls: bytes 0x80 to 0xFF are always
-characters of the code page.
+<api-ria-attributes>`, one byte for each character, not in UTF-8.
 
-The terminal also has a few features from other terminals:
-
-- The underline styles of kitty (SGR 4:n): double, curly, dotted, and
-  dashed underlines, in a color of their own (SGR 58 and 59).
-  See `Setting Reports`_.
-- iCE colors from SyncTERM (mode 33), for ANSI art.
-
-The terminal parses escape sequences as xterm does. It ignores a
-sequence that it does not know, whole. It ignores APC, PM, and SOS
-strings up to the ST that ends them, and DCS strings too, except
-DECRQSS, which asks for a setting, and DECRSPS, which restores the
-cursor or the tab stops. Inside a sequence, CAN and SUB cancel the
-sequence, and ESC starts a new one. BS, HT, LF, VT, FF, CR, SO, SI, and
-BEL act without ending the sequence, NUL and DEL are ignored, and any
-other control or a byte from 0x80 to 0xFF ends it.
-
-Some older terminals could not keep up at full speed, so a program sent
-padding or waited after a slow operation such as a screen clear, or
-paused when the terminal sent XOFF. This terminal keeps up with a
-program's output at full speed, even through a screen clear. In smooth
-scroll mode, a write takes as long as the scroll. A program needs no
-flow control, padding, or delays.
 
 C0 Control Codes
 ----------------
+
+A control code is a byte from 0x00 to 0x1F, or 0x7F. The table lists
+what the terminal does with each one.
 
 .. list-table::
    :widths: 9 9 5 15 62
@@ -235,12 +262,13 @@ C0 Control Codes
      - 0x01-0x06
      - —
      - —
-     - Drawn. ENQ (0x05) sends no answerback.
+     - Shown on the terminal. ENQ (0x05) does not send an answerback.
    * - ^G
      - 0x07
      - BEL
      - Bell
-     - Ignored.
+     - Ring the bell. To silence it, set :ref:`RIA_ATTR_BEL
+       <api-ria-attributes>` to 0.
    * - ^H
      - 0x08
      - BS
@@ -268,7 +296,7 @@ C0 Control Codes
      - 0x0C
      - FF
      - Form Feed
-     - Same as LF. It does not clear the screen.
+     - Same as LF.
    * - ^M
      - 0x0D
      - CR
@@ -290,7 +318,7 @@ C0 Control Codes
      - 0x10-0x17
      - —
      - —
-     - Drawn.
+     - Shown on the terminal.
    * - ^X
      - 0x18
      - CAN
@@ -300,7 +328,7 @@ C0 Control Codes
      - 0x19
      - EM
      - End of Medium
-     - Drawn.
+     - Shown on the terminal.
    * - ^Z
      - 0x1A
      - SUB
@@ -315,25 +343,26 @@ C0 Control Codes
      - 0x1C-0x1F
      - —
      - —
-     - Drawn.
+     - Shown on the terminal.
    * - —
      - 0x7F
      - DEL
      - Delete
      - Ignored.
 
-The controls marked "Drawn" are the ones that the Linux console does
-not act on. As on Linux, the terminal draws them as the characters of
-the code page at those codes.
+A control code that is shown on the terminal shows as the character of
+the code page at that code.
 
-CRM (``CSI 3 h``) draws every control except NUL, BS, LF, FF, CR, SO,
-SI, and ESC, and draws DEL too, so HT, VT, BEL, CAN, and SUB show as
-characters instead of acting. ``CSI 3 l`` turns this off. It applies
-only outside escape sequences, so a control inside a sequence still
-acts. SGR 0 leaves it on, and RIS turns it off.
+To show the other control codes on the terminal too, set CRM with
+``CSI 3 h``. HT, VT, BEL, CAN, SUB, and DEL are then shown instead of
+acting. NUL, BS, LF, FF, CR, SO, SI, and ESC still act. ``CSI 3 l``
+turns CRM off.
 
 Fe Escape Sequences
 -------------------
+
+These escape sequences are ESC and one or two more characters. The table
+lists what the terminal does with each one.
 
 .. list-table::
    :widths: 20 12 22 46
@@ -375,14 +404,15 @@ Fe Escape Sequences
      - DECFI
      - Forward Index
      - Move the cursor right one column. At the right margin, move the
-       columns between the margins left one column instead.
+       columns between the margins left one column instead, on every
+       line of the scroll region.
    * - ESC 7
      - DECSC
      - Save Cursor
      - Save the cursor's position, a pending wrap, SGR, the character
        sets in G0 to G3, which of them is in GL, a pending single
-       shift, and origin mode. Autowrap is not saved. The primary and
-       alternate screens have separate saves. ``CSI s`` is the same,
+       shift, and origin mode. It does not save autowrap. The primary
+       and alternate screens have separate saves. ``CSI s`` is the same,
        unless mode 69 has made it DECSLRM.
    * - ESC 8
      - DECRC
@@ -393,7 +423,7 @@ Fe Escape Sequences
    * - ESC Z
      - DECID
      - Identify Terminal
-     - Reply as Primary DA does, ``ESC [ ? 64 ; 6 ; 21 ; 22 ; 28 c``.
+     - Reply as Primary DA does. See `Reports`_.
    * - ESC [
      - CSI
      - Control Sequence Introducer
@@ -431,30 +461,23 @@ Fe Escape Sequences
      - Single Shift Two, Three
      - Draw the next character from G2 or G3. The character after it
        draws from GL again.
-   * - ESC ~, ESC }, ``ESC |``
-     - LS1R, LS2R, LS3R
-     - Locking Shift Right
-     - Ignored. Bytes 0x80 to 0xFF are always characters of the code
-       page.
    * - ESC # 3, ESC # 4
      - DECDHL
      - Double-Height Line
      - Make the cursor's line the top half (3) or the bottom half (4) of
        a double-height line. Write the same text on both rows. The line
-       shows half as many columns, and the characters past the middle
-       stay on it out of sight until it is made single size. Ignored
-       while mode 69 is set, as DECDWL is.
+       shows half as many columns. Ignored while mode 69 is set.
    * - ESC # 5
      - DECSWL
      - Single-Width Line
-     - Make the cursor's line single size. Characters that were past
-       the middle of a double-size line show again.
+     - Make the cursor's line single size.
    * - ESC # 6
      - DECDWL
      - Double-Width Line
      - Make the cursor's line double width. It shows half as many
-       columns. The characters past the middle stay on the line out of
-       sight, and show again when the line is made single width.
+       columns. The characters past the middle are hidden, and they
+       show again when the line is made single width. Ignored while
+       mode 69 is set.
    * - ESC # 8
      - DECALN
      - Screen Alignment
@@ -481,13 +504,7 @@ Fe Escape Sequences
    * - ESC <
      - —
      - ANSI mode
-     - Ignored in ANSI mode. Leaves `VT52 Mode`_.
-   * - ESC %, ESC SP, ESC -, ESC ., ESC /
-     - —
-     - Other
-     - Ignored, with their final byte: the UTF-8 selection, the 7-bit and
-       8-bit control selection (S7C1T and S8C1T), and the
-       96-character sets for G1, G2, and G3.
+     - Ignored. In VT52 mode, it returns to ANSI mode. See `VT52 Mode`_.
 
 Character Sets
 --------------
@@ -524,7 +541,7 @@ picks the set:
 
    * - F
      - Set loaded
-   * - B
+   * - B, U, K
      - US ASCII (default).
    * - A
      - UK: US ASCII with the pound sign (£) in place of ``#``.
@@ -532,10 +549,6 @@ picks the set:
      - DEC Special Graphics.
    * - >
      - DEC Technical. See `DEC Technical Set`_.
-   * - U, K
-     - US ASCII. These are the null and the user mappings of the Linux
-       console. On a VT220, ``ESC ( K`` selects German, but here it is
-       the user mapping of Linux.
 
 DEC Special Graphics replaces the characters from 0x5F to 0x7E with
 line-drawing characters and symbols. DEC Technical replaces the
@@ -544,9 +557,7 @@ integrals, radicals, and sigmas, mathematical symbols, Greek letters,
 and arrows. These two sets and the pound sign of UK work in every code
 page.
 
-Any other byte after the sequence leaves the place as it was, and so do
-``ESC - F``, ``ESC . F``, and ``ESC / F``, which load a 96-character
-set into G1, G2, or G3 on a DEC terminal.
+Any other byte after the sequence leaves the place as it was.
 
 **Switch the set in GL.** A locking shift puts a set in GL until the
 next locking shift. A single shift draws one character from G2 or G3,
@@ -1718,15 +1729,19 @@ reset.
    * - 3 (CRM), 4 (IRM), 6 (ERM), 20 (LNM)
      - 1 or 2.
    * - 12 (SRM)
-     - 3, permanently set: there is no local echo.
+     - 3, permanently set.
    * - ?2 (DECANM)
-     - 1, ANSI mode. In VT52 mode, the request is not a sequence the
-       terminal takes.
+     - 1, ANSI mode. In VT52 mode, there is no reply.
    * - ?3 (DECCOLM)
      - 4, permanently reset, on the 80-column terminal, and 0 on the
        40-column terminal.
-   * - ?1, ?4, ?5, ?6, ?7, ?8, ?25, ?33, ?40, ?66, ?67, ?69, ?2004
+   * - ?1, ?4, ?5, ?6, ?7, ?8, ?9, ?25, ?33, ?35, ?40, ?66, ?67, ?69,
+       ?1000, ?1001, ?1002, ?1003, ?1005, ?1006, ?1007, ?1015, ?1016,
+       ?2004
      - 1 or 2.
+   * - ?1004
+     - 1 or 2 on the :doc:`emu` and the :doc:`web`. 4, permanently
+       reset, on the other machines.
    * - ?12
      - 2 for a steady cursor style, 1 for a blinking one.
    * - ?47, ?1047, ?1049
@@ -1786,6 +1801,9 @@ other sequence the reply is ``ESC P 0 $ r ESC \``.
    * - ``ESC P $ q * | ESC \``
      - DECSNLS
      - ``n * |``, where n is the number of rows.
+   * - ``ESC P $ q * r ESC \``
+     - DECSCS
+     - ``; n * r``, where n is the speed, 0 to 11. See `Speed`_.
 
 The SGR reply lists what `SGR Parameters`_ would set, separated by
 ``;``: 1, 2, 3, the underline (4, or ``4:n`` for another style), 5 or

@@ -2293,3 +2293,17 @@ program set these registers.
      - The tablet's pointer: its y. Writing it moves the pointer to this y
        and to the x of POINTER_X. The VGA draws the pointer over every
        plane, with the point of its shape at x and y in canvas pixels.
+   * - $1:F:0B
+     - SELECT_START
+     - The first cell of the selection of the VGA terminal. The
+       selection changes when SELECT_END is written.
+   * - $1:F:0C
+     - SELECT_SIDES
+     - The columns that the rows of the selection cover, from the left
+       column up to, but not including, the right column. The selection
+       changes when SELECT_END is written.
+   * - $1:F:0D
+     - SELECT_END
+     - The cell after the last cell of the selection. Writing it sets
+       the selection from SELECT_START to here, or clears it when it
+       equals SELECT_START.
