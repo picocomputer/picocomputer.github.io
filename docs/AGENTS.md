@@ -22,13 +22,37 @@ how the system works.
 
 **Leave out what is not a thing.** Do not name a problem, a limit, or a
 technique that the reader does not have to deal with. Naming it tells the
-reader that it matters.
+reader that it matters. A place where the machine does not do what the
+standard or the reader expects is a thing: say it.
+
+**Test every sentence.** The rules apply to every sentence of the section,
+not only to the sentences that changed. A correction from the owner is a
+rule for the whole manual, not a fix for one sentence. Check each claim
+against the source before writing it.
 
 **Edit the passage, not the sentence.** Before any change, read the
 section from its start, as the person who arrives there.
 
 **Test each passage.** Before you report a change, read the section from
 its heading as a person reading the manual.
+
+## Procedure
+
+The default of an agent is the smallest change that satisfies the last
+instruction. That default is always wrong. Do these steps for every
+section, every time, before you report it:
+
+1. Read this file again. The rules fade during a long session.
+2. Read the whole section from its heading, as its reader.
+3. Test every sentence. Does the reader need it? Is it true in the
+   source? Is it how a person would say it? Fix or cut each one that
+   fails.
+4. Check that the section opens with what the thing is, why the reader
+   would want it, and how to use it.
+5. When the owner corrects one thing, work out the rule behind it. Find
+   every other place in the section that breaks the same rule, and fix
+   those too before you reply.
+6. Report with a link to the lines and one line of text.
 
 ## Rules
 

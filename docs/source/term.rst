@@ -241,9 +241,6 @@ Text is in the 8-bit code page of :ref:`RIA_ATTR_CODE_PAGE
 C0 Control Codes
 ----------------
 
-A control code is a byte from 0x00 to 0x1F, or 0x7F. The table lists
-what the terminal does with each one.
-
 .. list-table::
    :widths: 9 9 5 15 62
    :header-rows: 1
@@ -360,9 +357,6 @@ turns CRM off.
 
 Fe Escape Sequences
 -------------------
-
-These escape sequences are ESC and one or two more characters. The table
-lists what the terminal does with each one.
 
 .. list-table::
    :widths: 20 12 22 46
@@ -509,60 +503,53 @@ lists what the terminal does with each one.
 Character Sets
 --------------
 
-The terminal has four places for a character set, named **G0**, **G1**,
-**G2**, and **G3**. You load a set into each of them, and put one of
-them in **GL**. The characters from 0x21 to 0x7E draw from the set in
-GL. This lets you mix regular text with the DEC line-drawing characters
-(corners, tees, and lines) or with mathematical symbols, without an
-escape sequence per character. Load the line-drawing set into G1 once,
-then switch between G0 and G1 with SI and SO as you go.
+A character set changes the characters that the codes from 0x21 to 0x7E
+show. With the DEC Special Graphics set, the lowercase letters show
+lines and corners, so a program can draw boxes. The DEC Technical set
+has mathematical symbols. The sets work in every code page.
 
-**Load a set.** The sequence picks the place, and the byte after it
-picks the set:
+The terminal holds four character sets at a time, in **G0**, **G1**,
+**G2**, and **G3**. It shows characters from one of the four, which is
+called **GL**. To mix regular text with line drawing, load DEC Special
+Graphics into G1 once, then switch to G1 with SO and back to G0 with SI.
+
+**Load a set.** The sequence is ESC and two characters. The first
+character chooses G0, G1, G2, or G3, and the second chooses the set.
+``ESC ( 0`` loads DEC Special Graphics into G0, and ``ESC ) B`` loads US
+ASCII into G1.
 
 .. list-table::
    :widths: 22 78
    :header-rows: 1
 
-   * - Sequence
+   * - First character
      - Loads the set into
-   * - ESC ( F
+   * - ``(``
      - G0.
-   * - ESC ) F
+   * - ``)``
      - G1.
-   * - ``ESC * F``
+   * - ``*``
      - G2.
-   * - ESC + F
+   * - ``+``
      - G3.
 
 .. list-table::
    :widths: 22 78
    :header-rows: 1
 
-   * - F
+   * - Second character
      - Set loaded
-   * - B, U, K
+   * - ``B``, ``U``, or ``K``
      - US ASCII (default).
-   * - A
+   * - ``A``
      - UK: US ASCII with the pound sign (£) in place of ``#``.
-   * - 0
+   * - ``0``
      - DEC Special Graphics.
-   * - >
-     - DEC Technical. See `DEC Technical Set`_.
+   * - ``>``
+     - DEC Technical.
 
-DEC Special Graphics replaces the characters from 0x5F to 0x7E with
-line-drawing characters and symbols. DEC Technical replaces the
-characters from 0x21 to 0x7E with the pieces of tall brackets, braces,
-integrals, radicals, and sigmas, mathematical symbols, Greek letters,
-and arrows. These two sets and the pound sign of UK work in every code
-page.
-
-Any other byte after the sequence leaves the place as it was.
-
-**Switch the set in GL.** A locking shift puts a set in GL until the
-next locking shift. A single shift draws one character from G2 or G3,
-and the character after it draws from GL again. Controls do not use up
-a single shift.
+**Switch sets.** A locking shift switches to a set until the next
+locking shift. A single shift switches to a set for one character.
 
 .. list-table::
    :widths: 17 12 71
@@ -573,384 +560,39 @@ a single shift.
      - Effect
    * - SI (^O)
      - LS0
-     - Put G0 in GL.
+     - Switch to G0.
    * - SO (^N)
      - LS1
-     - Put G1 in GL.
+     - Switch to G1.
    * - ESC n
      - LS2
-     - Put G2 in GL.
+     - Switch to G2.
    * - ESC o
      - LS3
-     - Put G3 in GL.
+     - Switch to G3.
    * - ESC N
      - SS2
-     - Draw the next character from G2.
+     - Use G2 for the next character.
    * - ESC O
      - SS3
-     - Draw the next character from G3.
+     - Use G3 for the next character.
 
-On a DEC terminal, ESC ~, ESC }, and ``ESC |`` (LS1R, LS2R, and LS3R)
-put G1, G2, or G3 in GR, the set that draws the characters from 0xA0 to
-0xFF. Here those characters are always the code page, and these
-sequences are ignored.
-
-DECSC saves the four sets, which of them is in GL, and a pending single
-shift, and DECRC restores them. DECSTR and RIS put US ASCII in all four,
-with G0 in GL and no single shift pending. Entering `VT52 Mode`_ puts US
-ASCII in G0 and G1, puts G0 in GL, and ends a pending single shift.
-When a program stops, the system puts US ASCII in G0, G1, G2, and G3,
-with G0 in GL.
-
-All four places hold US ASCII at startup, with G0 in GL, so until you
-load another set you can ignore this entire feature.
-
-DEC Technical Set
------------------
-
-DEC Technical draws mathematical text. It has 94 codes, from 0x21 to
-0x7E. The codes 0x38 to 0x3B, 0x52, 0x54, 0x55, 0x6D, and 0x75 are
-undefined and draw a blank cell.
-
-The codes from 0x21 to 0x37 are pieces that build tall shapes, one
-piece in each row. A piece fills its cell from top to bottom, and its
-vertical stroke is on the same columns as the box-drawing lines, so the
-pieces in one column of consecutive rows join. The vertical line 0x26
-makes an integral, a bracket, a brace, or a radical taller wherever it
-is placed between two of its pieces. Written from the top row down:
-
-- An integral, three rows tall: 0x24, 0x26, 0x25.
-- A left square bracket, three rows tall: 0x27, 0x26, 0x28. A right
-  square bracket: 0x29, 0x26, 0x2A.
-- A left curly brace, three rows tall: 0x2B, 0x2F, 0x2C. A right curly
-  brace: 0x2D, 0x30, 0x2E. A brace five rows tall has 0x26 above and
-  below its middle piece.
-- A radical, three rows tall: 0x22 with 0x23 to its right as the bar
-  over the expression, 0x26, and 0x21.
-
-The big sigma is two columns wide and three rows tall. Each line below
-is one row, and 0x20 is a space:
-
-::
-
-   0x31 0x35
-   0x20 0x37
-   0x32 0x36
-
-0x33 and 0x34 are the upper and the lower diagonal of the sigma alone,
-without the bars.
-
-The table gives the character that each code draws, as the Unicode
-character that xterm draws for it. The pieces of the big sigma have no
-Unicode character.
-
-.. list-table::
-   :widths: 12 12 76
-   :header-rows: 1
-
-   * - Code
-     - Draws
-     - Unicode
-   * - 0x21
-     - ⎷
-     - U+23B7, radical symbol bottom.
-   * - 0x22
-     - ┌
-     - U+250C, box drawings light down and right.
-   * - 0x23
-     - ─
-     - U+2500, box drawings light horizontal.
-   * - 0x24
-     - ⌠
-     - U+2320, top half integral.
-   * - 0x25
-     - ⌡
-     - U+2321, bottom half integral.
-   * - 0x26
-     - │
-     - U+2502, box drawings light vertical.
-   * - 0x27
-     - ⎡
-     - U+23A1, left square bracket upper corner.
-   * - 0x28
-     - ⎣
-     - U+23A3, left square bracket lower corner.
-   * - 0x29
-     - ⎤
-     - U+23A4, right square bracket upper corner.
-   * - 0x2A
-     - ⎦
-     - U+23A6, right square bracket lower corner.
-   * - 0x2B
-     - ⎧
-     - U+23A7, left curly bracket upper hook.
-   * - 0x2C
-     - ⎩
-     - U+23A9, left curly bracket lower hook.
-   * - 0x2D
-     - ⎫
-     - U+23AB, right curly bracket upper hook.
-   * - 0x2E
-     - ⎭
-     - U+23AD, right curly bracket lower hook.
-   * - 0x2F
-     - ⎨
-     - U+23A8, left curly bracket middle piece.
-   * - 0x30
-     - ⎬
-     - U+23AC, right curly bracket middle piece.
-   * - 0x31
-     - —
-     - None. The top left of the big sigma: the top bar and the upper
-       diagonal.
-   * - 0x32
-     - —
-     - None. The bottom left of the big sigma: the lower diagonal and
-       the bottom bar.
-   * - 0x33
-     - —
-     - None. The upper diagonal of the big sigma, alone.
-   * - 0x34
-     - —
-     - None. The lower diagonal of the big sigma, alone.
-   * - 0x35
-     - —
-     - None. The top right of the big sigma: the end of the top bar.
-   * - 0x36
-     - —
-     - None. The bottom right of the big sigma: the end of the bottom bar.
-   * - 0x37
-     - —
-     - None. The middle of the big sigma, where the diagonals meet.
-   * - 0x38
-     - Blank
-     - None. Undefined.
-   * - 0x39
-     - Blank
-     - None. Undefined.
-   * - 0x3A
-     - Blank
-     - None. Undefined.
-   * - 0x3B
-     - Blank
-     - None. Undefined.
-   * - 0x3C
-     - ≤
-     - U+2264, less-than or equal to.
-   * - 0x3D
-     - ≠
-     - U+2260, not equal to.
-   * - 0x3E
-     - ≥
-     - U+2265, greater-than or equal to.
-   * - 0x3F
-     - ∫
-     - U+222B, integral.
-   * - 0x40
-     - ∴
-     - U+2234, therefore.
-   * - 0x41
-     - ∝
-     - U+221D, proportional to.
-   * - 0x42
-     - ∞
-     - U+221E, infinity.
-   * - 0x43
-     - ÷
-     - U+00F7, division sign.
-   * - 0x44
-     - Δ
-     - U+0394, Greek capital letter delta.
-   * - 0x45
-     - ∇
-     - U+2207, nabla.
-   * - 0x46
-     - Φ
-     - U+03A6, Greek capital letter phi.
-   * - 0x47
-     - Γ
-     - U+0393, Greek capital letter gamma.
-   * - 0x48
-     - ∼
-     - U+223C, tilde operator.
-   * - 0x49
-     - ≃
-     - U+2243, asymptotically equal to.
-   * - 0x4A
-     - Θ
-     - U+0398, Greek capital letter theta.
-   * - 0x4B
-     - ×
-     - U+00D7, multiplication sign.
-   * - 0x4C
-     - Λ
-     - U+039B, Greek capital letter lamda.
-   * - 0x4D
-     - ⇔
-     - U+21D4, left right double arrow.
-   * - 0x4E
-     - ⇒
-     - U+21D2, rightwards double arrow.
-   * - 0x4F
-     - ≡
-     - U+2261, identical to.
-   * - 0x50
-     - Π
-     - U+03A0, Greek capital letter pi.
-   * - 0x51
-     - Ψ
-     - U+03A8, Greek capital letter psi.
-   * - 0x52
-     - Blank
-     - None. Undefined.
-   * - 0x53
-     - Σ
-     - U+03A3, Greek capital letter sigma.
-   * - 0x54
-     - Blank
-     - None. Undefined.
-   * - 0x55
-     - Blank
-     - None. Undefined.
-   * - 0x56
-     - √
-     - U+221A, square root.
-   * - 0x57
-     - Ω
-     - U+03A9, Greek capital letter omega.
-   * - 0x58
-     - Ξ
-     - U+039E, Greek capital letter xi.
-   * - 0x59
-     - Υ
-     - U+03A5, Greek capital letter upsilon.
-   * - 0x5A
-     - ⊂
-     - U+2282, subset of.
-   * - 0x5B
-     - ⊃
-     - U+2283, superset of.
-   * - 0x5C
-     - ∩
-     - U+2229, intersection.
-   * - 0x5D
-     - ∪
-     - U+222A, union.
-   * - 0x5E
-     - ∧
-     - U+2227, logical and.
-   * - 0x5F
-     - ∨
-     - U+2228, logical or.
-   * - 0x60
-     - ¬
-     - U+00AC, not sign.
-   * - 0x61
-     - α
-     - U+03B1, Greek small letter alpha.
-   * - 0x62
-     - β
-     - U+03B2, Greek small letter beta.
-   * - 0x63
-     - χ
-     - U+03C7, Greek small letter chi.
-   * - 0x64
-     - δ
-     - U+03B4, Greek small letter delta.
-   * - 0x65
-     - ε
-     - U+03B5, Greek small letter epsilon.
-   * - 0x66
-     - φ
-     - U+03C6, Greek small letter phi.
-   * - 0x67
-     - γ
-     - U+03B3, Greek small letter gamma.
-   * - 0x68
-     - η
-     - U+03B7, Greek small letter eta.
-   * - 0x69
-     - ι
-     - U+03B9, Greek small letter iota.
-   * - 0x6A
-     - θ
-     - U+03B8, Greek small letter theta.
-   * - 0x6B
-     - κ
-     - U+03BA, Greek small letter kappa.
-   * - 0x6C
-     - λ
-     - U+03BB, Greek small letter lamda.
-   * - 0x6D
-     - Blank
-     - None. Undefined.
-   * - 0x6E
-     - ν
-     - U+03BD, Greek small letter nu.
-   * - 0x6F
-     - ∂
-     - U+2202, partial differential.
-   * - 0x70
-     - π
-     - U+03C0, Greek small letter pi.
-   * - 0x71
-     - ψ
-     - U+03C8, Greek small letter psi.
-   * - 0x72
-     - ρ
-     - U+03C1, Greek small letter rho.
-   * - 0x73
-     - σ
-     - U+03C3, Greek small letter sigma.
-   * - 0x74
-     - τ
-     - U+03C4, Greek small letter tau.
-   * - 0x75
-     - Blank
-     - None. Undefined.
-   * - 0x76
-     - ƒ
-     - U+0192, Latin small letter f with hook.
-   * - 0x77
-     - ω
-     - U+03C9, Greek small letter omega.
-   * - 0x78
-     - ξ
-     - U+03BE, Greek small letter xi.
-   * - 0x79
-     - υ
-     - U+03C5, Greek small letter upsilon.
-   * - 0x7A
-     - ζ
-     - U+03B6, Greek small letter zeta.
-   * - 0x7B
-     - ←
-     - U+2190, leftwards arrow.
-   * - 0x7C
-     - ↑
-     - U+2191, upwards arrow.
-   * - 0x7D
-     - →
-     - U+2192, rightwards arrow.
-   * - 0x7E
-     - ↓
-     - U+2193, downwards arrow.
+All four hold US ASCII at startup, with G0 in GL, so until you load
+another set you can ignore this entire feature.
 
 Cursor Movement
 ---------------
 
 Writing a character in the last column leaves the cursor on that column
-with a wrap pending, as on a VT102. The next character goes to column 1
+with a wrap pending. The next character goes to column 1
 of the next row. Any move of the cursor cancels the pending wrap, and so
 do the erase and edit sequences.
 With left and right margins set, the wrap is at the right
 margin and the next character goes to the left margin. See `Scrolling
 and Margins`_.
 
-A CSI sequence takes up to 16 parameters separated by ``;``, and
-ignores any after the 16th. A missing number is 0, and a number above
-65535 counts as 65535. Some functions, especially cursor movement,
-treat 0 as 1 to remain useful without parameters. Only SGR takes ``:``
+A CSI sequence takes numbers separated by ``;``. A missing number is 0.
+Cursor movement treats 0 as 1. Only SGR takes ``:``
 between numbers, and any other sequence with a ``:`` is ignored.
 
 .. list-table::
@@ -964,23 +606,23 @@ between numbers, and any other sequence with a ``:`` is ignored.
    * - CSI n A
      - CUU
      - Cursor Up
-     - Move n rows up, stopping at the top margin, or at the top row
-       from above the scroll region.
+     - Move n rows up, stopping at the top margin, or at the top row if
+       the cursor is above the scroll region.
    * - CSI n B
      - CUD
      - Cursor Down
      - Move n rows down, stopping at the bottom margin, or at the last
-       row from below the scroll region.
+       row if the cursor is below the scroll region.
    * - CSI n C
      - CUF
      - Cursor Forward
-     - Move n columns right, stopping at the last column or at the
-       right margin.
+     - Move n columns right, stopping at the right margin, or at the
+       last column if the cursor is right of the right margin.
    * - CSI n D
      - CUB
      - Cursor Back
-     - Move n columns left, stopping at column 1 or at the left
-       margin.
+     - Move n columns left, stopping at the left margin, or at column 1
+       if the cursor is left of the left margin.
    * - CSI n E
      - CNL
      - Cursor Next Line
@@ -1000,9 +642,9 @@ between numbers, and any other sequence with a ``:`` is ignored.
    * - CSI n a
      - HPR
      - Horizontal Position Relative
-     - Move to the column n columns right, as HPA does: past the right
-       margin, stopping at the last column. In origin mode, stop at the
-       right margin.
+     - Move n columns right. The cursor can pass the right margin and
+       stops at the last column. In origin mode, it stops at the right
+       margin.
    * - CSI n d
      - VPA
      - Vertical Position Absolute
@@ -1010,9 +652,9 @@ between numbers, and any other sequence with a ``:`` is ignored.
    * - CSI n e
      - VPR
      - Vertical Position Relative
-     - Move to the row n rows down, as VPA does: past the bottom margin,
-       stopping at the last row. In origin mode, stop at the bottom
-       margin. The column does not change.
+     - Move n rows down. The cursor can pass the bottom margin and stops
+       at the last row. In origin mode, it stops at the bottom margin.
+       The column does not change.
    * - CSI n ; m H
      - CUP
      - Cursor Position
@@ -1023,9 +665,8 @@ between numbers, and any other sequence with a ``:`` is ignored.
      - Same as CUP.
 
 Rows and columns count from 1. In origin mode (``CSI ? 6 h``), CUP, HVP,
-and VPA count rows from the top margin and stay inside the scroll
-region, and CUP, HVP, CHA, and HPA count columns from the left margin
-and stay inside the right one. VPR stops at the bottom margin and HPR
+and VPA count rows from the top margin and stop at the bottom margin,
+and CUP, HVP, CHA, and HPA count columns from the left margin and stop
 at the right margin. DECSC and DECRC (``ESC 7`` and ``ESC 8``) save and
 restore the cursor.
 
@@ -1070,19 +711,18 @@ Editing
    * - CSI n b
      - REP
      - Repeat
-     - Write the last character again, n times. A control or an escape
-       sequence after the character, other than another REP, cancels
-       it.
+     - Write the last character again, n times. REP works only right
+       after a character. After anything else, including another REP,
+       it does nothing.
 
 Erase
 -----
 
-An erased cell is a space in the current background color, with no
-attributes and no protection. Reverse video does not apply, so an erase
-under SGR 7 uses the background color, not the foreground color. This is
-true of every erase: the sequences below, the blank cells and lines of
-the editing and scrolling sequences, and the clear of the alternate
-screen.
+An erased cell is a space in the current background color, with no attributes
+and no protection. Reverse video does not apply, so an erase under SGR 7 uses
+the background color, not the foreground color. The blank cells and lines that
+the editing and scrolling sequences bring in, and the clear of the alternate
+screen, are erased cells too.
 
 .. list-table::
    :widths: 15 5 20 60
