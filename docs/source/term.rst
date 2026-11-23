@@ -759,11 +759,10 @@ screen, are erased cells too.
 Protected Areas
 ---------------
 
-A form on the screen can protect its labels and leave them in place
-while a program erases its fields. A protected character stays when an
-erase that respects protection reaches it. DEC terminals and ECMA-48
-each have a way to mark characters as protected, and the terminal
-combines them as xterm does.
+A protected character stays on the screen when a program erases around
+it. A program can protect the labels of a form, then erase the fields
+without erasing the labels. DECSCA and SPA each protect the characters
+written after them.
 
 .. list-table::
    :widths: 15 8 25 52
@@ -787,32 +786,24 @@ combines them as xterm does.
      - End of Guarded Area
      - The characters written after it are not protected.
 
-After a DECSCA, only DECSED, DECSEL, and DECSERA leave protected
-characters in place. After an SPA, ED, EL, and ECH leave them too,
-unless ERM (ANSI mode 6) is set. The later of the two decides.
+DECSED, DECSEL, and DECSERA leave protected characters in place. ED, EL,
+and ECH leave them only after an SPA, and not while ERM (ANSI mode 6) is
+set.
 
-Writing a character, ICH, DCH, IL, DL, and scrolling do not respect
-protection. A character written over a protected one takes the
-protection of the characters being written, and characters that move
-keep theirs. An erase that leaves protected characters on a line also
-leaves the line's size, where ED and EL make a line single size.
+Only an erase leaves a protected character in place. Writing a
+character, ICH, DCH, IL, DL, and scrolling still change and move
+protected characters.
 
-DECSC saves the protection of the characters being written, and DECRC
-restores it. SGR 0 does not change it. DECSTR and RIS turn it off, and
-until the next DECSCA or SPA no erase leaves a protected character in
-place.
+SGR 0 does not turn protection off. DECSTR and RIS do.
 
 Rectangles
 ----------
 
-These are the rectangle sequences of the VT420, as xterm has them. A
-rectangle is given by its top row t, left column l, bottom row b, and
-right column r. A side that is left out is the edge of the screen, and a
-side past the edge is the edge. A rectangle whose bottom is above its
-top, or whose right is left of its left, does nothing. In origin mode
-the rows and columns count from the margins, and a rectangle stays
-inside them. A double-width line has only its own columns of a
-rectangle. The cursor does not move.
+A rectangle is given by its top row t, left column l, bottom row b, and
+right column r. A side that is left out, or that is past the edge of the
+screen, is the edge of the screen. In origin mode the rows and columns
+count from the margins, and a rectangle stays inside them. The cursor
+does not move.
 
 .. list-table::
    :widths: 30 10 60
@@ -823,10 +814,9 @@ rectangle. The cursor does not move.
      - Effect
    * - CSI c ; t ; l ; b ; r $ x
      - DECFRA
-     - Fill the rectangle with the character whose code is c, as if it
-       were written in the current colors and attributes. A c that is
-       left out or 0 is a space. A control code (1-31 or 127) or a code
-       above 255 does nothing.
+     - Fill the rectangle with the character of code c, in the current
+       colors and attributes. With c left out or 0, the character is a
+       space.
    * - CSI t ; l ; b ; r $ z
      - DECERA
      - Erase the rectangle, protected characters too. Each cell becomes
@@ -835,14 +825,14 @@ rectangle. The cursor does not move.
    * - CSI t ; l ; b ; r $ {
      - DECSERA
      - Make the characters of the rectangle spaces. Each cell keeps its
-       colors and attributes, as in xterm. Protected characters stay,
-       as with DECSED. See `Protected Areas`_.
+       colors and attributes. Protected characters stay, as with
+       DECSED. See `Protected Areas`_.
    * - CSI t ; l ; b ; r ; 1 ; t2 ; l2 ; 1 $ v
      - DECCRA
-     - Copy the rectangle so that its top left is at row t2, column
-       l2, with its colors and attributes. The copy can lie over the
-       rectangle. What would land past the edge is lost. The two 1s
-       are page numbers, which are ignored: there is one page.
+     - Copy the rectangle so that its top left is at row t2, column l2,
+       with its colors and attributes. The copy can overlap the
+       original. What would land past the edge is lost. The two 1s are
+       page numbers and are ignored.
    * - CSI t ; l ; b ; r ; n ... $ r
      - DECCARA
      - Change the attributes of the characters already there. Each n
@@ -850,74 +840,38 @@ rectangle. The cursor does not move.
        24, 25, or 27 to clear one; or 0 to clear all four.
    * - CSI t ; l ; b ; r ; n ... $ t
      - DECRARA
-     - Reverse attributes of the characters already there: each n is
-       1, 4, 5, or 7, or 0 for all four. What was on goes off, and what
-       was off goes on.
+     - Turn each attribute of the characters already there on if it is
+       off, and off if it is on. Each n is 1, 4, 5, or 7, or 0 for all
+       four.
    * - CSI n * x
      - DECSACE
-     - Choose what DECCARA and DECRARA change. 2: the rectangle. 0 or
-       1 (default): the stream of characters from the top left of the
-       rectangle to its bottom right, which on the rows between those
-       two is the whole row. The stream runs to the edges of the
-       screen, also outside the left and right margins in origin mode.
+     - Choose what DECCARA and DECRARA change. 2: the rectangle. 0 or 1
+       (default): every character from the top left corner to the
+       bottom right corner in reading order. The rows between the first
+       and the last change across the whole width of the screen.
 
-DECCARA and DECRARA leave a character as SGR would have written it.
-Bold is the brighter color of SGR 1, and taking bold off leaves a color
-that was bright without it, such as one from SGR 90-97. A 24-bit color
-has no brighter color and does not change. An underline that they set
-is a single one in the foreground color. In iCE colors mode 5 does
-nothing: it does not set or reverse blink, and it does not brighten the
-background as SGR 5 does. 25 and 0 still clear blink from a character
-that has it.
+An underline that DECCARA or DECRARA sets is a single underline in the
+foreground color. With iCE colors (mode 33) set, 5 changes blink only.
+It does not brighten the background as SGR 5 does.
 
 Scrolling and Margins
 ---------------------
 
-The scroll region runs from the top margin to the bottom margin, and is
-the whole screen by default. LF, IND, and NEL scroll it up at the bottom
-margin, and RI scrolls it down at the top margin. The primary and
-alternate screens share it.
+The scroll region is the whole screen until DECSTBM sets a top and a
+bottom margin. Then only the rows from the top margin to the bottom
+margin scroll. The primary and alternate screens share one scroll
+region.
 
-Mode ?4 (DECSCLM) turns on smooth scroll, as on a VT102. A new line
-moves into the scroll region one scanline at a time instead of all at
-once, about four lines a second, and the program's output waits while it
-does. A program that wants its last lines to finish moving before it
-exits calls ``syncfs()`` on ``stdout``.
+``CSI ? 4 h`` (DECSCLM) turns on smooth scroll. A new line moves into
+the scroll region one scanline at a time, about four lines a second, and
+the output of the program waits while it does. To let the last lines
+finish moving before a program exits, call ``syncfs()`` on ``stdout``.
 
-Mode 69 (DECLRMM) allows left and right margins, which DECSLRM sets.
-They work as in xterm. A cursor between them stays between them, except
-with CBT and HPR:
-
-- A character written on the right margin wraps to the left margin of
-  the next row.
-- CR, BS, and CUB stop at the left margin, and CUF, HT, and CHT stop at
-  the right one.
-- CBT stops at the left margin only in origin mode. Otherwise it goes
-  on to column 1, outside the margins.
-- HPR stops at the right margin only in origin mode. Otherwise it goes
-  on to the last column, outside the margins.
-- Scrolling moves only the columns between the margins. This includes
-  LF, IND, NEL, and RI at the top or the bottom margin, SU, SD, SL, SR,
-  IL, and DL. The columns either side stay where they are.
-- ICH, DCH, and insert mode move the characters up to the right margin.
-
-A program can still move the cursor outside the margins with CUP. From
-there a move away from the margins stops at the edge of the screen, as
-with no margins. A move toward them, or text written left of them, goes
-in and stops or wraps at the far margin. CR goes to the left margin
-from right of it, and to column 1 from left of it unless origin mode is
-set.
-
-With the cursor left or right of the margins, LF, IND, NEL, and RI at
-the top or bottom margin do not scroll, ICH and DCH do nothing, and
-insert mode writes over the character at the cursor. SL, SR, IL, and DL
-do nothing there, or with the cursor above or below the scroll region.
-SU and SD scroll wherever the cursor is.
-
-While mode 69 is set every line is single size, and ``CSI s`` sets the
-margins and no longer saves the cursor. Resetting mode 69 makes the
-left and right margins the whole width again. When a program stops,
-the system resets mode 69.
+``CSI ? 69 h`` (DECLRMM) allows left and right margins, and DECSLRM sets
+them. Text then wraps at the right margin to the left margin of the next
+row, and scrolling moves only the columns between the margins. While
+mode 69 is set, every line is single size. Resetting mode 69 makes the
+left and right margins the whole width again.
 
 .. list-table::
    :widths: 17 10 25 48
@@ -936,7 +890,9 @@ the system resets mode 69.
      - SD
      - Scroll Down
      - Scroll the region down n lines. Blank lines come in at the top.
-       The cursor does not move.
+       The cursor does not move. ``CSI 0 T`` and ``CSI T`` with more
+       than one number do not scroll. They answer highlight tracking.
+       See `Mouse Reports`_.
    * - CSI n SP @
      - SL
      - Scroll Left
@@ -1017,13 +973,11 @@ Reports
 
 The terminal sends its replies to the console as input. These are the
 replies in the table below, the replies of `Mode Reports`_, `Setting
-Reports`_, and `Presentation State`_, and the answers to the color
-questions of `OSC Sequences`_. Set :ref:`RIA_ATTR_TERM_QUIET
+Reports`_, and `Presentation State`_, and the color replies of `OSC
+Sequences`_. Set :ref:`RIA_ATTR_TERM_QUIET
 <api-ria-attributes>` to 1 to turn the replies off.
 
-Replies wait until the program reads them. Up to 256 bytes can wait,
-and a reply that does not fit is dropped whole, so a program that asks
-many questions should read the replies before it asks more.
+Replies wait in a 256-byte queue. A reply that does not fit is lost.
 
 .. list-table::
    :widths: 18 13 22 47
@@ -1036,14 +990,15 @@ many questions should read the replies before it asks more.
    * - CSI c, CSI 0 c
      - DA
      - Primary Device Attributes
-     - ``ESC [ ? 64 ; 6 ; 21 ; 22 ; 28 c``: a VT420 (64) with
+     - ``ESC [ ? 64 ; 6 ; 21 ; 22 ; 28 ; 29 c``: a VT420 (64) with
        selective erase (6), horizontal scrolling and left and right
-       margins (21), ANSI color (22), and rectangular editing (28).
+       margins (21), ANSI color (22), rectangular editing (28), and the
+       DEC locator (29).
    * - CSI > c, CSI > 0 c
      - DA2
      - Secondary Device Attributes
-     - ``ESC [ > 41 ; 10 ; 0 c``: a VT420 (type 41), firmware version
-       1.0 (10), and ROM 0.
+     - ``ESC [ > 41 ; 10 ; 0 c``: a VT420 (41) with firmware version 1.0
+       (10).
    * - CSI = c, CSI = 0 c
      - DA3
      - Tertiary Device Attributes
@@ -1092,11 +1047,11 @@ many questions should read the replies before it asks more.
    * - CSI ? 55 n
      - DSR
      - Locator Status
-     - ``ESC [ ? 53 n``, no locator.
+     - ``ESC [ ? 50 n``, the locator is ready. See `DEC Locator`_.
    * - CSI ? 56 n
      - DSR
      - Locator Type
-     - ``ESC [ ? 57 ; 0 n``, no locator.
+     - ``ESC [ ? 57 ; 1 n``, the locator is a mouse.
    * - CSI ? 62 n
      - DECMSR
      - Macro Space Report
@@ -1124,22 +1079,24 @@ many questions should read the replies before it asks more.
      - Request Presentation State
      - DECTABSR, ``ESC P 2 $ u``, the columns of the tab stops, and
        ``ESC \``. See `Presentation State`_.
-   * - CSI x, CSI 0 x
+   * - CSI x, CSI 0 x, CSI 1 x
      - DECREQTPARM
      - Request Terminal Parameters
-     - ``ESC [ 2 ; 1 ; 1 ; 128 ; 128 ; 1 ; 0 x``: no parity, 8 bits,
-       38400 baud to send and to receive, clock multiplier 1, and no
-       flags. The speed codes of the VT100 end at 120 for 19200 baud,
-       and 128 is the next step.
-   * - CSI 1 x
-     - DECREQTPARM
-     - Request Terminal Parameters
-     - The same, starting with 3 in place of 2.
+     - ``ESC [ n ; 1 ; 1 ; 128 ; 128 ; 1 ; 0 x``. The first number
+       tells which request the reply answers: 2 for ``CSI x`` and
+       ``CSI 0 x``, and 3 for ``CSI 1 x``. The other numbers are the
+       serial settings of a VT100, in this order: no parity (1), 8 bits
+       (1), 38400 baud to send (128), 38400 baud to receive (128), a
+       clock multiplier of 1 (1), and no flags (0).
    * - CSI 11 t
      - —
      - Window state
-     - ``ESC [ 1 t``, not minimized. Only the desktop :doc:`emu`
-       replies ``ESC [ 2 t``, while its window is minimized.
+     - ``ESC [ 1 t``, not minimized. The desktop :doc:`emu` replies
+       ``ESC [ 2 t`` while its window is minimized.
+   * - CSI 13 t
+     - —
+     - Window position in pixels
+     - Always ``ESC [ 3 ; 1 ; 1 t``, an x of 1 and a y of 1.
    * - CSI 14 t
      - —
      - Text area in pixels
@@ -1158,15 +1115,11 @@ many questions should read the replies before it asks more.
      - Screen in characters
      - ``ESC [ 9 ; rows ; cols t``, the same size as 18.
 
-Other parameters of these sequences get no reply, and neither do the
-other window sequences of xterm, which move, resize, and name a window.
-
 ANSI Modes
 ----------
 
-Set with ``CSI n h`` and reset with ``CSI n l``. Multiple modes may be
-combined in one sequence (semicolon-separated parameters). Modes not
-listed are ignored.
+Set with ``CSI n h`` and reset with ``CSI n l``. One sequence can set or
+reset several modes, with their numbers separated by semicolons.
 
 .. list-table::
    :widths: 6 8 24 62
@@ -1176,10 +1129,6 @@ listed are ignored.
      - Abbr
      - Name
      - Effect
-   * - 2
-     - KAM
-     - Keyboard Action
-     - Ignored. The keyboard is never locked.
    * - 3
      - CRM
      - Control Representation
@@ -1194,9 +1143,8 @@ listed are ignored.
    * - 6
      - ERM
      - Erasure
-     - Set: ED, EL, and ECH erase protected characters too. Reset
-       (default): after an SPA, they leave them. See `Protected
-       Areas`_.
+     - Set: ED, EL, and ECH erase protected characters too. Reset (default):
+       they leave the characters that SPA protected. See `Protected Areas`_.
    * - 12
      - SRM
      - Send/Receive
@@ -1211,16 +1159,12 @@ listed are ignored.
 DEC Private Modes
 -----------------
 
-Set with ``CSI ? n h``, reset with ``CSI ? n l``. Multiple modes
-may be combined in one sequence (semicolon-separated parameters). Modes
-not listed are ignored.
+Set with ``CSI ? n h``, reset with ``CSI ? n l``. One sequence can set
+or reset several modes, with their numbers separated by semicolons.
 
-Mode 33 is for ANSI art. In the text mode of an IBM PC, one bit of the
-attribute byte of each character makes it blink. Some ANSI art was drawn
-with blinking turned off in the display adapter, so that bit brightened
-the background instead and gave 16 background colors. This is called
-iCE color. Mode 33, from SyncTERM, makes SGR 5 and 6 brighten the
-background in the same way.
+ANSI art made with iCE colors uses blink to mean a bright background. To
+show it, set ``CSI ? 33 ; 35 h``. Mode 33 gives blinking text a bright
+background, and mode 35 stops the blinking.
 
 .. list-table::
    :widths: 7 10 22 61
@@ -1239,16 +1183,19 @@ background in the same way.
    * - 2
      - DECANM
      - ANSI/VT52 Mode
-     - Reset: enter `VT52 Mode`_, with US ASCII in G0 and G1, G0 in
-       GL, and no single shift. Set: no effect.
+     - Reset: enter `VT52 Mode`_. To leave VT52 mode, send ``ESC <``.
    * - 3
      - DECCOLM
      - 132 Columns
-     - With mode 40 set, set and reset both erase the screen, make
-       every line single size, make the scroll region and the left and
-       right margins the whole screen, and move the cursor to the top
-       left. The width does not change, because the terminal has no
-       132-column mode. With mode 40 reset, DECCOLM does nothing.
+     - The terminal has no 132-column width, so this mode does not
+       change the width. By default it does nothing. With Allow 80 to
+       132 set, setting or resetting it clears the screen and moves the
+       cursor to the top left.
+   * - 4
+     - DECSCLM
+     - Smooth Scroll
+     - Set: new lines scroll in smoothly. Reset (default): they jump
+       into place. See `Scrolling and Margins`_.
    * - 5
      - DECSCNM
      - Reverse Screen
@@ -1258,25 +1205,26 @@ background in the same way.
    * - 6
      - DECOM
      - Origin Mode
-     - Set: CUP, HVP, and VPA count rows from the top margin and stay
-       inside the scroll region, and CUP, HVP, CHA, and HPA count
-       columns from the left margin and stay inside the right one. VPR
-       stops at the bottom margin and HPR at the right margin. CPR
-       reports the same way. Reset (default): they count from the top
-       row and column 1. Both move the cursor home, which is the top
-       and left margins when set. DECSC saves this mode.
+     - Set: rows and columns count from the top margin and the left
+       margin, and the cursor cannot be moved outside the margins.
+       Reset (default): rows and columns count from the top left of the
+       screen. Setting or resetting the mode moves the cursor home.
    * - 7
      - DECAWM
      - Autowrap
      - Set (default): a character after the last column goes to the
        next row. Reset: the cursor stays on the last column, and the
-       next character replaces the one there. Autowrap is on by
-       default, as in xterm and Linux.
+       next character replaces the one there.
    * - 8
      - DECARM
      - Autorepeat
      - Set (default): a key that is held down repeats. Reset: a key
        types once, however long it is held.
+   * - 9
+     - —
+     - Mouse presses
+     - Set: the terminal reports each press of the left, middle, or
+       right button. See `Mouse Reports`_.
    * - 12
      - —
      - Cursor blink
