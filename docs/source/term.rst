@@ -500,6 +500,8 @@ Fe Escape Sequences
      - ANSI mode
      - Ignored. In VT52 mode, it returns to ANSI mode. See `VT52 Mode`_.
 
+.. _term-character-sets:
+
 Character Sets
 --------------
 
@@ -1625,12 +1627,12 @@ keys send the codes of a VT52, as `Keyboard`_ describes.
    * - ESC >
      - Numeric keypad, as in ANSI mode.
 
-Any other escape sequence is ignored in VT52 mode.
+
 
 Keyboard
 --------
 
-The keys send what they send in xterm, except on the keypad. A key
+The keys send what they send in xterm. A key
 with a character types it. Alt sends ESC before the character. Ctrl
 turns it into a control code:
 
@@ -1707,9 +1709,9 @@ The cursor keys and the function keys send escape sequences:
      - ``ESC [ n ~``, where n is 20, 21, 23, 24
      - ``ESC [ n ; m ~``
 
-A modifier is Shift, Alt, or Ctrl held with the key. In the sequence, m
-is 1, plus 1 for Shift, 2 for Alt, and 4 for Ctrl. GUI-Space switches to
-the next keyboard layout.
+A modifier is Shift, Alt, or Ctrl held with the key. In the sequence, m is 1,
+plus 1 for Shift, 2 for Alt, and 4 for Ctrl. The copy and paste keys of `Copy
+and Paste`_ send nothing to the program.
 
 Three modes change these keys:
 
@@ -1805,12 +1807,8 @@ with ``ESC >``.
      - Enter
      - ``ESC O M``
 
-The application keypad sends what xterm's does. A VT100 has a comma key
-where a PC keypad has its plus key: plus sends xterm's ``ESC O k``, and a
-keypad with a comma key sends the VT100's ``ESC O l``. F1 to F4 are the
-VT100's PF1 to PF4. In VT52
-mode, the application keypad sends ``ESC ?`` and the letter, such as
-``ESC ? p``.
+F1 to F4 are the VT100's PF1 to PF4. In VT52 mode, the application
+keypad sends ``ESC ?`` and the letter, such as ``ESC ? p``.
 
 On an :doc:`pico` with NumLock on, hold Alt and type the number of a
 character of the code page on the keypad to type that character.
@@ -1829,7 +1827,6 @@ Here m is the modifier number of `Keyboard`_, and code is the code of
 the character the key types, in the code page: 97 for ``a``, 65 for
 ``A``, 13 for Enter, 9 for Tab, 27 for Escape, and 127 for Backspace,
 or 8 with DECBKM set.
-Editors such as Vim, Neovim, and Emacs set it when they start.
 
 .. list-table::
    :widths: 28 72
@@ -1844,8 +1841,8 @@ Editors such as Vim, Neovim, and Emacs set it when they start.
    * - CSI ? 4 m
      - Report the level, as ``ESC [ > 4 ; n m``.
    * - CSI > 4 ; 1 f
-     - Set formatOtherKeys: the sequence is the shorter
-       ``ESC [ code ; m u``.
+     - Set formatOtherKeys. The keys send ``ESC [ code ; m u`` in place
+       of the longer sequence.
    * - CSI > 4 ; 0 f
      - Back to ``ESC [ 27 ; m ; code ~``. ``CSI > 4 f`` and ``CSI > f``
        do the same.

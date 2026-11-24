@@ -9,6 +9,7 @@
    RIA <ria>
    VGA <vga>
    TERM <term>
+   FONTS <fonts>
    PORT <port>
 
 .. toctree::
