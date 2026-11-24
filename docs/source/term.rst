@@ -2185,9 +2185,10 @@ A ``?`` in place of a color asks what the color is. The reply is the
 OSC that sets that one color, with the color as ``rgb:rrrr/gggg/bbbb``,
 ended the way the question was ended, with BEL or ST. So
 ``OSC 10 ; ? ; ? ST`` replies ``OSC 10 ; rgb:... ST`` and
-``OSC 11 ; rgb:... ST``. The terminal shows 5 bits of each
-channel, so the reply has the color to those 5 bits. One OSC can ask
-for up to 6 colors.
+``OSC 11 ; rgb:... ST``. The terminal keeps 16-bit color, 5 bits for
+each of red, green and blue, so it drops the low 3 bits of each 8-bit
+channel it is given, and the reply gives back the 5 bits it kept. One OSC
+can ask for up to 6 colors.
 
 .. list-table::
    :widths: 33 67
