@@ -340,7 +340,8 @@ take these:
 
 The sprite modes add LENGTH after CONFIG. Their CONFIG is the XRAM
 address of the sprite array, and LENGTH is the number of sprites in it.
-Mode 0 takes only PLANE, BEGIN, and END.
+Mode 0 takes only PLANE, BEGIN, and END, and `Mode 6: Pointer`_ takes
+only CONFIG.
 
 BEGIN is the mode's first scanline, and END is one past its last, so
 BEGIN 0 and END 160 cover scanlines 0 to 159. With an END of 0, the mode
@@ -2131,6 +2132,87 @@ example, ``typedef MODE5_CUSTOM_IMAGE(4, 24, 16) image_t;`` declares a
 4-bit color image of size 24x16. Each row of the image starts on a new
 byte.
 
+.. _vga-mode-6:
+
+Mode 6: Pointer
+---------------
+
+Mode 6 gives the tablet's pointer your own shapes. The VGA system draws
+the :ref:`Tablet <ria-tablet>`'s pointer on top of every plane and moves
+it with the mouse, without the 6502 doing anything each frame. With mode
+6, it draws the pointer from your sprites instead of the system's shapes,
+so your program can have pointers in its own style, or shapes the system
+does not have, such as a paintbrush.
+
+.. list-table::
+   :widths: 5 5 90
+   :header-rows: 1
+
+   * - Address
+     - Name
+     - Description
+   * - $1:0:01
+     - MODE
+     - 6 - Pointer
+   * - $1:0:02
+     - CONFIG
+     - The XRAM address of the pointer array, or $FFFF for the system's
+       pointers.
+
+The pointer array holds :ref:`mode 5 <vga-mode-5>` custom sprites,
+``mode5_csprite_t``. The ``control`` byte of the tablet picks the
+sprite: shape 1 is the first sprite in the array, shape 2 the second,
+and so on, up to shape 255. Put in only the shapes that your program
+uses. The array has no length. A shape shows no pointer when its sprite,
+or the sprite's image, runs past the end of XRAM.
+
+In a pointer, ``x_pos_px`` and ``y_pos_px`` are the hot spot: the pixel
+of the sprite that is on the point where the pointer is, counted from the
+top left of the sprite as it is drawn. For an arrow with its tip at the
+top left pixel, both are 0. Everything else is the same as in a mode 5
+custom sprite: the size, the color depth, the palette, the flips, and the
+doubling. The pointer is drawn at its own size in canvas pixels, so it
+looks twice as large on a canvas 320 pixels wide as on one 640 pixels
+wide.
+
+For example, this call uses the pointer array at ``xaddr``:
+
+.. code-block:: C
+
+  xreg_vga_mode6(xaddr);
+
+Mode 6 is not on a plane, so it takes no PLANE, BEGIN, or END, and
+selecting another graphics canvas keeps it. Going back to the console
+canvas, as happens when your ROM stops, puts the system's pointers back,
+and so does a CONFIG of $FFFF. Mode 6 can't be programmed on the console
+canvas.
+
+.. tab:: C
+
+   .. code-block:: C
+      :caption: xram.h (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
+
+      #define xreg_vga_mode6(...) xreg(0x1, 0x0, 0x01, 6, __VA_ARGS__)
+
+.. tab:: cc65
+
+   .. code-block:: ca65
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
+
+      .macro xreg_vga_mode6 config
+          xreg $1, $0, $01, 6, config
+      .endmacro
+
+.. tab:: llvm-mc
+
+   .. code-block:: ca65
+      :caption: xram.inc (see :ref:`XRAM Memory Map <sdk-xram-memory-map>`)
+      :force:
+
+      .macro xreg_vga_mode6 values:vararg
+          xreg $1, $0, $01, 6, \values
+      .endm
+
 
 .. _vga-video-timing:
 
@@ -2282,8 +2364,8 @@ program set these registers.
        erased.
    * - $1:F:08
      - POINTER_SHAPE
-     - The tablet's pointer: its shape, one of the ``TABLET_CURSOR_``
-       values of the :ref:`Tablet <ria-tablet>`. Shape 0 hides it.
+     - The tablet's pointer: its shape, as ``control`` of the
+       :ref:`Tablet <ria-tablet>` holds it. Shape 0 hides it.
    * - $1:F:09
      - POINTER_X
      - The tablet's pointer: its x. The pointer moves when POINTER_Y is
@@ -2294,14 +2376,16 @@ program set these registers.
        and to the x of POINTER_X. The VGA draws the pointer over every
        plane, with the point of its shape at x and y in canvas pixels.
    * - $1:F:0B
-     - SELECT_START
-     - The first cell of the selection of the VGA terminal. The
-       selection changes when SELECT_END is written.
+     - SELECT_MARGINS
+     - The left and right margins of the selection of the VGA terminal:
+       the left column in bits 6-0, and the column after the right one in
+       bits 13-7, or $7F for the edge of the screen. The rows of the
+       selection wrap between them. The selection changes when SELECT_END
+       is written.
    * - $1:F:0C
-     - SELECT_SIDES
-     - The columns that the rows of the selection cover, from the left
-       column up to, but not including, the right column. The selection
-       changes when SELECT_END is written.
+     - SELECT_START
+     - The first cell of the selection. The selection changes when
+       SELECT_END is written.
    * - $1:F:0D
      - SELECT_END
      - The cell after the last cell of the selection. Writing it sets

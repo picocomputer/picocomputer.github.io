@@ -235,7 +235,7 @@ xterm, it identifies itself as a VT420 with xterm's extensions. The
 sections below list every sequence that it acts on.
 
 Text is in the 8-bit code page of :ref:`RIA_ATTR_CODE_PAGE
-<api-ria-attributes>`, one byte for each character, not in UTF-8.
+<api-ria-attributes>`, one byte for each character.
 
 
 C0 Control Codes
@@ -1857,29 +1857,204 @@ The levels are xterm's:
   makes no control code of (such as Ctrl-1 or Ctrl-comma), and Enter or
   Tab with Shift or Ctrl. Shift-Tab still sends ``ESC [ Z``. Alt still
   sends ESC first.
-- **Level 2.** Every key with a modifier sends the sequence. That
-  includes Shift with a letter, so Shift-A sends ``ESC [ 27 ; 2 ; 65 ~``,
-  and Alt, which no longer sends ESC first. A character that only Shift
-  makes, such as ``!``, is typed as it is, but Shift-Space sends the
-  sequence. Ctrl-Backspace still sends one byte: BS, or DEL with DECBKM
-  set.
+- **Level 2.** Every key with a modifier sends the sequence. Shift with a
+  letter counts, so Shift-A sends ``ESC [ 27 ; 2 ; 65 ~``. Alt is part of the
+  sequence, and no ESC comes first. A character that only Shift makes, such as
+  ``!``, is typed as it is, but Shift-Space sends the sequence. Ctrl-Backspace
+  still sends one byte: BS, or DEL with DECBKM set.
 - **Level 3.** Every key sends the sequence, modified or not, with m
   as 1 for no modifier.
 
 The cursor keys, the function keys, the editing keys, and the keypad
 send what they always do at every level. VT52 mode has no modified keys.
 
+.. _term-copy-paste:
+
+Copy and Paste
+--------------
+
+The mouse selects text on the VGA terminal. Drag with the left button to
+select characters, double-click to select a word, or triple-click to
+select a line. The middle button pastes the selected text. These keys
+copy and paste with the clipboard:
+
+.. list-table::
+   :widths: 45 55
+   :header-rows: 1
+
+   * - Keys
+     - Action
+   * - Ctrl-Shift-C, Ctrl-Insert
+     - Copy the selected text.
+   * - Ctrl-Shift-X, Shift-Delete
+     - Cut the selected text of the `line editor <Line Editor_>`_.
+   * - Ctrl-Shift-V, Shift-Insert
+     - Paste.
+
+On the desktop :doc:`emu` and the :doc:`web`, the clipboard is the
+clipboard of the computer, and Cmd-C, Cmd-X, and Cmd-V also work on a
+Mac. While a program reads the mouse, hold Shift to select text.
+
+Mouse Reports
+-------------
+
+A program can read the mouse of the VGA terminal as xterm reports it.
+The reports arrive as typed input. Set one of these modes to choose what
+is reported:
+
+.. list-table::
+   :widths: 15 85
+   :header-rows: 1
+
+   * - Mode
+     - Reports
+   * - 9
+     - Each press of the left, middle, or right button.
+   * - 1000
+     - Each press and release of a button, and each turn of the wheel.
+   * - 1001
+     - As 1000, with highlight tracking, described below.
+   * - 1002
+     - As 1000, and each move of the mouse while a button is down.
+   * - 1003
+     - As 1000, and each move of the mouse.
+
+Setting one of these modes turns the others off, and resetting it turns
+the reports off.
+
+A report gives a button and a position, with column 1 and row 1 at the top
+left. It is ``ESC [ M`` and three bytes: the button plus 32, the column plus
+32, and the row plus 32. Set one of these modes for a report in another form:
+
+.. list-table::
+   :widths: 15 85
+   :header-rows: 1
+
+   * - Mode
+     - Report
+   * - 1005
+     - The same, but a button of 96 or more, such as the back and
+       forward buttons, is two bytes of UTF-8.
+   * - 1006
+     - ``ESC [ <`` button ``;`` column ``;`` row, then ``M`` for a press
+       or a move, or ``m`` for a release.
+   * - 1015
+     - ``ESC [`` button plus 32 ``;`` column ``;`` row ``M``.
+   * - 1016
+     - The same as 1006, with the position in pixels, from 1.
+
+The button is 0 for the left, 1 for the middle, and 2 for the right, 64
+and 65 for the wheel turned up and down, 66 and 67 for the wheel tilted
+left and right, and 128 and 129 for the back and forward buttons. A
+release is button 3, except with modes 1006 and 1016, which end a
+release with ``m``. A move adds 32 to the button. Alt adds 8, and Ctrl
+adds 16, except in mode 9. A click with Shift is never reported, because
+Shift selects text.
+
+**Highlight tracking.** With mode 1001, a program chooses what a drag
+with the left button highlights. After the terminal reports the press,
+it waits for the program to answer with this sequence:
+
+``ESC [ 1 ; column ; row ; first ; last T``
+
+The highlight then starts at that column and row and follows the
+pointer, from row ``first`` up to, but not including, row ``last``. An
+answer of ``ESC [ 0 T`` makes the press an ordinary one.
+
+When the button comes up, the terminal reports the highlight, with each
+position in the form that the modes above choose:
+
+- ``ESC [ t``, the column, and the row where the highlight ends, when it
+  starts where the answer put it and ends at the pointer.
+- Otherwise ``ESC [ T`` and the column and row of the start of the
+  highlight, of its end, and of the pointer.
+
+**Focus.** With mode 1004 set, the terminal sends ``ESC [ I`` when the
+window of the :doc:`emu` or the :doc:`web` gains the focus, and
+``ESC [ O`` when it loses it.
+
+**Wheel scrolling.** With mode 1007 set and no mouse mode, the wheel
+sends the up and down arrow keys while the alternate screen shows, five
+for each notch. A pager or another full-screen program then scrolls with
+the wheel.
+
+DEC Locator
+-----------
+
+A program can also read the mouse of the VGA terminal as the locator of
+a DEC terminal, as in xterm. The reports arrive as typed input. Turning
+the locator on turns the mouse modes of `Mouse Reports`_ off, and setting
+one of those modes turns the locator off.
+
+.. list-table::
+   :widths: 22 10 25 43
+   :header-rows: 1
+
+   * - Code
+     - Abbr
+     - Name
+     - Effect
+   * - CSI Ps ; Pu ' z
+     - DECELR
+     - Enable Locator Reports
+     - Ps 1 turns the locator on, Ps 2 turns it on for one report, and Ps 0
+       turns it and the mouse modes off. Pu 1 gives positions in pixels, and
+       any other Pu in characters.
+   * - CSI Ps ; ... ' {
+     - DECSLE
+     - Select Locator Events
+     - Each Ps chooses: 1 reports a button going down, 2 does not, 3
+       reports a button coming up, 4 does not, and 0 reports neither.
+       The locator starts with neither.
+   * - CSI ' |
+     - DECRQLP
+     - Request Locator Position
+     - Report where the locator is now.
+   * - CSI Pt ; Pl ; Pb ; Pr ' w
+     - DECEFR
+     - Enable Filter Rectangle
+     - Report once when the locator leaves the rectangle from row Pt to
+       row Pb and from column Pl to column Pr, in the units of DECELR.
+       An edge that is left out or 0 is where the locator is now.
+
+A report is ``ESC [ event ; buttons ; row ; column & w``. The row and
+the column count from 1 at the top left. The buttons are the ones held
+after the event, added together: 1 for the right, 2 for the middle, 4
+for the left, and 8 for the back button.
+
+.. list-table::
+   :widths: 15 85
+   :header-rows: 1
+
+   * - Event
+     - Meaning
+   * - 0
+     - The locator is not over the VGA terminal. The report is
+       ``ESC [ 0 & w`` alone.
+   * - 1
+     - The answer to DECRQLP.
+   * - 2, 3
+     - The left button went down, or came up.
+   * - 4, 5
+     - The middle button went down, or came up.
+   * - 6, 7
+     - The right button went down, or came up.
+   * - 8, 9
+     - The back button went down, or came up.
+   * - 10
+     - The locator left the filter rectangle.
+
 SGR Parameters
 --------------
 
 Send multiple parameters separated by ``;``. ``CSI m`` with no
-parameters is the same as SGR 0. Parameters not listed are ignored.
+parameters is the same as SGR 0.
 
-The default foreground and background colors are separate from the
-256-color palette. They start as the white of palette entry 7 and the
-black of entry 0, but SGR 39 and 49 select them, OSC 10 and 11 change
-them, and OSC 4 does not. Palette entry 0 and the default background
-are transparent, so a plane behind the terminal shows through.
+The default foreground and background colors are separate from the 256-color
+palette. They start as the white of palette entry 7 and the black of entry 0.
+SGR 39 and 49 select them, and OSC 10 and 11 change them. Palette entry 0 and
+the default background start transparent, so a plane behind the terminal shows
+through. A color that OSC 4 or OSC 11 sets is opaque.
 
 A change to a palette entry or to a default color also changes the text
 already on the screen that was written in it, and an underline in that
@@ -1905,7 +2080,8 @@ palette entry. Text that SGR 1 made bright follows its bright entry,
      - Halve the brightness of the foreground.
    * - 3
      - Italic
-     - Only characters below 0x80, on the 80-column terminal.
+     - Characters below 0x80 show in italics on the 80-column
+       terminal.
    * - 4
      - Underline
      - A single underline. ``4:n`` (kitty) selects a style: ``4:0``
@@ -1913,8 +2089,8 @@ palette entry. Text that SGR 1 made bright follows its bright entry,
        dotted, and ``4:5`` dashed. SGR 58 gives it a color of its own.
    * - 5
      - Blink (slow)
-     - Blinks foreground. With iCE colors mode (``?33h``) set,
-       brightens the background instead.
+     - Blinks foreground. With iCE colors (mode 33) set, also brightens
+       the background. With mode 35 set, it does not blink.
    * - 6
      - Blink (rapid)
      - Same as 5 at double the blink rate.
@@ -1929,7 +2105,7 @@ palette entry. Text that SGR 1 made bright follows its bright entry,
      - —
    * - 21
      - Double underline
-     - Per ECMA-48 and xterm.
+     - —
    * - 22
      - Normal intensity
      - Cancels both bold (1) and faint (2).
@@ -1990,27 +2166,20 @@ palette entry. Text that SGR 1 made bright follows its bright entry,
 
 SGR 38, 48, and 58 take a color in these forms, shown here for 38:
 
-- ``38;5;n`` or ``38:5:n``: palette entry n, 0-255. A larger n does
-  nothing.
+- ``38;5;n`` or ``38:5:n``: palette entry n, 0-255.
 - ``38;2;r;g;b``, ``38:2:r:g:b``, or ``38:2::r:g:b``: a 24-bit color.
-  The empty field of the last form is the color space, which is
-  ignored. A channel above 255 does nothing.
 
-An unknown or incomplete form is taken whole, so its numbers do not act
-as SGR parameters of their own.
 
 OSC Sequences
 -------------
 
 An OSC sequence starts with ``ESC ]`` and ends with BEL (``0x07``) or
 ST (``ESC \``). It holds a command number and items, separated by
-``;``. Inside it, controls other than BEL, CAN, SUB, and ESC are
-ignored, and CAN and SUB cancel it.
+``;``.
 
-A color is an X11 color spec, as xterm takes it: ``#rgb``,
-``#rrggbb``, ``#rrrgggbbb``, ``#rrrrggggbbbb``, or ``rgb:r/g/b`` with 1
-to 4 hex digits per channel. Color names are not accepted, and an item
-longer than 20 bytes is ignored.
+A color is an X11 color spec: ``#rgb``, ``#rrggbb``, ``#rrrgggbbb``,
+``#rrrrggggbbbb``, or ``rgb:r/g/b`` with 1 to 4 hex digits per channel.
+
 
 A ``?`` in place of a color asks what the color is. The reply is the
 OSC that sets that one color, with the color as ``rgb:rrrr/gggg/bbbb``,
@@ -2029,7 +2198,6 @@ for up to 6 colors.
    * - OSC 4 ; n ; color ST
      - Set palette entry n, 0-255. More pairs of n and a color can
        follow, as in ``OSC 4 ; 1 ; #f00 ; 2 ; #0f0 ST``.
-       ``OSC 4 ; n ; ? ST`` replies ``OSC 4 ; n ; rgb:.../.../... ST``.
    * - OSC 104 ST
      - Reset the palette.
    * - OSC 104 ; n ST
@@ -2043,15 +2211,81 @@ for up to 6 colors.
      - Set the default background color. A second item sets the cursor
        color.
    * - OSC 12 ; color ST
-     - Set the cursor color. ``OSC 10 ; ? ST``, ``OSC 11 ; ? ST``, and
-       ``OSC 12 ; ? ST`` reply with each color.
+     - Set the cursor color.
+   * - OSC 17 ; color ST
+     - Set the background color of the selection.
+   * - OSC 19 ; color ST
+     - Set the text color of the selection.
    * - OSC 110 ST
      - Reset the default foreground color.
    * - OSC 111 ST
      - Reset the default background color.
    * - OSC 112 ST
      - Reset the cursor color.
+   * - OSC 117 ST
+     - Reset the background color of the selection.
+   * - OSC 119 ST
+     - Reset the text color of the selection.
 
+
+
+Speed
+-----
+
+Some ANSI art and animation was made to play as it arrived over a modem.
+``CSI 0 ; Ps * r`` (DECSCS) slows the output of the console to the speed
+of a modem, so that it plays as it was made to. Ps is the speed:
+
+.. list-table::
+   :widths: 15 55 30
+   :header-rows: 1
+
+   * - Ps
+     - Speed in bits per second
+     - DECREQTPARM
+   * - 0 or empty
+     - Full speed, the default.
+     - 128
+   * - 1
+     - 300
+     - 48
+   * - 2
+     - 600
+     - 56
+   * - 3
+     - 1200
+     - 64
+   * - 4
+     - 2400
+     - 88
+   * - 5
+     - 4800
+     - 104
+   * - 6
+     - 9600
+     - 112
+   * - 7
+     - 19200
+     - 120
+   * - 8
+     - 38400
+     - 128
+   * - 9
+     - 57600
+     - 128
+   * - 10
+     - 76800
+     - 128
+   * - 11
+     - 115200, the same as full speed.
+     - 128
+
+At 300 bits per second, the console shows 30 characters a second. The
+new speed starts with the character after the sequence.
+
+The DECREQTPARM column is the number the reply to ``CSI x`` gives for the
+speed, as a VT100 numbers speeds. The VT100 has no number above 38400, so
+the reply gives 128 for the faster speeds and for full speed.
 
 Resets
 ------
@@ -2071,12 +2305,11 @@ Resets
    * - CSI 2 ; 1 y
      - DECTST
      - Invoke Confidence Test
-     - The power-up test, which is the same as RIS. Other tests are
-       ignored.
+     - The same as RIS.
    * - CSI ! p
      - DECSTR
      - Soft Terminal Reset
-     - Reset the modes on the DEC list.
+     - Soft reset. See below.
    * - CSI Pl ; Pc " p
      - DECSCL
      - Select Conformance Level
@@ -2086,27 +2319,22 @@ Resets
 terminal back to its default, except mode 40, which it leaves as it is.
 The conformance level goes back to 64.
 
-**DECSTR** is the soft reset that a program sends. It turns insert
-mode, origin mode, and cursor key mode off, sets the numeric keypad,
-turns autowrap on, shows the cursor, puts US ASCII in G0 to G3 with G0
-in GL and no single shift pending, and resets SGR, character
-protection, the scroll region, the left and right margins with mode 69,
-and both saved cursors. It ends a pending wrap but does not move the
-cursor. It leaves the cursor style, iCE colors, the reverse screen,
-autorepeat, the backarrow key mode (mode 67), mode 40, LNM, CRM,
-DECSACE, the conformance level, the palette, the default colors, the
-tab stops, the line sizes, and the screen as they are.
+**DECSTR** turns insert mode,
+origin mode, and cursor key mode off, sets the numeric keypad, turns
+autowrap on, shows the cursor, puts US ASCII in G0 to G3 with G0 in GL,
+and resets SGR, character protection, the scroll region, the left and
+right margins and mode 69, and the saved cursor of each screen. The
+cursor does not move.
 
 **DECSCL** sets the conformance level: 61 for a VT100, 62 for a VT220,
-63 for a VT320, or 64 for a VT420. Then it does the same soft reset as
-DECSTR. The terminal acts as a VT420 at every level, and the level
-changes only the reply when DECRQSS asks for ``" p``: the level and
-``; 1`` for 7-bit controls, such as ``62 ; 1 " p``, or ``61 " p`` alone
-at level 61. A level other than 61 to 64 is ignored, with no reset. Pc,
-which selects 7-bit or 8-bit controls on a DEC terminal, is ignored, and
-the controls stay 7-bit.
+63 for a VT320, or 64 for a VT420. Then it does a DECSTR. The terminal
+acts as a VT420 at every level. The level changes only what DECRQSS
+reports for ``" p``. The terminal always sends 7-bit controls.
 
-**A change of the code page**, through :ref:`RIA_ATTR_CODE_PAGE
-<api-ria-attributes>` or the CODE_PAGE register of the VGA system, does
-a RIS of the VGA terminal. When a program that changed the code page
-stops, the system puts the code page back, with the same RIS.
+**A change of the code page** through :ref:`RIA_ATTR_CODE_PAGE
+<api-ria-attributes>` does a RIS of the VGA terminal. When a program that
+changed the code page stops, the system puts the code page back, with
+the same RIS.
+
+**When a program stops**, the system resets the VGA terminal as RIS
+does, but leaves the text on the screen and the cursor where it is.

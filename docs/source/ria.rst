@@ -1445,7 +1445,8 @@ A pointer shows wherever the first contact hovers, on top of the canvas,
 in the shape that ``control`` holds. Mapping the tablet sets ``control`` to
 ``TABLET_CURSOR_ARROW``. Write another ``TABLET_CURSOR_`` value to
 ``control`` to change the shape, or ``TABLET_CURSOR_OFF`` to hide the
-pointer and draw your own. A touchscreen has no pointer.
+pointer and draw your own. To give the pointer shapes of your own, see
+:ref:`Mode 6: Pointer <vga-mode-6>`. A touchscreen has no pointer.
 
 While a program uses the tablet, a click or a drag on the text of the
 VGA terminal still selects and pastes text. To turn that off, clear
