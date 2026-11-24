@@ -1082,12 +1082,13 @@ Replies wait in a 256-byte queue. A reply that does not fit is lost.
    * - CSI x, CSI 0 x, CSI 1 x
      - DECREQTPARM
      - Request Terminal Parameters
-     - ``ESC [ n ; 1 ; 1 ; 128 ; 128 ; 1 ; 0 x``. The first number
+     - ``ESC [ n ; 1 ; 1 ; s ; s ; 1 ; 0 x``. The first number
        tells which request the reply answers: 2 for ``CSI x`` and
        ``CSI 0 x``, and 3 for ``CSI 1 x``. The other numbers are the
        serial settings of a VT100, in this order: no parity (1), 8 bits
-       (1), 38400 baud to send (128), 38400 baud to receive (128), a
-       clock multiplier of 1 (1), and no flags (0).
+       (1), the speed to send (s), the speed to receive (s), a clock
+       multiplier of 1 (1), and no flags (0). Both speeds are the
+       speed of the console; `Speed`_ gives the number for each.
    * - CSI 11 t
      - —
      - Window state
@@ -1238,21 +1239,26 @@ background, and mode 35 stops the blinking.
    * - 33
      - —
      - iCE colors
-     - Set: SGR 5 and 6 brighten the background (iCE colors).
-       Reset (default): SGR 5 and 6 blink.
+     - Set: text written with SGR 5 or 6 gets a bright background.
+       Reset (default): it does not.
+   * - 35
+     - —
+     - Blink off
+     - Set: no text blinks, including text already on the screen. Reset
+       (default): text written with SGR 5 or 6 blinks.
    * - 40
      - —
      - Allow 80 to 132
-     - Set: DECCOLM (mode 3), set or reset, erases the screen, makes
-       every line single size, makes the scroll region and the left and
-       right margins the whole screen, and moves the cursor to the top
-       left. The width does not change. Reset (default): DECCOLM does
-       nothing. RIS and DECSTR leave this mode as it is, as in xterm.
+     - Set: the 132 Columns mode clears the screen. Reset (default):
+       the 132 Columns mode does nothing. RIS and DECSTR leave this mode
+       as it
+       is.
    * - 47
      - —
      - Alternate screen
-     - Set: switch to the alternate screen. Reset: switch back to the
-       primary screen. The cursor and SGR carry over both ways.
+     - Set: switch to the alternate screen. Reset: switch back to the primary
+       screen. The cursor position and the text attributes stay the same when
+       the screen switches.
    * - 66
      - DECNKM
      - Keypad
@@ -1263,15 +1269,62 @@ background, and mode 35 stops the blinking.
      - Backarrow Key
      - Set: Backspace sends BS (0x08), and Ctrl-Backspace sends DEL
        (0x7F). Reset (default): Backspace sends DEL, and Ctrl-Backspace
-       sends BS. When a program stops, the system resets mode 67. See
-       `Keyboard`_.
+       sends BS. See `Keyboard`_.
    * - 69
      - DECLRMM
      - Left and Right Margins
-     - Set: ``CSI l ; r s`` sets left and right margins, and every line
-       is single size. Reset (default): the margins are the whole
-       width, and ``CSI s`` saves the cursor. See `Scrolling and
+     - Set: ``CSI l ; r s`` sets the left and right margins, and every
+       double-size line becomes single size. Reset (default): the margins are
+       the whole width, and ``CSI s`` saves the cursor. See `Scrolling and
        Margins`_.
+   * - 1000
+     - —
+     - Mouse buttons
+     - Set: the terminal reports each press and release of a mouse
+       button, and each turn of the wheel. See `Mouse Reports`_.
+   * - 1001
+     - —
+     - Mouse highlight
+     - Set: as 1000, and a press of the left button waits for the
+       program to say what to highlight. See `Mouse Reports`_.
+   * - 1002
+     - —
+     - Mouse drags
+     - Set: as 1000, and the terminal also reports the mouse moving
+       while a button is down. See `Mouse Reports`_.
+   * - 1003
+     - —
+     - Mouse motion
+     - Set: as 1000, and the terminal also reports every move of the
+       mouse. See `Mouse Reports`_.
+   * - 1004
+     - —
+     - Focus events
+     - Set: on the :doc:`emu` and the :doc:`web`, the terminal reports
+       the window gaining and losing the focus. See `Mouse Reports`_.
+   * - 1005
+     - —
+     - UTF-8 mouse reports
+     - Set: mouse reports give positions in UTF-8. See `Mouse Reports`_.
+   * - 1006
+     - —
+     - SGR mouse reports
+     - Set: mouse reports give positions in decimal. See
+       `Mouse Reports`_.
+   * - 1007
+     - —
+     - Alternate scroll
+     - Set: on the alternate screen, the mouse wheel sends the up and
+       down arrow keys. See `Mouse Reports`_.
+   * - 1015
+     - —
+     - urxvt mouse reports
+     - Set: mouse reports give positions in decimal, in the form of
+       urxvt. See `Mouse Reports`_.
+   * - 1016
+     - —
+     - SGR pixel mouse reports
+     - Set: as 1006, with positions in pixels. See `Mouse Reports`_.
    * - 1047
      - —
      - Alternate screen
@@ -1287,22 +1340,21 @@ background, and mode 35 stops the blinking.
      - Alternate screen and save cursor
      - Set: save the cursor, switch to the alternate screen, and clear
        it. Reset: switch back to the primary screen and restore the
-       cursor, which it does on the primary screen too, as in xterm. Most
+       cursor. Most
        full-screen programs use this mode.
    * - 2004
      - —
      - Bracketed paste
-     - Set: text pasted into the :doc:`emu` or the :doc:`web` arrives
-       between ``ESC [ 200 ~`` and ``ESC [ 201 ~``, so a program can
-       tell it from typing, and any ESC in the text is left out. Reset
-       (default): a paste arrives as if typed.
+     - Set: pasted text arrives between ``ESC [ 200 ~`` and
+       ``ESC [ 201 ~``, so a program can tell it from typing. Reset
+       (default): a paste arrives as if typed. See `Copy and Paste`_.
 
 Mode Reports
 ------------
 
 ``CSI ? n $ p`` (DECRQM) asks for the state of DEC private mode n, and
 ``CSI n $ p`` asks for ANSI mode n. The reply is ``ESC [ ? n ; s $ y``
-or ``ESC [ n ; s $ y``, where s is 0 for a mode that is not reported, 1
+or ``ESC [ n ; s $ y``, where s is 0 for an unknown mode, 1
 for set, 2 for reset, 3 for permanently set, and 4 for permanently
 reset.
 
@@ -1343,8 +1395,8 @@ reset.
 Setting Reports
 ---------------
 
-``ESC P $ q`` and the end of a sequence, then ST (DECRQSS), asks what
-that sequence's setting is now. The reply is ``ESC P 1 $ r``, the
+``ESC P $ q``, the last characters of a sequence, and ST (DECRQSS) ask
+for the current setting of that sequence. The reply is ``ESC P 1 $ r``, the
 setting written as the sequence that would set it, and ST. For any
 other sequence the reply is ``ESC P 0 $ r ESC \``.
 
@@ -1393,14 +1445,14 @@ other sequence the reply is ``ESC P 0 $ r ESC \``.
      - DECSCS
      - ``; n * r``, where n is the speed, 0 to 11. See `Speed`_.
 
-The SGR reply lists what `SGR Parameters`_ would set, separated by
-``;``: 1, 2, 3, the underline (4, or ``4:n`` for another style), 5 or
-6, 7, 8, 9, 53, then the foreground, the background, and the underline
-color. A foreground or background in palette entries 0-15 is 30-37,
-90-97, 40-47, or 100-107, however it was set. Any other palette color,
-and every palette underline color, is the ``38:5:n`` form. A 24-bit
-color is ``38:2::r:g:b`` with the numbers that set it. A default color
-is not listed.
+The SGR reply lists what `SGR Parameters`_ would set, separated by ``;``: 1, 2,
+3, the underline (4, or ``4:n`` for another style), 5 or 6, 7, 8, 9, 53, then
+the foreground, the background, and the underline color. A foreground or
+background in palette entries 0-15 is 30-37, 90-97, 40-47, or 100-107, however
+it was set. Any other palette color is ``38:5:n`` for the foreground and
+``48:5:n`` for the background. A palette underline color is ``58:5:n``. A
+24-bit color is ``38:2::r:g:b``, ``48:2::r:g:b``, or ``58:2::r:g:b``, with the
+numbers that set it. A default color is not listed.
 
 This is how a program finds what the terminal can draw without knowing
 its name. Neovim sets a curly underline with ``CSI 4:3 m``, asks for
@@ -1411,13 +1463,26 @@ same way.
 Presentation State
 ------------------
 
-A program can ask for the cursor and its settings, or for the tab stops,
-keep the reply, and send it back later to restore them. ``CSI 1 $ w``
-and ``CSI 2 $ w`` (DECRQPSR) ask. To restore, the program sends the
-reply with ``$ t`` in place of ``$ u`` (DECRSPS).
+A program that moves the cursor or changes its settings can put them back
+when it is done. Before the change, the program asks the terminal for the
+cursor and its settings and keeps the reply. After the change, the program
+sends the reply back, and the cursor and its settings are as they were before.
+This is like save cursor (``ESC 7``) and restore cursor (``ESC 8``), except
+that the program keeps the saved copy, so it can keep more than one. The tab
+stops are saved and put back the same way.
 
-**The cursor.** ``CSI 1 $ w`` replies with DECCIR: ``ESC P 1 $ u``,
-these fields separated by ``;``, and ``ESC \``.
+**The cursor.** To save the cursor, the program sends ``CSI 1 $ w``
+(DECRQPSR) and reads the reply. The reply is ``ESC P 1 $ u``, ten fields
+separated by ``;``, and ``ESC \``. On a terminal that was just reset, the
+reply is ``ESC P 1 $ u 1 ; 1 ; 1 ; @ ; @ ; @ ; 0 ; 2 ; @ ; BBBB ESC \``.
+
+To put the cursor back, the program sends the reply with ``t`` in place of
+``u`` (DECRSPS). The cursor returns to the row and column in the reply, and
+each setting returns to the value in its field. If a field is missing or
+holds a value that is not possible, such as a row past the bottom of the
+screen, nothing changes.
+
+The reply has these fields:
 
 .. list-table::
    :widths: 6 20 74
@@ -1461,22 +1526,6 @@ these fields separated by ``;``, and ``ESC \``.
      - The final bytes of the sets in G0, G1, G2, and G3, with nothing
        between them, as `Character Sets`_ lists them.
 
-A terminal fresh from RIS replies
-``ESC P 1 $ u 1 ; 1 ; 1 ; @ ; @ ; @ ; 0 ; 2 ; @ ; BBBB ESC \``.
-
-``ESC P 1 $ t``, the same fields, and ``ESC \`` restores them. The
-cursor moves to the row and the column, counted from the top row and
-column 1. Bold, blink, underline, and reverse video go on or off, and
-the other SGR attributes and the colors stay as they are. Blink is the
-slow blink of SGR 5, and an underline that goes on is a single
-underline unless one of another style is already on. Protection 1
-protects the characters written after it, as DECSCA 1 does, and 0 does
-not. The pending wrap, the single shift, origin mode, the set in GL,
-and the four sets are set as the fields give them. A final byte with an
-intermediate byte in front of it, such as ``%5``, leaves that place as
-it was. When a field is out of range, such as a row below the screen,
-or a field is missing, nothing changes.
-
 **The tab stops.** ``CSI 2 $ w`` replies with DECTABSR:
 ``ESC P 2 $ u``, the column of each tab stop with ``/`` between them,
 and ``ESC \``. With the stops every 8 columns on a screen 80 columns
@@ -1515,11 +1564,16 @@ blinks. The space before the ``q`` is part of the sequence.
    * - 6
      - Steady bar.
 
-Values above 6 are ignored. Mode 12 switches between the blinking and
-the steady style of the same shape, and OSC 12 sets the color of the
-cursor. RIS puts the style back to 0, and DECSTR leaves it alone. The
-line editor changes the shape to show its mode, as `Terminal Size`_
-describes.
+``CSI ? 12 l`` makes the cursor steady and ``CSI ? 12 h`` makes it
+blink, with the same shape.
+
+A block cursor shows its cell with the colors reversed. OSC 12 gives the
+cursor a color of its own, which fills the block, and OSC 112 takes it
+away. See `OSC Sequences`_.
+
+When the window of the :doc:`emu` or the :doc:`web` loses the focus, a
+block cursor becomes an outline of the cell, and the cursor stops
+blinking until the window has the focus again.
 
 VT52 Mode
 ---------
@@ -1529,8 +1583,7 @@ mode the terminal takes only the escape sequences below, and ``ESC <``
 returns it to ANSI mode. Characters and controls work as in ANSI mode,
 except that insert mode (IRM) is off until the return to ANSI mode. The
 keys send the codes of a VT52, as `Keyboard`_ describes.
-RIS is not a VT52 sequence, so the resets of the system start with
-``ESC <``, which ends VT52 mode and does nothing in ANSI mode.
+
 
 .. list-table::
    :widths: 15 85
