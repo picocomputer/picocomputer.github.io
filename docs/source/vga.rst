@@ -2355,13 +2355,17 @@ program set these registers.
      - REBOOT_OR_LOCKUP
      - The RIA sets it after writing the flash of the VGA module. 0
        reboots the VGA module. Any other value locks it up, so that the
-       error message of a failed flash write stays on the screen.
+       error message of a failed flash write stays on the screen. Either
+       way, the VGA module clears XRAM $0000-$01FF first, which removes
+       the key of FLASH_PROGRAM.
    * - $1:F:07
      - FLASH_PROGRAM
      - Writes XRAM $0000-$00FF to a 256-byte page of the flash of the VGA
        module. The value is the number of the page. The VGA module erases
        the sector of the page first, unless the page already reads as
        erased.
+       XRAM $0100-$01FF must be filled with the bytes
+       "FLSH" before the first FLASH_PROGRAM.
    * - $1:F:08
      - POINTER_SHAPE
      - The tablet's pointer: its shape, as ``control`` of the
