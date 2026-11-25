@@ -1079,9 +1079,7 @@ Each test runs in its own directory, with its own save directory. With the
 ``build/cc65/debug/test/input/``, and its save directory is
 ``build/cc65/debug/test/input/save/``.
 The save directory is emptied when the test starts, so the files of a
-failed test stay until that test runs again. Different tests can run at the
-same time, from the Testing view and from the command line, but two people
-or agents editing one source tree at once is not supported.
+failed test stay until that test runs again.
 
 To find programs that read uninitialized memory, the emulator fills RAM
 and XRAM with random values. The values are different in each run, so a
