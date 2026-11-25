@@ -164,6 +164,12 @@ work.
    * - ``--help``
      - \-
      - Print the options and the script commands, then exit.
+   * - ``--list-options``
+     - \-
+     - Print each option on a line, as ``--name``, or ``--name=`` when it
+       takes a value, then exit. The Python tests of the
+       :doc:`sdk` read it to tell the options of the emulator from the
+       options of a test.
    * - ``--screenshot``
      - ``file.png``
      - Run headlessly, render the frames to PNG, and exit.
@@ -662,19 +668,33 @@ Symbols and expressions
 -----------------------
 
 A ``.sym`` file beside the ROM, with the same name, lists the program's
-addresses and constants by name. Every build of a project made with the
-:doc:`sdk` writes one. Each line is a name, one space and a whole number:
+addresses, constants and the sizes of its variables by name. Every build
+of a project made with the :doc:`sdk` writes one. Each line is a name,
+``define`` or ``address``, a value, a size, a count and a source file,
+with ``-`` for what the line does not have. :ref:`sdk-sym-file` describes
+each field:
 
 .. code-block:: text
 
-  XRAM_DATA_TAB 0x1100
-  XRAM_PSG 0x1200
+  XRAM_DATA_TAB define 0x1100 - - -
+  XRAM_PSG define 0x1200 - - -
+  scores address 0x1F86 16 8 -
 
 A script can use these symbols wherever a command takes a number. The
 emulator reads them from the ``.sym`` of the ROM that boots, and ``load``
 replaces them with the new program's. Without a ``.sym`` there are none.
-A name on two lines is ambiguous, and a script fails only when it uses
-that name.
+A name with two values is ambiguous, and a script fails only when it
+uses that name.
+
+Four lookups each read one value of a name: ``address(name)`` the
+address of a variable, a function or a label, ``define(name)`` the value
+of a ``#define``, ``sizeof(name)`` the size of a variable in bytes, and
+``countof(name)`` the number of elements of an array. A lookup fails
+when the name has no such value, as for the address of a ``#define``.
+The text between the parentheses, up to the first ``)``, is the name, or
+a path that picks a source file's meaning of the name, such as
+``sizeof(src/game.c/events)``. Outside a lookup, ``/`` divides, so a path
+works only inside one. :ref:`sdk-sizes-and-paths` tells how paths work.
 
 Spaces separate a command's arguments, so an expression with spaces must
 be in parentheses, as in ``poke xram:(XRAM_PSG + 5) ($80 | 3)``. Without
@@ -723,6 +743,11 @@ it is an error. The list below shows where these rules differ from C.
 - A name is a letter or ``_``, then letters, digits, ``_`` and ``.``, so
   an llvm-mos static such as ``draw.image`` is one name. Names are
   case-sensitive.
+- ``address()``, ``define()``, ``sizeof()`` and ``countof()`` are not
+  Python. Each is a name with the value it looks up, so
+  ``2 * countof(scores)`` is as in Python with a name in place of the
+  lookup. A name ``sizeof`` without ``(`` after it is a name like any
+  other.
 - There are no strings, function calls, casts, ``?:``, ``&&``, ``||`` or
   ``!``. Write ``and`` for ``&&``, ``or`` for ``||``, ``not`` for ``!``,
   and 1 and 0 for true and false.
@@ -741,8 +766,28 @@ after ``=``.
    * - ``unknown name 'XRAM_PSGG'``
      - No symbol or variable has that name.
    * - ``ambiguous name 'L0010'``
-     - The ``.sym`` has it on two lines, or a symbol and a variable share
-       it after a ``load``.
+     - The ``.sym`` has it with two values, or a symbol and a variable
+       share it after a ``load``.
+   * - ``ambiguous name 'LEVELS': src/shop.c/LEVELS
+       src/upgrades.c/LEVELS``
+     - The name means different things in different source files. Each
+       path picks one in a lookup, as in ``define(src/shop.c/LEVELS)``.
+   * - ``address(events): events is in more than one file, so its
+       address is not known; rename one``
+     - Two source files each have a variable or a function of that
+       name.
+   * - ``address(XRAM_PSG): XRAM_PSG is a #define``,
+       ``define(scores): scores is not a #define``,
+       ``sizeof(main): main has no size``,
+       ``countof(game): game is not an array``
+     - The name has no value of that kind.
+   * - ``tens is not in the linked program``
+     - The optimizer removed the variable, so it has a size and no
+       address.
+   * - ``sizeof(scores): the .sym was written by older tools; rebuild
+       the project with the new ones``
+     - The ``.sym`` has a name and a value on each line, with no sizes
+       or paths. A name by itself still works.
    * - ``cannot assign symbol 'XRAM_PSG'``
      - A symbol can't be set.
    * - ``base + 6 / 2: floats are not allowed, use //``

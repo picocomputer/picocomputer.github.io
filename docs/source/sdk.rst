@@ -776,8 +776,10 @@ Program Symbols
 
 The build writes the symbols of your program to ``hello.sym``, beside the
 ROM: each ``#define`` with a whole-number value, such as
-``XRAM_KEYBOARD``, and each symbol of the linker. The tools read this
-file, so an address that your program defines once is known everywhere:
+``XRAM_KEYBOARD``, each symbol of the linker, and the size of each
+variable of the C sources, with the count of each array. The tools read
+this file, so an address that your program defines once is known
+everywhere:
 
 - ``CMakeLists.txt`` uses symbols as asset addresses, and can check in
   one call that all of them are even.
@@ -1847,6 +1849,23 @@ This table lists the changes that break an older project:
        CR or on LF.
    * - With ``reply on``, a ``fail`` line
      - A ``fail`` line, then a status line.
+   * - A ``.sym`` file with a name and a value on each line, from a
+       ``tools/rp6502.cmake`` or ``tools/rp6502.py`` older than the
+       emulator
+     - A name by itself still works. For ``address()``, ``define()``,
+       ``sizeof()``, ``countof()`` and paths, update the tools as in
+       `Updating the Tools`_ and build again, so the ``.sym`` has the
+       layout of `The .sym File`_.
+   * - With llvm-mos, a ``static`` variable that has the name of another
+       in a second file, read by its name, or by a numbered name such as
+       ``hit.6``
+     - The name by itself is ambiguous with both compilers, and the
+       numbered name is gone. Rename one of the two to read its address,
+       or read its size with a path, as in ``sizeof(src/sound.c/hit)``.
+   * - ``emu.sym.ambiguous``, and ``KeyError`` with ``is ambiguous``
+     - ``KeyError`` with ``ambiguous name`` and a path for each
+       meaning. ``name in emu.sym`` is true only for a name with one
+       value.
    * - ``rp6502.py emu``, ``rp6502.py execute``, ``rp6502.py web``
      - ``emu``: the emulator of the target, such as
        ``build/cc65/debug/hello/rp6502-emu``. ``execute``:
