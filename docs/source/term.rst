@@ -148,11 +148,47 @@ These keys change the line:
      - Swap the character before the cursor with the character under it.
        At the end of the line, swap the last two characters.
    * - Insert
-     - Switch between insert mode and overwrite mode.
-   * - Up, Down, Ctrl-P, Ctrl-N
-     - Bring back an earlier line, in the monitor of an :doc:`pico`.
-   * - Shift with Left, Right, Home, or End
-     - Select text.
+     - Switch between insert mode, where the cursor is a bar, and
+       overwrite mode, where it is a block.
+   * - Enter
+     - End the line.
+
+A word ends at a space, colon, slash, or backslash. An argument ends only
+at a space. With the cursor at the end of ``games/chess.rp6502``, Ctrl-W
+deletes ``chess.rp6502`` and Alt-Ctrl-Backspace deletes the whole path.
+
+To move text, delete it with any key that Ctrl-Y can put back, move the
+cursor, and press Ctrl-Y. Deletes made one after another come back
+together: after three presses of Ctrl-W, Ctrl-Y puts back all three
+words.
+
+Selection and the Clipboard
+---------------------------
+
+Hold Shift and press Left, Right, Home, or End to select text in the
+line. Shift with Ctrl-Left or Ctrl-Right selects a word at a time. On the
+VGA terminal, the mouse works in the line too. Click to move the cursor,
+drag to select, double-click to select a word, or triple-click to select
+the whole line.
+
+With text selected:
+
+- A typed character replaces it.
+- Backspace or Delete deletes it.
+- A key that deletes a word or an argument deletes it, and Ctrl-Y can
+  put it back.
+- Ctrl-Y replaces it with the deleted text.
+- Any other editing key ends the selection and then does what it always
+  does.
+
+These keys use the clipboard:
+
+.. list-table::
+   :widths: 45 55
+   :header-rows: 1
+
+   * - Keys
+     - Action
    * - Ctrl-Shift-C, Ctrl-Insert
      - Copy the selected text.
    * - Ctrl-Shift-X, Shift-Delete
@@ -1952,6 +1988,16 @@ copy and paste with the clipboard:
      - Cut the selected text of the `line editor <Line Editor_>`_.
    * - Ctrl-Shift-V, Shift-Insert
      - Paste.
+
+Copy takes the highlighted text. Cut also removes it, which works only in
+the line being typed: text elsewhere on the screen can be copied but not
+cut.
+
+Pasted text arrives as if it were typed. Ctrl-C stops a paste.
+
+A program never receives the copy and paste keys. It does receive the cut
+keys, as the ordinary keys described in `Keyboard`_, and can give them a
+meaning of its own.
 
 On the desktop :doc:`emu` and the :doc:`web`, the clipboard is the
 clipboard of the computer, and Cmd-C, Cmd-X, and Cmd-V also work on a
