@@ -84,6 +84,8 @@ program that keeps running while the user types, such as a game, uses
 
 
 
+.. _term-line-editor:
+
 Line Editor
 ===========
 
@@ -93,7 +95,13 @@ newline. When the buffer of a read is shorter than the line, the next
 reads return the rest of it. Every ``CON:`` uses the same line editor, so
 each line is returned once, to whichever ``CON:`` reads it first.
 
-The line editor has these keys:
+The monitor of an :doc:`pico` reads its commands with the line editor
+too, so the keys here also work at the monitor prompt.
+
+Keys
+----
+
+These keys move the cursor:
 
 .. list-table::
    :widths: 45 55
@@ -102,23 +110,43 @@ The line editor has these keys:
    * - Keys
      - Action
    * - Left, Right, Ctrl-B, Ctrl-F
-     - Move the cursor one character.
-   * - Ctrl-Left, Ctrl-Right, Alt-B, Alt-F
-     - Move the cursor one word.
+     - Move one character.
+   * - Ctrl-Left, Ctrl-Right, Alt-Left, Alt-Right, Alt-B, Alt-F
+     - Move one word.
+   * - Alt-Ctrl-B, Alt-Ctrl-F
+     - Move one argument.
    * - Home, End, Ctrl-A, Ctrl-E
-     - Move the cursor to the start or the end of the line.
+     - Move to the start or the end of the line.
+
+These keys change the line:
+
+.. list-table::
+   :widths: 45 55
+   :header-rows: 1
+
+   * - Keys
+     - Action
    * - Backspace
      - Delete the character before the cursor.
    * - Delete, Ctrl-D
      - Delete the character under the cursor.
    * - Ctrl-W, Alt-Backspace
      - Delete the word before the cursor.
-   * - Alt-D
+   * - Ctrl-Delete, Alt-D
      - Delete the word after the cursor.
+   * - Alt-Ctrl-Backspace
+     - Delete the argument before the cursor.
+   * - Alt-Ctrl-D
+     - Delete the argument after the cursor.
    * - Ctrl-U
      - Delete from the start of the line to the cursor.
    * - Ctrl-K
      - Delete from the cursor to the end of the line.
+   * - Ctrl-Y
+     - Put back the text that the six rows above deleted last.
+   * - Ctrl-T
+     - Swap the character before the cursor with the character under it.
+       At the end of the line, swap the last two characters.
    * - Insert
      - Switch between insert mode and overwrite mode.
    * - Up, Down, Ctrl-P, Ctrl-N
@@ -130,12 +158,39 @@ The line editor has these keys:
    * - Ctrl-Shift-X, Shift-Delete
      - Cut the selected text.
    * - Ctrl-Shift-V, Shift-Insert
-     - Paste.
-   * - Enter
-     - End the line.
+     - Paste at the cursor, or in place of the selected text.
 
-On the VGA terminal, the mouse edits the line too. Click in the line to
-move the cursor there, or drag across text to select it.
+Pasted text is typed into the line. Each line end in it is Enter, so a
+paste of several lines enters them one after another, and each goes to
+the next line that is read. A paste of a single line that ends with a
+line end is the exception: the line end is left out, so the line waits
+for you to look it over and press Enter.
+
+The clipboard and Ctrl-Y are separate. Copy and cut fill the clipboard,
+and only paste reads it. The keys that delete a word, an argument, or
+part of the line fill what Ctrl-Y puts back, and never change the
+clipboard.
+
+The copy, cut, and paste keys are keys of the keyboard of the VGA
+terminal. `Copy and Paste`_ describes its clipboard. On a USB serial
+terminal or a telnet terminal, copy and paste with the terminal program
+of the computer. What it pastes arrives as typing.
+
+History
+-------
+
+The monitor of an :doc:`pico` remembers the lines entered at its prompt.
+Up or Ctrl-P brings back the line before, and Down or Ctrl-N the line
+after. Edit a line that came back, or press Enter to run it again. The
+monitor does not remember an empty line, a line that repeats the one
+before it, or a ``SET PASS`` or ``SET KEY`` command that sets a password
+or a passkey. The history lasts until the RIA reboots.
+
+A read by a program has no history, and the line editor leaves Up and
+Down to the program. `Non-blocking Read Line`_ shows how a program adds
+its own. What Ctrl-Y puts back is also kept apart. Each program starts
+with nothing to put back, and the monitor keeps its own text while a
+program runs.
 
 .. _term-terminal-size:
 
@@ -200,8 +255,8 @@ fields. Call these between reads:
    * - :ref:`ria_rln_lastkey() <api-rln-lastkey>`
      - Returns the last key that the user pressed, and whether the line
        editor used it. The program handles the keys that the line editor
-       does not use, such as Tab, Escape, Up, Down, and the function
-       keys.
+       does not use, such as Tab, Escape, Up, Down, the function keys,
+       and the keys of the application keypad.
    * - :ref:`ria_rln_peek() <api-rln-peek>`
      - Returns the line so far and where the cursor is in it.
    * - :ref:`ria_rln_poke() <api-rln-poke>`
@@ -1711,7 +1766,9 @@ The cursor keys and the function keys send escape sequences:
 
 A modifier is Shift, Alt, or Ctrl held with the key. In the sequence, m is 1,
 plus 1 for Shift, 2 for Alt, and 4 for Ctrl. The copy and paste keys of `Copy
-and Paste`_ send nothing to the program.
+and Paste`_ send nothing to the program. The cut keys are ordinary keys to
+a program that reads the keyboard itself: Shift-Delete sends its sequence
+from this table, and Ctrl-Shift-X sends what Ctrl-X sends.
 
 Three modes change these keys:
 
@@ -1724,7 +1781,9 @@ Three modes change these keys:
 
 The keypad follows NumLock, and Shift with NumLock on acts as NumLock
 off. A program sets the application keypad with ``ESC =`` and leaves it
-with ``ESC >``.
+with ``ESC >``. The `line editor <Line Editor_>`_ leaves the keys of the
+application keypad to the program, Enter included, so they type nothing
+in a line.
 
 .. list-table::
    :widths: 16 22 28 34
@@ -1867,6 +1926,9 @@ The levels are xterm's:
 
 The cursor keys, the function keys, the editing keys, and the keypad
 send what they always do at every level. VT52 mode has no modified keys.
+
+The `line editor <Line Editor_>`_ reads each sequence as the key it
+stands for, so its keys work the same at every level.
 
 .. _term-copy-paste:
 

@@ -101,7 +101,10 @@ A fresh RIA boots into the RP6502 monitor. The monitor loads ROMs and
 sets up the hardware and the locale.
 
 The monitor runs on the console, so it is reachable from any terminal on
-the :ref:`console manifold <term-console-manifold>`.
+the :ref:`console manifold <term-console-manifold>`. It reads each
+command with the :ref:`line editor <term-line-editor>`, so a command can
+be corrected before Enter runs it, and Up and Down bring back earlier
+commands.
 
 Type ``HELP`` for the list of commands, and ``HELP`` with a command for
 its help, such as ``HELP SET PHI2``.

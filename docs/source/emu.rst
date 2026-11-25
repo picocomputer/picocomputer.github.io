@@ -414,8 +414,8 @@ UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
    * - ``type "text" [frames]``
      - Type it. ``\r`` is Enter, ``\t`` is Tab. The text is UTF-8,
        converted to the machine's code page, so a byte that is not UTF-8
-       becomes ``?``. The command waits until the keyboard ring takes it
-       all.
+       becomes ``?``. The text takes its place among the keys, and
+       the command waits only until the keyboard has room for it.
    * - ``clip set "text"``
      - Put the text on the clipboard. A script has a clipboard of its
        own, so the clipboard of the computer does not change.
