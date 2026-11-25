@@ -875,6 +875,59 @@ script above, with the calculation in Python:
       byte = emu.sym["XRAM_KEYBOARD"] + HID_KEY_SPACE // 8
       emu.cmd(f"peek xram:{byte} {1 << HID_KEY_SPACE % 8}")
 
+.. _sdk-sizes-and-paths:
+
+Sizes and Paths
+---------------
+
+A test often needs more than an address: the size of a table, the number
+of entries in it, or the value of a ``#define``. These four lookups work
+in emulator scripts and in Python tests:
+
+.. list-table::
+   :widths: 30 70
+   :header-rows: 1
+
+   * - Lookup
+     - Value
+   * - ``address(<symbol>)``
+     - The address of a variable or a function.
+   * - ``define(<symbol>)``
+     - The value of a ``#define``.
+   * - ``sizeof(<symbol>)``
+     - The size of a variable, in bytes.
+   * - ``countof(<symbol>)``
+     - The number of elements in an array.
+
+For a program with ``uint16_t scores[8];``, this script line prints the
+whole table:
+
+.. code-block:: text
+
+  dump address(scores) sizeof(scores)
+
+In Python, the lookups are methods of ``emu.sym``, such as
+``emu.sym.countof("scores")``.
+
+Two source files can define the same symbol differently, such as a
+``static`` variable in each, or a ``#define`` with a different value in
+each. A lookup of that symbol fails, and the message lists each place it
+is defined:
+
+.. code-block:: text
+
+  ambiguous name 'LEVELS': src/shop.c/LEVELS src/upgrades.c/LEVELS
+
+Copy the one you want into the lookup, as in
+``define(src/shop.c/LEVELS)``. The part before the last ``/`` is the path
+of the source file from the top directory of the project. Paths also work
+in ``emu.sym[...]``, ``RAM()``, and ``XRAM()``. In a script, write a path
+inside a lookup, because ``/`` outside one divides.
+
+``address()`` fails for a variable or a function whose name is in more
+than one file. To use its address, rename one of them. ``sizeof()`` and
+``countof()`` work with a path.
+
 
 Multiple ROMs
 =============
@@ -978,8 +1031,8 @@ commands:
      - Sends ``status`` and returns its fields as a ``dict``.
    * - ``sym``
      - The symbols and values of the ``.sym`` file of the ROM that the
-       emulator starts, as a ``dict``. A lookup of a symbol with two
-       values raises ``KeyError`` with ``is ambiguous``.
+       emulator starts, as a ``dict``, with the lookups of `Sizes and
+       Paths`_ as methods. A lookup that fails raises ``KeyError``.
    * - ``close()``
      - Ends the script and waits for the emulator. An exit code other
        than 0 raises ``ScriptError``.
@@ -988,6 +1041,32 @@ commands:
        command, why it failed, the status line, and what the program
        printed after the last match. Its ``status`` is the status line as a
        ``dict``, the same as ``status()`` returns.
+
+A Python test can take options of its own. Read them with an ``argparse``
+parser and ``rp6502.parse_args()``:
+
+.. code-block:: python
+  :caption: tests/rounds.py
+
+  import argparse
+  import rp6502
+
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--rounds", type=int, default=1)
+  args = rp6502.parse_args(parser)
+  with rp6502.Emu() as emu:
+      for _ in range(args.rounds):
+          emu.cmd("press space")
+          emu.cmd("run 10")
+
+and give them in ``rp6502_test()``:
+
+.. code-block:: cmake
+
+  rp6502_test(NAME rounds COMMAND tests/rounds.py
+      --rounds 5 $<TARGET_PROPERTY:hello,RP6502_ROM>)
+
+A test option can't have the name of an emulator option.
 
 Run the tests from the Testing view of the Side Bar, or with ``ctest``:
 
@@ -999,6 +1078,10 @@ Each test runs in its own directory, with its own save directory. With the
 ``cc65/Debug`` preset, a test named ``input`` runs in
 ``build/cc65/debug/test/input/``, and its save directory is
 ``build/cc65/debug/test/input/save/``.
+The save directory is emptied when the test starts, so the files of a
+failed test stay until that test runs again. Different tests can run at the
+same time, from the Testing view and from the command line, but two people
+or agents editing one source tree at once is not supported.
 
 To find programs that read uninitialized memory, the emulator fills RAM
 and XRAM with random values. The values are different in each run, so a
@@ -1539,28 +1622,35 @@ also holds two named assets, ``help`` and ``level1``.
 The .sym File
 =============
 
-The build writes ``hello.sym`` beside ``hello.rp6502``. The file has one
-line for each symbol and value of the program: each ``#define`` with a
-whole-number value that is in effect in a ``.c`` source file, including
-the ``#define`` lines of its headers, and each symbol of the linker. A
-line is the symbol, one space, and the value. A value from 0 to 0xFFFF is hex,
-with ``0x`` and four digits. Any other value is decimal:
+The build writes ``hello.sym`` beside ``hello.rp6502``. It has a line for
+each symbol of the program: the symbol, ``define`` or ``address``, the
+value, the size in bytes, the number of elements, and the source file. A
+``-`` marks what a symbol does not have. A value from 0 to 0xFFFF is hex, with
+``0x`` and four digits. Any other number is decimal:
 
 .. code-block:: text
 
-  INT8_MIN -128
-  XRAM_KEYBOARD 0x0000
-  XRAM_LOGO 0x0020
+  INT8_MIN define -128 - - -
+  LEVELS define 0x0003 - - src/shop.c
+  LEVELS define 0x0005 - - src/upgrades.c
+  XRAM_KEYBOARD define 0x0000 - - -
+  main address 0x0CCF - - -
+  scores address 0x1F86 16 8 -
 
-The build sorts the lines by symbol, then by value. A symbol with two
-different values, such as a label that cc65 generates, like ``L0001``, has
-two lines. A lookup of that symbol fails because it is ambiguous. cc65
-puts ``_`` before each C symbol. The build writes each such symbol with
-and without the ``_``, so a C global ``x`` is in the file as ``x`` and as
-``_x``. With cc65, a ``static`` variable of a function is in the file
-only as a label that cc65 generates, such as ``M0001``. With llvm-mos, it
-is in the file as the function and the variable, such as
-``main.counter``.
+A ``define`` line is a ``#define`` with a whole-number value that is in
+effect in a ``.c`` source file, including the ``#define`` lines of its
+headers. An ``address`` line is a variable, a function, or a symbol of
+the linker. A line has a source file only when the symbol is different in
+different files.
+
+The build sorts the lines by symbol. A symbol with two different values,
+such as a label that cc65 generates, like ``L0001``, has two lines. A
+lookup of that symbol fails because it is ambiguous. cc65 puts ``_`` before each C
+symbol. The build writes each such symbol with and without the ``_``, so
+a C global ``x`` is in the file as ``x`` and as ``_x``. With cc65, a
+``static`` variable of a function is in the file only as a label that
+cc65 generates, such as ``M0001``. With llvm-mos, it is in the file as
+the function and the variable, such as ``main.counter``.
 
 The symbols in this file work in ``RAM()`` and ``XRAM()`` addresses, in
 ``rp6502_align()``, in emulator scripts, and in Python tests. `Program
