@@ -1441,13 +1441,16 @@ part of the tablet beyond the canvas holds the pointer at the nearest edge.
 same way as the counters of the `Mouse`_. Reading them once a frame is
 enough for normal use.
 
-Sometimes the pointer is already on the screen, and sometimes you have to
-draw it. ``TABLET_STATUS_HOST_CURSOR`` in ``status`` is set when it's
-already there, which happens only with a mouse on the :doc:`emu` or the
-:doc:`web`. Writing one of the ``TABLET_CURSOR_`` values to ``control``
-changes its shape, and ``TABLET_CURSOR_OFF`` hides it. If
-``TABLET_STATUS_HOST_CURSOR`` is clear, there's no pointer for ``control``
-to change, so you need to draw your own.
+A pointer shows wherever the first contact hovers, on top of the canvas,
+in the shape that ``control`` holds. Mapping the tablet sets ``control`` to
+``TABLET_CURSOR_ARROW``. Write another ``TABLET_CURSOR_`` value to
+``control`` to change the shape, or ``TABLET_CURSOR_OFF`` to hide the
+pointer and draw your own. To give the pointer shapes of your own, see
+:ref:`Mode 6: Pointer <vga-mode-6>`. A touchscreen has no pointer.
+
+While a program uses the tablet, a click or a drag on the text of the
+VGA terminal still selects and pastes text. To turn that off, clear
+``TABLET_STATUS_SHARED`` in ``status`` after mapping the tablet.
 
 .. tab:: C
 
@@ -1456,14 +1459,14 @@ to change, so you need to draw your own.
 
       #define TABLET_CONTACTS 8
 
-      #define TABLET_STATUS_HOST_CURSOR 0x01
-
       #define TABLET_FLAG_LEFT 0x01
       #define TABLET_FLAG_RIGHT 0x02
       #define TABLET_FLAG_MIDDLE 0x04
       #define TABLET_FLAG_BACKWARD 0x08
       #define TABLET_FLAG_FORWARD 0x10
       #define TABLET_FLAG_HOVER 0x80
+
+      #define TABLET_STATUS_SHARED 0x01
 
       #define TABLET_CURSOR_OFF 0
       #define TABLET_CURSOR_ARROW 1
@@ -1472,6 +1475,10 @@ to change, so you need to draw your own.
       #define TABLET_CURSOR_HAND 4
       #define TABLET_CURSOR_RESIZE_EW 5
       #define TABLET_CURSOR_RESIZE_NS 6
+      #define TABLET_CURSOR_RESIZE_NWSE 7
+      #define TABLET_CURSOR_RESIZE_NESW 8
+      #define TABLET_CURSOR_MOVE 9
+      #define TABLET_CURSOR_NOT_ALLOWED 10
 
       #define xreg_ria_tablet(...) xreg(0x0, 0x0, 0x03, __VA_ARGS__)
 
@@ -1508,8 +1515,6 @@ to change, so you need to draw your own.
 
       TABLET_CONTACTS = 8
 
-      TABLET_STATUS_HOST_CURSOR = $01
-
       TABLET_FLAG_LEFT     = $01
       TABLET_FLAG_RIGHT    = $02
       TABLET_FLAG_MIDDLE   = $04
@@ -1517,13 +1522,19 @@ to change, so you need to draw your own.
       TABLET_FLAG_FORWARD  = $10
       TABLET_FLAG_HOVER    = $80
 
-      TABLET_CURSOR_OFF       = 0
-      TABLET_CURSOR_ARROW     = 1
-      TABLET_CURSOR_CROSSHAIR = 2
-      TABLET_CURSOR_IBEAM     = 3
-      TABLET_CURSOR_HAND      = 4
-      TABLET_CURSOR_RESIZE_EW = 5
-      TABLET_CURSOR_RESIZE_NS = 6
+      TABLET_STATUS_SHARED = $01
+
+      TABLET_CURSOR_OFF         = 0
+      TABLET_CURSOR_ARROW       = 1
+      TABLET_CURSOR_CROSSHAIR   = 2
+      TABLET_CURSOR_IBEAM       = 3
+      TABLET_CURSOR_HAND        = 4
+      TABLET_CURSOR_RESIZE_EW   = 5
+      TABLET_CURSOR_RESIZE_NS   = 6
+      TABLET_CURSOR_RESIZE_NWSE = 7
+      TABLET_CURSOR_RESIZE_NESW = 8
+      TABLET_CURSOR_MOVE        = 9
+      TABLET_CURSOR_NOT_ALLOWED = 10
 
       .macro xreg_ria_tablet addr
           xreg $0, $0, $03, addr
@@ -1564,8 +1575,6 @@ to change, so you need to draw your own.
 
       TABLET_CONTACTS = 8
 
-      TABLET_STATUS_HOST_CURSOR = $01
-
       TABLET_FLAG_LEFT     = $01
       TABLET_FLAG_RIGHT    = $02
       TABLET_FLAG_MIDDLE   = $04
@@ -1573,13 +1582,19 @@ to change, so you need to draw your own.
       TABLET_FLAG_FORWARD  = $10
       TABLET_FLAG_HOVER    = $80
 
-      TABLET_CURSOR_OFF       = 0
-      TABLET_CURSOR_ARROW     = 1
-      TABLET_CURSOR_CROSSHAIR = 2
-      TABLET_CURSOR_IBEAM     = 3
-      TABLET_CURSOR_HAND      = 4
-      TABLET_CURSOR_RESIZE_EW = 5
-      TABLET_CURSOR_RESIZE_NS = 6
+      TABLET_STATUS_SHARED = $01
+
+      TABLET_CURSOR_OFF         = 0
+      TABLET_CURSOR_ARROW       = 1
+      TABLET_CURSOR_CROSSHAIR   = 2
+      TABLET_CURSOR_IBEAM       = 3
+      TABLET_CURSOR_HAND        = 4
+      TABLET_CURSOR_RESIZE_EW   = 5
+      TABLET_CURSOR_RESIZE_NS   = 6
+      TABLET_CURSOR_RESIZE_NWSE = 7
+      TABLET_CURSOR_RESIZE_NESW = 8
+      TABLET_CURSOR_MOVE        = 9
+      TABLET_CURSOR_NOT_ALLOWED = 10
 
       .macro xreg_ria_tablet addr
           xreg $0, $0, $03, \addr

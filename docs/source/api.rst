@@ -309,12 +309,20 @@ EXEC
    ``ria_execv()``, becomes ``argv[1]`` in the new ROM.
 
    After a successful call, the RIA stops the 6502, loads the new ROM, and
-   starts it. When the ROM does not load, the 6502 stays stopped, and the
-   display shows the console, with its text and the error. An :doc:`pico`
-   returns to its monitor. The :doc:`emu` exits, unless it runs with
-   ``--debug``. The other machines stay stopped. The ROM does not load when the
-   file is missing or is not a valid ROM, when its absolute path is longer than
-   255 bytes, or when the argv data with that path does not fit in 512 bytes.
+   starts it. When the ROM does not load, the 6502 stays stopped and the RIA
+   prints the error on the console. An :doc:`pico` returns to its monitor.
+   The :doc:`emu` exits, unless it runs with ``--debug``. The other machines
+   stay stopped. The ROM does not load when the file is missing or is not a
+   valid ROM, when its absolute path is longer than 255 bytes, or when the
+   argv data with that path does not fit in 512 bytes.
+
+   The new ROM gets the file descriptors of the ROM that called, as they
+   are, so a ROM can put a file or another console stream on ``stdin``,
+   ``stdout``, or ``stderr`` before it starts another. An open file of
+   ``ROM:`` or ``SAVE:`` belongs to the ROM that opened it, so while one is
+   open the call fails with EBUSY. When the last ROM of the chain exits,
+   every file closes, and the console is on 0, 1, and 2 again as
+   ``CON:0``, ``CON:1``, and ``CON:2``.
 
    To run again when the new ROM exits, a ROM first registers as the
    `Launcher`_.
@@ -334,7 +342,7 @@ EXEC
    :Operation: RIA_OP_EXEC 0x09
    :C proto: rp6502.h
    :returns: Does not return on success. -1 on error.
-   :errno: EINVAL
+   :errno: EBUSY, EINVAL
 
 
 EXIT
@@ -405,7 +413,7 @@ OPEN
    :C proto: fcntl.h
    :param path: Path of the file or the device stream.
    :param oflag: Options, ORed together.
-   :returns: File descriptor. -1 on error.
+   :returns: The lowest free file descriptor. -1 on error.
    :a regs: return, oflag
    :errno: EACCES, EBUSY, EEXIST, EINVAL, EIO, EMFILE, ENODEV, ENOENT, ENOMEM,
       ENOSPC
@@ -424,6 +432,46 @@ CLOSE
    :returns: 0 on success. -1 on error.
    :a regs: return, fildes
    :errno: EBADF, EIO, ENOSPC
+
+
+DUP
+~~~
+
+.. c:function:: int dup (int fildes)
+
+   ``dup()`` gives the open file of ``fildes`` another descriptor, the
+   lowest one free. The two descriptors share one read/write position, and
+   the file closes when the last of them closes.
+
+   :Operation: RIA_OP_DUP 0x12
+   :C proto: unistd.h
+   :param fildes: File descriptor.
+   :returns: The new file descriptor. -1 on error.
+   :a regs: return, fildes
+   :errno: EBADF, EMFILE
+
+
+.. _api-dup2:
+
+DUP2
+~~~~
+
+.. c:function:: int dup2 (int fildes, int fildes2)
+
+   ``dup2()`` gives the open file of ``fildes`` the descriptor
+   ``fildes2``. The two descriptors share one read/write position, and the
+   file closes when the last of them closes. If ``fildes2`` is already
+   open, ``dup2()`` closes it first and does not report an error from that
+   close. If ``fildes`` and ``fildes2`` are the same descriptor, ``dup2()``
+   changes nothing.
+
+   :Operation: RIA_OP_DUP2 0x13
+   :C proto: unistd.h
+   :param fildes: File descriptor.
+   :param fildes2: The descriptor it is to have.
+   :returns: ``fildes2``. -1 on error.
+   :a regs: return, fildes2
+   :errno: EBADF, EINVAL
 
 
 READ
@@ -590,7 +638,8 @@ SYNCFS
 
    ``syncfs()`` waits until the writes to a file descriptor are done. For a
    file, it writes the pending data to storage. For ``PCM:`` and the MIDI
-   devices, it waits until the data has played or been sent.
+   devices, it waits until the data has played or been sent. For ``CON:``
+   and ``TTY:``, it waits until the terminals show the text.
 
    :Operation: RIA_OP_SYNCFS 0x1E
    :C proto: unistd.h
@@ -603,14 +652,18 @@ SYNCFS
 ISATTY
 ~~~~~~
 
-.. c:function:: lib int isatty (int fildes)
+.. c:function:: int isatty (int fildes)
 
-   ``isatty()`` returns 1 when a file descriptor is the console: stdin,
-   stdout, stderr, ``CON:``, or ``TTY:``.
+   ``isatty()`` returns 1 when a file descriptor is the console, a ``CON:``
+   or a ``TTY:``, whichever descriptor it is on.
 
+   :Operation: RIA_OP_ISATTY 0x11
    :C proto: unistd.h
    :param fildes: File descriptor.
-   :returns: 1 for the console. 0 for any other file descriptor.
+   :returns: 1 for the console. 0 for any other file descriptor, and for a
+      closed one, which sets errno.
+   :a regs: return, fildes
+   :errno: EBADF
 
 
 Paths
@@ -1029,9 +1082,10 @@ RLN_POKE
    the line editor is not reading a line, the call does nothing.
 
    A control byte, 0x00 to 0x1F, ends the input and discards the rest of
-   the string. An empty string sends 0x00. ESC (``\33``) and CAN
-   (``\30``) are the exceptions: ESC starts an escape sequence, and CAN
-   cancels one. When ``RIA_ATTR_RLN_LENGTH`` is 2 or more, the line editor
+   the string. An empty string sends 0x00. ESC (``\33``) is the
+   exception: it starts an escape sequence, which must end within the same
+   string. A poke never lands in the middle of a key that the user is
+   typing. When ``RIA_ATTR_RLN_LENGTH`` is 2 or more, the line editor
    shows the byte that ends the input at the cursor in caret notation,
    ``^@`` to ``^_``, but does not put it in the text. CR (``\r``) shows
    nothing.
@@ -1164,9 +1218,86 @@ STRFTIME
    ``%z %Z`` follow the time zone of the machine, and ``%a %A %b %B %c %p
    %r %x %X`` follow its locale. On an :doc:`pico`, the locale and the
    time zone are :ref:`settings <pico-settings>` of the monitor. The
-   :doc:`emu` uses the locale of the computer that runs it. The :doc:`web`
-   and the :doc:`fpga` use the C locale, in English. The format and the
-   result are code page text. The ``%E`` and ``%O`` modifiers have no effect.
+   :doc:`emu` uses the locale and the time zone of the computer that runs
+   it. The :doc:`web` and the :doc:`fpga` use the C locale, in English.
+   The format and the result are code page text.
+
+   Every machine has the same conversions, which are these. The ones
+   marked \* are not in C99.
+
+   .. list-table::
+      :widths: 12 88
+      :header-rows: 1
+
+      * - Conversion
+        - Result
+      * - ``%a %A``
+        - The day of the week, short and whole: ``Sun``, ``Sunday``.
+      * - ``%b %h %B``
+        - The month, short and whole: ``Sep``, ``September``.
+      * - ``%c``
+        - The date and time in the locale's form.
+      * - ``%C``
+        - The century: the year without its last two digits.
+      * - ``%d %e``
+        - The day of the month, ``01`` to ``31``, padded with a zero
+          or with a space.
+      * - ``%D``
+        - ``%m/%d/%y``.
+      * - ``%F``
+        - ``%Y-%m-%d``.
+      * - ``%g %G``
+        - The year of the ISO 8601 week, as two digits and whole.
+      * - ``%H %I``
+        - The hour, ``00`` to ``23`` and ``01`` to ``12``.
+      * - ``%k %l`` \*
+        - ``%H`` and ``%I`` padded with a space.
+      * - ``%j``
+        - The day of the year, ``001`` to ``366``.
+      * - ``%m``
+        - The month, ``01`` to ``12``.
+      * - ``%M``
+        - The minute, ``00`` to ``59``.
+      * - ``%n %t``
+        - A newline and a tab.
+      * - ``%p``
+        - AM or PM in the locale's words.
+      * - ``%P`` \*
+        - ``%p`` in lower case.
+      * - ``%r``
+        - The time on a 12-hour clock in the locale's form.
+      * - ``%R``
+        - ``%H:%M``.
+      * - ``%s`` \*
+        - The seconds since 1970, read from the date as `MKTIME`_ reads
+          it.
+      * - ``%S``
+        - The second, ``00`` to ``60``.
+      * - ``%T``
+        - ``%H:%M:%S``.
+      * - ``%u %w``
+        - The day of the week as a number: ``1`` to ``7`` from Monday,
+          and ``0`` to ``6`` from Sunday.
+      * - ``%U %W``
+        - The week of the year, ``00`` to ``53``, with weeks from Sunday
+          and from Monday.
+      * - ``%V``
+        - The ISO 8601 week, ``01`` to ``53``.
+      * - ``%x %X``
+        - The date, and the time, in the locale's form.
+      * - ``%y %Y``
+        - The year, as two digits and whole.
+      * - ``%z``
+        - The offset from UTC: ``-0800``.
+      * - ``%Z``
+        - The time zone's name.
+      * - ``%%``
+        - A percent sign.
+
+   A flag after the ``%`` changes the padding of a number \*: ``-`` for
+   none, ``_`` for spaces, and ``0`` for zeros, so ``%-d`` is ``5`` where
+   ``%d`` is ``05``. The ``%E`` and ``%O`` modifiers have no effect.
+   Anything else after a ``%`` is copied as it is.
 
    :Operation: RIA_OP_STRFTIME 0x3D
    :C proto: time.h
@@ -1438,8 +1569,8 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        ``srand(ria_attr_get(RIA_ATTR_LRAND))``.
    * - | 0x05
        | ``RIA_ATTR_BEL``
-     - Set it to 0 to silence the console bell, which rings when a program
-       prints BEL (``\a``). Set it to 1 to turn it back on.
+     - Set it to 0 to silence the bell of the VGA terminal, which rings when
+       a program prints BEL (``\a``). Set it to 1 to turn it back on.
    * - | 0x06
        | ``RIA_ATTR_LAUNCHER``
      - Set it to 1 to register the running ROM as the launcher, and to 0
@@ -1451,7 +1582,7 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        for a launcher to test. ``exit(-1)`` reads back as 65535.
    * - | 0x08
        | ``RIA_ATTR_SIGINT``
-     - Read-only. 1 after the user presses Ctrl-C on the console, even
+     - Read-only. 1 after the user presses Ctrl-C on a terminal, even
        while the input before the Ctrl-C is still unread. A get clears it.
        It is the SIGINT bit of `IRQ`_.
    * - | 0x09
@@ -1461,21 +1592,28 @@ Each RIA attribute has a value from 0 to 0x7FFFFFFF.
        the line editor to upper case, or to 2 to invert their case.
    * - | 0x0A
        | ``RIA_ATTR_RLN_WIDTH``
-     - The width of the console, in columns, for a program that fits its
-       output to the console. The line editor detects the width and the
-       height of the console each time it reads a line. Get them after the
-       line editor reads a line. Set it to a width to use that width, or to
-       0 to use the detected width.
+     - The width of the terminal, in columns. The line editor uses it, and a
+       program that fits its output to the terminal can read it. It is the
+       width of the VGA terminal until a program sets it. Set it to a width
+       from 2 to 255 when the user types on another terminal, such as a USB
+       serial terminal, or to 0 to use the width of the VGA terminal again.
    * - | 0x0B
        | ``RIA_ATTR_RLN_HEIGHT``
-     - The height of the console, in rows. Set it to a height to use that
-       height, or to 0 to use the detected height.
+     - The height of the terminal, in rows. The line editor uses it, and a
+       program that fits its output to the terminal can read it. It is the
+       height of the VGA terminal until a program sets it. Set it to a height
+       from 1 to 255 when the user types on another terminal, such as a USB
+       serial terminal, or to 0 to use the height of the VGA terminal again.
    * - | 0x0C
        | ``RIA_ATTR_RLN_SUPPRESS_NL``
      - Set it to 1 for a program that draws a form. Enter then keeps the
        cursor on the row of the field, so a field on the last row does not
-       scroll the console. The line that the program reads still ends with
+       scroll the terminal. The line that the program reads still ends with
        ``\n``.
+   * - | 0x0D
+       | ``RIA_ATTR_TERM_QUIET``
+     - Set it to 1 to turn off the replies of the VGA terminal to
+       :ref:`reports <term-reports>`.
    * - | 0x0E
        | ``RIA_ATTR_PCM_UNDERRUNS``
      - Read-only. The times the buffer of the :ref:`PCM <ria-pcm>` device
@@ -1526,11 +1664,12 @@ To write a launcher:
    its own path in ``argv``. ``RIA_ATTR_EXIT_CODE`` holds the exit code
    of the ROM that exited.
 
-The launcher starts fresh each time, so it keeps anything that it needs
-between runs in a file, such as the next step of a shell. The
+The launcher starts fresh each time, with every file closed and the
+console on 0, 1 and 2, so it keeps anything that it needs between runs in
+a file, such as the next step of a shell. The
 registration clears when the launcher itself exits. When a ROM that the
-launcher starts does not load, the console shows the error, and the
-launcher does not run again.
+launcher starts does not load, the RIA prints the error on the console,
+and the launcher does not run again.
 
 A menu works best when every game in it has a way to exit, such as an
 Exit item in its menu. On a keyboard, Alt-F4 also exits the running ROM as

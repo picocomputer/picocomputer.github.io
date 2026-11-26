@@ -135,3 +135,60 @@ body:not([data-theme="light"]) .highlight {
 .sig .kt {
     color: var(--color-api-keyword);
 }
+
+/* The code charts of fonts.rst. The page takes the whole width beside the
+   navigation, and a chart is 8 cells across, or 4 on a narrow screen. A
+   glyph is cut from its chart's PNG, black with alpha, drawn sharp at a
+   whole multiple of its size, and turned white for the dark theme. */
+.content:has(.font-chart) {
+    width: auto;
+    flex: 1;
+}
+.font-chart {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--color-background-border);
+    border: 1px solid var(--color-background-border);
+    margin: 1rem 0 2rem;
+}
+@media (min-width: 40em) { .font-chart { grid-template-columns: repeat(8, 1fr); } }
+.font-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.5rem 0.25rem 0.4rem;
+    background: var(--color-background-primary);
+    font-family: var(--font-stack--monospace);
+    font-size: var(--font-size--small--3);
+    line-height: 1.2;
+}
+.font-glyph {
+    --scale: 2px;
+    width: calc(8 * var(--scale));
+    height: calc(var(--rows) * var(--scale));
+    margin-bottom: 0.2rem;
+    background-size: calc(128 * var(--scale)) calc(8 * var(--rows) * var(--scale));
+    background-position: calc(var(--x) * -8 * var(--scale)) calc(var(--y) * var(--rows) * -1 * var(--scale));
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+}
+@media (min-width: 90em) { .font-glyph { --scale: 3px; } }
+.font-chart-16 .font-glyph { --rows: 16; }
+.font-chart-8 .font-glyph { --rows: 8; }
+body[data-theme="dark"] .font-glyph {
+    filter: invert(1);
+}
+@media (prefers-color-scheme: dark) {
+    body:not([data-theme="light"]) .font-glyph {
+        filter: invert(1);
+    }
+}
+.font-code span {
+    color: var(--color-foreground-secondary);
+    margin-left: 0.4em;
+}
+.font-uni {
+    color: var(--color-foreground-muted);
+}

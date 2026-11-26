@@ -9,11 +9,50 @@ person. Write each passage the way you would explain it to that person.
 **Most important rule:** Write for a person - a person learning about the
 machine or referencing the manual.
 
+**Answer the reader's questions, in order.** A section answers three
+questions for the person who arrives at it, in this order:
+
+1. What is this?
+2. Why would I want it?
+3. How do I use it?
+
+The first sentence answers the first question for a person who has never
+heard of the thing. Start from what the reader is trying to do, not from
+how the system works.
+
+**Leave out what is not a thing.** Do not name a problem, a limit, or a
+technique that the reader does not have to deal with. Naming it tells the
+reader that it matters. A place where the machine does not do what the
+standard or the reader expects is a thing: say it.
+
+**Test every sentence.** The rules apply to every sentence of the section,
+not only to the sentences that changed. A correction from the owner is a
+rule for the whole manual, not a fix for one sentence. Check each claim
+against the source before writing it.
+
 **Edit the passage, not the sentence.** Before any change, read the
 section from its start, as the person who arrives there.
 
 **Test each passage.** Before you report a change, read the section from
 its heading as a person reading the manual.
+
+## Procedure
+
+The default of an agent is the smallest change that satisfies the last
+instruction. That default is always wrong. Do these steps for every
+section, every time, before you report it:
+
+1. Read this file again. The rules fade during a long session.
+2. Read the whole section from its heading, as its reader.
+3. Test every sentence. Does the reader need it? Is it true in the
+   source? Is it how a person would say it? Fix or cut each one that
+   fails.
+4. Check that the section opens with what the thing is, why the reader
+   would want it, and how to use it.
+5. When the owner corrects one thing, work out the rule behind it. Find
+   every other place in the section that breaks the same rule, and fix
+   those too before you reply.
+6. Report with a link to the lines and one line of text.
 
 ## Rules
 
@@ -57,8 +96,9 @@ program writes the operation ID of the API call to RIA_OP.
 
 **canvas.** The grid of pixels that the VGA draws.
 
-**console.** The main terminal, connected to stdin, stdout, stderr, CON:,
-and TTY:.
+**console.** The standard streams of a program: stdin, stdout, stderr,
+CON:, and TTY:. Terminals attach to the console through the console
+manifold.
 
 **debug overlay.** The windows of machine state that `--debug` draws
 over the emulator window, such as the CPU, the VIA, and the memory
@@ -139,6 +179,11 @@ CMake, Testing, and other views.
 "your project".
 
 **terminal.** A device that a user types into and reads from.
+
+**VGA terminal.** The terminal of the VGA system: the terminal emulator
+that mode 0 draws, with the keyboard. Use "terminal" alone for any
+terminal, and "VGA terminal" only where the text is about this one. A
+machine built without the VGA system has no VGA terminal.
 
 **USB drive.** Removable USB storage that the RIA mounts as MSC0: to
 MSC9:.

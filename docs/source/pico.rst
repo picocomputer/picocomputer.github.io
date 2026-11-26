@@ -71,32 +71,25 @@ system reboots after each one.
 Console
 =======
 
-The console of an RP6502-PICO is on the :ref:`console manifold
-<term-console-manifold>`, and a terminal can be attached in three ways:
+Terminals attach to the console of an RP6502-PICO through the
+:ref:`console manifold <term-console-manifold>`, in three ways that all
+work at once:
 
-* **VGA and USB keyboard.** In the standard configuration with a
-  :doc:`vga` module, the console is accessed with a VGA monitor, or an
-  HDMI display with a VGA-to-HDMI cable, and a USB keyboard plugged into
-  the RIA.
-* **USB CDC ACM.** Connect the USB port on the VGA module to a computer
-  and access the console over the USB CDC ACM serial port that appears.
-  No driver is needed.
-* **Telnet.** With a Pi Pico 2 W, the console is also on the network. See
-  `Telnet Console`_ for setup.
+* **VGA terminal.** In the standard configuration with a :doc:`vga`
+  module, the VGA terminal is on a VGA monitor, or an HDMI display with a
+  VGA-to-HDMI cable, and a USB keyboard is plugged into the RIA.
+* **USB serial terminal.** Connect the USB port on the VGA module to a
+  computer and open the USB CDC ACM serial port that appears. No driver
+  is needed.
+* **Telnet terminal.** With a Pi Pico 2 W, the console is also on the
+  network. See `Telnet Console`_ for setup.
 
-5V Power is applied to the VGA module, enough for all your devices plus one
-watt for the RP6502-PICO itself.
+Inside the machine, the console runs over a UART between the RIA and the
+VGA module: 115200 bps, 8-bit words, no parity, 1 stop bit.
 
-Inside the machine, the console is a UART between the RIA and the VGA
-module: 115200 bps, 8-bit words, no parity, 1 stop bit.
-
-One terminal is :ref:`in charge <term-terminal-size>`: the line editor
-lays out each line for it, and asks it alone where the cursor is. A
-telnet terminal that reports its size with NAWS is in charge while it
-is connected. Otherwise the VGA terminal is in charge, or the terminal
-on the UART when no VGA module is connected.
-If pagination or word-wrap seem wrong, check which terminal is in
-charge.
+The line editor lays out lines for the :ref:`size <term-terminal-size>`
+of the VGA terminal, or for 80 columns by 24 rows when no VGA module is
+connected.
 
 
 .. _pico-monitor:
@@ -104,16 +97,17 @@ charge.
 Monitor
 =======
 
-A fresh RIA boots into the RP6502 monitor. It is not an operating-system
-shell; think of it more like a UEFI shell. Its main job is loading ROMs,
-with just enough hardware and locale configuration to get going — kept
-deliberately minimal.
+A fresh RIA boots into the RP6502 monitor. The monitor loads ROMs and
+sets up the hardware and the locale.
 
 The monitor runs on the console, so it is reachable from any terminal on
-the :ref:`console manifold <term-console-manifold>`.
+the :ref:`console manifold <term-console-manifold>`. It reads each
+command with the :ref:`line editor <term-line-editor>`, so a command can
+be corrected before Enter runs it, and Up and Down bring back earlier
+commands.
 
-The monitor's built-in help is extensive and always current. Type
-``HELP`` to get started, then dig into deep help like ``HELP SET PHI2``.
+Type ``HELP`` for the list of commands, and ``HELP`` with a command for
+its help, such as ``HELP SET PHI2``.
 The table lists every command.
 
 .. list-table::
@@ -273,7 +267,7 @@ they last through a reboot. A Pi Pico 2 W adds ``BLE`` and the settings of
        ``strftime()``. While ``CP`` is 0, it also selects the code page.
    * - ``SET KB (layouts)``
      - One or more keyboard layouts, such as ``SET KB US US-INTL``.
-       Super+Space cycles through them.
+       GUI-Space cycles through them.
    * - ``SET CP (cp)``
      - The code page. 0, the default, follows ``LOC``. Any other value is
        fixed: 437, 720, 737, 771, 775, 850, 852, 855, 857, 860, 861, 862,
@@ -367,7 +361,7 @@ Telnet Console
 ==============
 
 The console can be exposed over the network. A telnet client is then a
-console like any other, for the monitor and for a running 6502. The
+terminal like any other, for the monitor and for a running program. The
 traffic is unencrypted, so anything typed or printed can be read along
 the way, including the key.
 
@@ -379,12 +373,11 @@ the way, including the key.
      - Description
    * - ``SET PORT (port|0)``
      - The TCP port to listen on. The default is ``23``, the standard
-       telnet port; ``0`` disables the telnet console.
+       telnet port; ``0`` disables telnet.
    * - ``SET KEY (key|-)``
      - The passkey a client sends to connect. Use ``-`` to clear it.
 
-The telnet console starts listening once ``KEY`` is set and ``PORT`` is
-non-zero.
+Telnet starts listening once ``KEY`` is set and ``PORT`` is non-zero.
 
 
 Modem Emulation
@@ -392,8 +385,8 @@ Modem Emulation
 
 The RP6502-PICO emulates a Hayes modem — the classic AT command set —
 for reaching BBSes (bulletin board systems). It places outgoing calls
-and answers incoming ones over either raw TCP or telnet. As with the
-telnet console, the connection is unencrypted.
+and answers incoming ones over either raw TCP or telnet. As with telnet
+terminals, the connection is unencrypted.
 
 .. note::
 

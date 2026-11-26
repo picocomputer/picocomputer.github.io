@@ -287,14 +287,13 @@ The files that its ``install`` setting names are on the null drive.
 Saves
 -----
 
-The working directory can be any directory: the one a shell was in when
-it started the emulator, the one a launcher left, or on the Pocket the
-Assets directory that holds the ROMs. So a portable program does not build
-the path of a save from the working directory. A path that starts with
-``SAVE:`` names a save, a file in the save directory of the machine, and
-each machine keeps that directory where saves belong. On an
-:doc:`pico`, the save directory is the working directory when the ROM
-starts.
+The working directory can be any directory, such as the one a shell was
+in when it started the emulator, or the one a launcher left. So a
+portable program does not build the path of a save from the working
+directory. A path that starts with ``SAVE:`` names a save, a file in the
+save directory of the machine, and each machine keeps that directory
+where saves belong. On an :doc:`pico`, the save directory is the working
+directory when the ROM starts.
 
 This program keeps a high score in ``SAVE:hopper.hiscore``. It reads the
 score when it starts, and it writes a new one when the player beats it.
@@ -579,9 +578,14 @@ Working Directory
 
 A relative path starts from the current directory of the current drive.
 Where that is when a machine starts differs: the root of ``MSC0:`` on an
-:doc:`pico`, ``FS:/Assets/rp6502/common`` on the Pocket, the directory
+:doc:`pico`, ``FS:/Saves/rp6502/common`` on the Pocket, the directory
 the :doc:`emu` was started from, the working directory of RetroArch when
 the core runs there, and the root, ``FS:/``, on an :doc:`web`.
+
+The Pocket keeps its ROMs in ``FS:/Assets/rp6502/common``, apart from
+its working directory. The relative path of an EXEC starts from that
+directory on the Pocket, so a program there runs another ROM by its file
+name alone. Every other relative path starts from the working directory.
 
 The :doc:`emu` and the :doc:`web` never change the current drive or
 directory themselves. Only CHDIR from a program changes them, and a ROM
@@ -593,8 +597,9 @@ A CHDIR into a directory on another drive also makes that drive current.
 Each drive keeps the last directory used on it, so a later CHDIR to the
 device name of the drive alone, such as ``MSC1:``, returns to that
 directory. On a machine with one drive, a CHDIR to its device name alone
-succeeds and changes nothing. The Pocket has one fixed directory, so
-every CHDIR fails there with ENOSYS.
+succeeds and changes nothing. The Pocket is the exception. It has one
+fixed directory, so a CHDIR there fails with ENOSYS unless its path is
+the one that GETCWD returns.
 
 .. _port-installed-roms:
 
@@ -647,7 +652,7 @@ has no ``--install``.
      - ``FS:``
    * - Working directory at start
      - ``MSC0:/``
-     - ``FS:/Assets/rp6502/common``
+     - ``FS:/Saves/rp6502/common``
      - the directory the emulator was started from
      - ``FS:/``
    * - Installed ROMs
@@ -686,8 +691,9 @@ has no ``--install``.
 The Pocket also has limits of its own. It opens files by path, but it has
 no directory operations and no listing:
 
-- STAT, REMOVE, RENAME, MKDIR, CHDIR, CHMOD, UTIME, GETLABEL, SETLABEL, and
-  GETFREE fail with ENOSYS.
+- STAT, REMOVE, RENAME, MKDIR, CHMOD, UTIME, GETLABEL, SETLABEL, and
+  GETFREE fail with ENOSYS. So does a CHDIR, unless its path is the one
+  that GETCWD returns.
 - OPENDIR, READDIR, CLOSEDIR, TELLDIR, SEEKDIR, and REWINDDIR fail with
   ENOSYS.
 - An open fails with EACCES for the root of the card,

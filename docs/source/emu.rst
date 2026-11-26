@@ -37,9 +37,9 @@ Install
 =======
 
 Pre-built emulators are on the `releases page
-<https://github.com/picocomputer/rp6502/releases/latest>`__. A project made from
-the :doc:`sdk` template will fetch the right one into ``tools/``, so
-you may have it already.
+<https://github.com/picocomputer/rp6502/releases/latest>`__. A project made
+from the :doc:`sdk` template will fetch the right one into ``tools/``, so you
+may have it already.
 
 - **Windows** — ``rp6502-emu.exe`` is the program itself, not an installer.
   Requires a GPU with Direct3D 11. It isn't code signed, so SmartScreen
@@ -108,10 +108,12 @@ around these limits:
   Settings > Input > Auto Enable 'Game Focus' Mode > Detect turns Game
   Focus on whenever the core is loaded.
 - **Mouse** — libretro has no way to share the host's cursor, so the
-  core reports no host cursor and the program draws its own. With Game
-  Focus off, RetroArch shows its own cursor as well. With Game Focus on,
+  core draws the tablet's pointer on the canvas itself. With Game Focus
+  off, RetroArch shows its own cursor as well. With Game Focus on,
   RetroArch captures the mouse, and the edges of the screen are hard to
   reach.
+- **Clipboard** — The clipboard is not shared with the computer. Copy
+  and paste work only inside the Picocomputer.
 
 
 .. _emu-toolchain:
@@ -162,6 +164,12 @@ work.
    * - ``--help``
      - \-
      - Print the options and the script commands, then exit.
+   * - ``--list-options``
+     - \-
+     - Print each option on a line, as ``--name``, or ``--name=`` when it
+       takes a value, then exit. The Python tests of the
+       :doc:`sdk` read it to tell the options of the emulator from the
+       options of a test.
    * - ``--screenshot``
      - ``file.png``
      - Run headlessly, render the frames to PNG, and exit.
@@ -186,10 +194,10 @@ work.
        ``16:9``,
        ``16:10``
      - A fixed shape for the window. The console canvas has the same
-       shape, at 640x480, 640x360, or 640x400, with 30, 22, or 25 rows,
-       and a canvas of another shape is letterboxed or pillarboxed.
-       Without it, the console canvas is 640x480, and the window takes
-       the shape of each canvas.
+       shape, at 640x480, 640x360, or 640x400, and the VGA terminal on it
+       has 30, 22, or 25 rows. A canvas of another shape is letterboxed or
+       pillarboxed. Without it, the console canvas is 640x480, and the
+       window takes the shape of each canvas.
    * - ``--script``
      - ``file``, or
        ``-``
@@ -202,7 +210,7 @@ work.
    * - ``--stdin``
      - \-
      - The host's stdin becomes the machine's console input. A terminal
-       there becomes the console itself. Implied by ``--headless``. See
+       there attaches to the console. Implied by ``--headless``. See
        `In a Toolchain`_.
    * - ``--install``
      - ``file``
@@ -341,9 +349,9 @@ Scripting
 
 ``--script`` drives the machine with no one at the keyboard. It types,
 works the gamepads and the pointer, waits for what the program writes to
-stdout and stderr and for what reaches the screen, and checks what the
-program produced, which is enough to turn a ROM into a test that passes or
-fails.
+stdout and stderr and for everything the console outputs, and checks what
+the program produced, which is enough to turn a ROM into a test that passes
+or fails.
 
 .. code-block:: text
 
@@ -380,10 +388,10 @@ Text is UTF-8, and so is what ``wait`` and ``expect`` search, converted
 from the machine's code page as it is written. ``stdout`` and ``stderr``
 are the bytes the program wrote, before the console puts a carriage return
 in front of each newline, so a line the program prints ends in ``\n``.
-``console`` is what reaches the screen: those bytes with the carriage
-returns, the line editor's echo of what is typed, and the system's own
-messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
-``"caf\xC3\xA9"`` is ``"café"``.
+``console`` is everything the console outputs: those bytes with the
+carriage returns, the line editor's echo of what is typed, and the system's
+own messages. An escape from ``\x80`` to ``\xFF`` is a byte of
+UTF-8, so ``"caf\xC3\xA9"`` is ``"café"``.
 
 .. code-block:: text
 
@@ -412,8 +420,11 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
    * - ``type "text" [frames]``
      - Type it. ``\r`` is Enter, ``\t`` is Tab. The text is UTF-8,
        converted to the machine's code page, so a byte that is not UTF-8
-       becomes ``?``. The command waits until the keyboard ring takes it
-       all.
+       becomes ``?``. The text takes its place among the keys, and
+       the command waits only until the keyboard has room for it.
+   * - ``clip set "text"``
+     - Put the text on the clipboard. A script has a clipboard of its
+       own, so the clipboard of the computer does not change.
    * - ``eof [frames]``
      - End the program's stdin, the way a piped ``--stdin`` ends. It
        waits until the program is reading stdin and has taken everything
@@ -425,8 +436,8 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
        ``release <key>...``
      - Set and clear bits in the HID bitmap a program reads. Each key is a
        name or a keycode. See `Key Names`_.
-   * - ``lock num|caps|scroll``
-     - Toggle a lock LED.
+   * - ``lock num|caps|scroll [on|off]``
+     - Turn a lock on or off, or toggle it. All three start off.
    * - ``pad <n> connect [western|eastern|playstation] [sticks]``,
        ``pad <n> disconnect``
      - Attach or detach one of four gamepads, optionally saying how its
@@ -464,6 +475,12 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
        ``expect-not exit <code>``
      - Check the exit code of the program. The check fails while the
        program runs, so put ``wait exit`` first.
+   * - ``expect lock num|caps|scroll on|off``,
+       ``expect-not lock num|caps|scroll on|off``
+     - Check a lock.
+   * - ``expect clip "text"``,
+       ``expect-not clip "text"``
+     - Check that the clipboard holds exactly this text.
    * - ``discard [stdout|stderr|console]``
      - Drop what the program printed on that stream after the last match,
        or on all three streams without a stream name. ``load`` keeps the captured output, so
@@ -508,8 +525,8 @@ messages. An escape from ``\x80`` to ``\xFF`` is a byte of UTF-8, so
        the first line, or just before or after ``load``. ``state load``
        replaces the stream.
    * - ``sys run|stop|break``
-     - Start the machine, stop it, or interrupt it the way a break at
-       the console would.
+     - Start the machine, stop it, or interrupt it the way a break from
+       a terminal would.
    * - ``reply [on|off]``
      - Answer every command on stdout. See `Driving it from a program`_.
    * - ``let name = expr``
@@ -629,14 +646,20 @@ is the a key.
 character and the keys that have an escape sequence. ``+shift`` types the
 shifted character, ``+alt`` prefixes ESC, and ``+ctrl`` sends the control
 byte, which makes ``key c+ctrl`` Ctrl-C and ``key leftbracket+ctrl`` an
-ESC. Ctrl with a digit from 2 to 8, with Space or with / sends what xterm
-sends, so ``key 2+ctrl`` is a zero byte. Those characters are a US keyboard's, whatever layout the machine is
-set to, so that a script sends the same bytes under every layout.
+ESC. Ctrl with a digit from 2 to 8, with Space, with / or with ? sends
+what xterm sends, so ``key 2+ctrl`` is a zero byte. A ``+ctrl`` on a
+character that has no control byte types the character, so ``key 1+ctrl``
+is a 1. Those characters are a US keyboard's, whatever layout the machine
+is set to, so that a script sends the same bytes under every layout.
+
+``key`` types by the locks. After ``lock num on``, ``key kp8`` is an 8;
+with NumLock off, or with ``+shift``, it is the up arrow. After
+``lock caps on``, ``key a`` is an A and ``key a+shift`` is an a.
+:doc:`term` lists what every key sends.
 
 A key that types nothing is an error, which
 covers ``capslock``, ``numlock``, ``scrolllock``, ``printscreen``,
-``pause``, ``menu`` and the modifiers. So is a ``+ctrl`` on a key that has
-no control byte, such as ``key 1+ctrl``.
+``pause``, ``menu`` and the modifiers.
 
 
 .. _emu-symbols:
@@ -645,19 +668,33 @@ Symbols and expressions
 -----------------------
 
 A ``.sym`` file beside the ROM, with the same name, lists the program's
-addresses and constants by name. Every build of a project made with the
-:doc:`sdk` writes one. Each line is a name, one space and a whole number:
+addresses, constants and the sizes of its variables by name. Every build
+of a project made with the :doc:`sdk` writes one. Each line is a name,
+``define`` or ``address``, a value, a size, a count and a source file,
+with ``-`` for what the line does not have. :ref:`sdk-sym-file` describes
+each field:
 
 .. code-block:: text
 
-  XRAM_DATA_TAB 0x1100
-  XRAM_PSG 0x1200
+  XRAM_DATA_TAB define 0x1100 - - -
+  XRAM_PSG define 0x1200 - - -
+  scores address 0x1F86 16 8 -
 
 A script can use these symbols wherever a command takes a number. The
 emulator reads them from the ``.sym`` of the ROM that boots, and ``load``
 replaces them with the new program's. Without a ``.sym`` there are none.
-A name on two lines is ambiguous, and a script fails only when it uses
-that name.
+A name with two values is ambiguous, and a script fails only when it
+uses that name.
+
+Four lookups each read one value of a name: ``address(name)`` the
+address of a variable, a function or a label, ``define(name)`` the value
+of a ``#define``, ``sizeof(name)`` the size of a variable in bytes, and
+``countof(name)`` the number of elements of an array. A lookup fails
+when the name has no such value, as for the address of a ``#define``.
+The text between the parentheses, up to the first ``)``, is the name, or
+a path that picks a source file's meaning of the name, such as
+``sizeof(src/game.c/events)``. Outside a lookup, ``/`` divides, so a path
+works only inside one. :ref:`sdk-sizes-and-paths` tells how paths work.
 
 Spaces separate a command's arguments, so an expression with spaces must
 be in parentheses, as in ``poke xram:(XRAM_PSG + 5) ($80 | 3)``. Without
@@ -706,6 +743,11 @@ it is an error. The list below shows where these rules differ from C.
 - A name is a letter or ``_``, then letters, digits, ``_`` and ``.``, so
   an llvm-mos static such as ``draw.image`` is one name. Names are
   case-sensitive.
+- ``address()``, ``define()``, ``sizeof()`` and ``countof()`` are not
+  Python. Each is a name with the value it looks up, so
+  ``2 * countof(scores)`` is as in Python with a name in place of the
+  lookup. A name ``sizeof`` without ``(`` after it is a name like any
+  other.
 - There are no strings, function calls, casts, ``?:``, ``&&``, ``||`` or
   ``!``. Write ``and`` for ``&&``, ``or`` for ``||``, ``not`` for ``!``,
   and 1 and 0 for true and false.
@@ -724,8 +766,28 @@ after ``=``.
    * - ``unknown name 'XRAM_PSGG'``
      - No symbol or variable has that name.
    * - ``ambiguous name 'L0010'``
-     - The ``.sym`` has it on two lines, or a symbol and a variable share
-       it after a ``load``.
+     - The ``.sym`` has it with two values, or a symbol and a variable
+       share it after a ``load``.
+   * - ``ambiguous name 'LEVELS': src/shop.c/LEVELS
+       src/upgrades.c/LEVELS``
+     - The name means different things in different source files. Each
+       path picks one in a lookup, as in ``define(src/shop.c/LEVELS)``.
+   * - ``address(events): events is in more than one file, so its
+       address is not known; rename one``
+     - Two source files each have a variable or a function of that
+       name.
+   * - ``address(XRAM_PSG): XRAM_PSG is a #define``,
+       ``define(scores): scores is not a #define``,
+       ``sizeof(main): main has no size``,
+       ``countof(game): game is not an array``
+     - The name has no value of that kind.
+   * - ``tens is not in the linked program``
+     - The optimizer removed the variable, so it has a size and no
+       address.
+   * - ``sizeof(scores): the .sym was written by older tools; rebuild
+       the project with the new ones``
+     - The ``.sym`` has a name and a value on each line, with no sizes
+       or paths. A name by itself still works.
    * - ``cannot assign symbol 'XRAM_PSG'``
      - A symbol can't be set.
    * - ``base + 6 / 2: floats are not allowed, use //``
