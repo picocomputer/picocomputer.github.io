@@ -1160,6 +1160,7 @@ program needs, or the whole block:
 
       .endif
 
+.. _ria-mouse:
 
 Mouse
 =====
@@ -1174,7 +1175,7 @@ on the canvas.
 On the :doc:`emu` and the :doc:`web`, the mouse interface captures the
 mouse. After a program maps the mouse, a click in the window hides the
 pointer and locks the mouse there. The player presses Esc to get the
-mouse back. The tablet never captures the mouse.
+mouse back.
 
 This finds how far the mouse moved since the last reading, and checks the
 left button:

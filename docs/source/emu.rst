@@ -42,14 +42,17 @@ from the :doc:`sdk` template will fetch the right one into ``tools/``, so you
 may have it already.
 
 - **Windows** — ``rp6502-emu.exe`` is the program itself, not an installer.
-  Requires a GPU with Direct3D 11. It isn't code signed, so SmartScreen
-  warns on first launch; choose "More info" then "Run anyway".
+  Take the ``windows-x64`` download for an x64 PC and ``windows-arm64``
+  for Windows on Arm. Requires a GPU with Direct3D 11. It isn't code signed,
+  so SmartScreen warns on first launch; choose "More info" then "Run
+  anyway".
 - **macOS** — drag ``rp6502-emu.app`` to Applications.
   It isn't signed or notarized, so Gatekeeper blocks the first launch.
   Allow it under System Settings > Privacy & Security >
   "Open Anyway", or ``xattr -dr com.apple.quarantine rp6502-emu.app``.
 - **Linux** — built on Ubuntu 22.04, so it needs glibc 2.35 or
-  later plus the GL, X11, and PulseAudio runtime libraries.
+  later plus the EGL, OpenGL ES, and X11 runtime libraries. It supports
+  both PipeWire and PulseAudio.
   The tarball preserves the execute bit; if something
   along the way stripped it, ``chmod +x rp6502-emu``.
 - **RetroArch** — the core is in the Online Updater, under
@@ -77,43 +80,54 @@ Start the emulator with a ROM, or drag one onto the window.
 RetroArch
 =========
 
-The RP6502-EMU is also a libretro core. RetroArch reaches devices that a
-dedicated emulator would make no sense for: Android phones, tablets and
-TVs, iPhone, iPad and Apple TV, and Linux on ARM boards. Install the core
-from Online Updater > Core Downloader, under "Picocomputer 6502", then
-load a ``.rp6502`` ROM the way you would a cartridge. Save states are
-deterministic, so rewind, run-ahead and netplay all work.
-A save state can't be taken while a program has a file open for writing.
+The RP6502-EMU is also a libretro core, a module that RetroArch loads to
+emulate a computer or a game console. RetroArch reaches devices that a
+dedicated emulator would make no sense for: Android phones, tablets, and
+TVs; iPhone, iPad, and Apple TV; and Linux on ARM boards. Install the
+core from Online Updater > Core Downloader, under "Picocomputer 6502",
+then load a ``.rp6502`` ROM the way you would a cartridge. The core
+supports save states, and its emulation is deterministic, so rewind,
+run-ahead, and netplay all work. A save state can't be taken while a
+program has a file open for writing.
 
 The core runs the ROM by its full path, so argv[0] is the absolute path
 of the file. A ROM whose path no program could name runs from the null
 drive as ``:name`` instead, as described in :ref:`Installed ROMs
-<port-installed-roms>`. ``SAVE:`` files go in an ``rp6502`` folder
-inside the RetroArch save folder, or in the working directory when the
-ROM starts if RetroArch has no save folder. The core never changes the
-working directory, so a program starts in the working directory of
-RetroArch.
+<port-installed-roms>`. ``SAVE:`` files go in an ``rp6502`` directory
+inside RetroArch's save directory. If RetroArch has no save directory,
+they go in the working directory when the ROM starts. A program starts
+in the working directory of RetroArch, and a program that changes
+directory changes RetroArch's as well, so the next program starts where
+the last one left off.
 
-Each of the four ports is a **Gamepad** by default, with analog sticks.
-A **Lightgun** port drives the Picocomputer's tablet.
+RetroArch stands between the Picocomputer and the input devices, and
+each kind of input works its own way there:
 
-libretro was built for consoles with gamepads, and a core cannot work
-around these limits:
-
-- **Keyboard** — RetroArch maps the keys to its virtual RetroPad and its
-  own hotkeys, so typing reaches the program only with Game Focus on.
-  Game Focus is the Scroll Lock key by default. The core cannot turn Game
-  Focus on or ask whether it is on, so it shows "Enable Game Focus for
-  Keyboard and Mouse." the first time a program asks for the keyboard.
-  Settings > Input > Auto Enable 'Game Focus' Mode > Detect turns Game
-  Focus on whenever the core is loaded.
-- **Mouse** — libretro has no way to share the host's cursor, so the
-  core draws the tablet's pointer on the canvas itself. With Game Focus
-  off, RetroArch shows its own cursor as well. With Game Focus on,
-  RetroArch captures the mouse, and the edges of the screen are hard to
-  reach.
-- **Clipboard** — The clipboard is not shared with the computer. Copy
-  and paste work only inside the Picocomputer.
+- **Gamepads** — Each of RetroArch's four ports is a gamepad with two
+  analog sticks. A program sees a gamepad on
+  every port up to Settings > Input > Maximum Users, whether or not a
+  controller is plugged in.
+- **Keyboard** — RetroArch binds many keys to its gamepad and its
+  hotkeys, such as the arrow keys, Enter, and Space. With Game Focus off,
+  those keys don't reach the program. With Game Focus on, every key
+  reaches the program, and RetroArch's hotkeys stop working, except the
+  one that turns Game Focus off: Scroll Lock by default. The first time a
+  program reads the console or the keyboard, the core shows "Enable Game
+  Focus for the keyboard." To turn Game Focus on each time a ROM starts or
+  the menu closes, set Settings > Input > Auto Enable 'Game Focus' Mode
+  to Detect.
+- **Tablet** — The mouse and a touchscreen both move the tablet's
+  pointer, and the mouse wheel is the tablet's wheel. A port set to
+  Lightgun drives the tablet in their place: the trigger is the left
+  button, Aux A the right button, and Aux B the middle button. The core
+  draws the tablet's pointer on the canvas. In a window with Game Focus
+  off, RetroArch's own cursor shows over it as well. Game Focus on hides
+  RetroArch's cursor.
+- **Mouse** — A program that reads the :ref:`mouse interface
+  <ria-mouse>` gets no movement, no buttons, and no wheel. A program for
+  RetroArch should read the :ref:`tablet <ria-tablet>` instead.
+- **Clipboard** — The clipboard is not shared with other apps. Copy and
+  paste work only inside the Picocomputer.
 
 
 .. _emu-toolchain:

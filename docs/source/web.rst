@@ -101,7 +101,9 @@ height is filled, as ``#game`` fills the window here.
 A browser does not run a web player opened as a file, from a ``file://``
 address, because the ROM and the WebAssembly load only from a web server.
 To try a page on your own computer, start a web server in its folder and
-open http://localhost:8000.
+open http://localhost:8000. Anywhere else, serve the page over https: a
+browser gives no sound to a page served over plain http, except from
+your own computer.
 
 .. code-block:: text
 

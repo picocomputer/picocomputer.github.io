@@ -1388,7 +1388,8 @@ each of them keeps the file name of its release:
 
 .. code-block:: text
 
-  rp6502-<version>-windows.zip
+  rp6502-<version>-windows-x64.zip
+  rp6502-<version>-windows-arm64.zip
   rp6502-<version>-macos.zip
   rp6502-<version>-linux-x86_64.tar.gz
   rp6502-<version>-linux-aarch64.tar.gz
